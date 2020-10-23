@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.WorkspaceDetails
+import org.broadinstitute.dsde.rawls.model.{WorkspaceDetails, WorkspaceVersions}
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -19,7 +19,6 @@ import spray.json._
  */
 //noinspection TypeAnnotation,NameBooleanParameters
 object MockWorkspaceServer {
-
   val mockValidWorkspace = WorkspaceDetails(
     "namespace",
     "name",
@@ -29,9 +28,11 @@ object MockWorkspaceServer {
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Map(), //attributes
+    Some(Map()), //attributes
     false, //locked
-    Set.empty
+    Some(Set.empty), //authdomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
   val mockSpacedWorkspace = WorkspaceDetails(
@@ -43,9 +44,11 @@ object MockWorkspaceServer {
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Map(), //attributes
+    Some(Map()), //attributes
     false, //locked
-    Set.empty
+    Some(Set.empty), //authdomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
   val mockValidId = randomPositiveInt()

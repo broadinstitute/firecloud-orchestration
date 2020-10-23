@@ -2,30 +2,29 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
+import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
-import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
-import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
+import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
+import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.{Header, JsonBody, NottableString, Parameter}
 import org.mockserver.model.HttpRequest._
+import org.mockserver.model.{JsonBody, Parameter}
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
-import spray.http._
 import spray.http.StatusCodes._
+import spray.http._
 import spray.httpx.SprayJsonSupport._
-import spray.json._
 import spray.json.DefaultJsonProtocol._
-import javax.net.ssl.HttpsURLConnection
+import spray.json._
 import spray.routing.RequestContext
 
 object WorkspaceApiServiceSpec {
@@ -39,9 +38,11 @@ object WorkspaceApiServiceSpec {
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Map(AttributeName("library", "published") -> AttributeBoolean(true)), //attributes
+    Some(Map(AttributeName("library", "published") -> AttributeBoolean(true))), //attributes
     false, //locked
-    Set.empty
+    Some(Set.empty), //authorizationDomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
 }
@@ -59,9 +60,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Map(), //attributes
+    Some(Map()), //attributes
     false, //locked
-    Set.empty
+    Some(Set.empty), //authorizationDomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
   val jobId = "testOp"
@@ -113,9 +116,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     DateTime.now(),
     DateTime.now(),
     "mb",
-    Map(), //attrs
+    Some(Map()), //attrs
     false,
-    Set(nihProtectedAuthDomain)
+    Some(Set(nihProtectedAuthDomain)), //authorizationDomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
   val authDomainRawlsWorkspace = WorkspaceDetails(
@@ -127,9 +132,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     DateTime.now(),
     DateTime.now(),
     "mb",
-    Map(), //attrs
+    Some(Map()), //attrs
     false,
-    Set(ManagedGroupRef(RawlsGroupName("secret_realm")))
+    Some(Set(ManagedGroupRef(RawlsGroupName("secret_realm")))), //authorizationDomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
   val nonAuthDomainRawlsWorkspace = WorkspaceDetails(
@@ -141,14 +148,16 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     DateTime.now(),
     DateTime.now(),
     "mb",
-    Map(), //attrs
+    Some(Map()), //attrs
     false,
-    Set.empty
+    Some(Set.empty), //authorizationDomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
-  val protectedRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, protectedRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
-  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, authDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
-  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare=false, canCompute=true, catalog=false, nonAuthDomainRawlsWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
+  val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), authDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
@@ -190,7 +199,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Map(), false, authDomain)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -212,7 +221,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", attributes, false, authDomain)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -418,7 +427,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       List(HttpMethods.GET) foreach { method =>
         s"OK status is returned for HTTP $method" in {
           val dao = new MockRawlsDAO
-          val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare=false)
+          val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare=Some(false))
           val lrwr = Seq.fill(2){rwr}
           stubRawlsService(method, workspacesRoot, OK, Some(lrwr.toJson.compactPrint))
           new RequestBuilder(method)(workspacesRoot) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
@@ -436,7 +445,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.nonEmpty)
+          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.nonEmpty)
         }
       }
 
@@ -447,7 +456,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.isEmpty)
+          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.isEmpty)
         }
       }
 

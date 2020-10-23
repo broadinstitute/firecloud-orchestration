@@ -76,14 +76,16 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
   val testWorkspace = new WorkspaceDetails(workspaceId = testUUID.toString,
     namespace = "testWorkspaceNamespace",
     name = "testWorkspaceName",
-    authorizationDomain = Set(testGroup1Ref, testGroup2Ref),
+    authorizationDomain = Some(Set(testGroup1Ref, testGroup2Ref)),
     isLocked = false,
     createdBy = "createdBy",
     createdDate = DateTime.now(),
     lastModified = DateTime.now(),
-    attributes = Map.empty,
+    attributes = Some(Map.empty),
     bucketName = "bucketName",
-    workflowCollectionName = Some("wf-collection"))
+    workflowCollectionName = Some("wf-collection"),
+    workspaceVersion=WorkspaceVersions.V2,
+    googleProject="googleProject")
 
 
   val DULAdditionalJsObject =
@@ -229,10 +231,10 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     }
     "with only library attributes in workspace" - {
       "should generate indexable document" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName("library","bar")->AttributeString("bar")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName("library","bar")->AttributeString("bar"),
@@ -248,12 +250,12 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     }
     "with only default attributes in workspace" - {
       "should generate indexable document" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName("library","discoverableByGroups")->AttributeValueList(Seq(AttributeString("Group1"))),
           AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
           AttributeName.withDefaultNS("qux")->AttributeString("defaultQux")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName.withDefaultNS("_discoverableByGroups") -> AttributeValueList(Seq(AttributeString("Group1"))),
@@ -269,10 +271,10 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     }
     "with discoverableByGroup attribute in workspace" - {
       "should generate indexable document" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
           AttributeName.withDefaultNS("qux")->AttributeString("defaultQux")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
@@ -284,12 +286,12 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should be the different for attribute operations" in {
-        val empty = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq.empty))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
+        val empty = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq.empty)))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
         assert(isDiscoverableDifferent(empty, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))))
-        val one = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
+        val one = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))))
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq.empty))))
-        val two = WorkspaceResponse(WorkspaceAccessLevels.NoAccess, false, true, false, testWorkspace.copy(attributes = Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))), WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty)
+        val two = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
         assert(isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"))))))
         assert(!isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"),AttributeString("group1"))))))
       }
@@ -298,7 +300,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       "should generate indexable document" in {
         // the Map.empty below is currently the same as what's in testWorkspace;
         // include explicitly here in case testWorkspace changes later
-        val w = testWorkspace.copy(attributes = Map.empty)
+        val w = testWorkspace.copy(attributes = Some(Map.empty))
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
@@ -313,14 +315,14 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     "with just a (longish) description in workspace" - {
       "should generate indexable document" in {
         // https://hipsum.co/
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName.withDefaultNS("description")->AttributeString("Fingerstache copper mug edison bulb, actually austin mustache chartreuse bicycle rights." +
             " Plaid iceland artisan blog street art hammock, subway tile vice. Hammock put a bird on it pinterest tacos" +
             " kitsch gastropub. Chicharrones food truck edison bulb meh. Cardigan aesthetic vegan kitsch. Hell of" +
             " messenger bag chillwave hashtag, distillery thundercats aesthetic roof party lo-fi sustainable" +
             " jean shorts single-origin coffee. Distillery ugh green juice, hammock marfa gastropub mlkshk" +
             " chambray vegan aesthetic beard listicle skateboard ramps literally.")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
           AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
@@ -334,12 +336,12 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     }
     "with mixed library and default attributes in workspace" - {
       "should generate indexable document" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
           AttributeName.withDefaultNS("qux")->AttributeString("defaultQux")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName("library","bar")->AttributeString("bar"),
@@ -355,14 +357,14 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     }
     "with illegally-namespaced attributes in workspace" - {
       "should generate indexable document" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName("library","bar")->AttributeString("bar"),
           AttributeName.withDefaultNS("baz")->AttributeString("defaultBaz"),
           AttributeName.withDefaultNS("qux")->AttributeString("defaultQux"),
           AttributeName("nope","foo")->AttributeString("foo"),
           AttributeName("default","bar")->AttributeString("bar")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName("library","foo")->AttributeString("foo"),
           AttributeName("library","bar")->AttributeString("bar"),
@@ -378,9 +380,9 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     }
     "with diseaseOntologyID attribute" - {
       "should generate indexable document with parent info when DOID valid" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_9220")
-        ))
+        )))
         val parentData = ontologyDao.data("http://purl.obolibrary.org/obo/DOID_9220").head.parents.get.map(_.toESTermParent)
         val expected = Document(testUUID.toString, Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_9220"),
@@ -395,9 +397,9 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should generate indexable document with no parent info when DOID has no parents" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_4")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_4"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
@@ -410,9 +412,9 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should generate indexable document with no parent info when DOID not valid" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_99999")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           AttributeName.withLibraryNS("diseaseOntologyID") -> AttributeString("http://purl.obolibrary.org/obo/DOID_99999"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
@@ -446,9 +448,9 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
       )
 
       "should populate data use restrictions from Consent" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           orspIdAttribute -> AttributeString("MOCK-111")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
           consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
@@ -467,11 +469,11 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should clear and overwrite pre-existing data use attributes" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
           AttributeName.withLibraryNS("NCU") -> AttributeBoolean(false), // should be overwritten by orsp DU
           AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true) // overrides the default, should be erased by orsp DU
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
           consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
@@ -490,12 +492,12 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should preserve pre-existing non-data use attributes" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
           AttributeName.withLibraryNS("datasetName") -> AttributeString("my cohort"),
           AttributeName.withLibraryNS("projectName") -> AttributeString("my project")
 
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
           consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
@@ -516,9 +518,9 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should generate indexable document without any data use restrictions if ORSP id not found" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           orspIdAttribute -> AttributeString("MOCK-NOTFOUND")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-NOTFOUND"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
@@ -531,9 +533,9 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
         }
       }
       "should generate indexable document without any data use restrictions if ORSP request throws exception" in {
-        val w = testWorkspace.copy(attributes = Map(
+        val w = testWorkspace.copy(attributes = Some(Map(
           orspIdAttribute -> AttributeString("MOCK-EXCEPTION")
-        ))
+        )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-EXCEPTION"),
           AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
@@ -817,13 +819,15 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           DateTime.now(),
           DateTime.now(),
           "my_workspace_creator",
-          Map(), //attributes
+          Some(Map()), //attributes
           false, //locked
-          Set.empty
+          Some(Set.empty), //authdomain
+          WorkspaceVersions.V2,
+          "googleProject"
         )
 
         attrMaps map { attrMap =>
-          ws.copy(attributes = attrMap, workspaceId = UUID.randomUUID().toString)
+          ws.copy(attributes = Some(attrMap), workspaceId = UUID.randomUUID().toString)
         }
       }
 
