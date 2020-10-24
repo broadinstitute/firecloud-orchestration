@@ -97,6 +97,7 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
     } else {
       unAuthedRequest(req, compressed, useFireCloudHeader)
     }
+
     resultsToObject(resp, label, tick)
   }
 
@@ -112,7 +113,7 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
       response.status match {
         case s if s.isSuccess =>
           Unmarshal(response.entity).to[T].recoverWith {
-            throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+            case e: Throwable => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
           }
         case f => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
       }

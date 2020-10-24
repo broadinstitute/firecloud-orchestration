@@ -17,6 +17,7 @@ object ErrorReportExtensions {
   object FCErrorReport extends SprayJsonSupport {
 
     def apply(response: HttpResponse)(implicit ers: ErrorReportSource): ErrorReport = {
+      //TODO
 //      val (message, causes) = Try(Unmarshal(response.entity).to[ErrorReport]) match {
 //        case Failure(re) => (re.getMessage, Seq(re))
 //        case Success(err) => (response.entity.toString, Seq.empty)
