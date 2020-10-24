@@ -58,7 +58,6 @@ object FireCloudApp extends App with LazyLogging {
     val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
     val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
     val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
-    val statusServiceConstructor: () => StatusService = StatusService.constructor(null)
     val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
     val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
     val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
@@ -69,6 +68,8 @@ object FireCloudApp extends App with LazyLogging {
     val healthMonitorChecks = healthChecks.healthMonitorChecks
     val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
     system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
+
+    val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
 
     //Boot Logit metrics actor
     if (logitMetricsEnabled) {

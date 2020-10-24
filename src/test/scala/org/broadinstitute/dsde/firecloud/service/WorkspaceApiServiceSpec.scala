@@ -777,6 +777,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             (Post(tsvImportPath, MockTSVFormData.membershipValid)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
+              //note to self: check for the illegal header in header name like the error message says!
               status should equal(OK)
             }
           }
