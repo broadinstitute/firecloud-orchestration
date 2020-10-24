@@ -447,5 +447,5 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
 
-  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Map.empty, false, Set.empty))
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", cloneRequest.attributes, false, cloneRequest.authorizationDomain.getOrElse(Set.empty)))
 }
