@@ -24,6 +24,15 @@ trait SwaggerApiService extends LazyLogging {
         get {
           complete(HttpEntity(ContentTypes.`application/octet-stream`, swaggerContents.getBytes))
         }
+      } ~
+      // We have to be explicit about the paths here since we're matching at the root URL and we don't
+      // want to catch all paths lest we circumvent akka-http's not-found and method-not-allowed error
+      // messages.
+      (pathPrefixTest("swagger-ui") | pathPrefixTest("oauth2") | pathSuffixTest("js")
+        | pathSuffixTest("css") | pathPrefixTest("favicon")) {
+        get {
+          getFromResourceDirectory(swaggerUiPath)
+        }
       }
   }
 
