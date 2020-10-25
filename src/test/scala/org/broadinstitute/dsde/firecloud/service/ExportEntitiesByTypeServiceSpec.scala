@@ -1,8 +1,5 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets.UTF_8
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.ContentDispositionTypes
 import akka.stream.ActorMaterializer
@@ -24,16 +21,13 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  override val storageServiceConstructor: UserInfo => StorageService = StorageService.constructor(app)
-
   // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
   override implicit val routeTestTimeout = RouteTestTimeout(30.seconds)
 
   def actorRefFactory: ActorSystem = system
-//
-  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
-//  val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
 
+  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
+  val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
 
   val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"
   val largeFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/largeSampleSet/entities/sample_set/tsv"
@@ -81,8 +75,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(uri) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity.isKnownEmpty() shouldNot be(true) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(Connection("Keep-Alive")) should be(true)
           headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
@@ -98,12 +90,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(nonModelEntitiesBigQueryTSVPath+"?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity.isKnownEmpty() shouldNot be(true) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(Connection("Keep-Alive")) should be(true)
           headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "bigQuery.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, 2)
           responseAs[String].contains("query_str") should be(true)
         }
       }
@@ -146,12 +135,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity.isKnownEmpty() shouldNot be(true) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(Connection("Keep-Alive")) should be(true)
           headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
         }
       }
     }
@@ -251,8 +237,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Map("FCtoken"->"token", "attributeNames"->filterProps.mkString(",")))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity.isKnownEmpty() shouldNot be(true) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(Connection("Keep-Alive")) should be(true)
           headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
@@ -340,12 +324,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           sealRoute(cookieAuthedRoutes) ~> check {
             handled should be(true)
             status should be(OK)
-            response.entity.isKnownEmpty() shouldNot be(true) // Entity is the first line of content as output by StreamingActor
-            chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
             headers.contains(Connection("Keep-Alive")) should be(true)
             headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
             contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-            validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
             validateProps(response.entity)
           }
       }

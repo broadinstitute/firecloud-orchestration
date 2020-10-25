@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Props
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
