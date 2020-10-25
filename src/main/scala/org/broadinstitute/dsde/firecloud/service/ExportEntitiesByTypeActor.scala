@@ -104,7 +104,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
         val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
 
         streamCollectionType(entityQueries, metadata).map { source =>
-          HttpResponse(entity = Chunked(contentType, source), headers = List(keepAlive, disposition))
+          HttpResponse(entity = HttpEntity.fromFile(contentType, source.toJava), headers = List(keepAlive, disposition))
         }
       } else {
 //        val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
@@ -178,7 +178,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 //    entityQuerySource.via(flow).runWith(sink)
 //  }
 
-  private def streamCollectionType(entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata): Future[AkkaSource[ChunkStreamPart, NotUsed]] = {
+  private def streamCollectionType(entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata): Future[File] = {
 
     // Two File sinks, one for each kind of entity set file needed.
     // The temp files will end up zipped and streamed when complete.
@@ -238,10 +238,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       if (s) {
         val zipFile: Future[File] = writeFilesToZip(tempEntityFile, tempMembershipFile)
         // The output to the user
-        zipFile map { f =>
-          val result: AkkaSource[ChunkStreamPart, NotUsed] = AkkaSource.fromIterator(Source.fromFile(f.toJava).getLines).map(x => ChunkStreamPart(x))
-          result
-        }
+        zipFile
       } else {
         Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream zip file to user for $workspaceNamespace:$workspaceName:$entityType")))
       }
