@@ -78,7 +78,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           headers.contains(Connection("Keep-Alive")) should be(true)
           headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
           responseAs[String].startsWith("update:") should be(true)
           validateProps(response.entity)
         }
@@ -109,12 +108,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(nonModelEntitiesPairTSVPath + "?attributeNames=names&model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          response.entity.isKnownEmpty() shouldNot be(true) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
           headers.contains(Connection("Keep-Alive")) should be(true)
           headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "pair.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, 2)
           responseAs[String].startsWith("entity:") should be(true)
           responseAs[String].contains("names") should be(true)
         }
@@ -240,7 +236,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           headers.contains(Connection("Keep-Alive")) should be(true)
           headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
           validateProps(response.entity)
         }
       }
@@ -331,11 +326,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           }
       }
     }
-  }
-
-  private def validateLineCount(chunks: Seq[ChunkStreamPart], count: Int): Unit = {
-    val lineCount = chunks.map(c => scala.io.Source.fromString(c.data.utf8String).getLines().size).sum
-    lineCount should equal(count)
   }
 
   private def validateProps(entity: HttpEntity): Unit = {
