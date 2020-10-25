@@ -114,7 +114,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
         val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
 
         streamSingularType(entityQueries, metadata, headers).map { source =>
-          HttpResponse(entity = HttpEntity.fromFile(contentType, source.toJava, 1), headers = List(keepAlive, disposition))
+          HttpResponse(entity = HttpEntity.fromFile(contentType, source.toJava), headers = List(keepAlive, disposition))
         }
       }
     }
