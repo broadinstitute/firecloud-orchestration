@@ -108,5 +108,4 @@ class MockSamDAO extends SamDAO {
 
   override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = Future.successful(())
 
-  override def getRegistrationStatusV2(implicit userInfo: WithAccessToken): Future[Option[RegistrationInfoV2]] = ???
 }
