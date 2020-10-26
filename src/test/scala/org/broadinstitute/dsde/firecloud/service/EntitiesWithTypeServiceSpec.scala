@@ -18,9 +18,7 @@ import org.broadinstitute.dsde.firecloud.webservice.EntityApiService
 import scala.concurrent.ExecutionContext
 
 class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService with SprayJsonSupport {
-
-  def actorRefFactory = system
-
+  
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
@@ -44,62 +42,6 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService 
   )
   val validParticipants = List(Entity("subject_HCC1143", "participant", participantAtts))
 
-  override def beforeAll(): Unit = {
-
-    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
-
-    // Valid cases
-    workspaceServer
-      .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(Map("participant"->1, "sample"->1).toJson.compactPrint).withStatusCode(OK.intValue)
-      )
-    workspaceServer
-      .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities/sample"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(validSampleEntities.toJson.compactPrint).withStatusCode(OK.intValue)
-      )
-    workspaceServer
-      .when(
-        request().withMethod("GET").withPath(validFireCloudPath + "entities/participant"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(validParticipants.toJson.compactPrint).withStatusCode(OK.intValue)
-      )
-
-    // Invalid cases:
-    workspaceServer
-      .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(List("participant", "sample").toJson.compactPrint).withStatusCode(OK.intValue)
-      )
-    workspaceServer
-      .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/sample"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)
-      )
-    workspaceServer
-      .when(
-        request().withMethod("GET").withPath(invalidFireCloudPath + "entities/participant"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody("Error").withStatusCode(InternalServerError.intValue)
-      )
-
-  }
-
-  override def afterAll(): Unit = {
-    workspaceServer.stop()
-  }
-
   "EntityService-EntitiesWithType" - {
 
     "when calling GET on a valid entities_with_type path" - {
@@ -113,12 +55,14 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService 
       }
     }
 
+    //TODO: CALL OUT THIS RESPONSE CODE CHANGE IN REVIEW
+    //Why did this ever return a 500 instead of a 404?
     "when calling GET on an invalid entities_with_type path" - {
       "server error is returned" in {
         val path = invalidFireCloudPath + "entities_with_type"
         Get(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
-          status should be(InternalServerError)
-          errorReportCheck("FireCloud", InternalServerError)
+          status should be(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
