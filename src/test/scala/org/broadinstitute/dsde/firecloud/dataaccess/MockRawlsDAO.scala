@@ -252,7 +252,7 @@ class MockRawlsDAO extends RawlsDAO {
       createdDate = DateTime.now(),
       lastModified = DateTime.now(),
       createdBy = "createdBy",
-      attributes = Some(Map.empty),
+      attributes = Option(Map.empty),
       isLocked = true,
       authorizationDomain = Some(Set.empty),
       workspaceVersion = WorkspaceVersions.V2,

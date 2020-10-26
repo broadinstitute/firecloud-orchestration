@@ -333,7 +333,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
   private def workspaceFromState(ns: String, name: String) = {
     val tags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
     val tagAttrs = (tags map AttributeString)
-    workspace.copy(attributes = Some(Map(
+    workspace.copy(attributes = Option(Map(
       AttributeName.withTagsNS() -> AttributeValueList(tagAttrs)
     )))
   }
@@ -342,13 +342,13 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     // AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("foo"),AttributeString("bar")))
     ns match {
       case "notags" => Future.successful(workspaceResponse())
-      case "onetag" => Future.successful(workspaceResponse(workspace.copy(attributes = Some(Map(
+      case "onetag" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
         AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("wibble")))
       )))))
-      case "threetags" => Future.successful(workspaceResponse(workspace.copy(attributes = Some(Map(
+      case "threetags" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
         AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("foo"),AttributeString("bar"),AttributeString("baz")))
       )))))
-      case "mixedattrs" => Future.successful(workspaceResponse(workspace.copy(attributes = Some(Map(
+      case "mixedattrs" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
         AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("boop"),AttributeString("blep"))),
         AttributeName.withDefaultNS("someDefault") -> AttributeNumber(123),
         AttributeName.withLibraryNS("someLibrary") -> AttributeBoolean(true)

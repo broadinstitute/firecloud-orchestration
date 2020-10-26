@@ -73,7 +73,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
           case Some(s:AttributeString) =>
             val orspAttrs = restrictionMap.getOrElse(s.value, Map.empty[AttributeName, Attribute])
             val newAttrs = replaceDataUseAttributes(ws.attributes.getOrElse(Map.empty), orspAttrs)
-            ws.copy(attributes = Some(newAttrs))
+            ws.copy(attributes = Option(newAttrs))
           case _ =>
             // this workspace does not have an ORSP id; leave it untouched
             ws
