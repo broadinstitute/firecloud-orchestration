@@ -87,7 +87,7 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDire
             reqMethod() ~> sealRoute(specRoute) ~> check {
               assertResult(OK) {status}
               // special handling for HEAD, because HEAD won't return a body
-              if (meth != HEAD) {
+              if (meth != HEAD && meth != CONNECT) {
                 val info = responseAs[RequestInfo]
                 assertResult(echoUrl + "/") {
                   info.url
