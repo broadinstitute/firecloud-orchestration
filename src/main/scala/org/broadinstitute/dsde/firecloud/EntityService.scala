@@ -338,7 +338,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
       }
 
       entitiesForTypes.map { result =>
-        RequestComplete(OK, result.flatten.toList)
+        RequestComplete(OK, result.flatten)
       }
     }
   }
