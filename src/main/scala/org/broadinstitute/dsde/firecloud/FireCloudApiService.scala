@@ -146,7 +146,7 @@ trait FireCloudApiService extends CookieAuthedApiService
           staticNotebooksRoutes
       }
 
-  def route: server.Route = (logRequestResult & handleExceptions(FireCloudApiService.exceptionHandler)/* & appendTimestampOnFailure*/ ) {
+  def route: server.Route = (handleExceptions(FireCloudApiService.exceptionHandler)/* & appendTimestampOnFailure*/ ) {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
