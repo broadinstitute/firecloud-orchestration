@@ -221,7 +221,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         Get(setMetadataPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           val meta = responseAs[AttributeMap]
-          val expected = new MockRawlsDAO().unpublishedRawlsWorkspaceLibraryValid.attributes
+          val expected = new MockRawlsDAO().unpublishedRawlsWorkspaceLibraryValid.attributes.get
           assertResult (expected) {meta}
         }
       }

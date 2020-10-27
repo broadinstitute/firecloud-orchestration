@@ -32,6 +32,7 @@ FireCloud Orchestration Service
 ## Building and Running
 
 See https://github.com/broadinstitute/firecloud-develop for directions on running locally within Broad's DSDE environment.
+* Local Orchestration URL: https://local.broadinstitute.org:10443/
 
 Run the assembly task to build a fat jar:
 ```

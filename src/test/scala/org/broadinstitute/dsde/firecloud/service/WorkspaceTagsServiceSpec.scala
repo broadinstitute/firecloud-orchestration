@@ -302,7 +302,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
 
   private var statefulTagMap = new ConcurrentHashMap[String, ListBuffer[String]]().asScala
 
-  private val workspace = model.WorkspaceDetails(
+  private val workspace = WorkspaceDetails(
     "namespace",
     "name",
     "workspace_id",
@@ -311,46 +311,48 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Map(), //attributes
+    Some(Map()), //attributes
     false, //locked
-    Set.empty
+    Some(Set.empty), //authdomain
+    WorkspaceVersions.V2,
+    "googleProject"
   )
 
   private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(
-    WorkspaceAccessLevels.ProjectOwner,
-    canShare = false,
-    canCompute=true,
-    catalog=false,
+    Some(WorkspaceAccessLevels.ProjectOwner),
+    canShare = Some(false),
+    canCompute = Some(true),
+    catalog = Some(false),
     ws,
-    WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0),
-    WorkspaceBucketOptions(false),
-    Set.empty
+    Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
+    Some(WorkspaceBucketOptions(false)),
+    Some(Set.empty)
   )
 
 
   private def workspaceFromState(ns: String, name: String) = {
     val tags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
     val tagAttrs = (tags map AttributeString)
-    workspace.copy(attributes = Map(
+    workspace.copy(attributes = Option(Map(
       AttributeName.withTagsNS() -> AttributeValueList(tagAttrs)
-    ))
+    )))
   }
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     // AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("foo"),AttributeString("bar")))
     ns match {
       case "notags" => Future.successful(workspaceResponse())
-      case "onetag" => Future.successful(workspaceResponse(workspace.copy(attributes = Map(
+      case "onetag" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
         AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("wibble")))
-      ))))
-      case "threetags" => Future.successful(workspaceResponse(workspace.copy(attributes = Map(
+      )))))
+      case "threetags" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
         AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("foo"),AttributeString("bar"),AttributeString("baz")))
-      ))))
-      case "mixedattrs" => Future.successful(workspaceResponse(workspace.copy(attributes = Map(
+      )))))
+      case "mixedattrs" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
         AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("boop"),AttributeString("blep"))),
         AttributeName.withDefaultNS("someDefault") -> AttributeNumber(123),
         AttributeName.withLibraryNS("someLibrary") -> AttributeBoolean(true)
-      ))))
+      )))))
       case "put" | "patch" | "delete" =>
         Future.successful(workspaceResponse(workspaceFromState(ns, name)))
       case _ =>

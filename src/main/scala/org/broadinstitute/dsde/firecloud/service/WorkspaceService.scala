@@ -113,7 +113,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
       // this is technically vulnerable to a race condition in which the workspace attributes have changed
       // between the time we retrieved them and here, where we update them.
-      val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes, newAttributes, _.namespace != AttributeName.libraryNamespace)
+      val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes.getOrElse(Map.empty), newAttributes, _.namespace != AttributeName.libraryNamespace)
       rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map { ws =>
         republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
         RequestComplete(ws)
@@ -155,7 +155,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
       val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
-      val attributes = workspaceResponse.workspace.attributes.filterKeys(_ != AttributeName.withDefaultNS("description"))
+      val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).filterKeys(_ != AttributeName.withDefaultNS("description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
@@ -251,7 +251,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   private def getTagsFromWorkspace(ws:WorkspaceDetails): Seq[String] = {
-    ws.attributes.get(AttributeName.withTagsNS) match {
+    ws.attributes.getOrElse(Map.empty).get(AttributeName.withTagsNS) match {
       case Some(vals:AttributeValueList) => vals.list collect {
         case s:AttributeString => s.value
       }

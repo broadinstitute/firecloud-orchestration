@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
-import org.broadinstitute.dsde.rawls.model
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import spray.json.DefaultJsonProtocol._
@@ -114,18 +113,20 @@ object DataUseRestrictionTestFixtures {
       AttributeName.withLibraryNS("useLimitationOption") -> AttributeString("questionnaire"),
       AttributeName.withDefaultNS("_discoverableByGroups") -> AttributeValueList(Seq(AttributeString("one"),AttributeString("two")))
     )
-    model.WorkspaceDetails(
+    WorkspaceDetails(
       workspaceId=testUUID.toString,
       namespace="testWorkspaceNamespace",
       name=wsName,
-      authorizationDomain=Set.empty[ManagedGroupRef],
       isLocked=false,
       createdBy="createdBy",
       createdDate=DateTime.now(),
       lastModified=DateTime.now(),
-      attributes=defaultAttributes,
+      attributes=Some(defaultAttributes),
       bucketName="bucketName",
-      workflowCollectionName=Some("wf-collection"))
+      workflowCollectionName=Some("wf-collection"),
+      authorizationDomain=Some(Set.empty[ManagedGroupRef]),
+      workspaceVersion=WorkspaceVersions.V2,
+      googleProject="googleProject")
   }
 
 }
