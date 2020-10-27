@@ -13,7 +13,7 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfigurationService with SprayJsonSupport {
+class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigurationApiService with SprayJsonSupport {
 
   var workspaceServer: ClientAndServer = _
   private final val mockWorkspace = WorkspaceDetails(
@@ -32,7 +32,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
 
   override def beforeAll(): Unit = {
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
-    List(MethodConfigurationService.remoteTemplatePath, MethodConfigurationService.remoteInputsOutputsPath) map {
+    List(MethodConfigurationApiService.remoteTemplatePath, MethodConfigurationApiService.remoteInputsOutputsPath) map {
       path =>
         workspaceServer.when(
           request().withMethod("POST").withPath(path))
@@ -43,7 +43,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
       method =>
         workspaceServer
           .when(request().withMethod(method.name).withPath(
-            MethodConfigurationService.remoteMethodConfigPath(
+            MethodConfigurationApiService.remoteMethodConfigPath(
               mockWorkspace.namespace,
               mockWorkspace.name,
               mockWorkspace.namespace,
@@ -55,7 +55,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
     }
     workspaceServer
       .when(request().withMethod("POST").withPath(
-        MethodConfigurationService.remoteMethodConfigRenamePath(
+        MethodConfigurationApiService.remoteMethodConfigRenamePath(
           mockWorkspace.namespace,
           mockWorkspace.name,
           mockWorkspace.namespace,
@@ -66,7 +66,7 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
       )
     workspaceServer
       .when(request().withMethod("GET").withPath(
-        MethodConfigurationService.remoteMethodConfigValidatePath(
+        MethodConfigurationApiService.remoteMethodConfigValidatePath(
           mockWorkspace.namespace,
           mockWorkspace.name,
           mockWorkspace.namespace,
@@ -77,14 +77,14 @@ class MethodConfigurationServiceSpec extends ServiceSpec with MethodConfiguratio
       )
     workspaceServer
       .when(request().withMethod("POST").withPath(
-        MethodConfigurationService.remoteCopyFromMethodRepoConfigPath))
+        MethodConfigurationApiService.remoteCopyFromMethodRepoConfigPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
       )
     workspaceServer
       .when(request().withMethod("POST").withPath(
-        MethodConfigurationService.remoteCopyToMethodRepoConfigPath))
+        MethodConfigurationApiService.remoteCopyToMethodRepoConfigPath))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
