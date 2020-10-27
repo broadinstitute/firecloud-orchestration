@@ -39,15 +39,15 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
     // POST, PUT, PATCH
     if (inMethod.isEntityAccepted) {
       method(inMethod) { requestContext =>
-        val outMethod = new RequestBuilder(inMethod)(uri, requestContext.request.entity)
-        requestContext.complete(executeRequestRawFromHttpRequest(outMethod))
+        val outgoingRequest = requestContext.request.withUri(uri)
+        requestContext.complete(executeRequestRawFromHttpRequest(outgoingRequest))
       }
     }
     else {
       // GET, DELETE
       method(inMethod) { requestContext =>
-        val outMethod = new RequestBuilder(inMethod)(uri)
-        requestContext.complete(executeRequestRawFromHttpRequest(outMethod))
+        val outgoingRequest = requestContext.request.withUri(uri)
+        requestContext.complete(executeRequestRawFromHttpRequest(outgoingRequest))
       }
     }
   }
