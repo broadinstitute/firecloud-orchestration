@@ -36,6 +36,7 @@ import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.{DefaultJsonProtocol, _}
 
+
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -356,11 +357,8 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
                   executeRequestRaw(userAuthToken.accessToken)(extReq).map { proxyResponse =>
                     proxyResponse.header[`Content-Type`] match {
                       case Some(ct) =>
-                        RequestComplete(proxyResponse.status)
-//                        RequestCompleteWithHeaders((proxyResponse.status, proxyResponse.entity),
-//                          `Content-Type`(ct.contentType)
-//                        )
-                      case None => RequestComplete(proxyResponse.status)//RequestComplete((proxyResponse.status, proxyResponse.entity))
+                        RequestCompleteWithHeaders(proxyResponse, `Content-Type`(ct.contentType))
+                      case None => RequestComplete(proxyResponse)
                     }
                   }
                 } else {
@@ -390,9 +388,8 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
 
               case _ =>
                 // the user does not have access to the object.
-//                val responseStr = objectResponse.entity.toJson.compactPrint.replaceAll("\n","")
-//                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
-                Future(RequestComplete("TODO"))
+                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status})")
+                Future(RequestComplete((Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
             }
           }
         case _ =>
