@@ -12,6 +12,7 @@ import org.mockserver.model.HttpRequest._
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.webservice.MethodConfigurationApiService
 
 class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigurationApiService with SprayJsonSupport {
 

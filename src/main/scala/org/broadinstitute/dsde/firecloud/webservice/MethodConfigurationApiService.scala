@@ -1,15 +1,16 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object MethodConfigurationApiService {
