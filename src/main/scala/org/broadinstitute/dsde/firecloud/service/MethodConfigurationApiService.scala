@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object MethodConfigurationService {
+object MethodConfigurationApiService {
   val remoteTemplatePath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/template"
   val remoteTemplateURL = FireCloudConfig.Rawls.baseUrl + remoteTemplatePath
 
@@ -42,17 +42,17 @@ object MethodConfigurationService {
 
 }
 
-trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSupport with StandardUserInfoDirectives {
+trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSupport with StandardUserInfoDirectives {
 
   private final val ApiPrefix = "workspaces"
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val methodConfigurationRoutes: Route = requireUserInfo() { userInfo =>
     path("template") {
-      passthrough(MethodConfigurationService.remoteTemplateURL, HttpMethods.POST)
+      passthrough(MethodConfigurationApiService.remoteTemplateURL, HttpMethods.POST)
     } ~
       path("inputsOutputs") {
-        passthrough(MethodConfigurationService.remoteInputsOutputsURL, HttpMethods.POST)
+        passthrough(MethodConfigurationApiService.remoteInputsOutputsURL, HttpMethods.POST)
       } ~
       pathPrefix(ApiPrefix) {
         pathPrefix(Segment / Segment / "method_configs") { (workspaceNamespace, workspaceName) =>
@@ -69,7 +69,7 @@ trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSuppo
                     workspaceName = Option(WorkspaceName(
                       namespace = workspaceNamespace,
                       name = workspaceName)))))
-                val extReq = Post(MethodConfigurationService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
+                val extReq = Post(MethodConfigurationApiService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
 
                 complete { executeRequestRaw(userInfo.accessToken)(extReq) }
               }
@@ -86,7 +86,7 @@ trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSuppo
                     workspaceName = Option(WorkspaceName(
                       namespace = workspaceNamespace,
                       name = workspaceName)))))
-                val extReq = Post(MethodConfigurationService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
+                val extReq = Post(MethodConfigurationApiService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
 
                 complete { executeRequestRaw(userInfo.accessToken)(extReq) }
               }
@@ -94,15 +94,15 @@ trait MethodConfigurationService extends FireCloudDirectives with SprayJsonSuppo
           } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
             pathEnd {
               passthrough(
-                encodeUri(MethodConfigurationService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
+                encodeUri(MethodConfigurationApiService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
                 HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE)
             } ~
               path("rename") {
-                passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
+                passthrough(encodeUri(MethodConfigurationApiService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
                   HttpMethods.POST)
               } ~
               path("validate") {
-                passthrough(encodeUri(MethodConfigurationService.remoteMethodConfigValidateUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
+                passthrough(encodeUri(MethodConfigurationApiService.remoteMethodConfigValidateUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
                   HttpMethods.GET)
               }
           }

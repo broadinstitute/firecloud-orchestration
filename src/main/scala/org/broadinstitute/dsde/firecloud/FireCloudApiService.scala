@@ -53,7 +53,7 @@ trait FireCloudApiService extends CookieAuthedApiService
   with StorageApiService
   with WorkspaceApiService
   with NotificationsApiService
-  with MethodConfigurationService
+  with MethodConfigurationApiService
   with BillingService
   with SubmissionService
   with StatusApiService
