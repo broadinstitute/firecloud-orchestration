@@ -22,14 +22,13 @@ import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import org.mockserver.model.{JsonBody, Parameter}
+import org.mockserver.model.Parameter
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.concurrent.duration.{Duration, _}
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.ExecutionContext
 
 object WorkspaceApiServiceSpec {
 
@@ -702,7 +701,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
-            println(Await.result(response.entity.toStrict(1.minute).map(_.data.utf8String), Duration.Inf))
             errorReportCheck("FireCloud", BadRequest)
           }
         }
@@ -767,7 +765,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             (Post(tsvImportPath, MockTSVFormData.membershipValid)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              //note to self: check for the illegal header in header name like the error message says!
               status should equal(OK)
             }
           }
