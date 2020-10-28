@@ -1033,48 +1033,30 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "WorkspaceService importPFB Tests" - {
 
       "should 400 if import service indicates a bad request" in {
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(400)
-            .withBody("Bad request as reported by import service"))
-
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
-            request.getBodyAsString should include ("Bad request as reported by import service")
+            responseAs[String] should include ("Bad request as reported by import service")
           }
       }
 
       "should 403 if import service access is forbidden" in {
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Forbidden.intValue)
-            .withBody("Missing Authorization: Bearer token in header"))
-
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
-            request.getBodyAsString should include ("Missing Authorization: Bearer token in header")
+            responseAs[String] should include ("Missing Authorization: Bearer token in header")
           }
       }
 
       "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(UnavailableForLegalReasons.intValue)
-            .withBody("import service message"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://its.lawsuit.time.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(UnavailableForLegalReasons)
-          request.getBodyAsString should include ("import service message")
+            status should equal(UnavailableForLegalReasons)
+            responseAs[String] should include ("import service message")
         }
       }
 
@@ -1102,7 +1084,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
-            request.getBodyAsString.parseJson should be (orchExpectedPayload.toJson)
+            responseAs[String].toJson should be (orchExpectedPayload.toJson)
           }
       }
 
@@ -1132,7 +1114,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          request.getBodyAsString.parseJson should be (responsePayload) // to address string-formatting issues
+          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 
@@ -1176,7 +1158,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          request.getBodyAsString.parseJson should be (responsePayload) // to address string-formatting issues
+          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 
@@ -1209,7 +1191,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          request.getBodyAsString.parseJson should be (responsePayload) // to address string-formatting issues
+          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 
