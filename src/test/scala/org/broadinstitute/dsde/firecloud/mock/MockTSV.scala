@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.mock
 
-import akka.http.scaladsl.model.{ContentType, HttpCharset, HttpCharsets, HttpEntity, MediaType, Multipart}
+import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 
@@ -313,8 +313,8 @@ object MockTSVLoadFiles {
 }
 
 object MockTSVFormData {
-  private def wrapInMultipart( fieldName: String, data: String ): Multipart.FormData = {
-    Multipart.FormData(Seq(BodyPart(data, fieldName)):_*)
+  def wrapInMultipart( fieldName: String, data: String ): Multipart.FormData = {
+    Multipart.FormData(Seq(BodyPart(fieldName, data)):_*)
   }
 
   val missingTSVType = wrapInMultipart("entities", MockTSVStrings.missingTSVType)
