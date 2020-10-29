@@ -7,8 +7,8 @@ object Dependencies {
   val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
-  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.11")
-  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.11")
+  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
+  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.12")
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -29,8 +29,8 @@ object Dependencies {
 
     "org.parboiled" % "parboiled-core" % "1.2.0",
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-b9d04a47")
-      exclude("com.typesafe.scala-logging", "scala-logging_2.11")
-      exclude("com.typesafe.akka", "akka-stream_2.11")
+      exclude("com.typesafe.scala-logging", "scala-logging_2.12")
+      exclude("com.typesafe.akka", "akka-stream_2.12")
       exclude("com.google.code.findbugs", "jsr305"),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
 
@@ -71,8 +71,8 @@ object Dependencies {
     "com.github.pathikrit"          %% "better-files"        % "2.17.1",
     "org.apache.httpcomponents"      % "httpclient"          % "4.5.3",
 
-    "org.specs2"                    %% "specs2-core"         % "3.7"     % "test",
-    "org.scalatest"                 %% "scalatest"           % "2.2.6"   % "test",
+    "org.specs2"                    %% "specs2-core"         % "3.10.0"     % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.0.5"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.10.2"  % "test"
   )
 }

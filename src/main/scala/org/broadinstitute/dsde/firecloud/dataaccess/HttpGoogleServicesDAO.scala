@@ -38,7 +38,7 @@ import spray.json.{DefaultJsonProtocol, _}
 
 
 import scala.collection.JavaConversions._
-import scala.concurrent.ExecutionContext.Implicits.global
+//import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
