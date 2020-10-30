@@ -30,25 +30,15 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
   // Danger: it is a common mistake to pass in a URI that omits the query parameters included in the original request to Orch.
   // To preserve the query, extract it and attach it to the passthrough URI using `.withQuery(query)`.
   def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
-    generateExternalHttpPerRequestForMethod(uri, inMethod)
+    generateExternalHttpRequestForMethod(uri, inMethod)
   } reduce (_ ~ _)
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
 
-  private def generateExternalHttpPerRequestForMethod(uri: Uri, inMethod: HttpMethod) = {
-    // POST, PUT, PATCH
-    if (inMethod.isEntityAccepted) {
-      method(inMethod) { requestContext =>
-        val outgoingRequest = requestContext.request.withUri(uri)
-        requestContext.complete(executeRequestRawFromHttpRequest(outgoingRequest))
-      }
-    }
-    else {
-      // GET, DELETE
-      method(inMethod) { requestContext =>
-        val outgoingRequest = requestContext.request.withUri(uri)
-        requestContext.complete(executeRequestRawFromHttpRequest(outgoingRequest))
-      }
+  private def generateExternalHttpRequestForMethod(uri: Uri, inMethod: HttpMethod) = {
+    method(inMethod) { requestContext =>
+      val outgoingRequest = requestContext.request.withUri(uri)
+      requestContext.complete(executeRequestRawFromHttpRequest(outgoingRequest))
     }
   }
 
