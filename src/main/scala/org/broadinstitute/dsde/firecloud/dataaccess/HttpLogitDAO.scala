@@ -1,12 +1,10 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-//TODO: java model slipped in here
-import akka.http.javadsl.model.HttpHeader
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.{OAuth2BearerToken, RawHeader}
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.metrics.MetricsException
@@ -14,9 +12,8 @@ import org.broadinstitute.dsde.firecloud.model.Metrics
 import org.broadinstitute.dsde.firecloud.model.Metrics.LogitMetric
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.LogitMetricFormat
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, RestJsonClient}
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 class HttpLogitDAO(logitUrl: String, logitApiKey: String)
@@ -40,7 +37,7 @@ class HttpLogitDAO(logitUrl: String, logitApiKey: String)
     val apiKey: HttpHeader = RawHeader("ApiKey", logitApiKey)
 
     val request = Put(logitUrl, metric)
-      .addHeaders(List(logType, apiKey).asJava)
+      .withHeaders(List(logType, apiKey))
 
     unAuthedRequest(request).map { logitResponse =>
       logitResponse.status match {
