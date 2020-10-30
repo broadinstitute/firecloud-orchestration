@@ -15,7 +15,7 @@ import org.elasticsearch.client.transport.TransportClient
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-object FireCloudApp extends App with LazyLogging {
+object Boot extends App with LazyLogging {
 
   val timeoutDuration = FiniteDuration(FireCloudConfig.HttpConfig.timeoutSeconds, SECONDS)
 
