@@ -40,21 +40,29 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
   extends RawlsDAO with RestJsonClient with SprayJsonSupport {
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
-    userAuthedRequest(Get(rawlsAdminUrl))(userInfo) map { response =>
+    userAuthedRequest(Get(rawlsAdminUrl))(userInfo) flatMap { response =>
       response.status match {
-        case OK => true
-        case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+        case OK => Future.successful(true)
+        case NotFound => Future.successful(false)
+        case _ => {
+          FCErrorReport(response).flatMap { errorReport =>
+            Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
+          }
+        }
       }
     }
   }
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
-    userAuthedRequest(Get(rawlsCuratorUrl))(userInfo) map { response =>
+    userAuthedRequest(Get(rawlsCuratorUrl))(userInfo) flatMap { response =>
       response.status match {
-        case OK => true
-        case NotFound => false
-        case _ => throw new FireCloudExceptionWithErrorReport(FCErrorReport(response))
+        case OK => Future.successful(true)
+        case NotFound => Future.successful(false)
+        case _ => {
+          FCErrorReport(response).flatMap { errorReport =>
+            Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
+          }
+        }
       }
     }
   }
@@ -155,11 +163,13 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
   override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
     val url = editBillingMembershipURL(projectId, role, email)
 
-    userAuthedRequest(Put(url), true) map { resp =>
+    userAuthedRequest(Put(url), true) flatMap { resp =>
       if (resp.status.isSuccess) {
-        true
+        Future.successful(true)
       } else {
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+        FCErrorReport(resp).flatMap { errorReport =>
+          Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
+        }
       }
     }
   }
@@ -167,11 +177,13 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
   override def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = {
     val url = editBillingMembershipURL(projectId, role, email)
 
-    userAuthedRequest(Delete(url), true) map { resp =>
+    userAuthedRequest(Delete(url), true) flatMap { resp =>
       if (resp.status.isSuccess) {
-        true
+        Future.successful(true)
       } else {
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+        FCErrorReport(resp).flatMap { errorReport =>
+          Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
+        }
       }
     }
   }

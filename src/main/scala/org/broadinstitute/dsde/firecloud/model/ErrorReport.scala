@@ -2,27 +2,25 @@ package org.broadinstitute.dsde.firecloud.model
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpResponse, StatusCode}
-import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
-import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
-import spray.json._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import scala.util.{Failure, Success}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 
-
-import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
 
 object ErrorReportExtensions {
   object FCErrorReport extends SprayJsonSupport {
 
-    def apply(response: HttpResponse)(implicit ers: ErrorReportSource, mat: Materializer): ErrorReport = {
-      val (message, causes) = Try(Unmarshal(response.entity).to[ErrorReport]) match {
-        case Failure(re) => (re.getMessage, Seq(re))
-        case Success(err) => (response.entity.toString, Seq.empty)
+    def apply(response: HttpResponse)(implicit ers: ErrorReportSource, executionContext: ExecutionContext, mat: Materializer): Future[ErrorReport] = {
+      Unmarshal(response).to[ErrorReport].map { re =>
+        new ErrorReport(ers.source, re.message, Option(response.status), Seq(re), Seq.empty, None)
+      } recoverWith {
+        case _ => Unmarshal(response).to[String].map { message =>
+          new ErrorReport(ers.source, message, Option(response.status), Seq.empty, Seq.empty, None)
+        }
       }
-
-      new ErrorReport(ers.source, message, Option(response.status), Seq.empty, Seq.empty, None)
     }
   }
 }
