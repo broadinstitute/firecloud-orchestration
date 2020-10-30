@@ -28,13 +28,6 @@ object FireCloudConfig {
     val swaggerRealm = auth.getString("swaggerRealm")
   }
 
-  object HttpConfig {
-    private val httpConfig = config.getConfig("http")
-    val interface = httpConfig.getString("interface")
-    val port = httpConfig.getInt("port")
-    val timeoutSeconds = httpConfig.getLong("timeoutSeconds")
-  }
-
   object Agora {
     private val methods = config.getConfig("methods")
     private val agora = config.getConfig("agora")

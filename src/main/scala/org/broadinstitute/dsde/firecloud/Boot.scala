@@ -17,8 +17,6 @@ import scala.concurrent.duration._
 
 object Boot extends App with LazyLogging {
 
-  val timeoutDuration = FiniteDuration(FireCloudConfig.HttpConfig.timeoutSeconds, SECONDS)
-
   private def startup(): Unit = {
     // we need an ActorSystem to host our application in
     implicit val system = ActorSystem("FireCloud-Orchestration-API")
