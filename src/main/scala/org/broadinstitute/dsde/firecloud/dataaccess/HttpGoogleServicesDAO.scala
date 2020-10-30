@@ -30,12 +30,11 @@ import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsGzip
+import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsGzip, RestJsonClient}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.{DefaultJsonProtocol, _}
-
 
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -108,10 +107,7 @@ object HttpGoogleServicesDAO {
   }
 }
 
-class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with DsdeHttpDAO with SprayJsonSupport {
-
-  override val http = Http(system)
-  override val httpClientUtils = HttpClientUtilsGzip()
+class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with RestJsonClient with SprayJsonSupport {
 
   // application name to use within Google api libraries
   private final val appName = "firecloud:orchestration"
@@ -233,7 +229,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     // project in which a pet service account is created. The XML api does not have this limitation.
     val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
 
-    executeRequestRaw(OAuth2BearerToken(authToken))(metadataRequest).map { response =>
+    userAuthedRequest(metadataRequest)(AccessToken(authToken)).map { response =>
       response.status match {
         case OK => xmlApiResponseToObject(response, bucketName, objectKey)
         case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.status.reason))
@@ -304,14 +300,14 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
                        (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
     val accessRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
 
-    executeRequestRaw(authToken.accessToken)(accessRequest)
+    userAuthedRequest(accessRequest)(authToken)
   }
 
   def getUserProfile(accessToken: WithAccessToken)
                     (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
     val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
 
-    executeRequestRaw(accessToken.accessToken)(profileRequest)
+    userAuthedRequest(profileRequest)(accessToken)
   }
 
   // download "proxy" for GCS objects. When using a simple RESTful url to download from GCS, Chrome/GCS will look
@@ -354,7 +350,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
                   val gcsApiUrl = getXmlApiMetadataUrl(bucketName, objectKey)
                   val extReq = Get(gcsApiUrl)
 
-                  executeRequestRaw(userAuthToken.accessToken)(extReq).map { proxyResponse =>
+                  userAuthedRequest(extReq)(userAuthToken).map { proxyResponse =>
                     proxyResponse.header[`Content-Type`] match {
                       case Some(ct) =>
                         RequestCompleteWithHeaders(proxyResponse, `Content-Type`(ct.contentType))
@@ -404,7 +400,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
   def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList] = {
     val httpReq = Get(FireCloudConfig.GoogleCloud.priceListUrl)
 
-    httpClientUtils.executeRequestUnmarshalResponse[GooglePriceList](http, httpReq)
+    unAuthedRequestToObject[GooglePriceList](httpReq)
   }
 
   override def deleteGoogleGroup(groupEmail: String): Unit = {
