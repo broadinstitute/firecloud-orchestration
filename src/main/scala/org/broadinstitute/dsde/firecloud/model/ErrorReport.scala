@@ -16,14 +16,13 @@ import scala.util.Try
 object ErrorReportExtensions {
   object FCErrorReport extends SprayJsonSupport {
 
-    def apply(response: HttpResponse)(implicit ers: ErrorReportSource): ErrorReport = {
-      //TODO
-//      val (message, causes) = Try(Unmarshal(response.entity).to[ErrorReport]) match {
-//        case Failure(re) => (re.getMessage, Seq(re))
-//        case Success(err) => (response.entity.toString, Seq.empty)
-//      }
+    def apply(response: HttpResponse)(implicit ers: ErrorReportSource, mat: Materializer): ErrorReport = {
+      val (message, causes) = Try(Unmarshal(response.entity).to[ErrorReport]) match {
+        case Failure(re) => (re.getMessage, Seq(re))
+        case Success(err) => (response.entity.toString, Seq.empty)
+      }
 
-      new ErrorReport(ers.source, "TODO", Option(response.status), Seq.empty, Seq.empty, None)
+      new ErrorReport(ers.source, message, Option(response.status), Seq.empty, Seq.empty, None)
     }
   }
 }

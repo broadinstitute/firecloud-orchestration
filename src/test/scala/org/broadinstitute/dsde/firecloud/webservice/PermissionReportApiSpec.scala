@@ -238,8 +238,8 @@ class PermissionReportMockRawlsDAO extends MockRawlsDAO {
 
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL] = {
     ns match {
-      case "notfound" => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(HttpResponse(NotFound))))
-      case "notowner" => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(HttpResponse(Forbidden))))
+      case "notfound" => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(NotFound, "Not Found response from Mock")))
+      case "notowner" => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(Forbidden, "Forbidden response from Mock")))
       case _ => Future.successful(mockACL)
     }
   }

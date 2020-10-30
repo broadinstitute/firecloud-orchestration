@@ -12,7 +12,7 @@ trait SwaggerApiService extends LazyLogging {
 
   private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/3.25.0"
 
-  val swaggerContents: String = loadResource("/swagger/api-docs.yaml") //todo: make sure this is the right location
+  val swaggerContents: String = loadResource("/swagger/api-docs.yaml")
 
   val swaggerRoutes: server.Route = {
     path("") {
