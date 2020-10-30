@@ -7,7 +7,11 @@ import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.StatusCodes.{MethodNotAllowed, NotFound, OK}
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
+import scala.concurrent.ExecutionContext
+
 final class NotificationsApiServiceSpec extends BaseServiceSpec with NotificationsApiService {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   override def beforeAll(): Unit = {
     MockWorkspaceServer.startWorkspaceServer()

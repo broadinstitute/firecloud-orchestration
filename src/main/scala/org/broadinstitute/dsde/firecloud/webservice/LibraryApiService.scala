@@ -1,24 +1,20 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.DataUse._
-import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, LibraryService, OntologyService}
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.json._
+import org.broadinstitute.dsde.firecloud.model.{Curator, UserInfo, _}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, LibraryService, OntologyService}
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
 import spray.json.DefaultJsonProtocol._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
-trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
+trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
 
@@ -69,7 +65,7 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
             pathPrefix("library") {
               path("user" / "role" / "curator") {
                 get { requestContext =>
-                  executeRequestRaw(userInfo.accessToken)(Get(rawlsCuratorUrl)).flatMap { response =>
+                  userAuthedRequest(Get(rawlsCuratorUrl))(userInfo).flatMap { response =>
                     response.status match {
                       case OK => requestContext.complete(OK, Curator(true))
                       case NotFound => requestContext.complete(OK, Curator(false))

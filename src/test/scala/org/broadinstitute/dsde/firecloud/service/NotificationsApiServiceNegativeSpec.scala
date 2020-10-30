@@ -4,11 +4,15 @@ import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.webservice.NotificationsApiService
 import akka.http.scaladsl.model.HttpMethods.GET
 
+import scala.concurrent.ExecutionContext
+
 /**
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
   * InternalServerError) and those that aren't passed through at the first place (i.e. not 'handled')
   */
 final class NotificationsApiServiceNegativeSpec extends BaseServiceSpec with NotificationsApiService {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   "NotificationsApiService" - {
     val namespace = MockWorkspaceServer.mockValidWorkspace.namespace

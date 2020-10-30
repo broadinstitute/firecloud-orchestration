@@ -16,8 +16,6 @@ class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
 
   val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
 
-  def actorRefFactory = system
-
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val urls = List("/api/methods/namespace/permissions", "/api/configurations/namespace/permissions")

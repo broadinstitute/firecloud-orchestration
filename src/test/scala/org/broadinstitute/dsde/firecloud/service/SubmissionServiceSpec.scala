@@ -8,9 +8,11 @@ import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
+import scala.concurrent.ExecutionContext
+
 final class SubmissionServiceSpec extends BaseServiceSpec with SubmissionService with SprayJsonSupport {
 
-  def actorRefFactory = system
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   override def beforeAll(): Unit = {
     MockWorkspaceServer.startWorkspaceServer()

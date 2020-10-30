@@ -14,7 +14,11 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.webservice.MethodConfigurationApiService
 
+import scala.concurrent.ExecutionContext
+
 class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigurationApiService with SprayJsonSupport {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var workspaceServer: ClientAndServer = _
   private final val mockWorkspace = WorkspaceDetails(

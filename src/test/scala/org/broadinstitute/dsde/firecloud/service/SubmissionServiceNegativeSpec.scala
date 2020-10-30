@@ -2,7 +2,9 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import akka.http.scaladsl.model.HttpMethods.{GET, DELETE, POST}
+import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
+
+import scala.concurrent.ExecutionContext
 
 /**
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
@@ -10,7 +12,7 @@ import akka.http.scaladsl.model.HttpMethods.{GET, DELETE, POST}
   */
 final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionService {
 
-  def actorRefFactory = system
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val localSubmissionsCountPath = FireCloudConfig.Rawls.submissionsCountPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,

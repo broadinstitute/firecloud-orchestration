@@ -3,12 +3,16 @@ package org.broadinstitute.dsde.firecloud.service
 import org.mockserver.integration.ClientAndServer
 import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST, PUT}
 
+import scala.concurrent.ExecutionContext
+
 /**
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
   * InternalServerError) and those that aren't passed through at the first place (i.e. not 'handled')
   */
 final class BillingServiceNegativeSpec extends ServiceSpec with BillingService {
-  def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   var workspaceServer: ClientAndServer = _
 
   "BillingService" - {

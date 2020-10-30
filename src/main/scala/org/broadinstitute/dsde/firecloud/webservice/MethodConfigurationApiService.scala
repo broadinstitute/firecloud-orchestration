@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
 
@@ -43,7 +43,7 @@ object MethodConfigurationApiService {
 
 }
 
-trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSupport with StandardUserInfoDirectives {
+trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSupport with StandardUserInfoDirectives with RestJsonClient {
 
   private final val ApiPrefix = "workspaces"
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -72,7 +72,7 @@ trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSu
                       name = workspaceName)))))
                 val extReq = Post(MethodConfigurationApiService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
 
-                complete { executeRequestRaw(userInfo.accessToken)(extReq) }
+                complete { userAuthedRequest(extReq)(userInfo) }
               }
             }
           } ~ path("copyToMethodRepo") {
@@ -89,7 +89,7 @@ trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSu
                       name = workspaceName)))))
                 val extReq = Post(MethodConfigurationApiService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
 
-                complete { executeRequestRaw(userInfo.accessToken)(extReq) }
+                complete { userAuthedRequest(extReq)(userInfo) }
               }
             }
           } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>

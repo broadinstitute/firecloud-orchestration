@@ -2,11 +2,10 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
 import org.slf4j.LoggerFactory
@@ -15,7 +14,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 trait EntityApiService extends FireCloudDirectives
-  with FireCloudRequestBuilding with StandardUserInfoDirectives with DsdeHttpDAO {
+  with FireCloudRequestBuilding with StandardUserInfoDirectives with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -54,7 +53,7 @@ trait EntityApiService extends FireCloudDirectives
                           val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
 
 
-                          complete { executeRequestRaw(userInfo.accessToken)(extReq) }
+                          complete { userAuthedRequest(extReq)(userInfo) }
                       }
                     }
                   }
@@ -96,7 +95,7 @@ trait EntityApiService extends FireCloudDirectives
                     withQuery(requestUri.query())
                   val extReq = Get(entityQueryUri)
 
-                  executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+                  userAuthedRequest(extReq)(userInfo).flatMap { resp =>
                     requestContext.complete(resp)
                   }
                 }

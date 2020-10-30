@@ -10,6 +10,8 @@ import org.mockserver.model.HttpCallback.callback
 import org.mockserver.model.HttpRequest.request
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
+
+import scala.concurrent.ExecutionContext
 //import spray.httpx.SprayJsonSupport
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
@@ -19,6 +21,8 @@ object PassthroughDirectivesSpec {
 }
 
 final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDirectives with SprayJsonSupport {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var echoServer: ClientAndServer = _
 

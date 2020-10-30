@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ContentTypes, HttpMethod, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.parboiled.common.FileUtils
 
 import scala.util.Try
@@ -21,7 +21,7 @@ object FireCloudDirectiveUtils {
   }
 }
 
-trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpDAO {
+trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
 
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)
@@ -38,7 +38,7 @@ trait FireCloudDirectives extends Directives with RequestBuilding with DsdeHttpD
   private def generateExternalHttpRequestForMethod(uri: Uri, inMethod: HttpMethod) = {
     method(inMethod) { requestContext =>
       val outgoingRequest = requestContext.request.withUri(uri)
-      requestContext.complete(executeRequestRawFromHttpRequest(outgoingRequest))
+      requestContext.complete(unAuthedRequest(outgoingRequest)) //NOTE: This is actually AUTHED (it's just not adding any headers explicitly, they're already in the request context
     }
   }
 

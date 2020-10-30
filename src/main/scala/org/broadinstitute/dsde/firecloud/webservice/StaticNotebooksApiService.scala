@@ -1,18 +1,13 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
 
 import scala.concurrent.ExecutionContext
 
-trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
-
-  override val http = Http(system)
-  override val httpClientUtils = HttpClientUtilsStandard()
+trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
 
@@ -31,7 +26,7 @@ trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInf
             //because it was an anti-pattern
 
             val extReq = Post(calhounStaticNotebooksURL, requestContext.request.entity)
-            executeRequestRaw(userInfo.accessToken)(extReq).flatMap { resp =>
+            userAuthedRequest(extReq)(userInfo).flatMap { resp =>
               requestContext.complete(resp)
             }
         }

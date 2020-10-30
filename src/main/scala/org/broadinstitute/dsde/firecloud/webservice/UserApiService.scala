@@ -6,11 +6,10 @@ import akka.http.scaladsl.model.{HttpMethods, HttpResponse, StatusCode}
 import akka.http.scaladsl.server.{RequestContext, RouteResult}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.DsdeHttpDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
 
@@ -53,7 +52,7 @@ object UserApiService {
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
 // of how we create service actors, so I'm pushing that work out to later.
-trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives with DsdeHttpDAO {
+trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
 
@@ -81,7 +80,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
 
               val version1 = !userDetailsOnly.exists(_.equalsIgnoreCase("true"))
 
-              executeRequestRaw(OAuth2BearerToken(header.token()))(Get(UserApiService.samRegisterUserInfoURL)).flatMap { response =>
+              userAuthedRequest(Get(UserApiService.samRegisterUserInfoURL))(AccessToken(header.token())).flatMap { response =>
                 handleSamResponse(response, requestContext, version1)
               } recoverWith {
                 // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
@@ -225,7 +224,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
       case Authorization(h) => h
     }).head //if we've gotten here, the header already exists. Will instead pass it through since that's "safer", TODO
 
-    executeRequestRaw(OAuth2BearerToken(authorizationHeader.token()))(Get(UserApiService.samRegisterUserDiagnosticsURL)).flatMap { response =>
+    userAuthedRequest(Get(UserApiService.samRegisterUserDiagnosticsURL))(AccessToken(authorizationHeader.token())).flatMap { response =>
       response.status match {
         case InternalServerError =>
           respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)

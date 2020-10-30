@@ -10,8 +10,12 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
+import scala.concurrent.ExecutionContext
+
 final class BillingServiceSpec extends BaseServiceSpec with BillingService {
-  def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   var workspaceServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {

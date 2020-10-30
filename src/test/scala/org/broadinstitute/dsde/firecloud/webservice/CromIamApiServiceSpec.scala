@@ -9,7 +9,11 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
+import scala.concurrent.ExecutionContext
+
 class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with SprayJsonSupport {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var cromiamServer: ClientAndServer = _
 
