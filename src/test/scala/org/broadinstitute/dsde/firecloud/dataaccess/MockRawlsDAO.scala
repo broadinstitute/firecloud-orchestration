@@ -328,7 +328,25 @@ class MockRawlsDAO extends RawlsDAO {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
     } else {
-      Future.successful(Seq.empty)
+      entityType match {
+        case "sample" =>
+          val sampleAtts = Map(
+            AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
+            AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
+            AttributeName.withDefaultNS("ref_dict") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"),
+            AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "subject_HCC1143")
+          )
+          Future.successful(List(Entity("sample_01", "sample", sampleAtts)))
+        case "participant" =>
+          val participantAtts = Map(
+            AttributeName.withDefaultNS("tumor_platform") -> AttributeString("illumina"),
+            AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
+            AttributeName.withDefaultNS("tumor_strip_unpaired") -> AttributeString("TRUE")
+          )
+          Future.successful(List(Entity("subject_HCC1143", "participant", participantAtts)))
+        case _ =>
+          Future.successful(Seq.empty)
+      }
     }
   }
 
