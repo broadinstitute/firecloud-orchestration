@@ -36,7 +36,8 @@ class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeSupport: 
   }
 
   def buildResearchPurposeQuery(request: ResearchPurposeRequest): Future[PerRequestMessage] = {
+    import spray.json._
     def addPrefix(name: String): String = request.prefix.getOrElse("") + name
-    Future(RequestComplete(researchPurposeSupport.researchPurposeFilters(ResearchPurpose(request), addPrefix).toString))
+    Future(RequestComplete(researchPurposeSupport.researchPurposeFilters(ResearchPurpose(request), addPrefix).toString.parseJson))
   }
 }
