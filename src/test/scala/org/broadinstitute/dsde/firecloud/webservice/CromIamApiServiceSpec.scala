@@ -16,13 +16,16 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var cromiamServer: ClientAndServer = _
+  var workspaceServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
     cromiamServer = startClientAndServer(MockUtils.cromiamServerPort)
+    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
   }
 
   override def afterAll(): Unit = {
     cromiamServer.stop()
+    workspaceServer.stop()
   }
 
   "CromIAM passthrough" - {
@@ -143,6 +146,9 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     }
 
     "/api/workflows/{version}/backend/metadata" - {
+
+      // N.B. these passthroughs hit Rawls, not Cromiam (see CromIamApiService). Therefore they use the
+      // "workspaceServer" mockserver, not the "cromiamServer" mockserver.
 
       val endpointPapiV1 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/operations/foobar"
       val endpointPapiV2 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/projects/proj/operations/foobar"
