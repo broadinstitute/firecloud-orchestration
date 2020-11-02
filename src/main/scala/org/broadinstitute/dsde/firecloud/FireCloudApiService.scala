@@ -121,7 +121,7 @@ trait FireCloudApiService extends CookieAuthedApiService
         import spray.json._
         response.mapEntity {
           case HttpEntity.Strict(contentType, data) =>
-            data.toString().parseJson match {
+            data.decodeString(java.nio.charset.Charset.defaultCharset()).parseJson match {
               case jso: JsObject =>
                 val withTimestamp = jso.fields + ("timestamp" -> JsNumber(System.currentTimeMillis()))
                 HttpEntity.apply(contentType, JsObject(withTimestamp).prettyPrint.getBytes)
