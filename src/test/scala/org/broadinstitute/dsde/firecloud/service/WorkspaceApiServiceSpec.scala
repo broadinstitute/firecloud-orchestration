@@ -164,7 +164,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
-  var importServiceServer: ClientAndServer = _
+   var importServiceServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -264,13 +264,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
     bagitServer = startClientAndServer(MockUtils.bagitServerPort)
-    importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
+     importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
     bagitServer.stop
-    importServiceServer.stop
+     importServiceServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -278,7 +278,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def afterEach(): Unit = {
-    importServiceServer.reset
+     importServiceServer.reset
     this.searchDao.reset
   }
 
@@ -1062,29 +1062,20 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should 202 (Accepted) if everything validated and import request was accepted" in {
 
-        val jobId = UUID.randomUUID().toString
         val pfbPath = "https://good.avro"
 
-        val importSvcResponsePayload = ImportServiceResponse(jobId = jobId, status = "Pending", message = None)
-
         val orchExpectedPayload = PfbImportResponse(url = pfbPath,
-                                                   jobId = jobId,
+                                                   jobId = "MockImportServiceDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
-
-        importServiceServer
-          .when(request()
-            .withMethod("POST")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Created.intValue)
-            .withBody(importSvcResponsePayload.toJson.compactPrint)
-            .withHeader("Content-Type", "application/json"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
-            responseAs[String].toJson should be (orchExpectedPayload.toJson)
+            val jobResponse = responseAs[PfbImportResponse]
+            jobResponse.url should be (orchExpectedPayload.url)
+            jobResponse.workspace should be (orchExpectedPayload.workspace)
+            jobResponse.jobId  should not be empty
           }
       }
 
