@@ -10,7 +10,7 @@ import scala.concurrent.ExecutionContext
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
   * InternalServerError) and those that aren't passed through at the first place (i.e. not 'handled')
   */
-final class NotificationsApiServiceNegativeSpec extends BaseServiceSpec with NotificationsApiService {
+final class NotificationsApiServiceNegativeSpec extends ServiceSpec with NotificationsApiService {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -21,14 +21,19 @@ final class NotificationsApiServiceNegativeSpec extends BaseServiceSpec with Not
 
     val generalNotificationUri = "/api/notifications/general"
 
-    "GET requests with valid URIs should be passed through (and hit 500 due to the absence of a server)" in {
-      checkIfPassedThrough(notificationsRoutes, GET, generalNotificationUri, toBeHandled = true)
-      checkIfPassedThrough(notificationsRoutes, GET, workspaceNotificationUri, toBeHandled = true)
-    }
+    // N.B. this file used to contain positive passthrough tests that checked to see if the request was handled
+    // by the route. However, those tests are unstable without a mockserver behind the passthrough or other way
+    // of actually handling the test; Akka shuts down its connection pool when it sees that requests are not connecting
+    // to the target. I have removed these positive tests, since we have coverage for them anyway in NotificationsApisServiceSpec.
 
-    "non-GET requests should not be passed through" in {
+    "non-GET requests should not be passed through for general notifications" in {
       allHttpMethodsExcept(GET) foreach { method =>
         checkIfPassedThrough(notificationsRoutes, method, generalNotificationUri, toBeHandled = false)
+      }
+    }
+
+    "non-GET requests should not be passed through for workspace notifications" in {
+      allHttpMethodsExcept(GET) foreach { method =>
         checkIfPassedThrough(notificationsRoutes, method, workspaceNotificationUri, toBeHandled = false)
       }
     }
