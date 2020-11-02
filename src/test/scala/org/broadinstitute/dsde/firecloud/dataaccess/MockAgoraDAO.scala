@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -33,7 +34,8 @@ class MockAgoraDAO extends AgoraDAO {
     Future(SubsystemStatus(ok = true, None))
   }
 
-  override def batchCreatePermissions(inputs: List[EntityAccessControlAgora])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = Future.successful(List.empty)
+  override def batchCreatePermissions(inputs: List[EntityAccessControlAgora])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] =
+    Future.successful(MockAgoraACLData.multiUpsertResponse)
 
   override def getPermission(url: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = Future.successful(List.empty)
 

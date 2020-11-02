@@ -1,9 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLServer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impFireCloudPermission, impMethodAclPair}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impMethodAclPair
 import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
 import akka.http.scaladsl.model.HttpMethods
@@ -24,16 +23,7 @@ class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with ServiceSpec wit
 
   val agoraPermissionService: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
 
-  override def beforeAll(): Unit = {
-    MockAgoraACLServer.startACLServer()
-  }
-
-  override def afterAll(): Unit = {
-    MockAgoraACLServer.stopACLServer()
-  }
-
   val localMethodPermissionsPath = s"/$localMethodsPath/permissions"
-
 
   // most of the functionality of this endpoint either exists in Agora or is unit-tested elsewhere.
   // here, we just test the routing and basic input/output of the endpoint.
@@ -56,8 +46,9 @@ class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with ServiceSpec wit
           MethodAclPair(MethodRepoMethod("ns1","n1",1), Seq(FireCloudPermission("user1@example.com","OWNER"))),
           MethodAclPair(MethodRepoMethod("ns2","n2",2), Seq(FireCloudPermission("user2@example.com","READER")))
         )
-        Put(localMethodPermissionsPath, payload) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Put(localMethodPermissionsPath, payload) ~> dummyUserIdHeaders("MethodsApiServiceMultiACLSpec") ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
+
           val resp = responseAs[Seq[MethodAclPair]]
           assert(resp.nonEmpty)
         }
