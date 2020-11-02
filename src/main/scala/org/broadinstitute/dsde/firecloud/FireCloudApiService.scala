@@ -9,7 +9,7 @@ import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
-import akka.http.scaladsl.server.{Directive0, ExceptionHandler}
+import akka.http.scaladsl.server.{Directive0, ExceptionHandler, RouteResult}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
@@ -87,26 +87,34 @@ trait FireCloudApiService extends CookieAuthedApiService
   implicit val executionContext: ExecutionContext
   implicit val materializer: Materializer
 
-  // basis for logRequestResult lifted from http://stackoverflow.com/questions/32475471/how-does-one-log-akka-http-client-requests
-  private def logRequestResult: Directive0 = {
-    def entityAsString(entity: HttpEntity): Future[String] = {
-      entity.dataBytes
-        .map(_.decodeString(entity.contentType.charsetOption.getOrElse(HttpCharsets.`UTF-8`).value))
-        .runWith(Sink.head)
-    }
+  private def logRequests: Directive0 = {
 
-    def myLoggingFunction(logger: LoggingAdapter)(req: HttpRequest)(res: Any): Unit = {
-      val entry = res match {
+    def myLoggingFunction(logger: LoggingAdapter)(req: HttpRequest)(res: RouteResult): Unit = {
+      val entry: Option[LogEntry] = res match {
         case Complete(resp) =>
-          val logLevel: LogLevel = resp.status.intValue / 100 match {
-            case 5 => Logging.ErrorLevel
-            case _ => Logging.DebugLevel
+          try {
+            val logLevel: LogLevel = resp.status.intValue / 100 match {
+              case 5 => Logging.ErrorLevel
+              case _ => Logging.DebugLevel // this will log everything, if logback level is set to debug!
+            }
+            resp.entity match {
+              case HttpEntity.Strict(_, data) =>
+                val entityAsString = data.decodeString(java.nio.charset.Charset.defaultCharset())
+                Option(LogEntry(s"${req.method} ${req.uri}: ${resp.status} entity: $entityAsString", logLevel))
+              case _ =>
+                // note that some responses, if large enough, are returned as Chunked, and we don't try to log
+                // those here.
+                None
+            }
+          } catch {
+            case e:Exception =>
+              // error when extracting the response, likely in decoding the raw bytes
+              None
           }
-          entityAsString(resp.entity).map(data => LogEntry(s"${req.method} ${req.uri}: ${resp.status} entity: $data", logLevel))
-        case other =>
-          Future.successful(LogEntry(s"$other", Logging.DebugLevel)) // I don't really know when this case happens
+        case _ => None // route rejections; don't attempt to log
+
       }
-      entry.map(_.logTo(logger))
+      entry.foreach(_.logTo(logger))
     }
 
     DebuggingDirectives.logRequestResult(LoggingMagnet(log => myLoggingFunction(log)))
@@ -151,7 +159,7 @@ trait FireCloudApiService extends CookieAuthedApiService
           staticNotebooksRoutes
       }
 
-  def route: server.Route = (handleExceptions(FireCloudApiService.exceptionHandler) & appendTimestampOnFailure ) {
+  def route: server.Route = (handleExceptions(FireCloudApiService.exceptionHandler) & appendTimestampOnFailure & logRequests) {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
