@@ -120,6 +120,9 @@ final class SubmissionServiceSpec extends BaseServiceSpec with SubmissionService
       }
     }
 
+    /* TODO: this test really only checks that we've set up our mock server correctly, it does not
+        validate any real authentication. It should be re-evaluated and possibly deleted.
+     */
     "when calling POST on the /workspaces/*/*/submissions path without a valid authentication token" - {
       "Found (302 redirect) response is returned" in {
         Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission) ~> sealRoute(submissionServiceRoutes) ~> check {

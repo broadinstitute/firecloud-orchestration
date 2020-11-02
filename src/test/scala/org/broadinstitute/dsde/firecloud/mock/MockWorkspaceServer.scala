@@ -117,6 +117,8 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("POST")
+          // presence of auth header will differentiate this mock response from the one at line 137
+          .withHeader(authHeader)
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name)))
       .callback(
