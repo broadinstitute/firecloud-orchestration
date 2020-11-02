@@ -4,12 +4,12 @@ import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.event.Logging.LogLevel
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, HttpEntity, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpCharsets, HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
-import akka.http.scaladsl.server.{Directive0, ExceptionHandler, MalformedRequestContentRejection, MethodRejection, RejectionHandler}
+import akka.http.scaladsl.server.{Directive0, ExceptionHandler}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
@@ -23,9 +23,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
 object FireCloudApiService {
-
-  import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
-  import spray.json._
 
   val exceptionHandler = {
 
@@ -116,20 +113,28 @@ trait FireCloudApiService extends CookieAuthedApiService
   }
 
   // So we have the time when users send us error screenshots
-//  val appendTimestampOnFailure = mapResponse { response =>
-//    if (response.status.isFailure) {
-//      try {
-//        import spray.json._
-//        val dataMap = response.entity.asString.parseJson.convertTo[Map[String, JsValue]]
-//        val withTimestamp = dataMap + ("timestamp" -> JsNumber(System.currentTimeMillis()))
-//        val contentType = response.header[HttpHeader.`Content-Type`].map{_.contentType}.getOrElse(ContentTypes.`application/json`)
-//        response.withEntity(HttpEntity(contentType, withTimestamp.toJson.prettyPrint + "\n"))
-//      } catch {
-//        // usually a failure to parse, if the response isn't JSON (e.g. HTML responses from Google)
-//        case e: Exception => response
-//      }
-//    } else response
-//  }
+  val appendTimestampOnFailure: Directive0 = mapResponse { response =>
+    if (response.status.isSuccess()) {
+      response
+    } else {
+      try {
+        import spray.json._
+        response.mapEntity {
+          case HttpEntity.Strict(contentType, data) =>
+            data.toString().parseJson match {
+              case jso: JsObject =>
+                val withTimestamp = jso.fields + ("timestamp" -> JsNumber(System.currentTimeMillis()))
+                HttpEntity.apply(contentType, JsObject(withTimestamp).prettyPrint.getBytes)
+              // was not a JsObject
+              case _ => HttpEntity.Strict(contentType, data)
+            }
+          case x => x
+        }
+      } catch {
+        case _: Exception => response
+      }
+    }
+  }
 
   // routes under /api
   def apiRoutes =
@@ -146,7 +151,7 @@ trait FireCloudApiService extends CookieAuthedApiService
           staticNotebooksRoutes
       }
 
-  def route: server.Route = (handleExceptions(FireCloudApiService.exceptionHandler)/* & appendTimestampOnFailure*/ ) {
+  def route: server.Route = (handleExceptions(FireCloudApiService.exceptionHandler) & appendTimestampOnFailure ) {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
