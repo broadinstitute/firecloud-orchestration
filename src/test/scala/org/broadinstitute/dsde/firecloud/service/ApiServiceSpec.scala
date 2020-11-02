@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.utils.{HttpClientUtilsStandard, TestRequestBuilding}
+import org.broadinstitute.dsde.firecloud.utils.TestRequestBuilding
 import org.broadinstitute.dsde.firecloud.webservice.{ManagedGroupApiService, NihApiService, RegisterApiService, UserApiService}
 import org.scalatest.{FlatSpec, Matchers}
 

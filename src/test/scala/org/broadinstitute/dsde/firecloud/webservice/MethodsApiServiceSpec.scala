@@ -17,7 +17,6 @@ import org.scalatest.Matchers
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.utils.HttpClientUtilsGzip
 
 import scala.concurrent.ExecutionContext
 
