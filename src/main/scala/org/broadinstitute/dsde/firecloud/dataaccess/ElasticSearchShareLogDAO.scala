@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.time.Instant
 
-import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impShareFormat
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
@@ -48,7 +47,7 @@ trait ShareQueries {
   * @param client      The ElasticSearch client
   * @param indexName   The name of the target share log index in ElasticSearch
   */
-class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.NONE)(implicit val materializer: Materializer)
+class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.NONE)
   extends ShareLogDAO with ElasticSearchDAOSupport with ShareQueries {
 
   lazy private final val datatype = "sharelog"

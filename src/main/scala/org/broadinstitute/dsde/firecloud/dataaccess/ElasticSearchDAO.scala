@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.model.Metrics.{LogitMetric, NumSubjects}
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.model._
@@ -26,7 +25,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurposeSupport: ResearchPurposeSupport)(implicit val materializer: Materializer) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
+class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurposeSupport: ResearchPurposeSupport) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private final val datatype = "dataset"
 

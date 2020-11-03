@@ -1,5 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
-import akka.stream.Materializer
+
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOntologyTermResource
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermResource
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -13,7 +13,7 @@ import spray.json._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ElasticSearchOntologyDAO(client: TransportClient, indexName: String)(implicit val materializer: Materializer) extends OntologyDAO with ElasticSearchDAOSupport {
+class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) extends OntologyDAO with ElasticSearchDAOSupport {
 
   private final val datatype = "ontology_term"
 
