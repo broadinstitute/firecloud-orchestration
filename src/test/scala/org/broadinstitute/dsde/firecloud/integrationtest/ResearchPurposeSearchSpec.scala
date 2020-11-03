@@ -2,11 +2,11 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
-//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
+import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
-class ResearchPurposeSearchSpec(implicit val materializer: Materializer) extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging with ESIntegrationSupport {
+class ResearchPurposeSearchSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging {
 
   override def beforeAll = {
     // use re-create here, since instantiating the DAO will create it in the first place

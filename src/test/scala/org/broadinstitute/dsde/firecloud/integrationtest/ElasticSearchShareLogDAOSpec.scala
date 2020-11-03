@@ -2,13 +2,13 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
-//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.{searchDAO, shareLogDAO}
+import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.{searchDAO, shareLogDAO}
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 import scala.util.Try
 
-class ElasticSearchShareLogDAOSpec(implicit val materializer: Materializer) extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with ESIntegrationSupport {
+class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
   override def beforeAll = {
     // using the recreate from search dao because we don't have recreate in sharelog dao
     searchDAO.recreateIndex()

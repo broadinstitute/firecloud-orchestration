@@ -2,12 +2,12 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
-//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
+import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
-class ResearchPurposeSearchUseCasesSpec(implicit val materializer: Materializer) extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging with ESIntegrationSupport {
+class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging {
 
   // cases as defined in the doc at
   // https://docs.google.com/a/broadinstitute.org/spreadsheets/d/16XzKpOFCyqRTNy9XHFFPx-Vf4PWFydsWAS7exzx26WM/edit?usp=sharing

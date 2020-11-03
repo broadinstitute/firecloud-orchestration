@@ -2,10 +2,10 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
-//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
+import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
 
-class TextSearchSpec(implicit val materializer: Materializer) extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation with ESIntegrationSupport {
+class TextSearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
 
   override def beforeAll = {
     // use re-create here, since instantiating the DAO will create it in the first place

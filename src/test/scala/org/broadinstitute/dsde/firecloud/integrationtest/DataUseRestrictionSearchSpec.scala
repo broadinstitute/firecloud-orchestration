@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockConsentDAO, MockOntologyDAO}
-//import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
+import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, LibrarySearchResponse, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
 import org.broadinstitute.dsde.firecloud.service.{DataUseRestrictionTestFixtures, LibraryServiceSupport}
@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import spray.json.DefaultJsonProtocol._
 
-class DataUseRestrictionSearchSpec(implicit val materializer: Materializer) extends FreeSpec with SearchResultValidation with BeforeAndAfterAll with Matchers with LibraryServiceSupport with ESIntegrationSupport {
+class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation with BeforeAndAfterAll with Matchers with LibraryServiceSupport {
 
   val datasets: Seq[WorkspaceDetails] = DataUseRestrictionTestFixtures.allDatasets
 
