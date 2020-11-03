@@ -223,7 +223,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", attributes + published + discoverable, false, authDomain)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -456,7 +456,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.nonEmpty)
+          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.nonEmpty)
         }
       }
 
@@ -467,7 +467,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.isEmpty)
+          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.isEmpty)
         }
       }
 
