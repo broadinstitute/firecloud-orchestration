@@ -333,6 +333,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
           import spray.json._
           val oauthUser = Try(Unmarshaller.stringUnmarshaller.map(_.parseJson.convertTo[OAuthUser]))
           val userStr = (oauthUser getOrElse userResponse.entity).toString
+          userResponse.discardEntityBytes()
           // Does the user have access to the target file?
           objectAccessCheck(bucketName, objectKey, userAuthToken) flatMap { objectResponse =>
             objectResponse.status match {
@@ -382,15 +383,17 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
                 }
 
               case _ =>
+                objectResponse.discardEntityBytes()
                 // the user does not have access to the object.
                 logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status})")
-                Future(RequestComplete((Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
+                Future(RequestComplete((Forbidden, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
             }
           }
         case _ =>
+          userResponse.discardEntityBytes()
           // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
           logger.warn(s"Unknown user attempted download for [$objectStr] and was denied.")
-          Future(RequestComplete((Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
+          Future(RequestComplete((Forbidden, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
       }
     }
   }
