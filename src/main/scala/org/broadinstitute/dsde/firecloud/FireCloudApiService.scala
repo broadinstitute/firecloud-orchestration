@@ -4,14 +4,13 @@ import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.event.Logging.LogLevel
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.{HttpCharsets, HttpEntity, HttpRequest, StatusCodes}
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
 import akka.http.scaladsl.server.{Directive, Directive0, ExceptionHandler, RouteResult}
 import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -19,7 +18,7 @@ import org.broadinstitute.dsde.firecloud.webservice._
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext}
 import scala.language.postfixOps
 
 object FireCloudApiService {
@@ -145,7 +144,7 @@ trait FireCloudApiService extends CookieAuthedApiService
   }
 
   // routes under /api
-  def apiRoutes =
+  def apiRoutes: server.Route =
     options { complete(StatusCodes.OK) } ~
       withExecutionContext(ExecutionContext.global) {
         methodsApiServiceRoutes ~
@@ -159,16 +158,8 @@ trait FireCloudApiService extends CookieAuthedApiService
           staticNotebooksRoutes
       }
 
-  // bring in rejection handlers
-  import org.broadinstitute.dsde.firecloud.model.malformedRequestContentRejectionHandler
-  import org.broadinstitute.dsde.firecloud.model.defaultErrorReportRejectionHandler
-
-  // order of rejection handlers matters here. Handlers later in this list are evaluated first.
-  // we want malformedRequestContentRejectionHandler, which looks for a specific rejection,
-  // to be evaluated before defaultErrorReportRejectionHandler, which handles all rejections.
   val routeWrappers: Directive[Unit] =
-    handleRejections(defaultErrorReportRejectionHandler) &
-      handleRejections(malformedRequestContentRejectionHandler) &
+   handleRejections(org.broadinstitute.dsde.firecloud.model.defaultErrorReportRejectionHandler) &
       handleExceptions(FireCloudApiService.exceptionHandler) &
       appendTimestampOnFailure &
       logRequests
