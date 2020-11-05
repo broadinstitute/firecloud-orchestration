@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.model.{ContentTypes, HttpMethod, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
@@ -23,6 +24,21 @@ object FireCloudDirectiveUtils {
 
 trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
 
+  // TODO: should this pass through any other headers, such as Accept or Cookie?
+  /* This list controls which headers from the original request are passed through to the
+   * target service. It is important that some headers are NOT passed through:
+   *     - if the Host header is passed through, it will not match the target service's host,
+   *        and some servers - notably App Engine - will reject the request.
+   *     - if headers that control the http protocol such as Accept-Encoding or Connection
+   *        are passed through, they may not reflect reality. The original request may have
+   *        come from a browser that supports different encodings or connection protocols
+   *        than the service-to-service request we're about to make.
+   *     - if headers that inform the target such as User-Agent, Referer or X-Forwarded-For
+   *        are passed through, they will be misleading, as they reflect the original request
+   *        and not the service-to-service request we're about to make.
+   */
+  final val allowedPassthroughHeaders = List(Authorization.lowercaseName)
+
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)
   }
@@ -37,8 +53,11 @@ trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonC
 
   private def generateExternalHttpRequestForMethod(uri: Uri, inMethod: HttpMethod) = {
     method(inMethod) { requestContext =>
-      val outgoingRequest = requestContext.request.withUri(uri)
-      requestContext.complete(unAuthedRequest(outgoingRequest)) //NOTE: This is actually AUTHED (it's just not adding any headers explicitly, they're already in the request context
+      val outgoingRequest = requestContext.request
+        .withUri(uri)
+        .withHeaders(requestContext.request.headers.filter(
+          hdr => allowedPassthroughHeaders.contains(hdr.lowercaseName())))
+      requestContext.complete(unAuthedRequest(outgoingRequest)) //NOTE: This is actually AUTHED because we pass through the Authorization header
     }
   }
 
