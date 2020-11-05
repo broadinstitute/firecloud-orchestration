@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
@@ -43,7 +44,12 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
           RequestComplete(Accepted, responsePayload)
         }
       case otherResp =>
-        Future.successful(RequestCompleteWithErrorReport(otherResp.status, otherResp.toString))
+        // see if we can extract errors
+        val responseString = otherResp.entity match {
+          case HttpEntity.Strict(_, data) => data.utf8String
+          case _ => otherResp.toString()
+        }
+        Future.successful(RequestCompleteWithErrorReport(otherResp.status, responseString))
 
     }
   }
