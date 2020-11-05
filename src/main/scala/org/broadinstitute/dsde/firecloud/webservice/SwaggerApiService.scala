@@ -7,10 +7,11 @@ import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.webjars.WebJarAssetLocator
 
 trait SwaggerApiService extends LazyLogging {
 
-  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/3.35.0"
+  private val swaggerUiPath = new WebJarAssetLocator().getFullPath("swagger-ui-dist", "index.html").replace("/index.html", "")
 
   val swaggerContents: String = loadResource("/swagger/api-docs.yaml")
 
