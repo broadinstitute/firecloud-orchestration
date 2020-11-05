@@ -9,7 +9,7 @@ import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
-import akka.http.scaladsl.server.{Directive0, ExceptionHandler, RouteResult}
+import akka.http.scaladsl.server.{Directive, Directive0, ExceptionHandler, RouteResult}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
@@ -159,7 +159,21 @@ trait FireCloudApiService extends CookieAuthedApiService
           staticNotebooksRoutes
       }
 
-  def route: server.Route = (handleExceptions(FireCloudApiService.exceptionHandler) & appendTimestampOnFailure & logRequests) {
+  // bring in rejection handlers
+  import org.broadinstitute.dsde.firecloud.model.malformedRequestContentRejectionHandler
+  import org.broadinstitute.dsde.firecloud.model.defaultErrorReportRejectionHandler
+
+  // order of rejection handlers matters here. Handlers later in this list are evaluated first.
+  // we want malformedRequestContentRejectionHandler, which looks for a specific rejection,
+  // to be evaluated before defaultErrorReportRejectionHandler, which handles all rejections.
+  val routeWrappers: Directive[Unit] =
+    handleRejections(defaultErrorReportRejectionHandler) &
+      handleRejections(malformedRequestContentRejectionHandler) &
+      handleExceptions(FireCloudApiService.exceptionHandler) &
+      appendTimestampOnFailure &
+      logRequests
+
+  def route: server.Route = (routeWrappers) {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
