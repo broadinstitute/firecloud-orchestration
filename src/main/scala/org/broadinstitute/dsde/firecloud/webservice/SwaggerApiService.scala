@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 
 trait SwaggerApiService extends LazyLogging {
 
-  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/3.25.0"
+  private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/3.35.0"
 
   val swaggerContents: String = loadResource("/swagger/api-docs.yaml")
 
