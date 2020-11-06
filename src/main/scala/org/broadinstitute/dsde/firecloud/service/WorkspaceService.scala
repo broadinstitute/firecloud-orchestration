@@ -113,6 +113,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).filterKeys(_ != AttributeName.withDefaultNS("description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
+      // TODO: entity TSVs are downloaded as text/tab-separated-value, but workspace attributes are text/plain. Align these?
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
         `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> filename)),
         `Content-Type`(ContentTypes.`text/plain(UTF-8)`))
