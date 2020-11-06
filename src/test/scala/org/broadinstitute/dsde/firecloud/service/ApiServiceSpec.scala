@@ -55,22 +55,3 @@ trait ApiServiceSpec extends FlatSpec with Matchers with ScalatestRouteTest with
   }
 
 }
-
-//trait ApiServices extends RegisterApiService with NihApiService with ManagedGroupApiService {
-//
-//  val app = new Application()
-//
-//  override val samDAO = new MockSamDAO
-//
-////  def actorRefFactory = system
-////  override implicit val materializer = ActorMaterializer()
-//
-////  override val httpClientUtils = HttpClientUtilsStandard()
-//
-//  override val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
-//  override val nihServiceConstructor: () => NihService = NihService.constructor(app)
-//  //  override val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
-//  //  override val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
-//  override val managedGroupServiceConstructor: WithAccessToken => ManagedGroupService = ManagedGroupService.constructor(app)
-//
-//}
