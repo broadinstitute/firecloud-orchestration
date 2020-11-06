@@ -110,7 +110,7 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
     val localInputsOutputsPath = "/inputsOutputs"
 
     "when calling the passthrough service" - {
-      List(localTemplatePath, localInputsOutputsPath) map {
+      List(localTemplatePath, localInputsOutputsPath) foreach {
         path =>
           s"POST on $path" - {
             "should not receive a MethodNotAllowed" in {
@@ -122,13 +122,9 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
 
           s"GET, PUT, DELETE on $path" - {
             "should receive a MethodNotAllowed" in {
-              List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) map {
+              List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) foreach {
                 method =>
                   new RequestBuilder(method)(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
-                    import scala.concurrent.duration._
-                    response.entity.toStrict(1.second).map { x =>
-                      println(x.data.utf8String)
-                    }
                     status should equal(MethodNotAllowed)
                   }
               }
