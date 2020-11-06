@@ -20,9 +20,6 @@ object FireCloudDirectiveUtils {
     }
     toUri(path).toString
   }
-}
-
-trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
 
   // TODO: should this pass through any other headers, such as Cookie?
   /* This list controls which headers from the original request are passed through to the
@@ -37,7 +34,11 @@ trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonC
    *        are passed through, they will be misleading, as they reflect the original request
    *        and not the service-to-service request we're about to make.
    */
-  final val allowedPassthroughHeaders = List(Authorization.lowercaseName, `Content-Type`.lowercaseName)
+  final val allowedPassthroughHeaders = List(Authorization, `Content-Type`).map(_.lowercaseName)
+
+}
+
+trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
 
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)
@@ -56,7 +57,7 @@ trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonC
       val outgoingRequest = requestContext.request
         .withUri(uri)
         .withHeaders(requestContext.request.headers.filter(
-          hdr => allowedPassthroughHeaders.contains(hdr.lowercaseName())))
+          hdr => FireCloudDirectiveUtils.allowedPassthroughHeaders.contains(hdr.lowercaseName())))
       requestContext.complete(unAuthedRequest(outgoingRequest)) //NOTE: This is actually AUTHED because we pass through the Authorization header
     }
   }
