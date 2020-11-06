@@ -34,8 +34,6 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService 
       }
     }
 
-    //TODO: CALL OUT THIS RESPONSE CODE CHANGE IN REVIEW
-    //Why did this ever return a 500 instead of a 404?
     "when calling GET on an invalid entities_with_type path" - {
       "server error is returned" in {
         val path = invalidFireCloudPath + "entities_with_type"

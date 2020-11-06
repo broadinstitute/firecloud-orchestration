@@ -21,10 +21,7 @@ trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInf
           requestContext =>
             // call Calhoun and pass its response back to our own caller
             // can't use passthrough() here because that demands a JSON response
-
-            //TODO: ensure mediatype is still honored, but respondWithMediaType was deprecated
-            //because it was an anti-pattern
-
+            // and we expect this to return text/html
             val extReq = Post(calhounStaticNotebooksURL, requestContext.request.entity)
             userAuthedRequest(extReq)(userInfo).flatMap { resp =>
               requestContext.complete(resp)

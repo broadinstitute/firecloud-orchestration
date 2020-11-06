@@ -56,8 +56,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           handled should be(true)
           val strResp = responseAs[String]
           strResp should include ("FireCloudException")
-          // TODO: are we still returning chunks?
-          // validateErrorInLastChunk(chunks, "FireCloudException")
         }
       }
     }
@@ -218,8 +216,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           handled should be(true)
           val strResp = responseAs[String]
           strResp should include ("FireCloudException")
-          // TODO: are we still returning chunks?
-          // validateErrorInLastChunk(chunks, "FireCloudException")
         }
       }
     }

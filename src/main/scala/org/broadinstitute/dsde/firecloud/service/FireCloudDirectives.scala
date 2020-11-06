@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.headers.Authorization
-import akka.http.scaladsl.model.{ContentTypes, HttpMethod, Uri}
+import akka.http.scaladsl.model.headers.{Authorization, `Content-Type`}
+import akka.http.scaladsl.model.{HttpMethod, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.parboiled.common.FileUtils
@@ -24,7 +24,7 @@ object FireCloudDirectiveUtils {
 
 trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
 
-  // TODO: should this pass through any other headers, such as Accept or Cookie?
+  // TODO: should this pass through any other headers, such as Cookie?
   /* This list controls which headers from the original request are passed through to the
    * target service. It is important that some headers are NOT passed through:
    *     - if the Host header is passed through, it will not match the target service's host,
@@ -37,7 +37,7 @@ trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonC
    *        are passed through, they will be misleading, as they reflect the original request
    *        and not the service-to-service request we're about to make.
    */
-  final val allowedPassthroughHeaders = List(Authorization.lowercaseName)
+  final val allowedPassthroughHeaders = List(Authorization.lowercaseName, `Content-Type`.lowercaseName)
 
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)

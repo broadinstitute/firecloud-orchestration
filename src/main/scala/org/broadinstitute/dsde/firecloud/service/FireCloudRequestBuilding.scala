@@ -14,9 +14,6 @@ trait FireCloudRequestBuilding extends RequestBuilding {
 
   val fireCloudHeader = RawHeader("X-FireCloud-Id", FireCloudConfig.FireCloud.fireCloudId)
 
-  // TODO: would be much better to make requestContext implicit, so callers don't have to always pass it in
-  // TODO: this could probably be rewritten more tersely in idiomatic scala - for instance, don't create
-  // the OAuth2BearerToken if we're not going to use it. I'm leaving all this longhand for better comprehension.
   def authHeaders(credentials:Option[HttpCredentials]): HttpRequest => HttpRequest = {
     credentials match {
       // if we have authorization credentials, apply them to the outgoing request
