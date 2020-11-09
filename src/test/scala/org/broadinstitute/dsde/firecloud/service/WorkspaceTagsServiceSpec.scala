@@ -299,7 +299,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
   */
 class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
 
-  import scala.collection.convert.decorateAsScala._
+  import collection.JavaConverters._
 
   private var statefulTagMap = new ConcurrentHashMap[String, ListBuffer[String]]().asScala
 

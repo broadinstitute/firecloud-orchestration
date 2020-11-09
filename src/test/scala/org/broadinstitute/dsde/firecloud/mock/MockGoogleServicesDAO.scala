@@ -104,8 +104,8 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 
   override def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit] = {
-    import scala.collection.JavaConversions._
-    pubsubMessages.addAll(messages)
+    import collection.JavaConverters._
+    pubsubMessages.addAll(messages.asJava)
     Future.successful(())
   }
 }

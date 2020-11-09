@@ -19,7 +19,7 @@ import org.parboiled.common.FileUtils
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.collection.JavaConversions._
+import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
@@ -163,12 +163,12 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   def getSchemaValidationMessages(ve: ValidationException): Seq[String] = {
     Seq(ve.getPointerToViolation + ": " + ve.getErrorMessage) ++
-      (ve.getCausingExceptions flatMap getSchemaValidationMessages)
+      (ve.getCausingExceptions.asScala flatMap getSchemaValidationMessages)
   }
 
   def getEffectiveDiscoverGroups(samDAO: SamDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
     samDAO.listGroups(userInfo) map { groupMemberships =>
-      groupMemberships map (_.groupName) intersect FireCloudConfig.ElasticSearch.discoverGroupNames
+      groupMemberships map (_.groupName) intersect FireCloudConfig.ElasticSearch.discoverGroupNames.asScala
     }
   }
 

@@ -7,7 +7,7 @@ dist: trusty
 language: scala
 
 scala:
-  - 2.11.12
+  - 2.12.12
 
 script: AGORA_URL_ROOT='http://localhost:8989' RAWLS_URL_ROOT='http://localhost:8990' THURLOE_URL_ROOT='http://localhost:8991' FIRE_CLOUD_ID='123' sbt coverage test coverageReport
 
