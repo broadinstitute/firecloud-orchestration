@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockConsentDAO, MockOntologyDAO}
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, LibrarySearchResponse, WithAccessToken}

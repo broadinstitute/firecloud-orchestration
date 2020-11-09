@@ -1,24 +1,25 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Props
-import org.broadinstitute.dsde.firecloud.core._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
-import spray.http.{HttpMethods, Uri}
-import spray.httpx.SprayJsonSupport._
-import spray.routing._
 
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-trait EntityService extends HttpService with PerRequestCreator with FireCloudDirectives
-  with FireCloudRequestBuilding with StandardUserInfoDirectives {
+trait EntityApiService extends FireCloudDirectives
+  with FireCloudRequestBuilding with StandardUserInfoDirectives with RestJsonClient {
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
+
+  val entityServiceConstructor: (ModelSchema) => EntityService
 
   def entityRoutes: Route =
     pathPrefix("api") {
@@ -26,9 +27,9 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
         val baseRawlsEntitiesUrl = FireCloudConfig.Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)
         path("entities_with_type") {
           get {
-            requireUserInfo() { _ => requestContext =>
-              perRequest(requestContext, Props(new GetEntitiesWithTypeActor(requestContext)),
-                GetEntitiesWithType.ProcessUrl(encodeUri(baseRawlsEntitiesUrl)))
+            requireUserInfo() { userInfo =>
+              //TODO: the model schema doesn't matter for this one. Ideally, make it Optional
+              complete { entityServiceConstructor(FlexibleModelSchema).GetEntitiesWithType(workspaceNamespace, workspaceName, userInfo) }
             }
           }
         } ~
@@ -40,18 +41,19 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
             } ~
               path("copy") {
                 post {
-                  requireUserInfo() { _ =>
+                  requireUserInfo() { userInfo =>
                     parameter('linkExistingEntities.?) { linkExistingEntities =>
                       entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest =>
                         val linkExistingEntitiesBool = Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
-                        requestContext =>
                           val copyMethodConfig = new EntityCopyDefinition(
                             sourceWorkspace = copyRequest.sourceWorkspace,
                             destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
                             entityType = copyRequest.entityType,
                             entityNames = copyRequest.entityNames)
                           val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
-                          externalHttpPerRequest(requestContext, extReq)
+
+
+                          complete { userAuthedRequest(extReq)(userInfo) }
                       }
                     }
                   }
@@ -86,13 +88,16 @@ trait EntityService extends HttpService with PerRequestCreator with FireCloudDir
           pathPrefix("entityQuery" / Segment) { entityType =>
             pathEnd {
               get {
-                requireUserInfo() { _ => requestContext =>
+                requireUserInfo() { userInfo => requestContext =>
                   val requestUri = requestContext.request.uri
                   val entityQueryUri = FireCloudConfig.Rawls.
                     entityQueryUriFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType).
-                    withQuery(requestUri.query)
+                    withQuery(requestUri.query())
                   val extReq = Get(entityQueryUri)
-                  externalHttpPerRequest(requestContext, extReq)
+
+                  userAuthedRequest(extReq)(userInfo).flatMap { resp =>
+                    requestContext.complete(resp)
+                  }
                 }
               }
             }

@@ -1,15 +1,18 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
+import scala.concurrent.ExecutionContext
 
-  def actorRefFactory = system
+final class SubmissionServiceSpec extends BaseServiceSpec with SubmissionService with SprayJsonSupport {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   override def beforeAll(): Unit = {
     MockWorkspaceServer.startWorkspaceServer()
@@ -71,7 +74,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     "when hitting the /submissions/queueStatus path" - {
       "with GET" - {
         "OK status is returned" in {
-          Get("/submissions/queueStatus") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+          Get("/submissions/queueStatus") ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(OK)
           }
         }
@@ -81,7 +84,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     "when calling GET on the /workspaces/*/*/submissionsCount path" - {
       "OK status is returned" in {
         (Get(localSubmissionsCountPath)
-          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -90,7 +93,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     "when calling GET on the /workspaces/*/*/submissions path" - {
       "a list of submissions is returned" in {
         (Get(localSubmissionsPath)
-          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(OK)
         }
       }
@@ -99,7 +102,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     "when calling POST on the /workspaces/*/*/submissions path with a valid submission" - {
       "OK response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission)
-          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(OK)
             val submission = responseAs[SubmissionRequest]
             submission shouldNot be (None)
@@ -110,16 +113,19 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     "when calling POST on the /workspaces/*/*/submissions path with an invalid submission" - {
       "BadRequest response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockInvalidSubmission)
-          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(BadRequest)
             errorReportCheck("Rawls", BadRequest)
         }
       }
     }
 
+    /* TODO: this test really only checks that we've set up our mock server correctly, it does not
+        validate any real authentication. It should be re-evaluated and possibly deleted.
+     */
     "when calling POST on the /workspaces/*/*/submissions path without a valid authentication token" - {
       "Found (302 redirect) response is returned" in {
-        Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission) ~> sealRoute(routes) ~> check {
+        Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(Found)
         }
       }
@@ -128,7 +134,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
     "when calling POST on the /workspaces/*/*/submissions/validate path" - {
       "with a valid submission, OK response is returned" in {
         (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockValidSubmission)
-          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(OK)
             val submission = responseAs[SubmissionRequest]
             submission shouldNot be (None)
@@ -137,7 +143,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
       "with an invalid submission, BadRequest response is returned" in {
         (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockInvalidSubmission)
-          ~> dummyAuthHeaders) ~> sealRoute(routes) ~> check {
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(BadRequest)
             errorReportCheck("Rawls", BadRequest)
         }
@@ -146,7 +152,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling GET on the /workspaces/*/*/submissions/* path with a valid id" - {
       "OK response is returned" in {
-        Get(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -154,7 +160,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling GET on the /workspaces/*/*/submissions/* path with an invalid id" - {
       "NotFound response is returned" in {
-        Get(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -163,7 +169,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling DELETE on the /workspaces/*/*/submissions/* with a valid id" - {
       "OK response is returned" in {
-        Delete(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Delete(localSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(NoContent)
         }
       }
@@ -171,7 +177,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling DELETE on the /workspaces/*/*/submissions/* with an invalid id" - {
       "NotFound response is returned" in {
-        Delete(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Delete(localInvalidSubmissionIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -180,7 +186,7 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling GET on the /workspaces/*/*/submissions/*/workflows/* path" - {
       "with a valid id, OK response is returned" in {
-        Get(localSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
@@ -189,13 +195,13 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
         // the request inbound to orchestration should encoded, so we replace spaces with  %20 in the test below.
         // this test really verifies that the runtime orch code can accept an encoded URI and maintain the encoding
         // when it passes through the request to rawls - i.e. it doesn't decode the request at any point.
-        Get(localSpacedWorkspaceWorkflowIdPath.replace(" ","%20")) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localSpacedWorkspaceWorkflowIdPath.replace(" ","%20")) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
 
       "with an invalid id, NotFound response is returned" in {
-        Get(localInvalidSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localInvalidSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -204,13 +210,13 @@ final class SubmissionServiceSpec extends ServiceSpec with SubmissionService {
 
     "when calling GET on the /workspaces/*/*/submissions/*/workflows/*/outputs path" - {
       "with a valid id, OK response is returned" in {
-        Get(localSubmissionWorkflowIdOutputsPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localSubmissionWorkflowIdOutputsPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
       }
 
       "with an invalid id, NotFound response is returned" in {
-        Get(localInvalidSubmissionWorkflowIdOutputsPath) ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+        Get(localInvalidSubmissionWorkflowIdOutputsPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(NotFound)
           errorReportCheck("Rawls", NotFound)
         }

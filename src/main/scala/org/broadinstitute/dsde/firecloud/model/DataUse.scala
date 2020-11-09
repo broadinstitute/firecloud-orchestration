@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.rawls.model.{Attribute, AttributeName, AttributeFormat, PlainArrayAttributeListSerializer}
+import akka.http.scaladsl.model.Uri
+import org.broadinstitute.dsde.rawls.model.{Attribute, AttributeFormat, AttributeName, PlainArrayAttributeListSerializer}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
-import spray.http.Uri
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsValue

@@ -1,26 +1,28 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpMethods
 import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpec._
 import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpecSupport._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.HttpCallback.callback
 import org.mockserver.model.HttpRequest.request
-import spray.http.{HttpMethods, Uri}
-import spray.http.HttpMethods._
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport
-import spray.routing.HttpServiceBase
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.StatusCodes._
+
+import scala.concurrent.ExecutionContext
+//import spray.httpx.SprayJsonSupport
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 object PassthroughDirectivesSpec {
   val echoPort = 9123
   val echoUrl = s"http://localhost:$echoPort"
 }
 
-final class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBase
-  with FireCloudDirectives with SprayJsonSupport {
+final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDirectives with SprayJsonSupport {
 
-  def actorRefFactory = system
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var echoServer: ClientAndServer = _
 
@@ -89,7 +91,7 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with HttpServiceBa
             reqMethod() ~> sealRoute(specRoute) ~> check {
               assertResult(OK) {status}
               // special handling for HEAD, because HEAD won't return a body
-              if (meth != HEAD) {
+              if (meth != HEAD && meth != CONNECT) {
                 val info = responseAs[RequestInfo]
                 assertResult(echoUrl + "/") {
                   info.url

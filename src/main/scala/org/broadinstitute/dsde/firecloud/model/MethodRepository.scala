@@ -1,8 +1,7 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import javax.mail.internet.InternetAddress
-
-import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
+import org.broadinstitute.dsde.firecloud.service.AgoraPermissionService
 import org.broadinstitute.dsde.rawls.model.{AgoraMethod, DockstoreMethod, MethodConfigurationShort, MethodRepoMethod}
 
 import scala.util.Try
@@ -72,7 +71,7 @@ object MethodRepository {
       s"role must be one of %s, %s, or %s".format(ACLNames.NoAccess, ACLNames.Reader, ACLNames.Owner)
     )
     require(validatePublicOrEmail(user), "user must be a valid email address or 'public'")
-    def toAgoraPermission = AgoraPermissionHandler.toAgoraPermission(this)
+    def toAgoraPermission = AgoraPermissionService.toAgoraPermission(this)
 
   }
 
@@ -81,7 +80,7 @@ object MethodRepository {
     user: Option[String] = None,
     roles: Option[List[String]] = None
   ) {
-    def toFireCloudPermission = AgoraPermissionHandler.toFireCloudPermission(this)
+    def toFireCloudPermission = AgoraPermissionService.toFireCloudPermission(this)
   }
 
   case class EntityAccessControlAgora(entity: Method, acls: Seq[AgoraPermission], message: Option[String] = None)

@@ -2,12 +2,11 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.InputStream
 
-import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.HttpResponse
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import spray.http.HttpResponse
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -23,16 +22,16 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
   def getUserProfile(accessToken: WithAccessToken)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse]
+                    (implicit executionContext: ExecutionContext): Future[HttpResponse]
   def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
-                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[PerRequestMessage]
+                 (implicit executionContext: ExecutionContext): Future[PerRequestMessage]
   def getObjectMetadata(bucketName: String, objectKey: String, userAuthToken: String)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata]
+                    (implicit executionContext: ExecutionContext): Future[ObjectMetadata]
 
   def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
   def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
 
-  def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList]
+  def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList]
 
   def deleteGoogleGroup(groupEmail: String) : Unit
   def createGoogleGroup(groupName: String): Option[String]

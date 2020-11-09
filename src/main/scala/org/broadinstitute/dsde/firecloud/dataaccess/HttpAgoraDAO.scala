@@ -1,24 +1,26 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.Uri
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.workbench.util.health.{StatusCheckResponse, SubsystemStatus}
+import org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceUrls
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.{StatusCheckResponseFormat, SubsystemStatusFormat}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
-import spray.http.Uri
-import spray.httpx.SprayJsonSupport._
-import spray.json._
+import org.broadinstitute.dsde.workbench.util.health.{StatusCheckResponse, SubsystemStatus}
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
-  extends AgoraDAO with RestJsonClient {
+class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
+  extends AgoraDAO with SprayJsonSupport with RestJsonClient with MethodsApiServiceUrls {
 
   private def getNamespaceUrl(ns: String, entity: String): String = {
     s"${config.authUrl}/$entity/$ns/permissions"
@@ -36,6 +38,18 @@ class HttpAgoraDAO(config: FireCloudConfig.Agora.type)(implicit val system: Acto
 
   override def getMultiEntityPermissions(entityType: AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = {
     authedRequestToObject[List[EntityAccessControlAgora]]( Post(getMultiEntityPermissionUrl(entityType), entities) )
+  }
+
+  override def batchCreatePermissions(inputs: List[EntityAccessControlAgora])(implicit userInfo: UserInfo): Future[List[EntityAccessControlAgora]] = {
+    authedRequestToObject[List[EntityAccessControlAgora]](Put(remoteMultiPermissionsUrl, inputs))
+  }
+
+  override def getPermission(url: String)(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
+    authedRequestToObject[List[AgoraPermission]](Get(url))
+  }
+
+  override def createPermission(url: String,  agoraPermissions: List[AgoraPermission])(implicit userInfo: UserInfo): Future[List[AgoraPermission]] = {
+    authedRequestToObject[List[AgoraPermission]](Post(url, agoraPermissions))
   }
 
   override def status: Future[SubsystemStatus] = {

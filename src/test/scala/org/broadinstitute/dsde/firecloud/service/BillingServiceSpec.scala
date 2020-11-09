@@ -6,11 +6,16 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse
-import spray.http.HttpMethods._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-final class BillingServiceSpec extends ServiceSpec with BillingService {
-  def actorRefFactory = system
+import scala.concurrent.ExecutionContext
+
+final class BillingServiceSpec extends BaseServiceSpec with BillingService {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   var workspaceServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
@@ -51,25 +56,25 @@ final class BillingServiceSpec extends ServiceSpec with BillingService {
 
   "BillingService" - {
     "create project" in {
-      Post("/billing") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Post("/billing") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(Created)
       }
     }
 
     "list project members" in {
-      Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(OK)
       }
     }
 
     "add user" in {
-      Put("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Put("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(OK)
       }
     }
 
     "remove user" in {
-      Delete("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(routes) ~> check {
+      Delete("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(OK)
       }
     }

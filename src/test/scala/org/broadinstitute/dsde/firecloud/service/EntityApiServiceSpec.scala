@@ -1,23 +1,30 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, MockWorkspaceServer}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.webservice.EntityApiService
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpCallback._
 import org.mockserver.model.HttpRequest._
-import spray.http.StatusCodes._
+import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import spray.httpx.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import scala.concurrent.ExecutionContext
 
-class EntityServiceSpec extends BaseServiceSpec with EntityService {
+class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
+  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
   var workspaceServer: ClientAndServer = _
   val apiPrefix = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
@@ -63,8 +70,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
@@ -76,8 +82,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid"))
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -87,8 +92,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entityQueryPath.format("broad-dsde-dev", "valid") + "/sample")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entityQueryPath.format("broad-dsde-dev", "valid") + "/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
@@ -98,8 +102,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       .when(
         request()
           .withMethod("POST")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath)
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath))
       .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityCopyCallback")
@@ -110,8 +113,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample"))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
@@ -123,8 +125,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid"))
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid")))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
@@ -136,8 +137,7 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       .when(
         request()
           .withMethod("POST")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/delete")
-          .withHeader(MockUtils.authHeader))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/delete"))
       .callback(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityDeleteCallback")
@@ -154,7 +154,6 @@ class EntityServiceSpec extends BaseServiceSpec with EntityService {
       "OK response is returned" in {
         Get(validFireCloudEntitiesSamplePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
           status should be(OK)
-          response.entity shouldNot be(empty)
         }
       }
     }

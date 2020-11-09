@@ -1,97 +1,52 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor._
-import akka.pattern.pipe
-import akka.event.Logging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
+import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.service.WorkspaceService.WorkspaceServiceMessage
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
-import spray.http.MediaTypes._
-import spray.http.StatusCodes._
-import spray.http.{HttpHeaders, StatusCodes}
-import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
- * Created by mbemis on 10/19/16.
- */
+  * Created by mbemis on 10/19/16.
+  */
 object WorkspaceService {
-  sealed trait WorkspaceServiceMessage
-  case class GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) extends WorkspaceServiceMessage
-  case class UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) extends WorkspaceServiceMessage
-  case class GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
-  case class UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) extends WorkspaceServiceMessage
-  case class SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) extends WorkspaceServiceMessage
-  case class UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean) extends WorkspaceServiceMessage
-  case class ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) extends WorkspaceServiceMessage
-  case class ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) extends WorkspaceServiceMessage
-  case class GetTags(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
-  case class PutTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
-  case class PatchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
-  case class DeleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]) extends WorkspaceServiceMessage
-  case class DeleteWorkspace(workspaceNamespace: String, workspaceName: String) extends WorkspaceServiceMessage
-
-  def props(workspaceServiceConstructor: WithAccessToken => WorkspaceService, userToken: WithAccessToken): Props = {
-    Props(workspaceServiceConstructor(userToken))
-  }
-
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
     new WorkspaceService(userToken, app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.ontologyDAO, app.searchDAO, app.consentDAO, app.shareLogDAO)
 }
 
 class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO, val ontologyDAO: OntologyDAO, val searchDAO: SearchDAO, val consentDAO: ConsentDAO, val shareLogDAO: ShareLogDAO)
-                      (implicit protected val executionContext: ExecutionContext) extends Actor with AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport {
-
-  implicit val system = context.system
-
-  val log = Logging(system, getClass)
+                      (implicit protected val executionContext: ExecutionContext) extends AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport with SprayJsonSupport with LazyLogging {
 
   implicit val userToken = argUserToken
 
-  import WorkspaceService._
-
-  override def receive: Receive = {
-
-    case GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) =>
-      getCatalog(workspaceNamespace, workspaceName, userInfo) pipeTo sender
-    case UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) =>
-      updateCatalog(workspaceNamespace, workspaceName, updates, userInfo) pipeTo sender
-    case GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) =>
-      getStorageCostEstimate(workspaceNamespace, workspaceName) pipeTo sender
-    case UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) =>
-      updateWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson) pipeTo sender
-    case SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =>
-      setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) pipeTo sender
-    case UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean) =>
-      updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail, originId, inviteUsersNotFound) pipeTo sender
-    case ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) =>
-      exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename) pipeTo sender
-    case ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
-      importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString) pipeTo sender
-    case GetTags(workspaceNamespace: String, workspaceName: String) =>
-      getTags(workspaceNamespace, workspaceName) pipeTo sender
-    case PutTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
-      putTags(workspaceNamespace, workspaceName, tags) pipeTo sender
-    case PatchTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
-      patchTags(workspaceNamespace, workspaceName, tags) pipeTo sender
-    case DeleteTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) =>
-      deleteTags(workspaceNamespace, workspaceName, tags) pipeTo sender
-    case DeleteWorkspace(workspaceNamespace: String, workspaceName: String) =>
-      deleteWorkspace(workspaceNamespace, workspaceName) pipeTo sender
-
-  }
+  def GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) = getCatalog(workspaceNamespace, workspaceName, userInfo)
+  def UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) = updateCatalog(workspaceNamespace, workspaceName, updates, userInfo)
+  def GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) = getStorageCostEstimate(workspaceNamespace, workspaceName)
+  def UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) = updateWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson)
+  def SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) = setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes)
+  def UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean) = updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail, originId, inviteUsersNotFound)
+  def ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) = exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename)
+  def ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) = importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString)
+  def GetTags(workspaceNamespace: String, workspaceName: String) = getTags(workspaceNamespace, workspaceName)
+  def PutTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = putTags(workspaceNamespace, workspaceName, tags)
+  def PatchTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = patchTags(workspaceNamespace, workspaceName, tags)
+  def DeleteTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = deleteTags(workspaceNamespace, workspaceName, tags)
+  def DeleteWorkspace(workspaceNamespace: String, workspaceName: String) = deleteWorkspace(workspaceNamespace, workspaceName)
+  def CloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest) = cloneWorkspace(workspaceNamespace, workspaceName, cloneRequest)
 
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
     rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
@@ -158,9 +113,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).filterKeys(_ != AttributeName.withDefaultNS("description"))
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
+      // TODO: entity TSVs are downloaded as text/tab-separated-value, but workspace attributes are text/plain. Align these?
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
-        HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> filename)),
-        HttpHeaders.`Content-Type`(`text/plain`))
+        `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> filename)),
+        `Content-Type`(ContentTypes.`text/plain(UTF-8)`))
     }
   }
 
@@ -244,9 +200,15 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
           RequestComplete(wsResponse.copy(message = Some(wsResponse.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
         }
       } recover {
-        case e: FireCloudExceptionWithErrorReport => RequestComplete(optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
-        case e: Throwable => RequestComplete(InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
+        case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
+        case e: Throwable => RequestComplete(StatusCodes.InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
       }
+    }
+  }
+
+  def cloneWorkspace(namespace: String, name: String, cloneRequest: WorkspaceRequest): Future[PerRequestMessage] = {
+    rawlsDAO.cloneWorkspace(namespace, name, cloneRequest).map { res =>
+      RequestComplete(StatusCodes.Created, res)
     }
   }
 

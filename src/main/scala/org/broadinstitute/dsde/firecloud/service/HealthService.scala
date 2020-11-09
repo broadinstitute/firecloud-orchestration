@@ -1,15 +1,17 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.slf4j.LoggerFactory
-import spray.http.StatusCodes._
-import spray.routing.{HttpService, Route}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route
 
-trait HealthService extends HttpService with FireCloudDirectives {
+import scala.concurrent.ExecutionContext
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+trait HealthService extends FireCloudDirectives {
+
+  implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val routes: Route = {
+  val healthServiceRoutes: Route = {
     path("health") { complete(OK) } ~
     path("error") { complete (ServiceUnavailable) }
   }

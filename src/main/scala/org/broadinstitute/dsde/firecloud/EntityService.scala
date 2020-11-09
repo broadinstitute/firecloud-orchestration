@@ -5,58 +5,32 @@ import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipFile}
 
-import akka.actor.{Actor, Props}
-import akka.pattern.pipe
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.EntityClient._
+import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.dataaccess.GoogleServicesDAO
-import org.broadinstitute.dsde.firecloud.model.ModelSchema
-import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.firecloud.dataaccess.{ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, TSVFileSupport, TsvTypes}
+import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
-import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, TSVLoadFile}
-import spray.client.pipelining._
-import spray.http.HttpEncodings._
-import spray.http.HttpHeaders.`Accept-Encoding`
-import spray.http.{HttpRequest, HttpResponse}
-import spray.http.StatusCodes._
-import spray.http._
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.encoding.Gzip
+import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
+import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
+import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
-import spray.json._
-import spray.routing.RequestContext
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable.Set
 import scala.concurrent.{ExecutionContext, Future}
-import scala.language.postfixOps
 import scala.io.Source
-import sys.process._
+import scala.language.postfixOps
+import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
-object EntityClient {
+object EntityService {
 
-  case class ImportEntitiesFromTSV(workspaceNamespace: String,
-                                   workspaceName: String,
-                                   tsvString: String)
-
-  case class ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest)
-
-  case class ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo)
-
-  def props(entityClientConstructor: (RequestContext, ModelSchema) => EntityClient, requestContext: RequestContext,
-            modelSchema: ModelSchema)(implicit executionContext: ExecutionContext): Props = {
-    Props(entityClientConstructor(requestContext, modelSchema))
-  }
-
-  def constructor(app: Application)(requestContext: RequestContext,
-                                    modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
-    new EntityClient(requestContext, modelSchema, app.googleServicesDAO)
+  def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
+    new EntityService(app.rawlsDAO, app.importServiceDAO, modelSchema)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -124,30 +98,15 @@ object EntityClient {
 
 }
 
-class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, googleServicesDAO: GoogleServicesDAO)(implicit val executionContext: ExecutionContext)
-  extends Actor with RestJsonClient with TSVFileSupport with LazyLogging {
+class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
+  extends TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 
-  //  ========================
-  // we have ambiguous implicit ActorRefFactories from Actor and RestJsonClient, so we need to tell sendReceive which to use,
-  // and we have to satisfy RestJsonClient's implicit
-  override implicit val system = context.system
-  private def sendRec = sendReceive(context, executionContext)
-  //  ========================
-
-
-  override def receive: Receive = {
-    case ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) =>
-      val pipeline = authHeaders(requestContext) ~> sendRec
-      importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, tsvString) pipeTo sender
-    case ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest) =>
-      val pipeline = authHeaders(requestContext) ~> sendRec
-      importBagit(pipeline, workspaceNamespace, workspaceName, bagitRq) pipeTo sender
-    case ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo) =>
-      importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) pipeTo sender
-  }
-
+  def ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo): Future[PerRequestMessage] = importEntitiesFromTSV(workspaceNamespace, workspaceName, tsvString, userInfo)
+  def ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = importBagit(workspaceNamespace, workspaceName, bagitRq, userInfo)
+  def ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo)
+  def GetEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = getEntitiesWithType(workspaceNamespace, workspaceName, userInfo)
 
   /**
    * Returns the plural form of the entity type.
@@ -178,36 +137,10 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
     }
   }
 
-  def batchCallToRawls(
-    pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    workspaceNamespace: String, workspaceName: String, entityType: String, calls: Seq[EntityUpdateDefinition], endpoint: String ): Future[PerRequestMessage] = {
-    logger.debug("TSV upload request received")
-
-    val responseFuture: Future[HttpResponse] = pipeline {
-      Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName)+"/"+endpoint),
-            HttpEntity(MediaTypes.`application/json`,calls.toJson.toString))
-    }
-
-    responseFuture map { response =>
-      response.status match {
-          case NoContent =>
-            logger.debug("OK response")
-            RequestComplete(OK, entityType)
-          case _ =>
-            // Bubble up all other unmarshallable responses
-            logger.warn("Unanticipated response: " + response.status.defaultMessage)
-            RequestComplete(response)
-      }
-    } recover {
-      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,  "Service API call failed", e)
-    }
-  }
-
   /**
    * Imports collection members into a collection type entity. */
   private def importMembershipTSV(
-    pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
     withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
       validateMembershipTSV(tsv, memberTypeOpt) {
         withPlural(memberTypeOpt.get) { memberPlural =>
@@ -219,7 +152,10 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
             }
             EntityUpdateDefinition(entityName,entityType,ops)
           }
-          batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq, "batchUpsert")
+
+          val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq)(userInfo)
+
+          handleBatchRawlsResponse(entityType, rawlsResponse)
         }
       }
     }
@@ -228,8 +164,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
   /**
    * Creates or updates entities from an entity TSV. Required attributes must exist in column headers. */
   private def importEntityTSV(
-    pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -237,7 +172,10 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
             val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
-            batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpsert")
+
+            val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+
+            handleBatchRawlsResponse(entityType, rawlsResponse)
           }
         }
       }
@@ -247,8 +185,7 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
   /**
    * Updates existing entities from TSV. All entities must already exist. */
   private def importUpdateTSV(
-    pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -260,27 +197,44 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
             case Success(requiredAttributes) =>
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
-              batchCallToRawls(pipeline, workspaceNamespace, workspaceName, entityType, rawlsCalls, "batchUpdate")
+
+              val rawlsResponse = rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+
+              handleBatchRawlsResponse(entityType, rawlsResponse)
           }
         }
       }
     }
   }
 
-  private def importEntitiesFromTSVLoadFile(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-                        workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String): Future[PerRequestMessage] = {
+  private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
+    response map { response =>
+      response.status match {
+        case NoContent =>
+          logger.debug("OK response")
+          RequestComplete(OK, entityType)
+        case _ =>
+          // Bubble up all other unmarshallable responses
+          logger.warn("Unanticipated response: " + response.status.defaultMessage)
+          RequestComplete(response)
+      }
+    } recover {
+      case e: Throwable => RequestCompleteWithErrorReport(InternalServerError,  "Service API call failed", e)
+    }
+  }
+
+  private def importEntitiesFromTSVLoadFile(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String, userInfo: UserInfo): Future[PerRequestMessage] = {
     tsvType match {
-      case TsvTypes.MEMBERSHIP => importMembershipTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
-      case TsvTypes.ENTITY => importEntityTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
-      case TsvTypes.UPDATE => importUpdateTSV(pipeline, workspaceNamespace, workspaceName, tsv, entityType)
+      case TsvTypes.MEMBERSHIP => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
+      case TsvTypes.ENTITY => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
+      case TsvTypes.UPDATE => importUpdateTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
       case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid TSV type.")) //We should never get to this case
     }
   }
 
   /**
    * Determines the TSV type from the first column header and routes it to the correct import function. */
-  def importEntitiesFromTSV(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]],
-    workspaceNamespace: String, workspaceName: String, tsvString: String): Future[PerRequestMessage] = {
+  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo): Future[PerRequestMessage] = {
 
     def stripEntityType(entityTypeString: String): String = {
       val entityType = entityTypeString.stripSuffix("_id")
@@ -306,11 +260,11 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
         } else {
           tsv
         }
-      importEntitiesFromTSVLoadFile(pipeline, workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType)
+      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType, userInfo)
     }
   }
 
-  def importBagit(pipeline: WithTransformerConcatenation[HttpRequest, Future[HttpResponse]], workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest): Future[PerRequestMessage] = {
+  def importBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
     if(bagitRq.format != "TSV") {
       Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid format; for now, you must place the string \"TSV\" here"))
     } else {
@@ -346,8 +300,8 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
                 case _ =>
                   for {
                     // This should vomit back errors from rawls.
-                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ps)).getOrElse(Future.successful(RequestComplete(OK)))
-                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(pipeline, workspaceNamespace, workspaceName, ss)).getOrElse(Future.successful(RequestComplete(OK)))
+                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
+                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
                   } yield {
                     participantResult match {
                       case RequestComplete((OK, _)) => sampleResult
@@ -368,29 +322,20 @@ class EntityClient(requestContext: RequestContext, modelSchema: ModelSchema, goo
   }
 
   def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
+    importServiceDAO.importPFB(workspaceNamespace, workspaceName, pfbRequest)(userInfo)
+  }
 
-    // the payload to Import Service sends "path" and filetype.  Here, we force-hardcode filetype because this API
-    // should only be used for PFBs.
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url.getOrElse(""), filetype = "pfb")
+  def getEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+    rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName)(userInfo).flatMap { entityTypeResponse =>
+      val entityTypes = entityTypeResponse.keys.toList
 
-    val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
+      val entitiesForTypes = Future.traverse(entityTypes) { entityType =>
+        rawlsDAO.fetchAllEntitiesOfType(workspaceNamespace, workspaceName, entityType)(userInfo)
+      }
 
-    userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) map {
-      case resp if resp.status == Created =>
-        val importServiceResponse = unmarshal[ImportServiceResponse].apply(resp)
-        // for backwards compatibility, we return Accepted(202), even though import service returns Created(201),
-        // and we return a different response payload than what import service returns.
-
-        val responsePayload:PfbImportResponse = PfbImportResponse(
-          jobId = importServiceResponse.jobId,
-          url = pfbRequest.url.getOrElse(""),
-          workspace = WorkspaceName(workspaceNamespace, workspaceName)
-        )
-
-        RequestComplete(Accepted, responsePayload)
-      case otherResp =>
-        RequestCompleteWithErrorReport(otherResp.status, otherResp.toString)
-
+      entitiesForTypes.map { result =>
+        RequestComplete(OK, result.flatten)
+      }
     }
   }
 

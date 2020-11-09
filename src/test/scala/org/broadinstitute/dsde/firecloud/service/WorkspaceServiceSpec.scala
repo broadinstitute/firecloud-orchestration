@@ -1,4 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceDeleteResponse}
@@ -7,7 +9,6 @@ import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.BeforeAndAfterEach
-import spray.http.{OAuth2BearerToken, StatusCode, StatusCodes}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -15,11 +16,11 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockLogitDAO, new MockShareLogDAO)
+  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockLogitDAO, new MockShareLogDAO, new MockImportServiceDAO)
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(customApp)
 
-  lazy val ws: WorkspaceService = TestActorRef(WorkspaceService.props(workspaceServiceConstructor, AccessToken(OAuth2BearerToken("")))).underlyingActor
+  lazy val ws: WorkspaceService = workspaceServiceConstructor(AccessToken(OAuth2BearerToken("")))
 
   override def beforeEach(): Unit = {
     searchDao.reset

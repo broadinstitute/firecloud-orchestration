@@ -1,17 +1,17 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, PerRequestCreator, ShareLogService}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, ShareLogService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.httpx.SprayJsonSupport
-import spray.routing.{HttpService, Route}
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.ExecutionContext
 
-trait ShareLogApiService extends HttpService with PerRequestCreator with FireCloudDirectives
+trait ShareLogApiService extends FireCloudDirectives
   with StandardUserInfoDirectives with SprayJsonSupport {
 
-  private implicit val executionContext: ExecutionContextExecutor = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
   val shareLogServiceConstructor: () => ShareLogService
 
   val shareLogServiceRoutes: Route = {
@@ -19,10 +19,8 @@ trait ShareLogApiService extends HttpService with PerRequestCreator with FireClo
       path("sharees" ) {
         get {
           parameter("shareType".?) { shareType =>
-            requireUserInfo() { userInfo => requestContext =>
-              perRequest(requestContext,
-                ShareLogService.props(shareLogServiceConstructor),
-                ShareLogService.GetSharees(userInfo.id, shareType.map(ShareType.withName)))
+            requireUserInfo() { userInfo =>
+              complete { shareLogServiceConstructor().GetSharees(userInfo.id, shareType.map(ShareType.withName)) }
             }
           }
         }

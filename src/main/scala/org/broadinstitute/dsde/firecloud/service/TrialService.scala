@@ -1,28 +1,18 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.{Actor, Props}
-import akka.pattern._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.service.TrialService._
 import org.broadinstitute.dsde.firecloud.utils.PermissionsSupport
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport
+import org.broadinstitute.dsde.firecloud.Application
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object TrialService {
-  sealed trait TrialServiceMessage
-
-  case class FinalizeUser(managerInfo: UserInfo) extends TrialServiceMessage
-
-  def props(service: () => TrialService): Props = {
-    Props(service())
-  }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new TrialService(app.samDAO, app.thurloeDAO, app.rawlsDAO, app.googleServicesDAO)
@@ -30,12 +20,9 @@ object TrialService {
 }
 
 final class TrialService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val rawlsDAO: RawlsDAO, val googleDAO: GoogleServicesDAO)(implicit protected val executionContext: ExecutionContext)
-  extends Actor with PermissionsSupport with SprayJsonSupport with LazyLogging {
+  extends PermissionsSupport with LazyLogging with SprayJsonSupport {
 
-  override def receive = {
-    case FinalizeUser(userInfo) => finalizeUser(userInfo) pipeTo sender
-    case x => throw new FireCloudException("unrecognized message: " + x.toString)
-  }
+  def FinalizeUser(userInfo: UserInfo) = finalizeUser(userInfo)
 
   private def finalizeUser(userInfo: UserInfo): Future[PerRequestMessage] = {
     import org.broadinstitute.dsde.firecloud.model.Project.TrialStates._

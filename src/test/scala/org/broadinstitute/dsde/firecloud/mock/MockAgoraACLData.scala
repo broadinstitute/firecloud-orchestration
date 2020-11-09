@@ -8,6 +8,9 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission
  */
 object MockAgoraACLData {
 
+  val standardPermsPath = "/ns/standard/1/permissions"
+  val withEdgeCasesPath = "/ns/edges/1/permissions"
+
   private val email = Some("davidan@broadinstitute.org")
 
   // FC PERMISSIONS

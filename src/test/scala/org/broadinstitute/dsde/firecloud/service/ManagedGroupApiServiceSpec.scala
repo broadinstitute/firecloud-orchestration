@@ -1,15 +1,11 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.mock.MockUtils.samServerPort
-import org.broadinstitute.dsde.firecloud.model.{ManagedGroupRoles, WithAccessToken}
+import akka.http.scaladsl.model.StatusCodes.{Created, NoContent, OK}
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.webservice.ManagedGroupApiService
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.integration.ClientAndServer.startClientAndServer
-import org.mockserver.model.HttpRequest.request
-import spray.http.HttpMethods
-import spray.http.StatusCodes.{Created, NoContent, OK}
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Created by mbemis on 4/2/18.
@@ -17,6 +13,8 @@ import spray.http.StatusCodes.{Created, NoContent, OK}
 class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiService {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val managedGroupServiceConstructor:(WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
 

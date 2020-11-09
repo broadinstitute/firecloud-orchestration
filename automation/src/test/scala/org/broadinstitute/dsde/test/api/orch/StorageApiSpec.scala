@@ -152,7 +152,7 @@ class StorageApiSpec extends FreeSpec with StorageApiSpecSupport with Matchers w
         End-user functionality remains fine. The test is faulty. The test will need to be rewritten such that after
         it grants the student access to the file, it removes the SA's permission.
 
-        TODO: rewrite/refactor/re-enable
+        AS-2: rewrite/refactor/re-enable
      */
     "should redirect to a direct-download url when SA doesn't have signing permissions for large (>8MB) files " ignore {
       implicit val authToken: AuthToken = student.makeAuthToken()

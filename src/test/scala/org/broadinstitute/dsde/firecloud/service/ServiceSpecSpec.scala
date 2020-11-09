@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import spray.http.HttpMethods._
+import akka.http.scaladsl.model.HttpMethods._
 
 final class ServiceSpecSpec extends ServiceSpec {
   "allHttpMethodsExcept() works" in {

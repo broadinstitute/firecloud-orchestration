@@ -3,11 +3,11 @@ package org.broadinstitute.dsde.firecloud.webservice
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.http.{HttpMethods, Uri}
-import spray.routing.Route
-import spray.routing.HttpService
+import akka.http.scaladsl.model.{HttpMethods, Uri}
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.Directives._
 
-trait CromIamApiService extends HttpService with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
+trait CromIamApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
   lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
   lazy val womtoolRoute: String = FireCloudConfig.CromIAM.authUrl + "/womtool/v1"
@@ -23,7 +23,7 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
       path("query") {
         pathEnd {
           get {
-            extract(_.request.uri.query) { query =>
+            extract(_.request.uri.query()) { query =>
               passthrough(Uri(s"$workflowRoot/query").withQuery(query), HttpMethods.GET)
             }
           } ~
@@ -35,7 +35,7 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
       path("callcaching" / "diff") {
         pathEnd {
           get {
-            extract(_.request.uri.query) { query =>
+            extract(_.request.uri.query()) { query =>
               passthrough(Uri(s"$workflowRoot/callcaching/diff").withQuery(query), HttpMethods.GET)
             }
           }
@@ -52,7 +52,7 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
         path("metadata") {
           pathEnd {
             get {
-              extract(_.request.uri.query) { query =>
+              extract(_.request.uri.query()) { query =>
                 passthrough(Uri(s"$workflowRoot/$workflowId/metadata").withQuery(query), HttpMethods.GET)
               }
             }
@@ -65,7 +65,7 @@ trait CromIamApiService extends HttpService with FireCloudRequestBuilding with F
             }
           }
         } ~
-        path("backend" / "metadata" / Segment.repeat(Slash)) { operationId =>
+        path("backend" / "metadata" / Segment.repeat(0,1024, Slash)) { operationId =>
           get {
             passthrough(s"$rawlsWorkflowRoot/$workflowId/genomics/${operationId.mkString("/")}", HttpMethods.GET)
           }

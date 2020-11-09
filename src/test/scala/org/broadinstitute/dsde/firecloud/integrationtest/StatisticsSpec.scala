@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._

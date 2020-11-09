@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
@@ -9,15 +10,19 @@ import org.broadinstitute.dsde.firecloud.webservice.{RegisterApiService, UserApi
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import spray.http.HttpMethods
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 import spray.json.DefaultJsonProtocol._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 
-class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService {
+import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.Duration
 
-  def actorRefFactory = system
+class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService with SprayJsonSupport {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
   val trialServiceConstructor:() => TrialService = TrialService.constructor(app)
@@ -205,14 +210,14 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
       "if anonymousGroup KVP does not exist, it gets assigned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
         }
       }
       "if anonymousGroup key exists but value is empty, a new group gets assigned, and MethodNotAllowed is not returned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithEmptyGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
           status shouldNot equal(MethodNotAllowed)
@@ -220,7 +225,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
       "existing anonymousGroup is not overwritten, and MethodNotAllowed is not returned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("existing-google-group@support.something.firecloud.org")))
           status shouldNot equal(MethodNotAllowed)
@@ -228,7 +233,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
       }
       "a user with no contact email still gets assigned a new anonymousGroup, and MethodNotAllowed is not returned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithNoContactEmail) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entity.asString.parseJson.convertTo[ProfileWrapper].keyValuePairs
+          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
             .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
             .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
           status shouldNot equal(MethodNotAllowed)
@@ -326,7 +331,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     "when calling /me without Authorization header" - {
       "Unauthorized response is returned" in {
         Get(s"/me") ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("No authorization header in request"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("No authorization header in request"))
           status should equal(Unauthorized)
         }
       }
@@ -337,7 +343,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserInfoPath, "", Unauthorized.intValue)
 
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("Request rejected by identity service"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("Request rejected by identity service"))
           status should equal(Unauthorized)
         }
       }
@@ -348,7 +355,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserInfoPath, "", NotFound.intValue)
 
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user registration not found"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("FireCloud user registration not found"))
           status should equal(NotFound)
         }
       }
@@ -359,7 +367,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserInfoPath, "", InternalServerError.intValue)
 
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("Identity service encountered an unknown error"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("Identity service encountered an unknown error"))
           status should equal(InternalServerError)
         }
       }
@@ -371,7 +380,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserDiagnosticsPath, noGoogleV2DiagnosticsBody, OK.intValue)
 
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user not activated"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
       }
@@ -383,7 +393,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserDiagnosticsPath, noLdapV2UserBody, OK.intValue)
 
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user not activated"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
       }
@@ -405,7 +416,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserInfoPath, uglyJsonBody, OK.intValue)
 
         Get(s"/me") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("Received unparseable response from identity service"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
         }
       }
@@ -436,7 +448,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserInfoPath, noLdapV2UserBody, OK.intValue)
 
         Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user not activated"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
       }
@@ -447,7 +460,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserInfoPath, uglyJsonBody, OK.intValue)
 
         Get(s"/me?userDetailsOnly=true") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("Received unparseable response from identity service"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
         }
       }
@@ -459,7 +473,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserDiagnosticsPath, noGoogleV2DiagnosticsBody, OK.intValue)
 
         Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user not activated"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
       }
@@ -471,7 +486,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserDiagnosticsPath, noLdapV2UserBody, OK.intValue)
 
         Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("FireCloud user not activated"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("FireCloud user not activated"))
           status should equal(Forbidden)
         }
       }
@@ -493,7 +509,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
         mockServerGetResponse(UserApiService.samRegisterUserInfoPath, uglyJsonBody, OK.intValue)
 
         Get(s"/me?userDetailsOnly=false") ~> dummyAuthHeaders ~> sealRoute(userServiceRoutes) ~> check {
-          assert(response.entity.asString.contains("Received unparseable response from identity service"))
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          assert(result.contains("Received unparseable response from identity service"))
           status should equal(InternalServerError)
         }
       }

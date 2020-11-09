@@ -12,7 +12,15 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.joda.time.DateTime
-import spray.http.StatusCodes
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import MockRawlsDAO._
+import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
+import org.broadinstitute.dsde.rawls.model
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -320,7 +328,25 @@ class MockRawlsDAO extends RawlsDAO {
     if (workspaceName == "invalid") {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "Workspace not found")))
     } else {
-      Future.successful(Seq.empty)
+      entityType match {
+        case "sample" =>
+          val sampleAtts = Map(
+            AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
+            AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
+            AttributeName.withDefaultNS("ref_dict") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"),
+            AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "subject_HCC1143")
+          )
+          Future.successful(List(Entity("sample_01", "sample", sampleAtts)))
+        case "participant" =>
+          val participantAtts = Map(
+            AttributeName.withDefaultNS("tumor_platform") -> AttributeString("illumina"),
+            AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
+            AttributeName.withDefaultNS("tumor_strip_unpaired") -> AttributeString("TRUE")
+          )
+          Future.successful(List(Entity("subject_HCC1143", "participant", participantAtts)))
+        case _ =>
+          Future.successful(Seq.empty)
+      }
     }
   }
 
@@ -426,8 +452,6 @@ class MockRawlsDAO extends RawlsDAO {
     Future.successful(WorkspaceDeleteResponse(Some("Your Google bucket 'bucketId' will be deleted within 24h.")))
   }
 
-  override def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(false)
-
   override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Project.RawlsBillingProjectMembership]] = Future(Seq.empty[Project.RawlsBillingProjectMembership])
 
   override def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]] =
@@ -437,4 +461,9 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
 
+  override def batchUpsertEntities(workspaceNamespace: String, workspaceName: String, entityType: String, upserts: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
+
+  override def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
+
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, "googleProject"))
 }

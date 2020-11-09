@@ -1,19 +1,13 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.Actor
-import spray.http.HttpMethods.{GET, POST}
-import spray.routing.{HttpService, Route}
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.model.HttpMethods._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls._
-import spray.http.Uri
 
-abstract class SubmissionServiceActor extends Actor with SubmissionService {
-  def actorRefFactory = context
-  def receive = runRoute(routes)
-}
-
-trait SubmissionService extends HttpService with PerRequestCreator with FireCloudDirectives {
+trait SubmissionService extends FireCloudDirectives {
   // TODO Resolve https://broadinstitute.atlassian.net/browse/GAWB-2807
-  val routes: Route = {
+  val submissionServiceRoutes: Route = {
     path("submissions" / "queueStatus") {
       get {
         passthrough(submissionQueueStatusUrl, GET)
@@ -49,7 +43,7 @@ trait SubmissionService extends HttpService with PerRequestCreator with FireClou
           pathPrefix("workflows" / Segment) { workflowId =>
             pathEnd {
               get {
-                extract(_.request.uri.query) { query =>
+                extract(_.request.uri.query()) { query =>
                   passthrough(Uri(encodeUri(s"$workspacesUrl/$namespace/$name/submissions/$submissionId/workflows/$workflowId")).withQuery(query), GET)
                 }
               }

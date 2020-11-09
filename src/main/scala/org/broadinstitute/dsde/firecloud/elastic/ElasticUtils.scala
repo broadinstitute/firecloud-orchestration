@@ -6,7 +6,7 @@ import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.transport.client.PreBuiltTransportClient
-import spray.http.Uri.Authority
+import akka.http.scaladsl.model.Uri.Authority
 
 object ElasticUtils {
   def buildClient(servers:Seq[Authority], clusterName: String): TransportClient = {

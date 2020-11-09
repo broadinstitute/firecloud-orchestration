@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
@@ -15,19 +17,24 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.scalatest.BeforeAndAfterEach
-import spray.http.StatusCodes._
-import spray.http._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.server.Directives._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.json.lenses.JsonLenses._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 
 import scala.collection.JavaConverters._
+import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.Duration
 
 
-class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach {
+class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   var consentServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
@@ -104,15 +111,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     val consentError = ConsentError(message = "Unapproved", code = BadRequest.intValue)
     val consentNotFound = ConsentError(message = "Not Found", code = NotFound.intValue)
 
-    val okGet = request().withMethod("GET").withPath(consentPath).withHeader(authHeader).withQueryStringParameter("name", "12345")
+    val okGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "12345")
     val okResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(OK.intValue).withBody(consent.toJson.prettyPrint)
     consentServer.when(okGet).respond(okResponse)
 
-    val badRequestGet = request().withMethod("GET").withPath(consentPath).withHeader(authHeader).withQueryStringParameter("name", "unapproved")
+    val badRequestGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "unapproved")
     val badRequestResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(BadRequest.intValue).withBody(consentError.toJson.prettyPrint)
     consentServer.when(badRequestGet).respond(badRequestResponse)
 
-    val notFoundGet = request().withMethod("GET").withPath(consentPath).withHeader(authHeader).withQueryStringParameter("name", "missing")
+    val notFoundGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "missing")
     val notFoundResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(NotFound.intValue).withBody(consentNotFound.toJson.prettyPrint)
     consentServer.when(notFoundGet).respond(notFoundResponse)
   }
@@ -287,7 +294,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
-            val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
+            val respdata = Await.result(Unmarshal(response).to[LibrarySearchResponse], Duration.Inf)
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.isEmpty, "results array should be empty")
           }
@@ -299,7 +306,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.autocompleteInvoked, "autocompleteInvoked should have been invoked")
-            val respdata = response.entity.asString.parseJson.convertTo[LibrarySearchResponse]
+            val respdata = Await.result(Unmarshal(response).to[LibrarySearchResponse], Duration.Inf)
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.isEmpty, "results array should be empty")
           }
@@ -310,7 +317,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
-            val respdata = response.entity.asString
+            val respdata = Await.result(Unmarshal(response).to[String], Duration.Inf)
             assert(respdata.contains("library:datasetOwner"))
             assert(respdata.contains("aha"))
           }
@@ -320,7 +327,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         "should return the all broad users group" in {
           new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            val respdata = response.entity.asString.parseJson.convertTo[Seq[String]]
+            val respdata = Await.result(Unmarshal(response).to[Seq[String]], Duration.Inf)
             assert(respdata.toSet ==  FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
           }
         }
@@ -340,7 +347,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         "should return a valid consent for '12345'" in {
           Get(duosConsentOrspIdPath("12345")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            val consent = response.entity.asString.parseJson.convertTo[Consent]
+            val consent = Await.result(Unmarshal(response).to[Consent], Duration.Inf)
             consent shouldNot equal(None)
             consent.name should equal("12345")
           }

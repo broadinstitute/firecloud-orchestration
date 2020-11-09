@@ -3,29 +3,32 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.UUID
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.Materializer
 import com.google.api.services.sheets.v4.model.ValueRange
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
-import spray.http.HttpHeaders.RawHeader
-import spray.http._
 import spray.json._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMethodTester {
+class HttpGoogleServicesDAOSpec(implicit val materializer: Materializer) extends FlatSpec with Matchers with PrivateMethodTester {
 
   val testProject = "broad-dsde-dev"
   implicit val system = ActorSystem("HttpGoogleCloudStorageDAOSpec")
   import system.dispatcher
-  val gcsDAO = HttpGoogleServicesDAO
+  val gcsDAO = new HttpGoogleServicesDAO
 
   behavior of "HttpGoogleServicesDAO"
 
   it should "fetch the current price list" in {
 
-    val priceList: GooglePriceList = Await.result(HttpGoogleServicesDAO.fetchPriceList, Duration.Inf)
+    val priceList: GooglePriceList = Await.result(gcsDAO.fetchPriceList, Duration.Inf)
 
     priceList.version should startWith ("v")
     priceList.updated should not be empty
@@ -62,7 +65,8 @@ class HttpGoogleServicesDAOSpec extends FlatSpec with Matchers with PrivateMetho
     val response = HttpResponse(status = StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`, json))
 
     import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
-    val objectMetadata = response.entity.asString.parseJson.convertTo[ObjectMetadata]
+
+    val objectMetadata = Await.result(Unmarshal(response).to[ObjectMetadata], Duration.Inf)
 
     objectMetadata.bucket should equal("test-bucket")
     objectMetadata.name should equal("test-composite-object")

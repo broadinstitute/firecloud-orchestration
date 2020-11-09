@@ -2,20 +2,17 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
-import akka.actor.{Actor, Props}
-import akka.pattern._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impProfileWrapper, impTerraPreference, impUserImportPermission}
 import org.broadinstitute.dsde.firecloud.model.Project.CreationStatuses
-import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, ProfileWrapper, RequestCompleteWithErrorReport, TerraPreference, UserImportPermission, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, RequestCompleteWithErrorReport, TerraPreference, UserImportPermission, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.service.UserService.{DeleteTerraPreference, GetAllUserKeys, GetTerraPreference, ImportPermission, SetTerraPreference}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
 import org.parboiled.common.FileUtils
-import spray.http.StatusCodes
-import spray.httpx.SprayJsonSupport
 import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,8 +21,6 @@ import scala.util.{Failure, Success, Try}
 
 
 object UserService {
-  sealed trait UserServiceMessage
-
   val TerraPreferenceKey = "preferTerra"
   val TerraPreferenceLastUpdatedKey = "preferTerraLastUpdated"
   val AnonymousGroupKey = "anonymousGroup"
@@ -34,31 +29,20 @@ object UserService {
   val randomNounList: List[String] = FileUtils.readAllTextFromResource("nouns_ab.txt").split("\n").toList
   val randomAdjectiveList: List[String] = FileUtils.readAllTextFromResource("adjectives_ab.txt").split("\n").toList
 
-  case object ImportPermission extends UserServiceMessage
-  case object GetTerraPreference extends UserServiceMessage
-  case object SetTerraPreference extends UserServiceMessage
-  case object DeleteTerraPreference extends UserServiceMessage
-  case object GetAllUserKeys extends UserServiceMessage
-
-  def props(userService: (UserInfo) => UserService, userInfo: UserInfo): Props = {
-    Props(userService(userInfo))
-  }
-
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
     new UserService(app.rawlsDAO, app.thurloeDAO, app.googleServicesDAO, userInfo)
 
 }
 
 class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO: GoogleServicesDAO, userToken: UserInfo)(implicit protected val executionContext: ExecutionContext)
-  extends Actor with LazyLogging with SprayJsonSupport with DefaultJsonProtocol {
+  extends LazyLogging with SprayJsonSupport with DefaultJsonProtocol {
 
-  override def receive = {
-    case ImportPermission => importPermission(userToken) pipeTo sender
-    case GetTerraPreference => getTerraPreference(userToken) pipeTo sender
-    case SetTerraPreference => setTerraPreference(userToken) pipeTo sender
-    case DeleteTerraPreference => deleteTerraPreference(userToken) pipeTo sender
-    case GetAllUserKeys => getAllUserKeys(userToken) pipeTo sender
-  }
+  def ImportPermission = importPermission(userToken)
+  def GetTerraPreference = getTerraPreference(userToken)
+  def SetTerraPreference = setTerraPreference(userToken)
+  def DeleteTerraPreference = deleteTerraPreference(userToken)
+  def GetAllUserKeys = getAllUserKeys(userToken)
+  def GetUserProfileGoogle = getUserProfileGoogle(userToken)
 
   def importPermission(implicit userToken: UserInfo): Future[PerRequestMessage] = {
     // start two requests, in parallel, to fire off workspace list and billing project list
@@ -221,4 +205,11 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
       }
     }
   }
+
+  def getUserProfileGoogle(userToken: UserInfo): Future[PerRequestMessage] = {
+    googleServicesDAO.getUserProfile(userToken).map { resp =>
+      RequestComplete(resp)
+    }
+  }
+
 }

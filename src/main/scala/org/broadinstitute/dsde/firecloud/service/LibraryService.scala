@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.{Actor, Props}
-import akka.pattern._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess._
@@ -14,8 +14,6 @@ import org.everit.json.schema.ValidationException
 import org.slf4j.LoggerFactory
 import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport
 import spray.json.JsonParser.ParsingException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impLibraryBulkIndexResponse, impLibrarySearchResponse}
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
@@ -32,21 +30,6 @@ object LibraryService {
   final val orspIdAttribute = AttributeName.withLibraryNS("orsp")
   final val schemaLocation = "library/attribute-definitions.json"
 
-  sealed trait LibraryServiceMessage
-  case class UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String, validate: Boolean) extends LibraryServiceMessage
-  case class GetLibraryMetadata(ns: String, name: String) extends LibraryServiceMessage
-  case class UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) extends LibraryServiceMessage
-  case class GetDiscoverableByGroups(ns: String, name: String) extends LibraryServiceMessage
-  case class SetPublishAttribute(ns: String, name: String, value: Boolean) extends LibraryServiceMessage
-  case object IndexAll extends LibraryServiceMessage
-  case class FindDocuments(criteria: LibrarySearchParams) extends LibraryServiceMessage
-  case class Suggest(criteria: LibrarySearchParams) extends LibraryServiceMessage
-  case class PopulateSuggest(field: String, text: String) extends LibraryServiceMessage
-
-  def props(libraryServiceConstructor: UserInfo => LibraryService, userInfo: UserInfo): Props = {
-    Props(libraryServiceConstructor(userInfo))
-  }
-
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
     new LibraryService(userInfo, app.rawlsDAO, app.samDAO, app.searchDAO, app.ontologyDAO, app.consentDAO)
 }
@@ -58,8 +41,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
                       val searchDAO: SearchDAO,
                       val ontologyDAO: OntologyDAO,
                       val consentDAO: ConsentDAO)
-                     (implicit protected val executionContext: ExecutionContext) extends Actor
-  with LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging with WorkspacePublishingSupport {
+                     (implicit protected val executionContext: ExecutionContext) extends LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging with WorkspacePublishingSupport {
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -69,18 +51,15 @@ class LibraryService (protected val argUserInfo: UserInfo,
   // we need to use the plain-array deserialization.
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
-  override def receive = {
-    case UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String, validate: Boolean) => updateLibraryMetadata(ns, name, attrsJsonString, validate) pipeTo sender
-    case GetLibraryMetadata(ns: String, name: String) => getLibraryMetadata(ns, name) pipeTo sender
-    case UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) => updateDiscoverableByGroups(ns, name, newGroups) pipeTo sender
-    case GetDiscoverableByGroups(ns: String, name: String) => getDiscoverableByGroups(ns, name) pipeTo sender
-    case SetPublishAttribute(ns: String, name: String, value: Boolean) => setWorkspaceIsPublished(ns, name, value) pipeTo sender
-    case IndexAll => asAdmin {indexAll} pipeTo sender
-    case FindDocuments(criteria: LibrarySearchParams) => findDocuments(criteria) pipeTo sender
-    case Suggest(criteria: LibrarySearchParams) => suggest(criteria) pipeTo sender
-    case PopulateSuggest(field: String, text: String) => populateSuggest(field: String, text: String) pipeTo sender
-  }
-
+  def UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String, validate: Boolean) = updateLibraryMetadata(ns, name, attrsJsonString, validate)
+  def GetLibraryMetadata(ns: String, name: String) = getLibraryMetadata(ns, name)
+  def UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) = updateDiscoverableByGroups(ns, name, newGroups)
+  def GetDiscoverableByGroups(ns: String, name: String) = getDiscoverableByGroups(ns, name)
+  def SetPublishAttribute(ns: String, name: String, value: Boolean) = setWorkspaceIsPublished(ns, name, value)
+  def IndexAll = asAdmin {indexAllWorkspaces}
+  def FindDocuments(criteria: LibrarySearchParams) = findDocuments(criteria)
+  def Suggest(criteria: LibrarySearchParams) = suggest(criteria)
+  def PopulateSuggest(field: String, text: String) = populateSuggest(field: String, text: String)
 
   def updateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
     if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
@@ -89,7 +68,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
         // between the time we retrieved them and here, where we update them.
         val remove = Seq(RemoveAttribute(discoverableWSAttribute))
         val operations = newGroups map (group => AddListMember(discoverableWSAttribute, AttributeString(group)))
-          internalPatchWorkspaceAndRepublish(ns, name, remove ++ operations, isPublished(workspaceResponse)) map (RequestComplete(_))
+        internalPatchWorkspaceAndRepublish(ns, name, remove ++ operations, isPublished(workspaceResponse)) map (RequestComplete(_))
       }
     } else {
       Future(RequestCompleteWithErrorReport(BadRequest, s"groups must be subset of allowable groups: %s".format(FireCloudConfig.ElasticSearch.discoverGroupNames.toArray.mkString(", "))))
@@ -171,7 +150,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
    * Will republish if it is currently in the published state.
    */
   private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[WorkspaceDetails] = {
-      rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
+    rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
       republishDocument(newws, ontologyDAO, searchDAO, consentDAO)
       newws
     }
@@ -188,11 +167,11 @@ class LibraryService (protected val argUserInfo: UserInfo,
         (false, None)
 
       if (currentPublished == publishArg)
-        // user request would result in no change; just return as noop.
-        Future(RequestComplete(NoContent))
+      // user request would result in no change; just return as noop.
+      Future(RequestComplete(NoContent))
       else if (invalid)
-        // user requested a publish, but metadata is invalid; return error.
-        Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
+      // user requested a publish, but metadata is invalid; return error.
+      Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
       else {
         // user requested a change in published flag, and metadata is valid; make the change.
         setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO, consentDAO) map { ws =>
@@ -202,7 +181,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  def indexAll: Future[PerRequestMessage] = {
+  def indexAllWorkspaces: Future[PerRequestMessage] = {
     logger.info("reindex: requesting workspaces from rawls ...")
     rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[WorkspaceDetails] =>
       if (workspaces.isEmpty)

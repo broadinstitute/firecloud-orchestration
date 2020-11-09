@@ -1,22 +1,26 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets.UTF_8
-
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.headers.ContentDispositionTypes
 import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
-import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeString, Entity}
-import spray.http._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.{ContentType, ContentTypes, FormData, HttpCharsets, HttpEntity, HttpMethods, MediaTypes, Uri}
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.headers.{Connection, `Content-Disposition`}
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import org.broadinstitute.dsde.workbench.model.ErrorReport
 
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
 class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
 
-  override val storageServiceConstructor: UserInfo => StorageService = StorageService.constructor(app)
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
   override implicit val routeTestTimeout = RouteTestTimeout(30.seconds)
@@ -24,6 +28,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   def actorRefFactory: ActorSystem = system
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
+  val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
 
   val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"
   val largeFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/largeSampleSet/entities/sample_set/tsv"
@@ -36,7 +41,6 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val nonModelEntitiesBigQueryTSVPath = "/api/workspaces/broad-dsde-dev/nonModel/entities/bigQuery/tsv"
   val nonModelEntitiesBigQuerySetTSVPath = "/api/workspaces/broad-dsde-dev/nonModelSet/entities/bigQuery_set/tsv"
   val nonModelEntitiesPairTSVPath = "/api/workspaces/broad-dsde-dev/nonModelPair/entities/pair/tsv"
-  val namespacedEntitiesTSVPath = "/api/workspaces/broad-dsde-dev/namespacedEntities/entities/study/tsv"
 
   // Pick the first few headers from the list of available sample headers:
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
@@ -50,7 +54,8 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         // Exception case is generated from the entity query call which is inside of the akka stream code.
         Get(page3ExceptionFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
-          validateErrorInLastChunk(chunks, "FireCloudException")
+          val strResp = responseAs[String]
+          strResp should include ("FireCloudException")
         }
       }
     }
@@ -68,18 +73,15 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling GET on exporting a valid entity type with filtered attributes" - {
       "OK response is returned and attributes are filtered" in {
-        val uri = Uri(largeFireCloudEntitiesSampleTSVPath).withQuery(("attributeNames", filterProps.mkString(",")))
+        val uri = Uri(largeFireCloudEntitiesSampleTSVPath).withQuery(Query(("attributeNames", filterProps.mkString(","))))
         Get(uri) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
-          entity.asString.startsWith("update:") should be(true)
-          validateProps(entity)
+          responseAs[String].startsWith("update:") should be(true)
+          validateProps(response.entity)
         }
       }
     }
@@ -89,13 +91,10 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(nonModelEntitiesBigQueryTSVPath+"?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "bigQuery.tsv")))
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "bigQuery.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, 2)
-          entity.asString.contains("query_str") should be(true)
+          responseAs[String].contains("query_str") should be(true)
         }
       }
       "400 response is returned is model is firecloud" in {
@@ -111,53 +110,11 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(nonModelEntitiesPairTSVPath + "?attributeNames=names&model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "pair.tsv")))
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "pair.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, 2)
-          entity.asString.startsWith("entity:") should be(true)
-          entity.asString.contains("names") should be(true)
-        }
-      }
-    }
-
-    "when calling GET on exporting a non-FC model entity type with namespaced attributes" - {
-      "OK response is returned and file is entity type when model is flexible" in {
-        Get(namespacedEntitiesTSVPath + "?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
-          handled should be(true)
-          status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "study.tsv")))
-          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.namespacedEntities.length)
-
-          // confirm headers
-          val colheaders = entity.asString.trim.split('\t')
-          colheaders should contain theSameElementsAs(List("entity:study_id") ++ MockRawlsDAO.namespacedMetadata("study").attributeNames)
-
-          val bodyLines = asStringBody(chunks)
-          bodyLines.length shouldBe MockRawlsDAO.namespacedEntities.length // effectively the same assertion as validateLineCount
-
-          // reconstitute entities so we can assert equality.
-          // loop through the (non-header) lines of the TSV
-          val reconstitutedEntities = bodyLines.map { line =>
-            // split on tabs to get each cell
-            val cellValues = line.split("\t")
-            cellValues.length shouldBe colheaders.length
-            // loop through cells to build the name-value attributes. The order of cells matches the order of the headers.
-            // the first column is always the id, so skip the first column.
-            // note the use of idx+1 below to seek into the colheaders, since we use cellValues.tail but don't use colheaders.tail
-            val attrs = cellValues.tail.zipWithIndex.map {
-              case (cellValue, idx) => AttributeName.fromDelimitedName(colheaders(idx+1)) -> AttributeString(cellValue)
-            }
-            Entity(cellValues.head, "study", attrs.toMap)
-          }
-
-          reconstitutedEntities shouldBe MockRawlsDAO.namespacedEntities
+          responseAs[String].startsWith("entity:") should be(true)
+          responseAs[String].contains("names") should be(true)
         }
       }
     }
@@ -176,12 +133,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
         }
       }
     }
@@ -191,9 +145,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(largeFireCloudEntitiesSampleSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
+          response.entity.isKnownEmpty() shouldNot be(true) // Entity is the first line of content as output by StreamingActor
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers.contains(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample_set.zip"))) should be(true)
         }
       }
     }
@@ -203,9 +157,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(validFireCloudEntitiesSampleSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty)
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip")))
+          response.entity.isKnownEmpty() shouldNot be(true)
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample_set.zip")))
           contentType shouldEqual ContentTypes.`application/octet-stream`
         }
       }
@@ -216,9 +170,9 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
         Get(validFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty)
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          response.entity.isKnownEmpty() shouldNot be(true)
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
       }
@@ -258,9 +212,10 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
     "when an exception occurs in a paged query response, the response should be handled appropriately" - {
       "FireCloudException is contained in response chunks" in {
         // Exception case is generated from the entity query call which is inside of the akka stream code.
-        Post(page3ExceptionCookieFireCloudEntitiesSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(page3ExceptionCookieFireCloudEntitiesSampleTSVPath, FormData(Map("FCtoken"->"token"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
-          validateErrorInLastChunk(chunks, "FireCloudException")
+          val strResp = responseAs[String]
+          strResp should include ("FireCloudException")
         }
       }
     }
@@ -268,7 +223,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
     "when an exception occurs, the response should be handled appropriately" - {
       "InternalServerError is returned" in {
         // Exception case is generated from the entity query call which is inside of the akka stream code.
-        Post(exceptionCookieFireCloudEntitiesSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(exceptionCookieFireCloudEntitiesSampleTSVPath, FormData(Map("FCtoken"->"token"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(InternalServerError)
           errorReportCheck("Rawls", InternalServerError)
@@ -278,28 +233,25 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling POST on exporting a valid entity type with filtered attributes" - {
       "OK response is returned and attributes are filtered" in {
-        Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token", "attributeNames"->filterProps.mkString(",")))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Map("FCtoken"->"token", "attributeNames"->filterProps.mkString(",")))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-          chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-          validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
-          validateProps(entity)
+          validateProps(response.entity)
         }
       }
     }
 
     "when calling POST on exporting LARGE (20K) sample TSV" - {
       "OK response is returned" in {
-        Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Map("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty)
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          response.entity.isKnownEmpty() shouldNot be(true)
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
       }
@@ -307,24 +259,24 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling POST on exporting a valid collection type" - {
       "OK response is returned" in {
-        Post(validCookieFireCloudEntitiesSampleSetTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(validCookieFireCloudEntitiesSampleSetTSVPath, FormData(Map("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty)
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers.contains(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample_set.zip"))) should be(true)
+          response.entity.isKnownEmpty() shouldNot be(true)
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers.contains(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample_set.zip"))) should be(true)
         }
       }
     }
 
     "when calling POST on exporting a valid entity type" - {
       "OK response is returned" in {
-        Post(validCookieFireCloudEntitiesSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(validCookieFireCloudEntitiesSampleTSVPath, FormData(Map("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(OK)
-          entity shouldNot be(empty)
-          headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-          headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+          response.entity.isKnownEmpty() shouldNot be(true)
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
       }
@@ -332,7 +284,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling POST on exporting an invalid collection type" - {
       "NotFound response is returned" in {
-        Post(invalidCookieFireCloudEntitiesParticipantSetTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(invalidCookieFireCloudEntitiesParticipantSetTSVPath, FormData(Map("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(NotFound)
         }
@@ -341,7 +293,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling POST on exporting an invalid entity type" - {
       "NotFound response is returned" in {
-        Post(invalidCookieFireCloudEntitiesSampleTSVPath, FormData(Seq("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
+        Post(invalidCookieFireCloudEntitiesSampleTSVPath, FormData(Map("FCtoken"->"token"))) ~> sealRoute(cookieAuthedRoutes) ~> check {
           handled should be(true)
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
@@ -370,35 +322,23 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           sealRoute(cookieAuthedRoutes) ~> check {
             handled should be(true)
             status should be(OK)
-            entity shouldNot be(empty) // Entity is the first line of content as output by StreamingActor
-            chunks shouldNot be(empty) // Chunks has all of the rest of the content, as output by StreamingActor
-            headers.contains(HttpHeaders.Connection("Keep-Alive")) should be(true)
-            headers should contain(HttpHeaders.`Content-Disposition`.apply("attachment", Map("filename" -> "sample.tsv")))
+            headers.contains(Connection("Keep-Alive")) should be(true)
+            headers should contain(`Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv")))
             contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-            validateLineCount(chunks, MockRawlsDAO.largeSampleSize)
-            validateProps(entity)
+            validateProps(response.entity)
           }
       }
     }
   }
 
-  private def asStringBody(chunks: List[MessageChunk]): List[String] = {
-    chunks.flatMap(c => scala.io.Source.fromString(c.data.asString).getLines())
-  }
-
-  private def validateLineCount(chunks: List[MessageChunk], count: Int): Unit = {
-    val lineCount = chunks.map(c => scala.io.Source.fromString(c.data.asString).getLines().size).sum
-    lineCount should equal(count)
-  }
-
   private def validateProps(entity: HttpEntity): Unit = {
-    val entityHeaderString = entity.asString
+    val entityHeaderString = Await.result(entity.toStrict(1.second).map(_.data.utf8String), Duration.Inf)
     filterProps.foreach { h => entityHeaderString.contains(h) should be(true) }
     missingProps.foreach { h => entityHeaderString.contains(h) should be(false) }
   }
 
-  private def validateErrorInLastChunk(chunks: List[MessageChunk], message: String): Unit = {
-    chunks.reverse.head.data.asString should include (message)
+  private def validateErrorInLastChunk(chunks: Seq[ChunkStreamPart], message: String): Unit = {
+    chunks.reverse.head.data.utf8String should include (message)
   }
 
 }

@@ -1,32 +1,29 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLServer
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impFireCloudPermission, impMethodAclPair}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impMethodAclPair
 import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 import org.broadinstitute.dsde.rawls.model.MethodRepoMethod
-import spray.http.HttpMethods
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+
+import scala.concurrent.ExecutionContext
 
 
-class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
+class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with ServiceSpec with MethodsApiService with SprayJsonSupport {
 
   def actorRefFactory = system
 
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  override def beforeAll(): Unit = {
-    MockAgoraACLServer.startACLServer()
-  }
-
-  override def afterAll(): Unit = {
-    MockAgoraACLServer.stopACLServer()
-  }
+  val agoraPermissionService: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
 
   val localMethodPermissionsPath = s"/$localMethodsPath/permissions"
-
 
   // most of the functionality of this endpoint either exists in Agora or is unit-tested elsewhere.
   // here, we just test the routing and basic input/output of the endpoint.
@@ -49,8 +46,9 @@ class MethodsApiServiceMultiACLSpec extends ServiceSpec with MethodsApiService {
           MethodAclPair(MethodRepoMethod("ns1","n1",1), Seq(FireCloudPermission("user1@example.com","OWNER"))),
           MethodAclPair(MethodRepoMethod("ns2","n2",2), Seq(FireCloudPermission("user2@example.com","READER")))
         )
-        Put(localMethodPermissionsPath, payload) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Put(localMethodPermissionsPath, payload) ~> dummyUserIdHeaders("MethodsApiServiceMultiACLSpec") ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
+
           val resp = responseAs[Seq[MethodAclPair]]
           assert(resp.nonEmpty)
         }

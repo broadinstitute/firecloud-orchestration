@@ -1,21 +1,23 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.actor.ActorRefFactory
+import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.metrics.MetricsException
 import org.broadinstitute.dsde.firecloud.model.Metrics
 import org.broadinstitute.dsde.firecloud.model.Metrics.LogitMetric
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.LogitMetricFormat
-import spray.client.pipelining._
-import spray.http.HttpHeaders.RawHeader
-import spray.http.StatusCodes.Accepted
-import spray.httpx.SprayJsonSupport
+import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class HttpLogitDAO(logitUrl: String, logitApiKey: String)
-                  (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext) extends LogitDAO with SprayJsonSupport with LazyLogging {
-
+                  (implicit val system: ActorSystem, val materializer: Materializer, implicit val executionContext: ExecutionContext) extends LogitDAO with SprayJsonSupport with LazyLogging with RestJsonClient with FireCloudRequestBuilding {
   /*
     Requirements to send to Logit:
       - Valid JSON content
@@ -30,12 +32,14 @@ class HttpLogitDAO(logitUrl: String, logitApiKey: String)
   */
 
   override def recordMetric(metric: LogitMetric): Future[LogitMetric] = {
-    val pipeline = Put(logitUrl, metric) ~>
-      addHeader(RawHeader("LogType", Metrics.LOG_TYPE)) ~>
-      addHeader(RawHeader("ApiKey", logitApiKey)) ~>
-      sendReceive
 
-    pipeline map { logitResponse =>
+    val logType: HttpHeader = RawHeader("LogType", Metrics.LOG_TYPE)
+    val apiKey: HttpHeader = RawHeader("ApiKey", logitApiKey)
+
+    val request = Put(logitUrl, metric)
+      .withHeaders(List(logType, apiKey))
+
+    unAuthedRequest(request).map { logitResponse =>
       logitResponse.status match {
         case Accepted =>
           logger.debug(s"Logit request succeeded: ${LogitMetricFormat.write(metric).compactPrint}")

@@ -2,6 +2,11 @@ package org.broadinstitute.dsde.firecloud.service
 
 import java.util.UUID
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
@@ -10,22 +15,20 @@ import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig}
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import org.mockserver.model.{JsonBody, Parameter}
+import org.mockserver.model.Parameter
 import org.mockserver.socket.SSLFactory
 import org.scalatest.BeforeAndAfterEach
-import spray.http.StatusCodes._
-import spray.http._
-import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-import spray.routing.RequestContext
+
+import scala.concurrent.ExecutionContext
 
 object WorkspaceApiServiceSpec {
 
@@ -47,9 +50,9 @@ object WorkspaceApiServiceSpec {
 
 }
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
+class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
-  def actorRefFactory = system
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val workspace = WorkspaceDetails(
     "namespace",
@@ -101,7 +104,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
-  val entityClientConstructor: (RequestContext, ModelSchema) => EntityClient = EntityClient.constructor(app)
+  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
@@ -161,7 +164,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
-  var importServiceServer: ClientAndServer = _
+   var importServiceServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -172,7 +175,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
     rawlsServer.reset()
     val request = org.mockserver.model.HttpRequest.request()
-      .withHeader("authorization", "Bearer .*")
       .withMethod(method.name)
       .withPath(path)
     if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
@@ -221,7 +223,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -229,7 +231,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsServiceWithError(method: HttpMethod, path: String, status: StatusCode) = {
     rawlsServer.reset()
     rawlsServer
-      .when(request().withMethod(method.name).withPath(path).withHeader(authHeader))
+      .when(request().withMethod(method.name).withPath(path))
       .respond(
         org.mockserver.model.HttpResponse.response()
           .withHeaders(MockUtils.header)
@@ -262,13 +264,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
     bagitServer = startClientAndServer(MockUtils.bagitServerPort)
-    importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
+     importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
     bagitServer.stop
-    importServiceServer.stop
+     importServiceServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -276,8 +278,17 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def afterEach(): Unit = {
-    importServiceServer.reset
+     importServiceServer.reset
     this.searchDao.reset
+  }
+
+  //there are many values in the response that in reality cannot be predicted
+  //we will only compare the key details: namespace, name, authdomain, attributes
+  def assertWorkspaceDetailsEqual(expected: WorkspaceDetails, actual: WorkspaceDetails) = {
+    actual.namespace should equal(expected.namespace)
+    actual.name should equal(expected.name)
+    actual.attributes should equal(expected.attributes)
+    actual.authorizationDomain should equal(expected.authorizationDomain)
   }
 
   "WorkspaceService Passthrough Negative Tests" - {
@@ -445,18 +456,18 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.nonEmpty)
+          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.nonEmpty)
         }
       }
 
-      s"OK status is returned for HTTP GET (non-realmed workspace)" in {
+      s"OK status is returned for HTTP GET (non-auth-domained workspace)" in {
         stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(nonAuthDomainRawlsWorkspaceResponse.toJson.compactPrint))
         Get(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
           //generally this is not how we want to treat the response
           //it should already be returned as JSON but for some strange reason it's being returned as text/plain
           //here we take the plain text and force it to be json so we can get the test to work
-          assert(entity.asString.parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.isEmpty)
+          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.isEmpty)
         }
       }
 
@@ -484,7 +495,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         Seq("allRepos" -> "true", "allRepos" -> "false", "allRepos" -> "banana") foreach { query =>
           stubRawlsService(HttpMethods.GET, methodconfigsPath, OK, None, Some(query))
 
-          Get(Uri(methodconfigsPath).withQuery(query)) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          Get(Uri(methodconfigsPath).withQuery(Query(query))) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             rawlsServer.verify(request().withPath(methodconfigsPath).withMethod("GET").withQueryStringParameter(query._1, query._2))
 
             status should equal(OK)
@@ -587,7 +598,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map())
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
@@ -598,7 +609,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
       Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
+        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
@@ -611,38 +622,35 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
+      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
 
       val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map())
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
-        responseAs[WorkspaceDetails] should equal(rawlsResponse)
+        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
       }
     }
 
     "POST on /workspaces/.../.../clone for 'protected' workspace sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
+      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
 
       val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(rawlsRequest.toJson.prettyPrint))
         status should equal(Created)
-        responseAs[WorkspaceDetails] should equal(rawlsResponse)
+        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
       }
     }
 
     "When cloning a published workspace, the clone should not be published" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name",
+      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name",
         attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false), AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList))
 
       val published = AttributeName("library", "published") -> AttributeBoolean(true)
       val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(clonePath).withMethod("POST").withBody(new JsonBody(rawlsRequest.toJson.toString)))
         status should equal(Created)
-        responseAs[WorkspaceDetails] should equal(rawlsResponse)
+        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
       }
     }
 
@@ -1025,76 +1033,49 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "WorkspaceService importPFB Tests" - {
 
       "should 400 if import service indicates a bad request" in {
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(400)
-            .withBody("Bad request as reported by import service"))
-
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(BadRequest)
-            body.asString should include ("Bad request as reported by import service")
+            status should equal(BadRequest)
+            responseAs[String] should include ("Bad request as reported by import service")
           }
       }
 
       "should 403 if import service access is forbidden" in {
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Forbidden.intValue)
-            .withBody("Missing Authorization: Bearer token in header"))
-
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
-            body.asString should include ("Missing Authorization: Bearer token in header")
+            responseAs[String] should include ("Missing Authorization: Bearer token in header")
           }
       }
 
       "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-        importServiceServer
-          .when(request().withMethod("POST").withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(UnavailableForLegalReasons.intValue)
-            .withBody("import service message"))
-
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
+        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://its.lawsuit.time.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(UnavailableForLegalReasons)
-          body.asString should include ("import service message")
+            status should equal(UnavailableForLegalReasons)
+            responseAs[String] should include ("import service message")
         }
       }
 
       "should 202 (Accepted) if everything validated and import request was accepted" in {
 
-        val jobId = UUID.randomUUID().toString
         val pfbPath = "https://good.avro"
 
-        val importSvcResponsePayload = ImportServiceResponse(jobId = jobId, status = "Pending", message = None)
-
         val orchExpectedPayload = PfbImportResponse(url = pfbPath,
-                                                   jobId = jobId,
+                                                   jobId = "MockImportServiceDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
-
-        importServiceServer
-          .when(request()
-            .withMethod("POST")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(Created.intValue)
-            .withBody(importSvcResponsePayload.toJson.compactPrint)
-            .withHeader("Content-Type", "application/json"))
 
         (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
-            body.asString.parseJson should be (orchExpectedPayload.toJson)
+            val jobResponse = responseAs[PfbImportResponse]
+            jobResponse.url should be (orchExpectedPayload.url)
+            jobResponse.workspace should be (orchExpectedPayload.workspace)
+            jobResponse.jobId  should not be empty
           }
       }
 
@@ -1124,7 +1105,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 
@@ -1168,7 +1149,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 
@@ -1201,7 +1182,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(OK)
-          body.asString.parseJson should be (responsePayload) // to address string-formatting issues
+          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
         }
       }
 

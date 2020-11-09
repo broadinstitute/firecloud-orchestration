@@ -1,14 +1,17 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.{Http, HttpExt}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import akka.stream.{ActorMaterializer, Materializer}
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.TestRequestBuilding
-import org.broadinstitute.dsde.firecloud.webservice.NihApiService
+import org.broadinstitute.dsde.firecloud.webservice.{ManagedGroupApiService, NihApiService, RegisterApiService, UserApiService}
 import org.scalatest.{FlatSpec, Matchers}
-import spray.httpx.SprayJsonSupport
-import spray.routing.HttpService
-import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 
@@ -17,7 +20,7 @@ import scala.concurrent.duration._
   */
 
 // common trait to be inherited by API service tests
-trait ApiServiceSpec extends FlatSpec with Matchers with HttpService with ScalatestRouteTest with SprayJsonSupport with TestRequestBuilding {
+trait ApiServiceSpec extends FlatSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with TestRequestBuilding {
   // increase the timeout for ScalatestRouteTest from the default of 1 second, otherwise
   // intermittent failures occur on requests not completing in time
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
@@ -36,11 +39,12 @@ trait ApiServiceSpec extends FlatSpec with Matchers with HttpService with Scalat
     val thurloeDao: MockThurloeDAO
     val logitDao: LogitDAO
     val shareLogDao: MockShareLogDAO
+    val importServiceDao: ImportServiceDAO
 
     def actorRefFactory = system
 
     val nihServiceConstructor = NihService.constructor(
-      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, logitDao, shareLogDao)
+      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, logitDao, shareLogDao, importServiceDao)
     )_
 
   }

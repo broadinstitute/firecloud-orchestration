@@ -1,28 +1,28 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData._
-import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLServer
+import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
-import spray.http.HttpMethods
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
 
+import scala.concurrent.{Await, ExecutionContext}
 
-class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
+
+class MethodsApiServiceACLSpec extends BaseServiceSpec with MethodsApiService with SprayJsonSupport {
 
   def actorRefFactory = system
 
-  override def beforeAll(): Unit = {
-    MockAgoraACLServer.startACLServer()
-  }
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  override def afterAll(): Unit = {
-    MockAgoraACLServer.stopACLServer()
-  }
+  val agoraPermissionService: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
 
   val localConfigPermissionsPath = localConfigsPath + "/ns/n/1/permissions"
   val localMethodPermissionsPath = localMethodsPath + "/ns/n/1/permissions"
@@ -91,7 +91,8 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // configuration endpoints return the mock data in the proper order
     "when retrieving ACLs from configs" - {
       "the entire list is successfully translated" in {
-        Get("/" + localConfigsPath + MockAgoraACLServer.standardPermsPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Get("/" + localConfigsPath + MockAgoraACLData.standardPermsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodsApiServiceRoutes) ~> check {
+          import scala.concurrent.duration._
           status should equal(OK)
           var perms = responseAs[List[FireCloudPermission]]
           perms shouldBe standardFC
@@ -101,7 +102,7 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // methods endpoints return the mock data in reverse order - this way we can differentiate methods vs. configs
     "when retrieving ACLs from methods" - {
       "the entire (reversed) list is successfully translated" in {
-        Get("/" + localMethodsPath + MockAgoraACLServer.standardPermsPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Get("/" + localMethodsPath + MockAgoraACLData.standardPermsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
           var perms = responseAs[List[FireCloudPermission]]
           perms shouldBe standardFC.reverse
@@ -112,14 +113,14 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // AGORA RETURNS FAULTY DATA
     "when retrieving bad Agora data from configs" - {
       "InternalServerError is returned" in {
-        Get("/" + localConfigsPath + MockAgoraACLServer.withEdgeCasesPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Get("/" + localConfigsPath + MockAgoraACLData.withEdgeCasesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }
     }
     "when retrieving bad Agora data from methods" - {
       "InternalServerError is returned" in {
-        Get("/" + localMethodsPath + MockAgoraACLServer.withEdgeCasesPath) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Get("/" + localMethodsPath + MockAgoraACLData.withEdgeCasesPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }
@@ -129,7 +130,7 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // configs endpoint returns good data from Agora on post
     "when posting good data to configs, expecting a good response" - {
       "a good response is returned" in {
-        Post("/" + localConfigsPath + MockAgoraACLServer.standardPermsPath, standardFC) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Post("/" + localConfigsPath + MockAgoraACLData.standardPermsPath, standardFC) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(OK)
           var perms = responseAs[List[FireCloudPermission]]
           perms shouldBe standardFC
@@ -139,7 +140,7 @@ class MethodsApiServiceACLSpec extends ServiceSpec with MethodsApiService {
     // methods endpoint returns faulty data from Agora on post
     "when posting good data to methods, expecting an invalid response" - {
       "an invalid response is returned and we throw an error" in {
-        Post("/" + localMethodsPath + MockAgoraACLServer.standardPermsPath, standardFC) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Post("/" + localMethodsPath + MockAgoraACLData.standardPermsPath, standardFC) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodsApiServiceRoutes) ~> check {
           status should equal(InternalServerError)
         }
       }
