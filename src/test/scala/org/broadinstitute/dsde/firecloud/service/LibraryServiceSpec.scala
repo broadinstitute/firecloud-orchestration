@@ -19,7 +19,7 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResourc
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.joda.time.DateTime
 
-import scala.collection.JavaConversions._
+import collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Try
@@ -582,7 +582,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getCausingExceptions.last.getMessage.contains("library:datasetName"))
+        assert(ex.getCausingExceptions.asScala.last.getMessage.contains("library:datasetName"))
       }
       "fails with two missing keys" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
@@ -601,7 +601,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getCausingExceptions.last.getMessage.contains("library:numSubjects"))
+        assert(ex.getCausingExceptions.asScala.last.getMessage.contains("library:numSubjects"))
       }
       "fails on a number out of bounds" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
@@ -611,7 +611,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getCausingExceptions.last.getMessage.contains("library:numSubjects"))
+        assert(ex.getCausingExceptions.asScala.last.getMessage.contains("library:numSubjects"))
       }
       "fails on a value outside its enum" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
@@ -637,7 +637,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           validateJsonSchema(sampleData, testSchema)
         }
         assertResult(1){ex.getViolationCount}
-        assert(ex.getCausingExceptions.last.getMessage.contains("library:institute"))
+        assert(ex.getCausingExceptions.asScala.last.getMessage.contains("library:institute"))
       }
       "fails with missing ORSP key" in {
         val testSchema = FileUtils.readAllTextFromResource("library/attribute-definitions.json")

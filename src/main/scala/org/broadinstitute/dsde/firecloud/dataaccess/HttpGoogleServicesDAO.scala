@@ -35,8 +35,7 @@ import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.{DefaultJsonProtocol, _}
 
-import scala.collection.JavaConversions._
-import scala.concurrent.ExecutionContext.Implicits.global
+import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -86,7 +85,7 @@ object HttpGoogleServicesDAO {
   val spreadsheetScopes = Seq(SheetsScopes.SPREADSHEETS)
 
   private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
-    baseCreds.createScoped(scopes)
+    baseCreds.createScoped(scopes.asJava)
   }
 
   private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials, scopes: Seq[String]): ServiceAccountCredentials = {
@@ -129,11 +128,11 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
   }
 
   def getCloudBillingManager(credential: ServiceAccountCredentials): Cloudbilling = {
-    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(authScopes ++ billingScope))).setApplicationName(appName).build()
+    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped((authScopes ++ billingScope).asJava))).setApplicationName(appName).build()
   }
 
   def getDirectoryManager(credential: GoogleCredentials): Directory = {
-    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(directoryScope))).setApplicationName(appName).build()
+    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(directoryScope.asJava))).setApplicationName(appName).build()
   }
 
   private lazy val pubSub = {
@@ -172,7 +171,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
       case Success(obs) =>
         Option(obs.getItems) match {
           case None => List.empty[String]
-          case Some(items) => items.toList.map { ob =>
+          case Some(items) => items.asScala.toList.map { ob =>
             ob.getName
           }
         }
@@ -521,7 +520,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     logger.debug(s"publishing to google pubsub topic $fullyQualifiedTopic, messages [${messages.mkString(", ")}]")
     Future.traverse(messages.grouped(1000)) { messageBatch =>
       val pubsubMessages = messageBatch.map(text => new PubsubMessage().encodeData(text.getBytes("UTF-8")))
-      val pubsubRequest = new PublishRequest().setMessages(pubsubMessages)
+      val pubsubRequest = new PublishRequest().setMessages(pubsubMessages.asJava)
       Future(executeGoogleRequest(pubSub.projects().topics().publish(fullyQualifiedTopic, pubsubRequest)))
     }.map(_ => ())
   }

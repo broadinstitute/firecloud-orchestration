@@ -12,7 +12,6 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
 
 import scala.concurrent.ExecutionContext
-//import spray.httpx.SprayJsonSupport
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 object PassthroughDirectivesSpec {

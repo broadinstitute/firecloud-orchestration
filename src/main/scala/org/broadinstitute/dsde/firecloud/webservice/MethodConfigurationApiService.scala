@@ -11,8 +11,6 @@ import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfo
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 object MethodConfigurationApiService {
   val remoteTemplatePath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/template"
   val remoteTemplateURL = FireCloudConfig.Rawls.baseUrl + remoteTemplatePath

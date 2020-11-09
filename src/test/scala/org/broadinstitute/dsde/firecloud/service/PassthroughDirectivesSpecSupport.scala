@@ -10,14 +10,14 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import spray.json.DefaultJsonProtocol._
 
-import scala.collection.JavaConversions._
+import collection.JavaConverters._
 
 class EchoCallback extends ExpectationCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
     // translate the mockserver request to a spray Uri
-    val sprayparams = httpRequest.getQueryStringParameters.toSeq.map{p =>
+    val sprayparams = httpRequest.getQueryStringParameters.asScala.map{p =>
       assert(p.getValues.size() <= 1)
-      p.getName.getValue -> p.getValues.head.getValue}.toMap
+      p.getName.getValue -> p.getValues.asScala.head.getValue}.toMap
 
     val sprayuri = Uri(echoUrl)
       .withPath(Path(httpRequest.getPath.getValue))
