@@ -107,15 +107,13 @@ function docker_cmd()
         docker build -t $DOCKERHUB_REGISTRY:${HASH_TAG} .
 
         echo "scanning docker image..."
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME"/Library/Caches:/root/.cache/ aquasec/trivy --exit-code 1 --severity CRITICAL "$DOCKERHUB_REGISTRY":"${HASH_TAG}"
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME"/Library/Caches:/root/.cache/ aquasec/trivy --severity CRITICAL "$DOCKERHUB_REGISTRY":"${HASH_TAG}"
 
 
         echo "building ${DOCKERHUB_TESTS_REGISTRY}:${HASH_TAG}..."
         cd automation
         docker build -f Dockerfile-tests -t $DOCKERHUB_TESTS_REGISTRY:${HASH_TAG} .
 
-        echo "scanning docker image..."
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME"/Library/Caches:/root/.cache/ aquasec/trivy --exit-code 1 --severity CRITICAL "$DOCKERHUB_TESTS_REGISTRY":"${HASH_TAG}"
         cd ..
 
         if [ $DOCKER_CMD="push" ]; then
