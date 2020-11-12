@@ -62,9 +62,10 @@ object MockWorkspaceServer {
     expression = Option(randomAlpha()),
     useCallCache = Option(randomBoolean()),
     deleteIntermediateOutputFiles = Option(randomBoolean()),
+    useReferenceDisks = Option(randomBoolean()),
     workflowFailureMode = Option(randomElement(List("ContinueWhilePossible", "NoNewCalls")))
-  ) 
-  
+  )
+
   val mockInvalidSubmission = SubmissionRequest(
     methodConfigurationNamespace = Option.empty,
     methodConfigurationName = Option.empty,

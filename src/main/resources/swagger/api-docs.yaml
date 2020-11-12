@@ -8553,6 +8553,9 @@ components:
           type: boolean
           description: Whether or not to delete intermediate output files when the
             workflow completes. See Cromwell docs for more information.
+        useReferenceDisks:
+          type: boolean
+          description: Whether or not to use pre-built disks for common genome references
         workflowFailureMode:
           type: string
           description: What happens after a task fails. Choose from ContinueWhilePossible
