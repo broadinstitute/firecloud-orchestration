@@ -74,6 +74,7 @@ object MockWorkspaceServer {
     expression = Option.empty,
     useCallCache = Option.empty,
     deleteIntermediateOutputFiles = Option.empty,
+    useReferenceDisks = Option.empty,
     workflowFailureMode = Option.empty
   )
 
