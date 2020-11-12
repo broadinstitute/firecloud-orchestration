@@ -121,6 +121,8 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
           }
         case f => {
           FCErrorReport(response).map { errorReport =>
+            //we never consume the response body in this case, so we must discard the bytes here
+            response.discardEntityBytes()
             throw new FireCloudExceptionWithErrorReport(errorReport)
           }
         }

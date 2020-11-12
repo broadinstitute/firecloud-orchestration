@@ -230,7 +230,10 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     userAuthedRequest(metadataRequest)(AccessToken(authToken)).map { response =>
       response.status match {
         case OK => xmlApiResponseToObject(response, bucketName, objectKey)
-        case _ => throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.status.reason))
+        case _ => {
+          response.discardEntityBytes()
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.status.reason))
+        }
       }
     }
   }
@@ -255,6 +258,9 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val headerMap: Map[String, String] = response.headers.map { h =>
       h.lowercaseName -> h.value
     }.toMap
+
+    //we're done with the response and we don't care about the body, so we should discard the bytes now
+    response.discardEntityBytes()
 
     // exists in xml api, same value as json api
     val generation: String = headerMap("x-goog-generation")
