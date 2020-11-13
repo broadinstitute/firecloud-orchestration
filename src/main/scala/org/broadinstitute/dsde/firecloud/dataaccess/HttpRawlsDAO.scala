@@ -17,7 +17,7 @@ import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model.{EntityUpdateDefinition, _}
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.utils.{JsonUtils, RestJsonClient}
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations._
 import org.broadinstitute.dsde.rawls.model.StatusJsonSupport._
@@ -188,61 +188,22 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
     }
   }
 
-  private def upsertOrUpdateEntities(urlSuffix: String, workspaceNamespace: String, workspaceName: String, entityType: String, operations: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = {
-    val reqUrl = FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/" + urlSuffix)
-
-    // batch operations into appropriately-sized chunks
-    // total payload size limit (kb)
-    // TODO: this should correlate to the actual limit
-    val totalSizeLimit = 256 * 1024
-
-    val chunkSize = 5
+  private def aggregateResponses(requests: Seq[HttpRequest])(implicit userToken: UserInfo): Future[HttpResponse] = {
 
     case class ResponseStub(statusCode: StatusCode, bodyString: String)
 
-    // take ${chunkSize} entities from the operations list, until their json-string representation is too large
-    // TODO: corner case where the next ${chunkSize} in and of itself is too large
-    // TODO: the toJson.compactPrint.getBytes in a tight loop feels expensive
-    //
-    def takeUntil(accum: Seq[Seq[EntityUpdateDefinition]], remaining: Seq[EntityUpdateDefinition]): Seq[Seq[EntityUpdateDefinition]] = {
-      val nextOps = remaining.take(chunkSize)
-      if (nextOps.isEmpty) {
-        accum // we're done, just return our accumulator
-      } else {
-        val currentBatch = accum.last // the seq we're building up
-        val plusOne = (currentBatch ++ nextOps)
-        val byteSize = plusOne.toJson.compactPrint.getBytes.length
-
-        logger.warn(s"upsertOrUpdateEntities analyzing size. Batch of ${plusOne.length} is $byteSize bytes")
-
-        if (byteSize < totalSizeLimit) {
-          logger.warn(s"upsertOrUpdateEntities: $byteSize is under $totalSizeLimit, continuing")
-          // we can append this operation!
-          takeUntil(accum.dropRight(1) :+ plusOne, remaining.drop(nextOps.size))
-        } else {
-          logger.warn(s"upsertOrUpdateEntities: $byteSize is over $totalSizeLimit, starting a new batch")
-          // appending this operation makes the current seq too large. Don't add it to the current seq; start a new one
-          takeUntil(accum :+ nextOps, remaining.tail)
-        }
-      }
-    }
-
-    val batches: Seq[Seq[EntityUpdateDefinition]] = takeUntil(Seq(Seq.empty[EntityUpdateDefinition]), operations)
-
-    logger.warn(s"upsertOrUpdateEntities using batches of: (${batches.map(_.length).mkString(",")})")
-
-
     // send all of the batches. This needs to be done serially to ensure that prior entities are committed before
     // any entities that depend on them.
-    val responsesFuture: Future[List[ResponseStub]] = batches.foldLeft(Future(List.empty[ResponseStub])) { (prevFuture, next) =>
+    // If we are certain these are all the same entityType, they could be sent in parallel. But, sending in parallel
+    // could cause contention, so ...
+    val responsesFuture: Future[List[ResponseStub]] = requests.foldLeft(Future(List.empty[ResponseStub])) { (prevFuture, next) =>
       for {
         prevResponses <- prevFuture
-        request = Post(reqUrl, HttpEntity(MediaTypes.`application/json`,next.toJson.compactPrint))
-        _ = logger.warn(s"sending request with a batch of ${next.size}")
-        nextResponse <- userAuthedRequest(request)
+        nextResponse <- userAuthedRequest(next)
         strictResponse <- nextResponse.toStrict(Duration.create(2, "seconds"))
       } yield {
-        // get entity as string
+        // get entity as String. We use Strings here because we're not sure what shape we'll get back; it could
+        // be different for successes vs. errors, for instance
         val respString = strictResponse.entity match {
           case HttpEntity.Strict(_, data) =>
             val body = data.utf8String
@@ -283,12 +244,19 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
           }
         }
 
-        logger.warn(s"collected ${responseErrors.length} response errors: $responseErrors")
+        // now aggregate inner causes to outer causes
+        val innerOuter: List[ErrorReport] = responseErrors
+          .groupBy(_.message)
+          .map {
+            case (message, errs) => ErrorReport(message, errs.flatMap(_.causes.map(c => ErrorReport(c.message))))
+          }.toList
 
-        val aggregateErrors = if (responseErrors.isEmpty) {
+        logger.warn(s"collected ${innerOuter.length} response errors: $innerOuter")
+
+        val aggregateErrors = if (innerOuter.isEmpty) {
           List(ErrorReport("Error writing entities. No other information is available."))
         } else {
-          responseErrors
+          innerOuter
         }
 
         logger.warn(s"using aggregateErrors: $aggregateErrors")
@@ -299,11 +267,40 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
     }
 
     aggregateResponse
+  }
 
-//    val request = Post(FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/" + urlSuffix),
-//      HttpEntity(MediaTypes.`application/json`,operations.toJson.toString))
-//
-//    userAuthedRequest(request)
+
+  private def upsertOrUpdateEntities(urlSuffix: String, workspaceNamespace: String, workspaceName: String, entityType: String, operations: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = {
+    // calculate the target URL, based on if this an upsert or an update
+    val reqUrl = FireCloudDirectiveUtils.encodeUri(Rawls.entityPathFromWorkspace(workspaceNamespace, workspaceName) + "/" + urlSuffix)
+
+    // total payload size limit (bytes)
+    // TODO: this should correlate to the actual limit set in Rawls
+    val totalSizeLimit = 256 * 1024 // 256k
+
+    // convert the EntityUpdateDefinition to json
+    val opJson: JsArray = operations.toJson match {
+      case a:JsArray => a
+      case _ =>
+        // this should never happen
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "inbound EntityUpdateDefinitions did not serialize to JsArray"))
+    }
+
+    // divide the json into batches under the target payload size
+    val batches: Seq[JsArray] = new JsonUtils().groupByByteSize(opJson, totalSizeLimit)
+    val requests: Seq[HttpRequest] = batches.map { batch =>
+      Post(reqUrl, HttpEntity(MediaTypes.`application/json`,batch.compactPrint))
+    }
+
+    logger.warn(s"upsertOrUpdateEntities using batches of: (${batches.map(_.elements.length).mkString(",")})")
+
+    if (requests.length == 1) {
+      // if there's only one batch, take the simple path to send the request and return a response
+      userAuthedRequest(requests.head)
+    } else {
+      // we have multiple batches, send them all and return an aggregate response
+      aggregateResponses(requests)
+    }
   }
 
   override def batchUpsertEntities(workspaceNamespace: String, workspaceName: String, entityType: String, upserts: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = {
