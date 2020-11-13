@@ -366,6 +366,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
                   // object is too large to proxy; try to make a signed url.
                   // now make a final request to see if our service account has access, so it can sign a URL
                   objectAccessCheck(bucketName, objectKey, AccessToken(getRawlsServiceAccountAccessToken)) map { serviceAccountResponse =>
+                    serviceAccountResponse.discardEntityBytes()
                     serviceAccountResponse.status match {
                       case OK =>
                         // the service account can read the object too. We are safe to sign a url.

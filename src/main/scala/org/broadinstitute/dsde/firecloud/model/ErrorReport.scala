@@ -30,14 +30,6 @@ object ErrorReportExtensions {
           val fallbackMessage = Try(response.toString()).toOption.getOrElse("Unexpected error")
           Future.successful(new ErrorReport(ers.source, fallbackMessage, Option(response.status), Seq.empty, Seq.empty, None))
       }
-//
-//      Unmarshal(response).to[ErrorReport].map { re =>
-//        new ErrorReport(ers.source, re.message, Option(response.status), Seq(re), Seq.empty, None)
-//      } recoverWith {
-//        case _ => Unmarshal(response).to[String].map { message =>
-//          new ErrorReport(ers.source, message, Option(response.status), Seq.empty, Seq.empty, None)
-//        }
-//      }
     }
   }
 }

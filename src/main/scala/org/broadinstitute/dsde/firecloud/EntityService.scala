@@ -211,6 +211,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
     response map { response =>
       response.status match {
         case NoContent =>
+          response.discardEntityBytes()
           logger.debug("OK response")
           RequestComplete(OK, entityType)
         case _ =>

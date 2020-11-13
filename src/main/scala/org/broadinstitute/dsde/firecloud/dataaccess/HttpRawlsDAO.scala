@@ -39,6 +39,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsAdminUrl))(userInfo) flatMap { response =>
+      response.discardEntityBytes()
       response.status match {
         case OK => Future.successful(true)
         case NotFound => Future.successful(false)
@@ -53,6 +54,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
     userAuthedRequest(Get(rawlsCuratorUrl))(userInfo) flatMap { response =>
+      response.discardEntityBytes()
       response.status match {
         case OK => Future.successful(true)
         case NotFound => Future.successful(false)
@@ -162,6 +164,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
     val url = editBillingMembershipURL(projectId, role, email)
 
     userAuthedRequest(Put(url), true) flatMap { resp =>
+      resp.discardEntityBytes()
       if (resp.status.isSuccess) {
         Future.successful(true)
       } else {
@@ -176,6 +179,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
     val url = editBillingMembershipURL(projectId, role, email)
 
     userAuthedRequest(Delete(url), true) flatMap { resp =>
+      resp.discardEntityBytes()
       if (resp.status.isSuccess) {
         Future.successful(true)
       } else {
