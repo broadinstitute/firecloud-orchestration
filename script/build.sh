@@ -109,7 +109,6 @@ function docker_cmd()
         echo "scanning docker image..."
         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME"/Library/Caches:/root/.cache/ aquasec/trivy --severity CRITICAL "$DOCKERHUB_REGISTRY":"${HASH_TAG}"
 
-
         echo "building ${DOCKERHUB_TESTS_REGISTRY}:${HASH_TAG}..."
         cd automation
         docker build -f Dockerfile-tests -t $DOCKERHUB_TESTS_REGISTRY:${HASH_TAG} .
