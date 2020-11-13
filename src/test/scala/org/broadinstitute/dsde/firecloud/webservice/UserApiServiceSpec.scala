@@ -24,7 +24,6 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
-  val trialServiceConstructor:() => TrialService = TrialService.constructor(app)
   val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
