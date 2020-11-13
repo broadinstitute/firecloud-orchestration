@@ -98,6 +98,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
         }
       }
       else {
+        response.discardEntityBytes()
         logger.info(s"body of reindex error response: ${response.entity}")
         throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + response.entity))
       }

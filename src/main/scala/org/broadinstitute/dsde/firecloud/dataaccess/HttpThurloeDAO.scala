@@ -31,8 +31,14 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
       req flatMap { response =>
         response.status match {
           case StatusCodes.OK => Unmarshal(response).to[ProfileWrapper].map(Option(_))
-          case StatusCodes.NotFound => Future.successful(None)
-          case _ => throw new FireCloudException("Unable to get user KVPs from profile service")
+          case StatusCodes.NotFound => {
+            response.discardEntityBytes()
+            Future.successful(None)
+          }
+          case _ => {
+            response.discardEntityBytes()
+            throw new FireCloudException("Unable to get user KVPs from profile service")
+          }
         }
       }
     }
@@ -70,6 +76,7 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     val thurloeKeyValues = ThurloeKeyValues(Option(forUserId), Option(keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value)) }.toSeq))
     wrapExceptions {
       userAuthedRequest(Post(UserApiService.remoteSetKeyURL, thurloeKeyValues), compressed = false, useFireCloudHeader = true, label = Some("HttpThurloeDAO.saveKeyValues"))(callerToken) map { response =>
+        response.discardEntityBytes()
         if(response.status.isSuccess) Try(())
         else Try(throw new FireCloudException(s"Unable to update user profile"))
       }

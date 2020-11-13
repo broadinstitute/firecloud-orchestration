@@ -356,6 +356,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
                   val extReq = Get(gcsApiUrl)
 
                   userAuthedRequest(extReq)(userAuthToken).map { proxyResponse =>
+                    proxyResponse.discardEntityBytes()
                     proxyResponse.header[`Content-Type`] match {
                       case Some(ct) =>
                         RequestCompleteWithHeaders(proxyResponse, `Content-Type`(ct.contentType))

@@ -7,6 +7,7 @@ import java.util.zip.{ZipEntry, ZipFile}
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
@@ -29,7 +30,7 @@ import scala.util.{Failure, Success, Try}
 
 object EntityService {
 
-  def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
+  def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext, materializer: Materializer) =
     new EntityService(app.rawlsDAO, app.importServiceDAO, modelSchema)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
@@ -98,7 +99,7 @@ object EntityService {
 
 }
 
-class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
+class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext, val materializer: Materializer)
   extends TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
