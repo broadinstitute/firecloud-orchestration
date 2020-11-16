@@ -2,13 +2,15 @@ import sbt._
 
 object Dependencies {
   val akkaV = "2.5.32"
-  val akkaHttpV = "10.1.12"
+  val akkaHttpV = "10.2.1"
   val jacksonV = "2.10.0"
   val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
   val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.12")
+  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12");
+  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12");
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -31,7 +33,8 @@ object Dependencies {
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-18b1c01e0")
       exclude("com.typesafe.scala-logging", "scala-logging_2.12")
       exclude("com.typesafe.akka", "akka-stream_2.12")
-      exclude("com.google.code.findbugs", "jsr305"),
+      exclude("com.google.code.findbugs", "jsr305")
+      excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,

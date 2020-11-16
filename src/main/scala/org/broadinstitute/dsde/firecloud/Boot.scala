@@ -99,7 +99,7 @@ object Boot extends App with LazyLogging {
     )
 
     for {
-      _ <- Http().bindAndHandle(service.route, "0.0.0.0", 8080) recover {
+      _ <- Http().newServerAt( "0.0.0.0", 8080).bind(service.route) recover {
         case t: Throwable =>
           logger.error("FATAL - failure starting http server", t)
           throw t

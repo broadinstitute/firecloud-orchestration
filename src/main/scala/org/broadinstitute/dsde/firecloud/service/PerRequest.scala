@@ -11,12 +11,12 @@ object PerRequest {
   implicit def requestCompleteMarshaller(implicit executionContext: ExecutionContext): ToResponseMarshaller[PerRequestMessage] = Marshaller {
     _: ExecutionContext => {
       case requestComplete@ RequestComplete(errorReport: ErrorReport) =>
-        requestComplete.marshaller(requestComplete.response).map(_.map(_.map(_.copy(status = errorReport.statusCode.getOrElse(StatusCodes.InternalServerError)))))
+        requestComplete.marshaller(requestComplete.response).map(_.map(_.map(_.withStatus(errorReport.statusCode.getOrElse(StatusCodes.InternalServerError)))))
       case requestComplete: RequestComplete[_] =>
         requestComplete.marshaller(requestComplete.response)
 
       case requestComplete@ RequestCompleteWithHeaders(errorReport: ErrorReport, _) =>
-        requestComplete.marshaller(requestComplete.response).map(_.map(_.map(_.mapHeaders(_ ++ requestComplete.headers).copy(status = errorReport.statusCode.getOrElse(StatusCodes.InternalServerError)))))
+        requestComplete.marshaller(requestComplete.response).map(_.map(_.map(_.mapHeaders(_ ++ requestComplete.headers).withStatus(errorReport.statusCode.getOrElse(StatusCodes.InternalServerError)))))
       case requestComplete: RequestCompleteWithHeaders[_] =>
         requestComplete.marshaller(requestComplete.response).map(_.map(_.map(_.mapHeaders(_ ++ requestComplete.headers))))
     }
