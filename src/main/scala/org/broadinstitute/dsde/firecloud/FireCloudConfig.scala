@@ -140,8 +140,8 @@ object FireCloudConfig {
     val whitelists: Set[NihWhitelist] = {
       val whitelistConfigs = nih.getConfig("whitelists")
 
-      whitelistConfigs.root.asScala.map { case (name, configObject) =>
-        val config = configObject.asInstanceOf[ConfigObject].toConfig
+      whitelistConfigs.root.asScala.collect { case (name, configObject:ConfigObject) =>
+        val config = configObject.toConfig
         val rawlsGroup = config.getString("rawlsGroup")
         val fileName = config.getString("fileName")
 
