@@ -5,8 +5,6 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.Coders._
-//import akka.http.scaladsl.coding.Gzip
-//import akka.http.scaladsl.coding._
 import akka.http.scaladsl.model.headers.{HttpEncodings, `Accept-Encoding`}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, ResponseEntity}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
