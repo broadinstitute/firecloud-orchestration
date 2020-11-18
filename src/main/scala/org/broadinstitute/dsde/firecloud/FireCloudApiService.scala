@@ -11,6 +11,7 @@ import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
 import akka.http.scaladsl.server.{Directive, Directive0, ExceptionHandler, RouteResult}
 import akka.stream.Materializer
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -18,10 +19,10 @@ import org.broadinstitute.dsde.firecloud.webservice._
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.{ExecutionContext}
+import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
 
-object FireCloudApiService {
+object FireCloudApiService extends LazyLogging {
 
   val exceptionHandler = {
 
@@ -33,6 +34,12 @@ object FireCloudApiService {
       case withErrorReport: FireCloudExceptionWithErrorReport =>
         complete(withErrorReport.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError) -> withErrorReport.errorReport)
       case e: Throwable =>
+        // so we don't log the error twice when debug is enabled
+        if (logger.underlying.isDebugEnabled) {
+          logger.debug(e.getMessage, e)
+        } else {
+          logger.error(e.getMessage)
+        }
         complete(StatusCodes.InternalServerError -> ErrorReport(e))
     }
   }
