@@ -32,7 +32,6 @@ jobs:
         FIRE_CLOUD_ID: 123
       run: sbt jacoco
 
-    - name: Coveralls
-      uses: coverallsapp/github-action@v1.1.2
+    - uses: codecov/codecov-action@v1
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./target/scala-2.12/jacoco/report/jacoco.xml
