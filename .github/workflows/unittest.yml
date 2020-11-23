@@ -2,9 +2,8 @@ name: Scala CI
 
 on:
   push:
-    branches:
-      paths-ignore:
-        - 'README.md'
+    paths-ignore:
+      - 'README.md'
   pull_request:
     branches: [ develop ]
 
