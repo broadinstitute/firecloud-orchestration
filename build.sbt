@@ -8,8 +8,6 @@ lazy val root = project.in(file("."))
 
 enablePlugins(RevolverPlugin)
 
-//Revolver.settings.settings
-
 Revolver.enableDebugging(port = 5051, suspend = false)
 
 // When JAVA_OPTS are specified in the environment, they are usually meant for the application
