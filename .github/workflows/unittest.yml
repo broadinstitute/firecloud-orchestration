@@ -1,0 +1,38 @@
+name: Scala CI
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    # coursier cache action caches both coursier and sbt caches
+    - name: coursier-cache-action
+      uses: coursier/cache-action@v5
+
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    - name: Run tests
+      env:
+        AGORA_URL_ROOT:  http://localhost:8989
+        RAWLS_URL_ROOT: http://localhost:8990
+        THURLOE_URL_ROOT: http://localhost:8991
+        FIRE_CLOUD_ID: 123
+      run: sbt jacoco
+
+    - uses: codecov/codecov-action@v1
+      with:
+        file: ./target/scala-2.12/jacoco/report/jacoco.xml
