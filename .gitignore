@@ -5,6 +5,7 @@ config/
 
 # sbt specific
 .sbtopts
+.bsp/
 .cache/
 .history/
 .lib/

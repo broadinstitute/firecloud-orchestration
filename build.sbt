@@ -1,12 +1,14 @@
 import Settings._
 import Testing._
-import spray.revolver.RevolverPlugin.Revolver
+import spray.revolver.RevolverPlugin
 
 lazy val root = project.in(file("."))
   .settings(rootSettings:_*)
   .withTestSettings
 
-Revolver.settings.settings
+enablePlugins(RevolverPlugin)
+
+//Revolver.settings.settings
 
 Revolver.enableDebugging(port = 5051, suspend = false)
 
@@ -14,4 +16,4 @@ Revolver.enableDebugging(port = 5051, suspend = false)
 // itself rather than sbt, but they are not passed by default to the application, which is a forked
 // process. This passes them through to the "re-start" command, which is probably what a developer
 // would normally expect.
-javaOptions in Revolver.reStart ++= sys.env("JAVA_OPTS").split(" ").toSeq
+javaOptions in reStart ++= sys.env("JAVA_OPTS").split(" ").toSeq
