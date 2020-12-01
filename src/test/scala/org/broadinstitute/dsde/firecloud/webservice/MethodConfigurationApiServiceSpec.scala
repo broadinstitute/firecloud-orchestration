@@ -1,18 +1,18 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{CopyConfigurationIngest, PublishConfigurationIngest}
+import org.broadinstitute.dsde.firecloud.service.ServiceSpec
 import org.broadinstitute.dsde.rawls.model.{WorkspaceDetails, WorkspaceVersions}
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import org.broadinstitute.dsde.firecloud.webservice.MethodConfigurationApiService
 
 import scala.concurrent.ExecutionContext
 

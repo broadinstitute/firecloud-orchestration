@@ -1,8 +1,8 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import org.mockserver.integration.ClientAndServer
 import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST, PUT}
-import org.broadinstitute.dsde.firecloud.webservice.BillingApiService
+import org.broadinstitute.dsde.firecloud.service.ServiceSpec
+import org.mockserver.integration.ClientAndServer
 
 import scala.concurrent.ExecutionContext
 

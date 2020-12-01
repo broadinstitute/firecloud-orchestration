@@ -1,11 +1,11 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.{HttpMethod, StatusCode}
-import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import org.broadinstitute.dsde.firecloud.webservice.NotificationsApiService
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.StatusCodes.{MethodNotAllowed, NotFound, OK}
+import akka.http.scaladsl.model.{HttpMethod, StatusCode}
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
+import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 
 import scala.concurrent.ExecutionContext
 

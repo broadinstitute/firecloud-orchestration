@@ -1,7 +1,10 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods}
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
@@ -10,25 +13,20 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, Duos
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurposeRequest
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.webservice.LibraryApiService
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, LibraryService, OntologyService}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.{AttributeFormat, AttributeName, AttributeString, PlainArrayAttributeListSerializer}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpRequest._
+import org.mockserver.model.HttpRequest.request
 import org.scalatest.BeforeAndAfterEach
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.server.Directives._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.json.lenses.JsonLenses._
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import akka.http.scaladsl.unmarshalling.Unmarshal
 
 import scala.collection.JavaConverters._
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
 
 
 class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {

@@ -1,13 +1,13 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
-import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import org.broadinstitute.dsde.firecloud.webservice.SubmissionApiService
+import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
+import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 
 import scala.concurrent.ExecutionContext
 

@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurati
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.{LibraryService, WorkspaceApiServiceSpec}
+import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.rawls.model._
@@ -18,6 +18,7 @@ import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRol
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
+import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiServiceSpec
 import org.broadinstitute.dsde.rawls.model
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus

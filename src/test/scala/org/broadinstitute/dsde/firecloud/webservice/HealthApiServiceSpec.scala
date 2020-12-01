@@ -1,10 +1,8 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import org.broadinstitute.dsde.firecloud.webservice.HealthApiService
+import org.broadinstitute.dsde.firecloud.service.ServiceSpec
 
 import scala.concurrent.ExecutionContext
 

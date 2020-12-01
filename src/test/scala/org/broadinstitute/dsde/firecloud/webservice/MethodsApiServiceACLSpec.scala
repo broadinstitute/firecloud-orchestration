@@ -1,19 +1,19 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData._
-import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
-import spray.json._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData
+import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData._
+import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.webservice.MethodsApiService
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseServiceSpec}
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.ExecutionContext
 
 
 class MethodsApiServiceACLSpec extends BaseServiceSpec with MethodsApiService with SprayJsonSupport {
@@ -92,7 +92,6 @@ class MethodsApiServiceACLSpec extends BaseServiceSpec with MethodsApiService wi
     "when retrieving ACLs from configs" - {
       "the entire list is successfully translated" in {
         Get("/" + localConfigsPath + MockAgoraACLData.standardPermsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodsApiServiceRoutes) ~> check {
-          import scala.concurrent.duration._
           status should equal(OK)
           var perms = responseAs[List[FireCloudPermission]]
           perms shouldBe standardFC
