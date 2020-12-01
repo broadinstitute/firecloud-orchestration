@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.mockserver.integration.ClientAndServer
 import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST, PUT}
+import org.broadinstitute.dsde.firecloud.webservice.BillingApiService
 
 import scala.concurrent.ExecutionContext
 
@@ -9,13 +10,13 @@ import scala.concurrent.ExecutionContext
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
   * InternalServerError) and those that aren't passed through at the first place (i.e. not 'handled')
   */
-final class BillingServiceNegativeSpec extends ServiceSpec with BillingService {
+final class BillingApiServiceNegativeSpec extends ServiceSpec with BillingApiService {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   var workspaceServer: ClientAndServer = _
 
-  "BillingService" - {
+  "BillingApiService" - {
     "non-POST requests hitting /api/billing are not passed through" in {
       allHttpMethodsExcept(POST) foreach { method =>
         checkIfPassedThrough(billingServiceRoutes, method, "/billing", toBeHandled = false)

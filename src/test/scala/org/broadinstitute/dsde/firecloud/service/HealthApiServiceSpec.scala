@@ -4,17 +4,17 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.webservice.HealthApiService
 
 import scala.concurrent.ExecutionContext
 
-class HealthServiceSpec extends ServiceSpec with HealthService {
+class HealthApiServiceSpec extends ServiceSpec with HealthApiService {
 
   def actorRefFactory = system
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  "HealthService" - {
-
+  "HealthApiService" - {
     "when GET-ting the health service endpoint" - {
       "OK response is returned" in {
         Get("/health") ~> sealRoute(healthServiceRoutes) ~> check {

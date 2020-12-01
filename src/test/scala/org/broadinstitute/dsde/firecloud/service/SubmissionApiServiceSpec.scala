@@ -7,10 +7,11 @@ import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
 import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.webservice.SubmissionApiService
 
 import scala.concurrent.ExecutionContext
 
-final class SubmissionServiceSpec extends BaseServiceSpec with SubmissionService with SprayJsonSupport {
+final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiService with SprayJsonSupport {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -70,7 +71,7 @@ final class SubmissionServiceSpec extends BaseServiceSpec with SubmissionService
     MockWorkspaceServer.mockInvalidId,
     MockWorkspaceServer.mockInvalidId)
 
-  "SubmissionService" - {
+  "SubmissionApiService" - {
     "when hitting the /submissions/queueStatus path" - {
       "with GET" - {
         "OK status is returned" in {
