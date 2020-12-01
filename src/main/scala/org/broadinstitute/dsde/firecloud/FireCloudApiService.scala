@@ -69,6 +69,7 @@ trait FireCloudApiService extends CookieAuthedApiService
   with CromIamApiService
   with HealthService
   with StaticNotebooksApiService
+  with PerimeterApiService
 {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -162,7 +163,8 @@ trait FireCloudApiService extends CookieAuthedApiService
           nihRoutes ~
           billingServiceRoutes ~
           shareLogServiceRoutes ~
-          staticNotebooksRoutes
+          staticNotebooksRoutes ~
+          perimeterServiceRoutes
       }
 
   val routeWrappers: Directive[Unit] =
