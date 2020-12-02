@@ -1,18 +1,19 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse
-import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.ExecutionContext
 
-final class BillingServiceSpec extends BaseServiceSpec with BillingService {
+final class BillingApiServiceSpec extends BaseServiceSpec with BillingApiService {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -54,7 +55,7 @@ final class BillingServiceSpec extends BaseServiceSpec with BillingService {
     workspaceServer.stop()
   }
 
-  "BillingService" - {
+  "BillingApiService" - {
     "create project" in {
       Post("/billing") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
         status should be(Created)

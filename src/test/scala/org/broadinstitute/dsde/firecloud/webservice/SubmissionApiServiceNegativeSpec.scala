@@ -1,8 +1,9 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
+import org.broadinstitute.dsde.firecloud.service.ServiceSpec
 
 import scala.concurrent.ExecutionContext
 
@@ -10,7 +11,7 @@ import scala.concurrent.ExecutionContext
   * We don't create a mock server so we can differentiate between methods that get passed through (and result in
   * InternalServerError) and those that aren't passed through at the first place (i.e. not 'handled')
   */
-final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionService {
+final class SubmissionApiServiceNegativeSpec extends ServiceSpec with SubmissionApiService {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -27,7 +28,7 @@ final class SubmissionServiceNegativeSpec extends ServiceSpec with SubmissionSer
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockValidId)
 
-  "SubmissionService" - {
+  "SubmissionApiService" - {
     "non-GET requests hitting the /submissions/queueStatus path are not passed through" in {
       allHttpMethodsExcept(GET) foreach { method =>
         checkIfPassedThrough(submissionServiceRoutes, method, "/submissions/queueStatus", toBeHandled = false)

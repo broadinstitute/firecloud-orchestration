@@ -1,8 +1,8 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
-import org.broadinstitute.dsde.firecloud.webservice.NotificationsApiService
 import akka.http.scaladsl.model.HttpMethods.GET
+import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
+import org.broadinstitute.dsde.firecloud.service.ServiceSpec
 
 import scala.concurrent.ExecutionContext
 

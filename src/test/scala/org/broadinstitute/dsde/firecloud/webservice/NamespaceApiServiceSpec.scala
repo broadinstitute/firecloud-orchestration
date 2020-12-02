@@ -1,14 +1,14 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockAgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.webservice.NamespaceApiService
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.StatusCodes._
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseServiceSpec, NamespaceService}
 import spray.json.DefaultJsonProtocol._
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.ExecutionContext
 

@@ -1,24 +1,23 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.webservice.{RegisterApiService, UserApiService}
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService, TrialService, UserService}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.StatusCodes._
-import spray.json._
 import spray.json.DefaultJsonProtocol._
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import akka.http.scaladsl.unmarshalling.Unmarshal
+import spray.json._
 
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
 
 class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService with SprayJsonSupport {
 

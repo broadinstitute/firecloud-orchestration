@@ -1,16 +1,12 @@
-package org.broadinstitute.dsde.firecloud.service
+package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import akka.stream.{ActorMaterializer, Materializer}
 import org.broadinstitute.dsde.firecloud.Application
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
-import org.broadinstitute.dsde.firecloud.model.{UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service.NihService
 import org.broadinstitute.dsde.firecloud.utils.TestRequestBuilding
-import org.broadinstitute.dsde.firecloud.webservice.{ManagedGroupApiService, NihApiService, RegisterApiService, UserApiService}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.duration._
@@ -45,7 +41,7 @@ trait ApiServiceSpec extends FlatSpec with Matchers with ScalatestRouteTest with
 
     val nihServiceConstructor = NihService.constructor(
       new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, logitDao, shareLogDao, importServiceDao)
-    )_
+    ) _
 
   }
 
