@@ -6729,7 +6729,7 @@ paths:
   /servicePerimeters/{servicePerimeterName}/projects/{projectName}:
     put:
       tags:
-        - servicePerimeters
+        - Service Perimeters
       summary: Add a project to a service perimeter
       description: |
         Add a project to a service perimeter, must have 'add_to_service_perimeter'
