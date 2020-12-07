@@ -16,10 +16,6 @@ import scala.util.{Success, Try}
  *
  */
 object MockThurloeDAO {
-  val TRIAL_SELF_ENABLED = "trial-self-enabled"
-  val TRIAL_SELF_ENABLED_PREEXISTING = "trial-self-enabled-preexisting"
-  val TRIAL_SELF_ENABLED_ERROR = "trial-self-enabled-error"
-
   val NORMAL_USER = "normal-user"
 }
 
@@ -111,9 +107,6 @@ class MockThurloeDAO extends ThurloeDAO {
       TCGA_AND_TARGET_UNLINKED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_UNLINKED)))
       ),
-      TRIAL_SELF_ENABLED -> baseProfile,
-      TRIAL_SELF_ENABLED_ERROR -> baseProfile,
-      TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile,
       //Anonymized google groups
       HAVE_GOOGLE_GROUP -> baseProfile.++(Set(
         FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
