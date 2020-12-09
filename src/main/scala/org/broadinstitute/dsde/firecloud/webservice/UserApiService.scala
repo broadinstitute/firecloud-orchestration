@@ -58,7 +58,6 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val trialServiceConstructor: () => TrialService
   val userServiceConstructor: (UserInfo) => UserService
 
   val userServiceRoutes =
@@ -129,20 +128,6 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         delete {
           requireUserInfo() { userInfo =>
             complete { userServiceConstructor(userInfo).DeleteTerraPreference }
-          }
-        }
-      } ~
-      pathPrefix("profile" / "trial") {
-        pathEnd {
-          post {
-            parameter("operation") { op =>
-              requireUserInfo() { userInfo =>
-                op.toLowerCase match {
-                  case "finalize" => complete { trialServiceConstructor().FinalizeUser(userInfo) }
-                  case _ => complete { BadRequest }
-                }
-              }
-            }
           }
         }
       } ~

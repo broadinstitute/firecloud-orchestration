@@ -44,7 +44,6 @@ object Boot extends App with LazyLogging {
     val app:Application = Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, logitDAO, shareLogDAO, importServiceDAO);
 
     val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
-    val trialServiceConstructor: () => TrialService = TrialService.constructor(app)
     val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
     val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
     val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
@@ -81,7 +80,6 @@ object Boot extends App with LazyLogging {
 
     val service = new FireCloudApiServiceImpl(
       agoraPermissionServiceConstructor,
-      trialServiceConstructor,
       exportEntitiesByTypeActorConstructor,
       entityServiceConstructor,
       libraryServiceConstructor,

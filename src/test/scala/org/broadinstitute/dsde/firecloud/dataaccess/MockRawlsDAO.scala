@@ -456,7 +456,7 @@ class MockRawlsDAO extends RawlsDAO {
   override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Project.RawlsBillingProjectMembership]] = Future(Seq.empty[Project.RawlsBillingProjectMembership])
 
   override def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]] =
-    Future(Seq(Project.RawlsBillingProjectMember(RawlsUserEmail("mock-trial-billing-mgr-email"), ProjectRoles.Owner)))
+    Future(Seq.empty)
 
   override def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean] = Future(true)
 

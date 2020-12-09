@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.NoSuchElementException
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO._
-import org.broadinstitute.dsde.firecloud.model.Project.{TrialStates, UserTrialStatus}
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, ProfileWrapper, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -17,10 +16,6 @@ import scala.util.{Success, Try}
  *
  */
 object MockThurloeDAO {
-  val TRIAL_SELF_ENABLED = "trial-self-enabled"
-  val TRIAL_SELF_ENABLED_PREEXISTING = "trial-self-enabled-preexisting"
-  val TRIAL_SELF_ENABLED_ERROR = "trial-self-enabled-error"
-
   val NORMAL_USER = "normal-user"
 }
 
@@ -112,9 +107,6 @@ class MockThurloeDAO extends ThurloeDAO {
       TCGA_AND_TARGET_UNLINKED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_UNLINKED)))
       ),
-      TRIAL_SELF_ENABLED -> baseProfile,
-      TRIAL_SELF_ENABLED_ERROR -> baseProfile,
-      TRIAL_SELF_ENABLED_PREEXISTING -> baseProfile,
       //Anonymized google groups
       HAVE_GOOGLE_GROUP -> baseProfile.++(Set(
         FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
@@ -168,21 +160,6 @@ class MockThurloeDAO extends ThurloeDAO {
   }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
-
-  override def getTrialStatus(forUserId: String, callerToken: WithAccessToken) = {
-    Future.successful(
-      forUserId match {
-        case "enabled-user" =>
-          UserTrialStatus(forUserId, Some(TrialStates.Enabled), true, 0, 0, 0, 0, Some("date"))
-        case "disabled-user" => UserTrialStatus(ProfileWrapper(forUserId, List.empty))
-        case _ =>
-          UserTrialStatus(forUserId, Some(TrialStates.Terminated), true, 0, 0, 0, 0, None)
-      }
-    )
-  }
-
-  override def saveTrialStatus(forUserId: String, callerToken: WithAccessToken, trialStatus: UserTrialStatus): Future[Try[Unit]] =
-    Future.successful(Success(()))
 
   override def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]] = {
 
