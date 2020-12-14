@@ -19,6 +19,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
@@ -98,11 +99,13 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   } ~
                     post {
                       requireUserInfo() { _ =>
-                        entity(as[MethodConfiguration]) { methodConfig =>
-                          if (!methodConfig.outputs.exists { param => param._2.value.startsWith("this.library:") || param._2.value.startsWith("workspace.library:")})
-                            passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
-                          else
-                            complete(StatusCodes.Forbidden, ErrorReport("Methods and configurations can not create or modify library attributes"))
+                        toStrictEntity(10.seconds) {
+                          entity(as[MethodConfiguration]) { methodConfig =>
+                            if (!methodConfig.outputs.exists { param => param._2.value.startsWith("this.library:") || param._2.value.startsWith("workspace.library:") })
+                              passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
+                            else
+                              complete(StatusCodes.Forbidden, ErrorReport("Methods and configurations can not create or modify library attributes"))
+                          }
                         }
                       }
                     }
