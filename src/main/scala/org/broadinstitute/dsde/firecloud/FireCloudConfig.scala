@@ -182,16 +182,6 @@ object FireCloudConfig {
     val dulvn = duos.getInt("dulvn")
   }
 
-  object Metrics {
-    private val metrics = config.getConfig("metrics")
-    val logitFrequencyMinutes = metrics.getInt("logitFrequencyMinutes")
-    val logitUrl: String = metrics.getString("logitUrl")
-    val logitApiKey: Option[String] = if (metrics.hasPath("logitApiKey")) Some(metrics.getString("logitApiKey")) else None
-    val entityWorkspaceNamespace: Option[String] = if (metrics.hasPath("entityWorkspaceNamespace")) Some(metrics.getString("entityWorkspaceNamespace")) else None
-    val entityWorkspaceName: Option[String] = if (metrics.hasPath("entityWorkspaceName")) Some(metrics.getString("entityWorkspaceName")) else None
-    val libraryNamespaces: List[String] = metrics.getStringList("libraryWorkspaceNamespace").asScala.toList
-  }
-
   object Spray {
     private val spray = config.getConfig("spray")
     // grab a copy of this Spray setting to use when displaying an error message

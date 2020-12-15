@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.Metrics.{LogitMetric, NumSubjects}
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
@@ -125,44 +124,6 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
     populateSuggestions(client, indexName, field, text)
-  }
-
-  override def statistics: LogitMetric = {
-    if (FireCloudConfig.Metrics.libraryNamespaces.isEmpty)
-      throw new FireCloudException("no namespaces defined for ElasticSearchDAO.statistics()")
-
-    val AGGKEY = "sumSamples"
-
-    // build query: any namespace defined in our conf file
-    val namespaceFilter = boolQuery()
-    FireCloudConfig.Metrics.libraryNamespaces.map { ns =>
-      namespaceFilter.should(termQuery("namespace.keyword", ns))
-    }
-    val namespaceQuery = boolQuery().filter(namespaceFilter)
-
-    // build aggregation: sum of the numSubjects field
-    val sum = AggregationBuilders.sum(AGGKEY).field("library:numSubjects")
-
-    // build the search, using query and aggregation. Set size to 0; we don't care about search results, only
-    // the aggregation results.
-    val search = client.prepareSearch(indexName).addAggregation(sum).setQuery(namespaceQuery).setSize(0)
-
-    // execute search
-    val statsTry = Try(executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](search))
-
-    // extract the sum from the results, safely
-    val safeNumber: Int = statsTry match {
-      case Success(stats) =>
-        val sumOption = Option(stats.getAggregations.get[Sum](AGGKEY))
-        if (sumOption.isEmpty)
-          logger.info(s"statistics query did not find $AGGKEY in aggregation results!")
-        sumOption.map(_.getValue.toInt).getOrElse(0)
-      case Failure(ex) =>
-        logger.warn(s"statistics query failed: ${ex.getMessage}")
-        0
-    }
-
-    NumSubjects(safeNumber)
   }
 
   /* see https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_time_search_as_you_type.html

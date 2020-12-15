@@ -10,8 +10,6 @@ import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
-import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
-import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impRawlsBillingProjectMember, _}
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
@@ -99,19 +97,6 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
         logger.info(s"body of reindex error response: ${response.entity}")
         throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + response.entity))
       }
-    }
-  }
-
-  override def adminStats(startDate: DateTime, endDate: DateTime, workspaceNamespace: Option[String], workspaceName: Option[String]): Future[AdminStats] = {
-    val queryParams =
-      Map("startDate" -> startDate.toString, "endDate" -> endDate.toString) ++
-        workspaceNamespace.map("workspaceNamespace" -> _) ++
-        workspaceName.map("workspaceName" -> _)
-    val url = Uri(FireCloudConfig.Rawls.authUrl + "/admin/statistics").withQuery(Query.apply(queryParams))
-    adminAuthedRequestToObject[AdminStats](Get(url)) recover {
-      case e: Exception =>
-        logger.error(s"HttpRawlsDAO.adminStats failed with ${e.getMessage}")
-        throw e
     }
   }
 
