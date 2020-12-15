@@ -42,7 +42,8 @@ trait SwaggerApiService extends LazyLogging {
       """
         |        validatorUrl: null,
         |        apisSorter: "alpha",
-        |        operationsSorter: "alpha"
+        |        operationsSorter: "alpha",
+        |        docExpansion: "none"
       """.stripMargin
 
     mapResponseEntity { entityFromJar =>
