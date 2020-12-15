@@ -23,7 +23,7 @@ class MetricsActor(logitDAO: LogitDAO, rawlsDAO: RawlsDAO, searchDAO: SearchDAO)
   import context.dispatcher
 
   override def receive: Receive = {
-    case RecordMetrics => recordMetrics pipeTo sender
+    case RecordMetrics => recordMetrics pipeTo sender()
   }
 
   private def recordMetrics: Future[LogitMetric] = {

@@ -35,4 +35,4 @@ jobs:
 
     - uses: codecov/codecov-action@v1
       with:
-        file: ./target/scala-2.12/jacoco/report/jacoco.xml
+        file: ./target/scala-2.13/jacoco/report/jacoco.xml

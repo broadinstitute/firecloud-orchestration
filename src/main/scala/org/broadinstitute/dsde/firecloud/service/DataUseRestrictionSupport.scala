@@ -79,7 +79,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
 
   def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, JsValue] = {
-    generateStructuredDataResponse(request, ontologyDAO).formatWithPrefix
+    generateStructuredDataResponse(request, ontologyDAO).formatWithPrefix()
   }
 
   def generateStructuredDataResponse(request: StructuredDataRequest, ontologyDAO: OntologyDAO): StructuredDataResponse = {

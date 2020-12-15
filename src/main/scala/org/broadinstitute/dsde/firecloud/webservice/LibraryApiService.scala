@@ -140,7 +140,7 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                 } ~
                 pathPrefix("populate" / "suggest" / Segment ) { (field) =>
                   get {
-                    parameter('q) { text =>
+                    parameter(Symbol("q")) { text =>
                       complete { libraryServiceConstructor(userInfo).PopulateSuggest(field, text) }
                     }
                   }

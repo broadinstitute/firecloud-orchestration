@@ -42,7 +42,7 @@ trait EntityApiService extends FireCloudDirectives
               path("copy") {
                 post {
                   requireUserInfo() { userInfo =>
-                    parameter('linkExistingEntities.?) { linkExistingEntities =>
+                    parameter(Symbol("linkExistingEntities").?) { linkExistingEntities =>
                       entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest =>
                         val linkExistingEntitiesBool = Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
                           val copyMethodConfig = new EntityCopyDefinition(

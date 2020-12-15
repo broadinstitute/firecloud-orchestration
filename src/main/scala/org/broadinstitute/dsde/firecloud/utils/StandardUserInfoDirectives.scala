@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait StandardUserInfoDirectives extends UserInfoDirectives {
 
-  def requireUserInfo: Directive1[UserInfo] = (
+  def requireUserInfo(): Directive1[UserInfo] = (
     headerValueByName("OIDC_access_token") &
       headerValueByName("OIDC_CLAIM_user_id") &
       headerValueByName("OIDC_CLAIM_expires_in") &

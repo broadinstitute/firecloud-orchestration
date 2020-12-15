@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{HttpMethods, HttpResponse}
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.model.MethodRepository._
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
 import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, ModelSchema, PermissionReport, PermissionReportRequest, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PermissionReportService, WorkspaceService}

@@ -61,7 +61,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
             pathPrefix("tags") {
               pathEnd {
                 requireUserInfo() { _ =>
-                  parameter('q.?) { queryString =>
+                  parameter(Symbol("q").?) { queryString =>
                     val baseUri = Uri(rawlsWorkspacesRoot + "/tags")
                     val uri = queryString match {
                       case Some(query) => baseUri.withQuery(Query(("q", query)))
@@ -110,7 +110,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("flexibleImportEntities") {
                   post {
                     requireUserInfo() { userInfo =>
-                      formFields('entities) { entitiesTSV =>
+                      formFields(Symbol("entities")) { entitiesTSV =>
                         complete { entityServiceConstructor(FlexibleModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
@@ -119,7 +119,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("importEntities") {
                   post {
                     requireUserInfo() { userInfo =>
-                      formFields('entities) { entitiesTSV =>
+                      formFields(Symbol("entities")) { entitiesTSV =>
                         complete { entityServiceConstructor(FirecloudModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
@@ -186,7 +186,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("importAttributesTSV") {
                   post {
                     requireUserInfo() { userInfo =>
-                      formFields('attributes) { attributesTSV =>
+                      formFields(Symbol("attributes")) { attributesTSV =>
                         complete { workspaceServiceConstructor(userInfo).ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV) }
                       }
                     }
@@ -195,7 +195,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("acl") {
                   patch {
                     requireUserInfo() { userInfo =>
-                      parameter('inviteUsersNotFound.?) { inviteUsersNotFound =>
+                      parameter(Symbol("inviteUsersNotFound").?) { inviteUsersNotFound =>
                         entity(as[List[WorkspaceACLUpdate]]) { aclUpdates =>
                           complete { workspaceServiceConstructor(userInfo).UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail, userInfo.id, inviteUsersNotFound.getOrElse("false").toBoolean) }
                         }

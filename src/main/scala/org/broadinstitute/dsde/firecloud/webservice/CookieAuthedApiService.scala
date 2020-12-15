@@ -31,24 +31,24 @@ trait CookieAuthedApiService extends Directives with RequestBuilding with LazyLo
       // this endpoint allows an arbitrary number of attribute names in the POST body (GAWB-1435)
       // but the URL cannot be saved for later use (firecloud-app#80)
       post {
-        formFields('FCtoken, 'attributeNames.?, 'model.?) { (tokenValue, attributeNamesString, modelString) =>
+        formFields(Symbol("FCtoken"), Symbol("attributeNames").?, Symbol("model").?) { (tokenValue, attributeNamesString, modelString) =>
           val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
           val userInfo = dummyUserInfo(tokenValue)
           val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
 
-          complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
+          complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities() }
         }
       } ~
         // this endpoint allows saving the URL for later use (firecloud-app#80)
         // but it's possible to exceed the maximum URI length by specifying too many attributes (GAWB-1435)
         get {
           cookie("FCtoken") { tokenCookie =>
-            parameters('attributeNames.?, 'model.?) { (attributeNamesString, modelString) =>
+            parameters(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
               val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
               val userInfo = dummyUserInfo(tokenCookie.value)
               val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
 
-              complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
+              complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities() }
             }
           }
         }

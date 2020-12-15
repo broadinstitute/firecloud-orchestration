@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.ACLNames._
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.{AgoraPermission, FireCloudPermission}
 import org.scalatest.FreeSpec
 
 class AgoraACLTranslationSpec extends FreeSpec {

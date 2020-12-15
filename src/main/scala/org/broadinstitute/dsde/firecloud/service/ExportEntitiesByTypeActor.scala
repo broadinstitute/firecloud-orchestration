@@ -79,7 +79,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     case None => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.FIRECLOUD)
   }
 
-  def ExportEntities = streamEntities
+  def ExportEntities(): Future[HttpResponse] = streamEntities()
 
   /**
     * Two basic code paths

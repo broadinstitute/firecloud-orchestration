@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.rawls.model.{AgoraMethod, DockstoreMethod, Method
 
 import scala.util.Try
 
-object MethodRepository {
+object OrchMethodRepository {
 
   object AgoraEntityType extends Enumeration {
     type EntityType = Value

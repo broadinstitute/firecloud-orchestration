@@ -42,7 +42,7 @@ sbt
 
 ```
 java -Dconfig.file=src/main/resources/application.conf \
-  -jar $(ls target/scala-2.12/FireCloud-Orchestration-assembly-* | tail -n 1)
+  -jar $(ls target/scala-2.13/FireCloud-Orchestration-assembly-* | tail -n 1)
 ```
 
 For development, you can have sbt recompile and restart the server whenever a file changes on disk:

@@ -5,7 +5,7 @@ import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.MethodRepository._
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, PermissionReport, PermissionReportRequest, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete

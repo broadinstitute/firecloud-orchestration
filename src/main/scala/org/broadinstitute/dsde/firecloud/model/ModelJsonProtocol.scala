@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHan
 import org.broadinstitute.dsde.firecloud.model.DUOS._
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.MethodRepository._
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project._
@@ -169,9 +169,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   }
 
   // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
-  implicit val impMethod = jsonFormat11(MethodRepository.Method.apply)
-  implicit val impConfiguration = jsonFormat10(MethodRepository.Configuration)
-  implicit val impAgoraConfigurationShort = jsonFormat4(MethodRepository.AgoraConfigurationShort)
+  implicit val impMethod = jsonFormat11(OrchMethodRepository.Method.apply)
+  implicit val impConfiguration = jsonFormat10(OrchMethodRepository.Configuration)
+  implicit val impAgoraConfigurationShort = jsonFormat4(OrchMethodRepository.AgoraConfigurationShort)
 
   implicit val impWorkspaceDeleteResponse = jsonFormat1(WorkspaceDeleteResponse)
 
