@@ -99,6 +99,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   } ~
                     post {
                       requireUserInfo() { _ =>
+                        //TODO: pull timeout from config
                         toStrictEntity(10.seconds) {
                           entity(as[MethodConfiguration]) { methodConfig =>
                             if (!methodConfig.outputs.exists { param => param._2.value.startsWith("this.library:") || param._2.value.startsWith("workspace.library:") })
