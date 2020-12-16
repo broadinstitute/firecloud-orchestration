@@ -10,14 +10,16 @@ import akka.stream.Materializer
 import com.google.api.services.sheets.v4.model.ValueRange
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.PrivateMethodTester
 import spray.json._
+import org.scalatest.matchers.should.Matchers
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class HttpGoogleServicesDAOSpec(implicit val materializer: Materializer) extends FlatSpec with Matchers with PrivateMethodTester {
+class HttpGoogleServicesDAOSpec(implicit val materializer: Materializer) extends AnyFlatSpec with Matchers with PrivateMethodTester {
 
   val testProject = "broad-dsde-dev"
   implicit val system = ActorSystem("HttpGoogleCloudStorageDAOSpec")

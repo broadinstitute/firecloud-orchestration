@@ -4,12 +4,14 @@ import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.{searchDAO, shareLogDAO}
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.util.Try
 
-class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
-  override def beforeAll = {
+class ElasticSearchShareLogDAOSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
+  override def beforeAll() = {
     // using the recreate from search dao because we don't have recreate in sharelog dao
     searchDAO.recreateIndex()
     ElasticSearchShareLogDAOSpecFixtures.fixtureShares map { share =>
@@ -17,7 +19,7 @@ class ElasticSearchShareLogDAOSpec extends FreeSpec with Matchers with BeforeAnd
     }
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     // using the delete from search dao because we don't have recreate in sharelog dao
     searchDAO.deleteIndex()
   }

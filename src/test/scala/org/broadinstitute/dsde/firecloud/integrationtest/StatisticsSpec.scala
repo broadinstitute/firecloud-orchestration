@@ -7,9 +7,11 @@ import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.Document
 import org.broadinstitute.dsde.firecloud.model.Metrics.NumSubjects
 import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeNumber, AttributeString}
-import org.scalatest.{BeforeAndAfterEach, FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.BeforeAndAfterEach
 
-class StatisticsSpec extends FreeSpec with Matchers with BeforeAndAfterEach with LazyLogging {
+class StatisticsSpec extends AnyFreeSpec with Matchers with BeforeAndAfterEach with LazyLogging {
 
   /* Conf file contains one or more workspace namespaces, referenced via FireCloudConfig.Metrics.libraryNamespaces.
      We filter Library datasets to just those namespaces when calculating metrics.
@@ -50,12 +52,12 @@ class StatisticsSpec extends FreeSpec with Matchers with BeforeAndAfterEach with
     }
   }
 
-  override def beforeEach = {
+  override def beforeEach() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
   }
 
-  override def afterEach = {
+  override def afterEach() = {
     searchDAO.deleteIndex()
   }
 

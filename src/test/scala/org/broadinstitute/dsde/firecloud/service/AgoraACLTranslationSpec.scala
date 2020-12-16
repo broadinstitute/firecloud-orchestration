@@ -2,9 +2,9 @@ package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.ACLNames._
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.{AgoraPermission, FireCloudPermission}
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class AgoraACLTranslationSpec extends FreeSpec {
+class AgoraACLTranslationSpec extends AnyFreeSpec {
 
   val email = Some("davidan@broadinstitute.org")
 

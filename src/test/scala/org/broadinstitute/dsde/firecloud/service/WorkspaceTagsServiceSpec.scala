@@ -299,7 +299,7 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
   */
 class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
 
-  import collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   private var statefulTagMap = new ConcurrentHashMap[String, ListBuffer[String]]().asScala
 
@@ -316,7 +316,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     false, //locked
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject")
   )
 
   private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(
@@ -335,7 +335,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     val tags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
     val tagAttrs = (tags map AttributeString)
     workspace.copy(attributes = Option(Map(
-      AttributeName.withTagsNS() -> AttributeValueList(tagAttrs)
+      AttributeName.withTagsNS() -> AttributeValueList(tagAttrs.toList)
     )))
   }
 
@@ -385,7 +385,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
           "Delete operation should consist of only AddListMember operations" )
         val removeTags = attributes.map(_.asInstanceOf[RemoveListMember].removeMember.asInstanceOf[AttributeString].value)
         val currentTags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
-        val finalTags = currentTags -- removeTags
+        val finalTags = currentTags --= removeTags
         statefulTagMap.put(name, finalTags)
       case _ => fail("is the unit test correct?")
     }

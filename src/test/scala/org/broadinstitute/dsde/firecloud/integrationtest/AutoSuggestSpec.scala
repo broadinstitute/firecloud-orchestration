@@ -3,15 +3,17 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOQuerySupport
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, Ignore}
 import spray.json.{JsObject, JsString}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, MINUTES}
 
-class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with ElasticSearchDAOQuerySupport {
+class AutoSuggestSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with ElasticSearchDAOQuerySupport {
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -21,7 +23,7 @@ class AutoSuggestSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 

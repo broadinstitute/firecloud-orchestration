@@ -3,14 +3,15 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.ExecutionContext
 
 /**
   * Created by mbemis on 3/7/17.
   */
-class NihServiceSpec extends FlatSpec with Matchers {
+class NihServiceSpec extends AnyFlatSpec with Matchers {
 
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   val samDao = new MockSamDAO
