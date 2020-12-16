@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
 import spray.json._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

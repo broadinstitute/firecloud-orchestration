@@ -19,7 +19,7 @@ import org.elasticsearch.search.sort.SortOrder
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}

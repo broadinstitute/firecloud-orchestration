@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudExceptionWithE
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
-import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, ModelSchema, PermissionReport, PermissionReportRequest, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{OrchMethodConfigurationName, ModelSchema, PermissionReport, PermissionReportRequest, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PermissionReportService, WorkspaceService}
 import org.broadinstitute.dsde.rawls.model.{MethodConfigurationShort, MethodRepoMethod, _}
@@ -60,7 +60,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "should accept correctly-formed input" in {
-      val payload = PermissionReportRequest(Some(Seq("foo")),Some(Seq(MethodConfigurationName("ns","name"))))
+      val payload = PermissionReportRequest(Some(Seq("foo")),Some(Seq(OrchMethodConfigurationName("ns","name"))))
       Post(permissionReportPath("foo","bar"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
       }
@@ -81,9 +81,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
-          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
-          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
+          OrchMethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          OrchMethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          OrchMethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -100,9 +100,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
-          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
-          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
+          OrchMethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          OrchMethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          OrchMethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -112,14 +112,14 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "should filter configs if caller specifies" in {
-      val payload = PermissionReportRequest(None,Some(Seq(MethodConfigurationName("configns2","configname2"))))
+      val payload = PermissionReportRequest(None,Some(Seq(OrchMethodConfigurationName("configns2","configname2"))))
       Post(permissionReportPath("foo","bar"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
         val report = responseAs[PermissionReport]
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
+          OrchMethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -129,14 +129,14 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "should filter both users and configs if caller specifies" in {
-      val payload = PermissionReportRequest(Some(Seq("carol@example.com")),Some(Seq(MethodConfigurationName("configns2","configname2"))))
+      val payload = PermissionReportRequest(Some(Seq("carol@example.com")),Some(Seq(OrchMethodConfigurationName("configns2","configname2"))))
       Post(permissionReportPath("foo","bar"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
         val report = responseAs[PermissionReport]
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
+          OrchMethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -166,9 +166,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
-          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
-          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
+          OrchMethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          OrchMethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          OrchMethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -180,8 +180,8 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
     "should omit a caller-specified config if config doesn't exist in the workspace" in {
       val payload = PermissionReportRequest(None,
         Some(Seq(
-          MethodConfigurationName("configns2","configname2"),
-          MethodConfigurationName("confignsZZZ","confignameZZZ")
+          OrchMethodConfigurationName("configns2","configname2"),
+          OrchMethodConfigurationName("confignsZZZ","confignameZZZ")
         ))
       )
       Post(permissionReportPath("foo","bar"), payload) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
@@ -190,7 +190,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assertResult(Set("alice@example.com","bob@example.com","carol@example.com")) {report.workspaceACL.keySet}
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
+          OrchMethodConfigurationName("configns2", "configname2") -> Some(mockMethod2)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {
@@ -208,9 +208,9 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
         assert(report.workspaceACL.isEmpty)
 
         val expectedConfigsNoAcls = Map(
-          MethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
-          MethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
-          MethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
+          OrchMethodConfigurationName("configns1", "configname1") -> Some(mockMethod1),
+          OrchMethodConfigurationName("configns2", "configname2") -> Some(mockMethod2),
+          OrchMethodConfigurationName("configns3", "configname3") -> Some(mockMethod3)
         )
 
         assertResult(expectedConfigsNoAcls) {(report.referencedMethods map {

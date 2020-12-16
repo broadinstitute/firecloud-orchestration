@@ -13,5 +13,5 @@ case class PermissionReport (
 
 case class PermissionReportRequest (
   users: Option[Seq[String]],
-  configs: Option[Seq[MethodConfigurationName]]
+  configs: Option[Seq[OrchMethodConfigurationName]]
 )

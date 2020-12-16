@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import java.io.StringReader
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import com.univocity.parsers.csv.{CsvParser, CsvParserSettings}
 
 case class TSVLoadFile(

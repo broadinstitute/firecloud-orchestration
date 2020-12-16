@@ -187,7 +187,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
   implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
   implicit val impPublishConfigurationIngest = jsonFormat4(PublishConfigurationIngest)
-  implicit val impMethodConfigurationName = jsonFormat2(MethodConfigurationName.apply)
+  implicit val impMethodConfigurationName = jsonFormat2(OrchMethodConfigurationName.apply)
 
   implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
   implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
@@ -284,7 +284,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
           case _ => f.getName -> JsNull
         }
       }) match {
-        case Success(props) => props.filterNot(_._2 == JsNull)
+        case Success(props) => props.toIndexedSeq.filterNot(_._2 == JsNull)
         case Failure(ex) => serializationError(ex.getMessage)
       }
       JsObject(existingProps.toMap)

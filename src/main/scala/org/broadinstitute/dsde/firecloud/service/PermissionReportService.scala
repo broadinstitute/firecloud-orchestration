@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErr
 import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{MethodConfigurationName, PermissionReport, PermissionReportRequest, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{OrchMethodConfigurationName, PermissionReport, PermissionReportRequest, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.rawls.model.{AccessEntry, WorkspaceACL}
 import akka.http.scaladsl.model.StatusCodes._
@@ -42,7 +42,7 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
     val futureWorkspaceConfigs = rawlsDAO.getAgoraMethodConfigs(workspaceNamespace, workspaceName) map { configs =>
       // filter to just those the user requested
       if (reportInput.configs.isEmpty || reportInput.configs.get.isEmpty) configs
-      else configs.filter( x => reportInput.configs.get.contains(MethodConfigurationName(x)))
+      else configs.filter( x => reportInput.configs.get.contains(OrchMethodConfigurationName(x)))
     }
 
     for {
@@ -60,8 +60,8 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
         agoraMethodReference match {
           case Some(agora) =>
             EntityAccessControl(Some(Method(config.methodRepoMethod, agora.entity.managers, agora.entity.public)),
-              MethodConfigurationName(config), agora.acls map AgoraPermissionService.toFireCloudPermission, agora.message)
-          case None => EntityAccessControl(None, MethodConfigurationName(config), Seq.empty[FireCloudPermission], Some("referenced method not found."))
+              OrchMethodConfigurationName(config), agora.acls map AgoraPermissionService.toFireCloudPermission, agora.message)
+          case None => EntityAccessControl(None, OrchMethodConfigurationName(config), Seq.empty[FireCloudPermission], Some("referenced method not found."))
         }
       }
 

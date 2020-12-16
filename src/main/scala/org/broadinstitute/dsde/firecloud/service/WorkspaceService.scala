@@ -110,7 +110,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
       val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
-      val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).filterKeys(_ != AttributeName.withDefaultNS("description"))
+      val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).view.filterKeys(_ != AttributeName.withDefaultNS("description")).toMap
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
       // TODO: entity TSVs are downloaded as text/tab-separated-value, but workspace attributes are text/plain. Align these?

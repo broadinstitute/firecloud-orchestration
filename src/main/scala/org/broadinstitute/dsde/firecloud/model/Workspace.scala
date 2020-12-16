@@ -48,15 +48,15 @@ case class MethodConfigurationId(
   namespace: Option[String] = None,
   workspaceName: Option[WorkspaceName] = None)
 
-case class MethodConfigurationName(
+case class OrchMethodConfigurationName(
   namespace: String,
   name: String)
 
-object MethodConfigurationName {
-  def apply(mcs:MethodConfigurationShort): MethodConfigurationName =
-    new MethodConfigurationName(mcs.namespace, mcs.name)
-  def apply(mcs: AgoraConfigurationShort): MethodConfigurationName =
-    new MethodConfigurationName(mcs.namespace, mcs.name)
+object OrchMethodConfigurationName {
+  def apply(mcs:MethodConfigurationShort): OrchMethodConfigurationName =
+    new OrchMethodConfigurationName(mcs.namespace, mcs.name)
+  def apply(mcs: AgoraConfigurationShort): OrchMethodConfigurationName =
+    new OrchMethodConfigurationName(mcs.namespace, mcs.name)
 }
 
 case class MethodConfigurationCopy(
