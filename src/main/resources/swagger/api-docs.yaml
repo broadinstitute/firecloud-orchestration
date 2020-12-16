@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: FireCloud
   description: |
-    Genome analysis execution service.
+    FireCloud API
   termsOfService: https://github.com/broadinstitute/firecloud-orchestration
   license:
     name: BSD
@@ -10,6 +10,30 @@ info:
   version: "0.1"
 servers:
   - url: /
+tags:
+  - name: Billing
+  - name: CromIAM Engine (for Job Manager)
+  - name: CromIAM Workflows (for Admin)
+  - name: CromIAM Workflows (for Job Manager)
+  - name: Entities
+  - name: GA4GH Tool Registry
+  - name: Groups
+  - name: Library
+  - name: Method Configurations
+  - name: Method Repository
+  - name: NIH
+  - name: Notifications
+  - name: OAuth
+  - name: Profile
+  - name: Service Perimeters
+  - name: ShareLog
+  - name: Static Notebooks
+  - name: Status
+  - name: Storage
+  - name: Submissions
+  - name: Version
+  - name: Womtool
+  - name: Workspaces
 security:
   - googleoauth:
       - openid
