@@ -12,6 +12,11 @@ jobs:
           # submodules: true
 
       - name: Build jar
-        run: ./script/build.sh jar
+        run: |
+          set -ex
+          echo ${BRANCH}
+          git rev-parse --abbrev-ref HEAD
+          git rev-parse --short origin/HEAD
+          #./script/build.sh jar
 
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
