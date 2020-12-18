@@ -7,4 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Build jar
+        run: ./scripts/build.sh jar
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
