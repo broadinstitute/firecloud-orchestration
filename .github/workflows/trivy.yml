@@ -8,10 +8,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 1000
+          fetch-depth: 0
           # submodules: true
 
       - name: Build jar
-        run: ./script/build.sh jar
+        run: |
+          set -x
+          ./script/build.sh jar
 
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
