@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          submodules: recursive
+          submodules: true
 
       - name: Build jar
         run: ./script/build.sh jar
