@@ -8,5 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build jar
+        env:
+          BRANCH: ${{ github.base_ref }}
         run: ./script/build.sh jar
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
