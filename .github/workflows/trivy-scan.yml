@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Build jar
-        env:
-          BRANCH: ${{ github.base_ref }}
         run: ./script/build.sh jar
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
