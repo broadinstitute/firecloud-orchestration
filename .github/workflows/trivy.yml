@@ -12,8 +12,6 @@ jobs:
           # submodules: true
 
       - name: Build jar
-        run: |
-          set -x
-          ./script/build.sh jar
+        run: ./script/build.sh jar
 
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
