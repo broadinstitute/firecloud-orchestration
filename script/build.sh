@@ -112,7 +112,6 @@ function docker_cmd()
         echo "building ${DOCKERHUB_TESTS_REGISTRY}:${HASH_TAG}..."
         cd automation
         docker build -f Dockerfile-tests -t $DOCKERHUB_TESTS_REGISTRY:${HASH_TAG} .
-
         cd ..
 
         if [ $DOCKER_CMD="push" ]; then
