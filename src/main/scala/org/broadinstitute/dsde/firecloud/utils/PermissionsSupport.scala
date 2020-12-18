@@ -1,13 +1,13 @@
 package org.broadinstitute.dsde.firecloud.utils
 
+import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.dataaccess.{RawlsDAO, SamDAO}
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsGroupName}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceAccessLevels}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
-import spray.http.{HttpRequest, StatusCodes}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -49,16 +49,16 @@ trait PermissionsSupport {
     tryIsAdmin(userInfo) flatMap { isadmin =>
       if (!isadmin) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo.asInstanceOf[WithAccessToken]) map { ws =>
-          ws.accessLevel >= neededLevel
+          ws.accessLevel match {
+            case Some(accessLevel) => accessLevel >= neededLevel
+            case None => false
+          }
         }
       } else {
         Future.successful(true)
       }
     }
   }
-
-  def asTrialCampaignManager(op: => Future[PerRequestMessage])(implicit userInfo: UserInfo): Future[PerRequestMessage] =
-    asGroupMember(FireCloudConfig.Trial.managerGroup)(op)
 
   def asGroupMember(group: String)(op: => Future[PerRequestMessage])(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     tryIsGroupMember(userInfo, group) flatMap { isGroupMember =>

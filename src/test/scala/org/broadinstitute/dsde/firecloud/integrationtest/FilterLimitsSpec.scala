@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}

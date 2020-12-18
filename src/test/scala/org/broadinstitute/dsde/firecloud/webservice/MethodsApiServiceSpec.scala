@@ -1,9 +1,11 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethod
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.service.ServiceSpec
+import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseServiceSpec, ServiceSpec}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.mock.action.ExpectationCallback
@@ -12,15 +14,21 @@ import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.{HttpRequest, HttpResponse}
 import org.scalatest.Matchers
-import spray.http.HttpMethod
-import spray.http.HttpMethods._
-import spray.http.StatusCodes._
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.StatusCodes._
+import org.broadinstitute.dsde.firecloud.model.UserInfo
 
-final class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
+import scala.concurrent.ExecutionContext
+
+final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with MethodsApiService {
 
   def actorRefFactory:ActorSystem = system
 
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   var methodsServer: ClientAndServer = _
+
+  val agoraPermissionService: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
 
   case class Api(localPath: String, verb: HttpMethod, remotePath: String, allowQueryParams: Boolean)
 
@@ -96,7 +104,7 @@ final class MethodsApiServiceSpec extends ServiceSpec with MethodsApiService {
 
           val queryParamMsg = if (api.allowQueryParams) "allow" else "omit"
 
-          assertResult(api.verb.toString, "unexpected http verb in passthrough") {
+          assertResult(api.verb.value, "unexpected http verb in passthrough") {
             passthroughResult(0)
           }
           assertResult(api.remotePath, "unexpected uri path in passthrough") {

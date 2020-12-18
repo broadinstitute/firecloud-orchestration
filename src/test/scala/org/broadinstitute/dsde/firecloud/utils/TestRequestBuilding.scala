@@ -1,8 +1,8 @@
 package org.broadinstitute.dsde.firecloud.utils
 
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.headers.{Cookie, OAuth2BearerToken, RawHeader}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import spray.http.HttpHeaders.{Cookie, RawHeader}
-import spray.http._
 
 trait TestRequestBuilding extends FireCloudRequestBuilding {
 
@@ -21,6 +21,6 @@ trait TestRequestBuilding extends FireCloudRequestBuilding {
   }
 
   def dummyCookieAuthHeaders: RequestTransformer = {
-    addHeader(Cookie(HttpCookie("FCtoken", dummyToken)))
+    addHeader(Cookie("FCtoken", dummyToken))
   }
 }

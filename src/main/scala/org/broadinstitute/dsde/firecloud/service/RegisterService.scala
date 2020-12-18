@@ -1,49 +1,32 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.{Actor, Props}
-import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.Trial.UserTrialStatus
-import org.broadinstitute.dsde.firecloud.service.RegisterService.{CreateUpdateProfile, UpdateProfilePreferences}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import org.broadinstitute.dsde.firecloud.utils.DateUtils
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Notifications.{ActivationNotification, NotificationFormat}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserSubjectId}
-import spray.http._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object RegisterService {
-  sealed trait ServiceMessage
-  case class CreateUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile)
-    extends ServiceMessage
-  case class UpdateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String])
-    extends ServiceMessage
-
-  def props(service: () => RegisterService): Props = {
-    Props(service())
-  }
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.trialDAO, app.googleServicesDAO)
+    new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)
+
 }
 
-class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val trialDao: TrialDAO, val googleServicesDAO: GoogleServicesDAO)
-  (implicit protected val executionContext: ExecutionContext) extends Actor
-  with TrialServiceSupport with LazyLogging {
+class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO)
+  (implicit protected val executionContext: ExecutionContext) extends LazyLogging {
 
-  override def receive = {
-    case CreateUpdateProfile(userInfo, basicProfile) =>
-      createUpdateProfile(userInfo, basicProfile) pipeTo sender
-    case UpdateProfilePreferences(userInfo, preferences) =>
-      updateProfilePreferences(userInfo, preferences) pipeTo sender
-  }
+  def CreateUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile) = createUpdateProfile(userInfo, basicProfile)
+  def UpdateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]) = updateProfilePreferences(userInfo, preferences)
 
   private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
@@ -65,7 +48,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
 
   private def isRegistered(userInfo: UserInfo): Future[RegistrationInfo] = {
     samDao.getRegistrationStatus(userInfo) recover {
-      case e: FireCloudExceptionWithErrorReport if optAkka2sprayStatus(e.errorReport.statusCode) == Option(StatusCodes.NotFound) =>
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
         RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail), WorkbenchEnabled(false, false, false))
     }
   }
@@ -73,16 +56,9 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def registerUser(userInfo: UserInfo): Future[RegistrationInfo] = {
     for {
       registrationInfo <- samDao.registerUser(userInfo)
-      freeCredits:Either[Exception,UserTrialStatus] <- enableSelfForFreeCredits(userInfo)
-        .map(Right(_)) recover { case e: Exception => Left(e) }
       _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(ActivationNotification(RawlsUserSubjectId(userInfo.id))).compactPrint))
     } yield {
-      val messages:Option[List[String]] = freeCredits match {
-        case Left(ex) => Some(registrationInfo.messages.getOrElse(List.empty[String]) :+
-          s"Error enabling free credits during registration. Underlying error: ${ex.getMessage}")
-        case Right(_) => registrationInfo.messages
-      }
-      registrationInfo.copy(messages = messages)
+      registrationInfo
     }
   }
 

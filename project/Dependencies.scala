@@ -1,12 +1,16 @@
 import sbt._
 
 object Dependencies {
-  val akkaV = "2.4.19"
-  val sprayV = "1.3.4"
+  val akkaV = "2.5.32"
+  val akkaHttpV = "10.2.1"
   val jacksonV = "2.10.0"
   val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
+  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
+  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.12")
+  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12");
+  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12");
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -25,24 +29,27 @@ object Dependencies {
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.7.2",
 
-    "org.broadinstitute.dsde.vault" %% "vault-common"        % "0.1-19-ca8b927"
-      exclude("io.spray", "spray-routing_2.11"),
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-b9d04a47")
-      exclude("com.typesafe.scala-logging", "scala-logging_2.11")
-      exclude("com.typesafe.akka", "akka-stream_2.11")
-      exclude("com.google.code.findbugs", "jsr305"),
+    "org.parboiled" % "parboiled-core" % "1.2.0",
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-18b1c01e0")
+      exclude("com.typesafe.scala-logging", "scala-logging_2.12")
+      exclude("com.typesafe.akka", "akka-stream_2.12")
+      exclude("com.google.code.findbugs", "jsr305")
+      excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
 
-    "io.spray"                      %% "spray-can"                 % sprayV,
-    "io.spray"                      %% "spray-json"                % "1.3.3",
-    "io.spray"                      %% "spray-client"              % sprayV,
-    "io.spray"                      %% "spray-routing-shapeless23" % sprayV,
-    "io.spray"                      %% "spray-testkit"             % sprayV   % "test",
+    "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
+    "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
+    "com.typesafe.akka"   %%  "akka-http-core"       % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
+    "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV               excludeAll(excludeAkkaActor),
+    "com.typesafe.akka"   %%  "akka-http"            % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
+    "com.typesafe.akka"   %%  "akka-http-spray-json" % akkaHttpV,
+    "com.typesafe.akka"   %%  "akka-testkit"         % akkaV     % "test",
+    "com.typesafe.akka"   %%  "akka-http-testkit"    % akkaHttpV % "test",
+
     "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
-    "com.typesafe.akka"             %% "akka-actor"                % akkaV,
     "com.typesafe.akka"             %% "akka-testkit"              % akkaV    % "test",
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
-    "com.typesafe.akka"             %% "akka-stream"               % akkaV,
+    "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll(excludeAkkaActor),
 
     "org.elasticsearch.client"       % "transport"           % "5.6.16"
       exclude("io.netty", "netty-codec")
@@ -58,7 +65,8 @@ object Dependencies {
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.18.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "org.webjars"                    % "swagger-ui"          % "3.25.0",
+    "org.webjars.npm"                % "swagger-ui-dist"     % "3.35.0",
+    "org.webjars"                    % "webjars-locator"     % "0.40",
     "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
     "com.sun.mail"                   % "javax.mail"          % "1.5.6",
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
@@ -67,8 +75,8 @@ object Dependencies {
     "com.github.pathikrit"          %% "better-files"        % "2.17.1",
     "org.apache.httpcomponents"      % "httpclient"          % "4.5.3",
 
-    "org.specs2"                    %% "specs2-core"         % "3.7"     % "test",
-    "org.scalatest"                 %% "scalatest"           % "2.2.6"   % "test",
+    "org.specs2"                    %% "specs2-core"         % "3.10.0"     % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.0.5"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.10.2"  % "test"
   )
 }

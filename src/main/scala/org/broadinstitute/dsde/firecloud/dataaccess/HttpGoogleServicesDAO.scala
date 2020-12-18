@@ -1,47 +1,41 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io
 import java.io.FileInputStream
 
-import akka.actor.ActorRefFactory
+import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
+import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.stream.Materializer
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
-import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.admin.directory.model.{Group, Member}
+import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.cloudbilling.Cloudbilling
-import com.google.api.services.cloudbilling.model.ProjectBillingInfo
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.sheets.v4.SheetsScopes
-import com.google.api.services.sheets.v4.Sheets
-import com.google.api.services.sheets.v4.model.ValueRange
 import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impGoogleObjectMetadata
+import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import spray.client.pipelining._
-import spray.http.StatusCodes._
-import spray.http._
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.UnsuccessfulResponseException
-import spray.httpx.encoding.Gzip
-import spray.json._
-import spray.routing.RequestContext
+import spray.json.{DefaultJsonProtocol, _}
 
-import scala.collection.JavaConversions._
-import scala.concurrent.ExecutionContext.Implicits.global
+import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -65,7 +59,7 @@ case class UsPriceItem(us: BigDecimal)
   */
 case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
-object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
+object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
   implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
     override def write(value: UsTieredPriceItem): JsValue = ???
@@ -79,11 +73,7 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol {
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
-object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging {
-
-  // application name to use within Google api libraries
-  private final val appName = "firecloud:orchestration"
-
+object HttpGoogleServicesDAO {
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
@@ -94,12 +84,34 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
   val spreadsheetScopes = Seq(SheetsScopes.SPREADSHEETS)
 
-  val httpTransport = GoogleNetHttpTransport.newTrustedTransport
-  val jsonFactory = JacksonFactory.getDefaultInstance
+  private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
+    baseCreds.createScoped(scopes.asJava)
+  }
+
+  private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials, scopes: Seq[String]): ServiceAccountCredentials = {
+    getScopedCredentials(baseCreds, scopes) match {
+      case sa:ServiceAccountCredentials => sa
+      case ex => throw new Exception(s"Excpected a ServiceAccountCredentials instance, got a ${ex.getClass.getName}")
+    }
+  }
 
   // credentials for orchestration's "firecloud" service account, used for admin duties
   lazy private val firecloudAdminSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.firecloudAdminSAJsonFile))
+
+  def getAdminUserAccessToken = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
+      .refreshAccessToken().getTokenValue
+  }
+}
+
+class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with RestJsonClient with SprayJsonSupport {
+
+  // application name to use within Google api libraries
+  private final val appName = "firecloud:orchestration"
+
+  val httpTransport = GoogleNetHttpTransport.newTrustedTransport
+  val jsonFactory = JacksonFactory.getDefaultInstance
 
   // credentials for the rawls service account, used for signing GCS urls
   lazy private val rawlsSACreds = ServiceAccountCredentials
@@ -111,48 +123,16 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   val anonymizedGroupRole = "MEMBER"
   val anonymizedGroupDeliverySettings = "ALL_MAIL"
 
-  // credentials for the trial billing service account, used for free trial duties
-  lazy private val trialBillingSACreds = ServiceAccountCredentials
-    .fromStream(new FileInputStream(FireCloudConfig.Auth.trialBillingSAJsonFile))
-
   private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials= {
     baseCreds.createDelegated(user)
   }
 
-  private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
-    baseCreds.createScoped(scopes)
-  }
-
-  private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials, scopes: Seq[String]): ServiceAccountCredentials = {
-    getScopedCredentials(baseCreds, scopes) match {
-      case sa:ServiceAccountCredentials => sa
-      case ex => throw new Exception(s"Excpected a ServiceAccountCredentials instance, got a ${ex.getClass.getName}")
-    }
-  }
-
-  def getAdminUserAccessToken = {
-    getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
-      .refreshAccessToken().getTokenValue
-  }
-
-  def getTrialBillingManagerAccessToken = {
-    getScopedServiceAccountCredentials(trialBillingSACreds, authScopes ++ billingScope)
-      .refreshAccessToken().getTokenValue
-  }
-
-  def getTrialSpreadsheetAccessToken = {
-    getScopedServiceAccountCredentials(trialBillingSACreds, authScopes ++ spreadsheetScopes)
-      .refreshAccessToken().getTokenValue
-  }
-
-  def getTrialBillingManagerEmail = trialBillingSACreds.getClientEmail
-
   def getCloudBillingManager(credential: ServiceAccountCredentials): Cloudbilling = {
-    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(authScopes ++ billingScope))).setApplicationName(appName).build()
+    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped((authScopes ++ billingScope).asJava))).setApplicationName(appName).build()
   }
 
   def getDirectoryManager(credential: GoogleCredentials): Directory = {
-    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(directoryScope))).setApplicationName(appName).build()
+    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(directoryScope.asJava))).setApplicationName(appName).build()
   }
 
   private lazy val pubSub = {
@@ -191,7 +171,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
       case Success(obs) =>
         Option(obs.getItems) match {
           case None => List.empty[String]
-          case Some(items) => items.toList.map { ob =>
+          case Some(items) => items.asScala.toList.map { ob =>
             ob.getName
           }
         }
@@ -241,25 +221,20 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
   def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[ObjectMetadata] = {
+                    (implicit executionContext: ExecutionContext): Future[ObjectMetadata] = {
 
     // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
     // project in which a pet service account is created. The XML api does not have this limitation.
     val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
-    val metadataPipeline = addCredentials(OAuth2BearerToken(authToken)) ~> sendReceive
-    metadataPipeline{metadataRequest} map { resp: HttpResponse =>
-      resp.status match {
-        case OK => xmlApiResponseToObject(resp, bucketName, objectKey)
-        case _ =>
-          // translate spray status code to akka-http status code
-          val code = akka.http.scaladsl.model.StatusCodes.getForKey(resp.status.intValue).getOrElse(
-            akka.http.scaladsl.model.StatusCodes.custom(resp.status.intValue, resp.status.defaultMessage)
-          )
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(code, code.reason))
+
+    userAuthedRequest(metadataRequest)(AccessToken(authToken)).map { response =>
+      response.status match {
+        case OK => xmlApiResponseToObject(response, bucketName, objectKey)
+        case _ => {
+          response.discardEntityBytes()
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.status.reason))
+        }
       }
-    } recover {
-      case t: UnsuccessfulResponseException =>
-        throw new FireCloudExceptionWithErrorReport(FCErrorReport(t.response))
     }
   }
 
@@ -283,6 +258,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     val headerMap: Map[String, String] = response.headers.map { h =>
       h.lowercaseName -> h.value
     }.toMap
+
+    //we're done with the response and we don't care about the body, so we should discard the bytes now
+    response.discardEntityBytes()
 
     // exists in xml api, same value as json api
     val generation: String = headerMap("x-goog-generation")
@@ -323,18 +301,17 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   }
 
   def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
-                       (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
-    val accessRequest = Head( HttpGoogleServicesDAO.getXmlApiMetadataUrl(bucketName, objectKey) )
-    val accessPipeline = addCredentials(authToken.accessToken) ~> sendReceive
-    accessPipeline{accessRequest}
+                       (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
+    val accessRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
+
+    userAuthedRequest(accessRequest)(authToken)
   }
 
   def getUserProfile(accessToken: WithAccessToken)
-                    (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[HttpResponse] = {
+                    (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
     val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
-    val profilePipeline = authHeaders(accessToken) ~> sendReceive
 
-    profilePipeline{profileRequest}
+    userAuthedRequest(profileRequest)(accessToken)
   }
 
   // download "proxy" for GCS objects. When using a simple RESTful url to download from GCS, Chrome/GCS will look
@@ -349,7 +326,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
   //      else
   //        redirect to a direct download in GCS
   def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
-                 (implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[PerRequestMessage] = {
+                 (implicit executionContext: ExecutionContext): Future[PerRequestMessage] = {
 
     val objectStr = s"gs://$bucketName/$objectKey" // for logging
     // can we determine the current user's identity with Google?
@@ -359,8 +336,9 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
           // user is known to Google. Extract the user's email and SID from the response, for logging
           import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOAuthUser
           import spray.json._
-          val oauthUser:Try[OAuthUser] = Try(userResponse.entity.asString.parseJson.convertTo[OAuthUser])
+          val oauthUser = Try(Unmarshaller.stringUnmarshaller.map(_.parseJson.convertTo[OAuthUser]))
           val userStr = (oauthUser getOrElse userResponse.entity).toString
+          userResponse.discardEntityBytes()
           // Does the user have access to the target file?
           objectAccessCheck(bucketName, objectKey, userAuthToken) flatMap { objectResponse =>
             objectResponse.status match {
@@ -376,15 +354,12 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                   logger.info(s"$userStr download via proxy allowed for [$objectStr]")
                   val gcsApiUrl = getXmlApiMetadataUrl(bucketName, objectKey)
                   val extReq = Get(gcsApiUrl)
-                  val proxyPipeline = addCredentials(userAuthToken.accessToken) ~> sendReceive
-                  // ensure we set the content-type correctly when proxying
-                  proxyPipeline(extReq) map { proxyResponse:HttpResponse =>
-                      proxyResponse.header[HttpHeaders.`Content-Type`] match {
+
+                  userAuthedRequest(extReq)(userAuthToken).map { proxyResponse =>
+                    proxyResponse.header[`Content-Type`] match {
                       case Some(ct) =>
-                        RequestCompleteWithHeaders((proxyResponse.status, proxyResponse.entity),
-                          HttpHeaders.`Content-Type`(ct.contentType)
-                        )
-                      case None => RequestComplete((proxyResponse.status, proxyResponse.entity))
+                        RequestCompleteWithHeaders(proxyResponse, `Content-Type`(ct.contentType))
+                      case None => RequestComplete(proxyResponse)
                     }
                   }
                 } else {
@@ -396,7 +371,7 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                         // the service account can read the object too. We are safe to sign a url.
                         logger.info(s"$userStr download via signed URL allowed for [$objectStr]")
                         val redirectUrl = getSignedUrl(bucketName, objectKey)
-                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, HttpHeaders.Location(Uri(redirectUrl)))
+                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, Location(Uri(redirectUrl)))
                       case _ =>
                         // the service account cannot read the object, even though the user can. We cannot
                         // make a signed url, because the service account won't have permission to sign it.
@@ -406,122 +381,33 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
                         // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
                         logger.info(s"$userStr download via direct link allowed for [$objectStr]")
                         val redirectUrl = getDirectDownloadUrl(bucketName, objectKey)
-                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, HttpHeaders.Location(Uri(redirectUrl)))
+                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, Location(Uri(redirectUrl)))
 
                     }
                   }
                 }
 
               case _ =>
+                objectResponse.discardEntityBytes()
                 // the user does not have access to the object.
-                val responseStr = objectResponse.entity.asString.replaceAll("\n","")
-                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status}): $responseStr")
-                Future(RequestComplete(objectResponse))
+                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status})")
+                Future(RequestComplete((Forbidden, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
             }
           }
         case _ =>
+          userResponse.discardEntityBytes()
           // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
-          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied. User info (${userResponse.status}): ${userResponse.entity.asString}")
-          Future(RequestComplete((Unauthorized, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
+          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied.")
+          Future(RequestComplete((Forbidden, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
       }
     }
   }
 
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
-  def fetchPriceList(implicit actorRefFactory: ActorRefFactory, executionContext: ExecutionContext): Future[GooglePriceList] = {
-    val pipeline: HttpRequest => Future[GooglePriceList] = sendReceive ~> decode(Gzip) ~> unmarshal[GooglePriceList]
-    pipeline(Get(FireCloudConfig.GoogleCloud.priceListUrl))
-  }
+  def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList] = {
+    val httpReq = Get(FireCloudConfig.GoogleCloud.priceListUrl)
 
-  /**
-    * Updates an existing google drive spreadsheet with the provided data.
-    *
-    * @param spreadsheetId  Spreadsheet ID
-    * @param newContent     ValueRange
-    * @return               JsObject representing the Google Update response
-    */
-  def updateSpreadsheet(spreadsheetId: String, newContent: ValueRange): JsObject = {
-
-    val service = new Sheets.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(trialBillingSACreds.createScoped(spreadsheetScopes))).setApplicationName("FireCloud").build()
-
-    // Retrieve existing records
-    val getExisting: Sheets#Spreadsheets#Values#Get = service.spreadsheets().values.get(spreadsheetId, "Sheet1")
-    val existingContent: ValueRange = getExisting.execute()
-
-    // Smart merge existing with new
-    val rows = updatePreservingOrder(newContent, existingContent)
-
-    // Send update
-    val response = service.spreadsheets().values().update(spreadsheetId, newContent.getRange, newContent.setValues(rows)).setValueInputOption("RAW").execute()
-    response.toString.parseJson.asJsObject
-  }
-
-  private def updatePreservingOrder(newContent: ValueRange, existingContent: ValueRange): List[java.util.List[AnyRef]] = {
-    val existingRecords =
-      // getValues may come through as an instantiated list of type null with zero entries due to Scala <> Java stuff
-      if (Try(existingContent.getValues.size()).toOption.getOrElse(0) > 0)
-        existingContent.getValues.tail.toList
-      else
-        List()
-
-    val header: java.util.List[AnyRef] = newContent.getValues.head
-    val newRecords: List[java.util.List[AnyRef]] = newContent.getValues.drop(1).toList
-
-    // Go through existing records and update them in place
-    val existingRecordsUpdated = existingRecords.map { existingRecord =>
-      val matchingNewRecord = newRecords.find { newRecordCandidate =>
-        newRecordCandidate.head == existingRecord.head
-      }
-
-      matchingNewRecord match {
-        case Some(newRecord) => newRecord // Overwrite the entire row in place, adequate unless we want to preserve user-added columns
-        case _ => existingRecord // Don't delete existing records that aren't in the new export
-      }
-    }
-
-    // Create new records for newly-added projects
-    val recordsToAppend = newRecords.filter { newRecordCandidate =>
-      !existingRecords.exists { existingRecordCandidate =>
-        existingRecordCandidate.head == newRecordCandidate.head
-      }
-    }
-
-    List(header) ++ existingRecordsUpdated ++ recordsToAppend
-  }
-
-  override def trialBillingManagerRemoveBillingAccount(project: String, targetUserEmail: String): Boolean = {
-    val projectName = s"projects/$project" // format needed by Google
-
-    // as the service account, get the current billing info to make sure we are removing the right thing.
-    // this call will fail if the free-tier billing account has already been removed from the project.
-    val billingService = getCloudBillingManager(trialBillingSACreds)
-
-    val readRequest = billingService.projects().getBillingInfo(projectName)
-    Try(executeGoogleRequest[ProjectBillingInfo](readRequest)) match {
-      case Failure(f) =>
-        logger.warn(s"Could not read billing info for free trial project $project at termination. This " +
-          "probably means the user has already swapped billing, but you may want to doublecheck.")
-        true
-      case Success(currentBillingInfo) =>
-        if (currentBillingInfo.getBillingAccountName != FireCloudConfig.Trial.billingAccount) {
-          // the project is not linked to the free-tier billing account. Don't change anything.
-          logger.warn(s"Free trial project $project has third-party billing account " +
-            s"${currentBillingInfo.getBillingAccountName}; not removing it.")
-          true
-        } else {
-          // At this point, we know that the user is a member of the project and that the project
-          // is on the free-trial billing account. We've done our due diligence - remove the billing.
-          // We do this by creating a ProjectBillingInfo with an empty account name - that's how Google
-          // indicates we want to remove the billing account association.
-          val noBillingInfo = new ProjectBillingInfo().setBillingAccountName("")
-          // generate the request to send to Google
-          val noBillingRequest = getCloudBillingManager(trialBillingSACreds)
-            .projects().updateBillingInfo(projectName, noBillingInfo)
-          // send the request
-          val updatedProject = executeGoogleRequest[ProjectBillingInfo](noBillingRequest)
-          updatedProject.getBillingEnabled != null && updatedProject.getBillingEnabled
-        }
-    }
+    unAuthedRequestToObject[GooglePriceList](httpReq)
   }
 
   override def deleteGoogleGroup(groupEmail: String): Unit = {
@@ -640,8 +526,13 @@ object HttpGoogleServicesDAO extends GoogleServicesDAO with FireCloudRequestBuil
     logger.debug(s"publishing to google pubsub topic $fullyQualifiedTopic, messages [${messages.mkString(", ")}]")
     Future.traverse(messages.grouped(1000)) { messageBatch =>
       val pubsubMessages = messageBatch.map(text => new PubsubMessage().encodeData(text.getBytes("UTF-8")))
-      val pubsubRequest = new PublishRequest().setMessages(pubsubMessages)
+      val pubsubRequest = new PublishRequest().setMessages(pubsubMessages.asJava)
       Future(executeGoogleRequest(pubSub.projects().topics().publish(fullyQualifiedTopic, pubsubRequest)))
     }.map(_ => ())
+  }
+
+  override def getAdminUserAccessToken = {
+    getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
+      .refreshAccessToken().getTokenValue
   }
 }

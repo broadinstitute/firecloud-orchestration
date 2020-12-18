@@ -1,47 +1,29 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import akka.actor.{Actor, Props}
-import akka.pattern._
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.core.AgoraPermissionHandler
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
-import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo, optAkka2sprayStatus}
-import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
-import org.broadinstitute.dsde.firecloud.service.NamespaceService.{GetPermissions, PostPermissions}
+import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport
-import spray.httpx.SprayJsonSupport._
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import spray.json.DefaultJsonProtocol._
-import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object NamespaceService {
-
-  sealed trait NamespaceServiceMessage
-  case class GetPermissions(ns: String, entity: String) extends NamespaceServiceMessage
-  case class PostPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]) extends NamespaceServiceMessage
-
-  def props(namespaceService: UserInfo => NamespaceService, userInfo: UserInfo): Props = {
-    Props(namespaceService(userInfo))
-  }
-
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
     new NamespaceService(userInfo, app.agoraDAO)
 }
 
 class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit protected val executionContext: ExecutionContext)
-  extends Actor with SprayJsonSupport {
+  extends SprayJsonSupport {
 
   implicit val userInfo = argUserInfo
 
-  override def receive = {
-    case GetPermissions(ns: String, entity: String) => { getFireCloudPermissions(ns, entity) } pipeTo sender
-    case PostPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]) => { postFireCloudPermissions(ns, entity, permissions) } pipeTo sender
-  }
+  def GetPermissions(ns: String, entity: String) = { getFireCloudPermissions(ns, entity) }
+  def PostPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]) = { postFireCloudPermissions(ns, entity, permissions) }
 
   def getFireCloudPermissions(ns: String, entity: String): Future[PerRequestMessage] = {
     val agoraPermissions = agoraDAO.getNamespacePermissions(ns, entity)
@@ -49,7 +31,7 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
   }
 
   def postFireCloudPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]): Future[PerRequestMessage] = {
-    val agoraPermissionsToPost = permissions map { permission => AgoraPermissionHandler.toAgoraPermission(permission) }
+    val agoraPermissionsToPost = permissions map { permission => AgoraPermissionService.toAgoraPermission(permission) }
     val agoraPermissionsPosted = agoraDAO.postNamespacePermissions(ns, entity, agoraPermissionsToPost)
     delegatePermissionsResponse(agoraPermissionsPosted)
   }
@@ -57,10 +39,11 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
   private def delegatePermissionsResponse(agoraPerms: Future[List[AgoraPermission]]): Future[PerRequestMessage] = {
     agoraPerms map {
       perms =>
-        RequestComplete(OK, perms map AgoraPermissionHandler.toFireCloudPermission)
+        RequestComplete(OK, perms map AgoraPermissionService.toFireCloudPermission)
     } recover {
       case e: FireCloudExceptionWithErrorReport =>
-        RequestComplete(optAkka2sprayStatus(e.errorReport.statusCode).getOrElse(InternalServerError), e.errorReport)
+//        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
+        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError))
       case e: Throwable =>
         RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
     }

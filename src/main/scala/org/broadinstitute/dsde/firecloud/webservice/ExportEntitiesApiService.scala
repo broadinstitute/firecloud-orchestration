@@ -1,18 +1,19 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.Props
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.service.{ExportEntitiesByTypeActor, ExportEntitiesByTypeArguments, FireCloudDirectives, FireCloudRequestBuilding}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
-import spray.routing.{HttpService, Route}
 
+import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
 
-trait ExportEntitiesApiService extends HttpService with FireCloudDirectives with FireCloudRequestBuilding with StandardUserInfoDirectives with LazyLogging {
+trait ExportEntitiesApiService extends Directives with RequestBuilding with StandardUserInfoDirectives with LazyLogging {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
 
   val exportEntitiesRoutes: Route =
 
@@ -21,11 +22,10 @@ trait ExportEntitiesApiService extends HttpService with FireCloudDirectives with
       parameters('attributeNames.?, 'model.?) { (attributeNamesString, modelString) =>
         requireUserInfo() { userInfo =>
           get {
-            requestContext =>
-              val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-              val exportArgs = ExportEntitiesByTypeArguments(requestContext, userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
-              val exportProps: Props = ExportEntitiesByTypeActor.props(exportEntitiesByTypeConstructor, exportArgs)
-              actorRefFactory.actorOf(exportProps) ! ExportEntitiesByTypeActor.ExportEntities
+            val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+            val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
+
+            complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
           }
         }
       }

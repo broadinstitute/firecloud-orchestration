@@ -1,13 +1,13 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockLogitDAO, MockResearchPurposeSupport, MockShareLogDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockImportServiceDAO, MockLogitDAO, MockResearchPurposeSupport, MockShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.scalatest.BeforeAndAfterEach
-import spray.http.OAuth2BearerToken
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -15,12 +15,13 @@ import scala.concurrent.duration._
 
 class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, trialDao, new MockLogitDAO, new MockShareLogDAO)
+  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockLogitDAO, new MockShareLogDAO, new MockImportServiceDAO)
 
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(customApp)
 
   val userToken: UserInfo = UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111")
-  lazy val userService: UserService = TestActorRef(UserService.props(userServiceConstructor, userToken)).underlyingActor
+
+  lazy val userService: UserService = userServiceConstructor(userToken)
 
   "UserService " - {
     "getNewAnonymousGroupName" - { // this indirectly tests getWord

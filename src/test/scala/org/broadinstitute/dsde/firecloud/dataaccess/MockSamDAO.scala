@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, SamResource, UserIdInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamResource, UserIdInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
@@ -106,4 +107,5 @@ class MockSamDAO extends SamDAO {
     Future.failed(new FireCloudException("mock not implemented"))
 
   override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = Future.successful(())
+
 }

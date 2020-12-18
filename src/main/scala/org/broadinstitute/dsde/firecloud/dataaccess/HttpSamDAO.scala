@@ -4,30 +4,33 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, UserIdInfo, UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, RegistrationInfoV2, UserIdInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.model.{ManagedRoles, RawlsUserEmail}
+import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import spray.client.pipelining.sendReceive
-import spray.http.HttpRequest
-import spray.httpx.SprayJsonSupport._
+import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.DefaultJsonProtocol._
-import spray.json.{JsBoolean, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{JsValue, JsonFormat, RootJsonFormat}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Created by mbemis on 8/21/17.
   */
-class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext )
-  extends SamDAO with RestJsonClient {
+class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializer, implicit val executionContext: ExecutionContext )
+  extends SamDAO with RestJsonClient with SprayJsonSupport {
 
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] = {
     authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")), label=Some("HttpSamDAO.listWorkspaceResources"))
@@ -93,6 +96,7 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
       override def read(json: JsValue): Boolean = implicitly[JsonFormat[Boolean]].read(json)
       override def write(obj: Boolean): JsValue = implicitly[JsonFormat[Boolean]].write(obj)
     }
+
     userAuthedRequestToUnit(Put(samResourcePolicy(resourceTypeName, resourceId, policyName) + "/public", public))
   }
 
@@ -102,13 +106,18 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
 
   private def userAuthedRequestToUnit(request: HttpRequest)(implicit userInfo: WithAccessToken): Future[Unit] = {
     userAuthedRequest(request).map { resp =>
-      if(resp.status.isSuccess) ()
-      else throw new FireCloudExceptionWithErrorReport(FCErrorReport(resp))
+      if(resp.status.isSuccess) Future.successful(())
+      else {
+        FCErrorReport(resp).flatMap { errorReport =>
+          Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
+        }
+      }
     }
   }
 
   override def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken] = {
     implicit val accessToken = user
+
     authedRequestToObject[String](Post(samArbitraryPetTokenUrl, scopes), label=Some("HttpSamDAO.getPetServiceAccountTokenForUser")).map { quotedToken =>
       // Sam returns a quoted string. We need the token without the quotes.
       val token = if (quotedToken.startsWith("\"") && quotedToken.endsWith("\"") )
@@ -120,11 +129,12 @@ class HttpSamDAO( implicit val system: ActorSystem, implicit val executionContex
   }
 
   override def status: Future[SubsystemStatus] = {
-    val pipeline = sendReceive
-    pipeline(Get(samStatusUrl)) map { response =>
-      val ok = response.status.isSuccess
-      SubsystemStatus(ok, if (!ok) Option(List(response.entity.asString)) else None)
+    for {
+      response <- unAuthedRequest(Get(samStatusUrl))
+      ok = response.status.isSuccess
+      message <- if (ok) Future.successful(None) else Unmarshal(response.entity).to[String].map(Option(_))
+    } yield {
+      SubsystemStatus(ok, message.map(List(_)))
     }
   }
-
 }

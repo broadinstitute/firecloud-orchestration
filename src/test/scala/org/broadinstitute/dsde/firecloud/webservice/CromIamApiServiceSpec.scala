@@ -1,23 +1,31 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.ActorRefFactory
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.{HttpMethods, Uri}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import spray.http.{HttpMethods, Uri}
-import spray.httpx.SprayJsonSupport
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+
+import scala.concurrent.ExecutionContext
 
 class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with SprayJsonSupport {
 
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   var cromiamServer: ClientAndServer = _
+  var workspaceServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
     cromiamServer = startClientAndServer(MockUtils.cromiamServerPort)
+    workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
   }
 
   override def afterAll(): Unit = {
     cromiamServer.stop()
+    workspaceServer.stop()
   }
 
   "CromIAM passthrough" - {
@@ -122,7 +130,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery("includeKey=hit&includeKey=hitFailure")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("includeKey=hit&includeKey=hitFailure"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -138,6 +146,9 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     }
 
     "/api/workflows/{version}/backend/metadata" - {
+
+      // N.B. these passthroughs hit Rawls, not Cromiam (see CromIamApiService). Therefore they use the
+      // "workspaceServer" mockserver, not the "cromiamServer" mockserver.
 
       val endpointPapiV1 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/operations/foobar"
       val endpointPapiV2 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/projects/proj/operations/foobar"
@@ -195,7 +206,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery("start=start%20value&end=end%20value")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("start=start%20value&end=end%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -237,7 +248,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery("workflowA=workflowA%20value&workflowB=workflowB%20value")) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("workflowA=workflowA%20value&workflowB=workflowB%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -287,6 +298,4 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     }
 
   }
-
-  override def actorRefFactory: ActorRefFactory = system
 }

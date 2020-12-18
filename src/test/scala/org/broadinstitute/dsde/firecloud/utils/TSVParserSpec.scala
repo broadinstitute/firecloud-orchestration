@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import org.scalatest.FlatSpec
-import org.broadinstitute.dsde.firecloud.EntityClient
+import org.broadinstitute.dsde.firecloud.EntityService
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVLoadFiles, MockTSVStrings}
 import org.broadinstitute.dsde.firecloud.model.FirecloudModelSchema
 
@@ -71,6 +71,13 @@ class TSVParserSpec extends FlatSpec {
     }
   }
 
+  it should "handle attributes in namespaces" in {
+    val expected = MockTSVLoadFiles.validNamespacedAttributes
+    assertResult(expected) {
+      TSVParser.parse(MockTSVStrings.namespacedAttributes)
+    }
+  }
+
   it should "handle windows newline separators" in {
     val expected = MockTSVLoadFiles.validQuotedValues
     assertResult(expected) {
@@ -112,7 +119,7 @@ class TSVParserSpec extends FlatSpec {
       "ref_fasta")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
+      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
     }
   }
 
@@ -136,7 +143,7 @@ class TSVParserSpec extends FlatSpec {
       "ref_fasta")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
+      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
     }
   }
 
@@ -156,7 +163,7 @@ class TSVParserSpec extends FlatSpec {
       "some_other_id")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityClient.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
+      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
     }
   }
 }

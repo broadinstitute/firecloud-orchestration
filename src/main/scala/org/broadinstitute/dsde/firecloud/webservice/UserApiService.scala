@@ -1,24 +1,19 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpMethods, HttpResponse, StatusCode}
+import akka.http.scaladsl.server.{RequestContext, RouteResult}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.UserService.{DeleteTerraPreference, GetTerraPreference, ImportPermission, SetTerraPreference}
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
-import spray.http.HttpHeaders.Authorization
-import spray.http.StatusCodes._
-import spray.http.{HttpCredentials, HttpMethods, HttpResponse, StatusCode}
-import spray.httpx.SprayJsonSupport._
-import spray.httpx.unmarshalling._
-import spray.json.DefaultJsonProtocol._
-import spray.routing._
 
-import scala.util.{Failure, Success}
+import scala.concurrent.{ExecutionContext, Future}
 
 object UserApiService {
   val remoteGetKeyPath = FireCloudConfig.Thurloe.authPrefix + FireCloudConfig.Thurloe.get
@@ -57,13 +52,12 @@ object UserApiService {
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
 // of how we create service actors, so I'm pushing that work out to later.
-trait UserApiService extends HttpService with PerRequestCreator with FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
+trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient {
 
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val trialServiceConstructor: () => TrialService
   val userServiceConstructor: (UserInfo) => UserService
 
   val userServiceRoutes =
@@ -81,15 +75,15 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
             case None =>
               respondWithErrorReport(Unauthorized, "No authorization header in request.", requestContext)
             // browser sent Authorization header; try to query Sam for user status
-            case Some(_) =>
-              val pipeline = authHeaders(requestContext) ~> sendReceive
+            case Some(header) =>
+
               val version1 = !userDetailsOnly.exists(_.equalsIgnoreCase("true"))
-              pipeline(Get(UserApiService.samRegisterUserInfoURL)) onComplete {
-                case Success(response: HttpResponse) =>
-                  handleSamResponse(response, requestContext, version1)
+
+              userAuthedRequest(Get(UserApiService.samRegisterUserInfoURL))(AccessToken(header.token())).flatMap { response =>
+                handleSamResponse(response, requestContext, version1)
+              } recoverWith {
                 // we couldn't reach Sam (within timeout period). Respond with a Service Unavailable error.
-                case Failure(error) =>
-                  respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
+                case error: Throwable => respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
               }
           }
         }
@@ -115,54 +109,25 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
       } ~
       path("profile" / "importstatus") {
         get {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), ImportPermission)
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).ImportPermission }
           }
         }
       } ~
       path("profile" / "terra") {
         get {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), GetTerraPreference)
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).GetTerraPreference }
           }
         } ~
         post {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), SetTerraPreference)
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).SetTerraPreference }
           }
         } ~
         delete {
-          requireUserInfo() { userInfo => requestContext =>
-            perRequest(requestContext, UserService.props(userServiceConstructor, userInfo), DeleteTerraPreference)
-          }
-        }
-      } ~
-      pathPrefix("profile" / "trial") {
-        pathEnd {
-          post {
-            parameter("operation" ? "enroll") { op =>
-              requireUserInfo() { userInfo => requestContext =>
-                val operation = op.toLowerCase match {
-                  case "enroll" => Some(TrialService.EnrollUser(userInfo))
-                  case "finalize" => Some(TrialService.FinalizeUser(userInfo))
-                  case _ => None
-                }
-
-                if (operation.nonEmpty)
-                  perRequest(requestContext, TrialService.props(trialServiceConstructor), operation.get)
-                else
-                  requestContext.complete(BadRequest, ErrorReport(s"Invalid operation '$op'"))
-              }
-            }
-          }
-        } ~
-        path("userAgreement") {
-          put {
-            requireUserInfo() { userInfo => requestContext =>
-              perRequest(requestContext,
-                TrialService.props(trialServiceConstructor),
-                TrialService.RecordUserAgreement(userInfo))
-            }
+          requireUserInfo() { userInfo =>
+            complete { userServiceConstructor(userInfo).DeleteTerraPreference }
           }
         }
       } ~
@@ -179,8 +144,8 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         }
       } ~
       path("userinfo") {
-        requireUserInfo() { userInfo => requestContext =>
-          requestContext.complete(HttpGoogleServicesDAO.getUserProfile(userInfo))
+        requireUserInfo() { userInfo =>
+          complete { userServiceConstructor(userInfo).GetUserProfileGoogle }
         }
       } ~
       pathPrefix("profile") {
@@ -188,25 +153,22 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         pathEnd {
           get {
             requireUserInfo() { userInfo =>
-              requestContext =>
-                perRequest(requestContext,
-                  UserService.props(userServiceConstructor, userInfo),
-                  UserService.GetAllUserKeys)
+              complete { userServiceConstructor(userInfo).GetAllUserKeys }
             }
           }
         }
       }
     }
 
-  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext): Unit = {
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, requestContext: RequestContext): Future[RouteResult] = {
     requestContext.complete(statusCode, ErrorReport(statusCode=statusCode, message=message))
   }
 
-  private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Unit = {
+  private def respondWithErrorReport(statusCode: StatusCode, message: String, error: Throwable, requestContext: RequestContext): Future[RouteResult] = {
     requestContext.complete(statusCode, ErrorReport(statusCode = statusCode, message = message, throwable = error))
   }
 
-  private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version1: Boolean): Unit = {
+  private def handleSamResponse(response: HttpResponse, requestContext: RequestContext, version1: Boolean): Future[RouteResult] = {
     response.status match {
       // Sam rejected our request. User is either invalid or their token timed out; this is truly unauthorized
       case Unauthorized =>
@@ -219,55 +181,50 @@ trait UserApiService extends HttpService with PerRequestCreator with FireCloudRe
         respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
       // Sam found the user; we'll try to parse the response and inspect it
       case OK =>
-        val respJson: Deserialized[RegistrationInfoV2] = response.entity.as[RegistrationInfoV2]
-        handleOkResponse(respJson, requestContext, version1)
+        Unmarshal(response).to[RegistrationInfoV2].flatMap { regInfo =>
+          handleOkResponse(regInfo, requestContext, version1)
+        } recoverWith {
+          case error: Throwable => respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+        }
       case x =>
         // if we get any other error from Sam, pass that error on
         respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
     }
   }
 
-  private def handleOkResponse(respJson: Deserialized[RegistrationInfoV2], requestContext: RequestContext, version1: Boolean): Unit = {
-    respJson match {
-      case Right(regInfo) =>
-        if (regInfo.enabled) {
-          if (version1) {
-            respondWithUserDiagnostics(regInfo, requestContext)
-          } else {
-            requestContext.complete(OK, regInfo)
-          }
-        } else {
-          respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
-        }
-      case Left(_) =>
-        respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+  private def handleOkResponse(regInfo: RegistrationInfoV2, requestContext: RequestContext, version1: Boolean): Future[RouteResult] = {
+    if (regInfo.enabled) {
+      if (version1) {
+        respondWithUserDiagnostics(regInfo, requestContext)
+      } else {
+        requestContext.complete(OK, regInfo)
+      }
+    } else {
+      respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
     }
   }
 
-  private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Unit = {
-    val pipeline = authHeaders(requestContext) ~> sendReceive
-    pipeline(Get(UserApiService.samRegisterUserDiagnosticsURL)) onComplete {
-      case Success(response: HttpResponse) =>
-        response.status match {
-          case InternalServerError =>
-            respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
-          case OK =>
-            response.entity.as[WorkbenchEnabledV2] match {
-              case Right(diagnostics) =>
-                if (diagnostics.inAllUsersGroup && diagnostics.inGoogleProxyGroup) {
-                  val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), WorkbenchEnabled(diagnostics.inGoogleProxyGroup, diagnostics.enabled, diagnostics.inAllUsersGroup))
-                  requestContext.complete(OK, v1RegInfo)
-                } else {
-                  respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
-                }
-              case Left(_) =>
-                respondWithErrorReport(InternalServerError, "Received unparseable response from identity service.", requestContext)
+  private def respondWithUserDiagnostics(regInfo: RegistrationInfoV2, requestContext: RequestContext): Future[RouteResult] = {
+    val authorizationHeader: HttpCredentials = (requestContext.request.headers collect {
+      case Authorization(h) => h
+    }).head //if we've gotten here, the header already exists. Will instead pass it through since that's "safer", TODO
+
+    userAuthedRequest(Get(UserApiService.samRegisterUserDiagnosticsURL))(AccessToken(authorizationHeader.token())).flatMap { response =>
+      response.status match {
+        case InternalServerError =>
+          respondWithErrorReport(InternalServerError, "Identity service encountered an unknown error, please try again.", requestContext)
+        case OK =>
+          Unmarshal(response).to[WorkbenchEnabledV2].flatMap { diagnostics =>
+            if (diagnostics.inAllUsersGroup && diagnostics.inGoogleProxyGroup) {
+              val v1RegInfo = RegistrationInfo(WorkbenchUserInfo(regInfo.userSubjectId, regInfo.userEmail), WorkbenchEnabled(diagnostics.inGoogleProxyGroup, diagnostics.enabled, diagnostics.inAllUsersGroup))
+              requestContext.complete(OK, v1RegInfo)
+            } else {
+              respondWithErrorReport(Forbidden, "FireCloud user not activated.", requestContext)
             }
-          case x =>
-            respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
-        }
-      case Failure(error) =>
-        respondWithErrorReport(ServiceUnavailable, "Identity service did not produce a timely response, please try again later.", error, requestContext)
+          }
+        case x =>
+          respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
+      }
     }
   }
 }

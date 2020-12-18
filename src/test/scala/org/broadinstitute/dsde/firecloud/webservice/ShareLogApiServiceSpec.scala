@@ -6,11 +6,17 @@ import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDA
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
-import spray.http.OAuth2BearerToken
-import spray.http.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import spray.json.DefaultJsonProtocol._
 
+import scala.concurrent.ExecutionContext
+
 final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService {
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   final val sharingUser = UserInfo("fake1@gmail.com", OAuth2BearerToken(dummyToken), 3600L, "fake1")
 
   private def getUserHeaders(userId: String, email: String) = dummyUserIdHeaders(userId, dummyToken, email)
@@ -22,9 +28,7 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
   val localShareLogDao = new ShareLogApiServiceSpecShareLogDAO
 
   override val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))
-
-  override def actorRefFactory: ActorRefFactory = system
-
+  
   "ShareLogApiService" - {
     "when getting all sharees" in {
       Get(getShareesPath)  ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {

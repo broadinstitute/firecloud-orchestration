@@ -1,25 +1,26 @@
 package org.broadinstitute.dsde.firecloud.service
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceDeleteResponse}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
-import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeString, _}
+import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.BeforeAndAfterEach
-import spray.http.{OAuth2BearerToken, StatusCode, StatusCodes}
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 
 class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, trialDao, new MockLogitDAO, new MockShareLogDAO)
+  val customApp = Application(agoraDao, googleServicesDao, ontologyDao, consentDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockLogitDAO, new MockShareLogDAO, new MockImportServiceDAO)
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(customApp)
 
-  lazy val ws: WorkspaceService = TestActorRef(WorkspaceService.props(workspaceServiceConstructor, AccessToken(OAuth2BearerToken("")))).underlyingActor
+  lazy val ws: WorkspaceService = workspaceServiceConstructor(AccessToken(OAuth2BearerToken("")))
 
   override def beforeEach(): Unit = {
     searchDao.reset
@@ -110,10 +111,10 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     ns match {
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
-      case "projectowner" => Future(WorkspaceResponse(WorkspaceAccessLevels.ProjectOwner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty))
-      case "unpublishsuccess" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishsuccess, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty))
-      case "unpublishfailure" => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, unpublishfailure, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty))
-      case _ => Future(WorkspaceResponse(WorkspaceAccessLevels.Owner, canShare = true, canCompute=true, catalog=false, newWorkspace, WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0), WorkspaceBucketOptions(false), Set.empty))
+      case "projectowner" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.ProjectOwner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
+      case "unpublishsuccess" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishsuccess, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
+      case "unpublishfailure" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishfailure, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
+      case _ => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
     }
   }
 

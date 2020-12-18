@@ -1,11 +1,13 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.FreeSpec
-import spray.testkit.ScalatestRouteTest
+
+import scala.concurrent.ExecutionContext
 
 class FireCloudDirectivesSpec extends FreeSpec with ScalatestRouteTest with FireCloudDirectives {
 
-  def actorRefFactory = system
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   "FireCloudDirectives" - {
     "Unencoded passthrough URLs" - {

@@ -1,33 +1,48 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCode}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
-import spray.client.pipelining.unmarshal
-import spray.http._
-import spray.json._
-import spray.httpx.SprayJsonSupport._
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 object ErrorReportExtensions {
-  object FCErrorReport {
+  object FCErrorReport extends SprayJsonSupport {
 
-    def apply(response: HttpResponse)(implicit ers: ErrorReportSource): ErrorReport = {
-      import spray.httpx.unmarshalling._
-      val (message, causes) = response.entity.as[ErrorReport] match {
-        case Right(re) => (re.message, Seq(re))
-        case Left(err) => (response.entity.asString, Seq.empty)
+    def apply(response: HttpResponse)(implicit ers: ErrorReportSource, executionContext: ExecutionContext, mat: Materializer): Future[ErrorReport] = {
+      // code prior to creation of this error report may have already consumed the response entity
+
+      response.entity match {
+        case HttpEntity.Strict(contentType, data) =>
+          val entityString = data.decodeString(java.nio.charset.Charset.defaultCharset())
+          Unmarshal(entityString).to[ErrorReport].map { re =>
+            new ErrorReport(ers.source, re.message, Option(response.status), Seq(re), Seq.empty, None)
+          } recover {
+            case _ =>
+              new ErrorReport(ers.source, entityString, Option(response.status), Seq.empty, Seq.empty, None)
+          }
+        case _ =>
+          val fallbackMessage = Try(response.toString()).toOption.getOrElse("Unexpected error")
+          Future.successful(new ErrorReport(ers.source, fallbackMessage, Option(response.status), Seq.empty, Seq.empty, None))
       }
-      new ErrorReport(ers.source, message, Option(response.status), causes, Seq.empty, None)
+//
+//      Unmarshal(response).to[ErrorReport].map { re =>
+//        new ErrorReport(ers.source, re.message, Option(response.status), Seq(re), Seq.empty, None)
+//      } recoverWith {
+//        case _ => Unmarshal(response).to[String].map { message =>
+//          new ErrorReport(ers.source, message, Option(response.status), Seq.empty, Seq.empty, None)
+//        }
+//      }
     }
-
-    def tryUnmarshal(response: HttpResponse) =
-      Try { unmarshal[ErrorReport].apply(response) }
   }
 }
 
-object RequestCompleteWithErrorReport {
+object RequestCompleteWithErrorReport extends SprayJsonSupport {
 
   def apply(statusCode: StatusCode, message: String) =
     RequestComplete(statusCode, ErrorReport(statusCode, message))
@@ -37,17 +52,4 @@ object RequestCompleteWithErrorReport {
 
   def apply(statusCode: StatusCode, message: String, causes: Seq[ErrorReport]) =
     RequestComplete(statusCode, ErrorReport(statusCode, message, causes))
-}
-
-object HttpResponseWithErrorReport {
-
-  def apply(statusCode: StatusCode, message: String) =
-    HttpResponse(statusCode, ErrorReport(statusCode, message).toJson.compactPrint)
-
-  def apply(statusCode: StatusCode, throwable: Throwable) =
-    HttpResponse(statusCode, ErrorReport(statusCode, throwable).toJson.compactPrint)
-
-  def apply(statusCode: StatusCode, message: String, throwable: Throwable) =
-    HttpResponse(statusCode, ErrorReport(statusCode, message, throwable).toJson.compactPrint)
-
 }

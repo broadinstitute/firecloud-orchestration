@@ -42,14 +42,18 @@ LOCAL_UI=true ./config/docker-rsync-local-ui.sh
 ### Run tests
 
 #### From IntelliJ
+To run tests from IntelliJ, it is recommended to load the project from the `automation` folder instead of the `sam` root folder.
+To do this, go to `File` -> `Open...` and navigate __into__ the `automation` folder, click `Open` to accept, and then import from SBT.
 
-First, you need to set some default VM parameters for ScalaTest run configurations. In IntelliJ, go to `Run` > `Edit Configurations...`, select `ScalaTest` under `Defaults`, and add these VM parameters:
+Then, you need to set some default VM parameters for ScalaTest run configurations. In IntelliJ, go to `Run` > `Edit Configurations...`, select `ScalaTest` under `Defaults`, and add these VM parameters:
 
 ```
 -Djsse.enableSNIExtension=false -Dheadless=false
 ```
 
 Also make sure that there is a `Build` task configured to run before launch.
+
+You may also need to check the `Use sbt` checkbox
 
 Now, simply open the test spec, right-click on the class name or a specific test string, and select `Run` or `Debug` as needed. A good one to start with is `GoogleSpec` to make sure your base configuration is correct. All test code lives in `automation/src/test/scala`. FireCloud test suites can be found in `automation/src/test/scala/org/broadinstitute/dsde/firecloud/test`.
 

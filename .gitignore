@@ -5,6 +5,7 @@ config/
 
 # sbt specific
 .sbtopts
+.bsp/
 .cache/
 .history/
 .lib/
@@ -72,4 +73,7 @@ crashlytics-build.properties
 *.pid
 .DS_Store
 
-automation/src/test/resources
+
+automation/src/test/resources/**
+!automation/src/test/resources/PFBImportSpec-expected-entities.json
+

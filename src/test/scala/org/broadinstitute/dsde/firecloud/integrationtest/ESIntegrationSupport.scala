@@ -14,6 +14,7 @@ import scala.util.{Failure, Success, Try}
 
 /**
   * Created by davidan on 2/9/17.
+  * This is an object (i.e. not a trait) so that the Elasticsearch TransportClient is a singleton
   */
 object ESIntegrationSupport extends IntegrationTestConfig {
 
@@ -47,11 +48,6 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   lazy val ontologyDAO:OntologyDAO = {
     // use the index name defined in reference.conf, since we execute read-only
     new ElasticSearchOntologyDAO(client, FireCloudConfig.ElasticSearch.ontologyIndexName)
-  }
-
-  lazy val trialDAO:TrialDAO = {
-    // use the temporary index name defined above
-    new ElasticSearchTrialDAO(client, itTestIndexName, RefreshPolicy.IMMEDIATE)
   }
 
   lazy val shareLogDAO:ShareLogDAO = {

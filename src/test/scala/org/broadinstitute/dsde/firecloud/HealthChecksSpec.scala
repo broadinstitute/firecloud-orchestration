@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.scalatest.concurrent.ScalaFutures
-import spray.http.StatusCodes.{InternalServerError, NotFound}
+import akka.http.scaladsl.model.StatusCodes.{InternalServerError, NotFound}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -23,14 +23,13 @@ class HealthChecksSpec extends BaseServiceSpec with ScalaFutures {
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
   private def doChecks(healthChecks: HealthChecks) = {
-    Future.sequence(Seq(healthChecks.maybeRegisterAdminSA, healthChecks.maybeRegisterTrialBillingSA)).map(_.exists(_.isDefined))
+    Future.sequence(Seq(healthChecks.maybeRegisterAdminSA)).map(_.exists(_.isDefined))
   }
 
 
   "Startup checks" - {
     val tokens = Map(
-      "admin SA" -> app.googleServicesDAO.getAdminUserAccessToken,
-      "billing SA" -> app.googleServicesDAO.getTrialBillingManagerAccessToken
+      "admin SA" -> app.googleServicesDAO.getAdminUserAccessToken
     )
 
     "When automatic registration of SAs is disabled" - {

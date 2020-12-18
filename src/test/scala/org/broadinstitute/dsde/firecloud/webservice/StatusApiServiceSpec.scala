@@ -1,14 +1,15 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.HealthChecks
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, StatusService}
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.StatusCheckResponseFormat
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
 import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, StatusCheckResponse}
-import spray.http.HttpMethods.GET
-import spray.http.StatusCodes.OK
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model.StatusCodes.OK
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 
@@ -16,9 +17,11 @@ import scala.concurrent.duration._
     workbench-libs. Here, we test routing, de/serialization, and the config we send into
     the HealthMonitor.
  */
-class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService {
+class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with SprayJsonSupport {
 
   def actorRefFactory = system
+
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val healthMonitorChecks = new HealthChecks(app).healthMonitorChecks
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
@@ -58,7 +61,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService {
     "should contain all the subsystems we care about" in {
       Get(statusPath) ~> statusRoutes ~> check {
         val statusCheckResponse = responseAs[StatusCheckResponse]
-        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe, HealthChecks.adminSaRegistered, HealthChecks.trialBillingSaRegistered)
+        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe, HealthChecks.adminSaRegistered)
         assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
       }
     }

@@ -32,6 +32,7 @@ FireCloud Orchestration Service
 ## Building and Running
 
 See https://github.com/broadinstitute/firecloud-develop for directions on running locally within Broad's DSDE environment.
+* Local Orchestration URL: https://local.broadinstitute.org:10443/
 
 Run the assembly task to build a fat jar:
 ```
@@ -41,7 +42,7 @@ sbt
 
 ```
 java -Dconfig.file=src/main/resources/application.conf \
-  -jar $(ls target/scala-2.11/FireCloud-Orchestration-assembly-* | tail -n 1)
+  -jar $(ls target/scala-2.12/FireCloud-Orchestration-assembly-* | tail -n 1)
 ```
 
 For development, you can have sbt recompile and restart the server whenever a file changes on disk:

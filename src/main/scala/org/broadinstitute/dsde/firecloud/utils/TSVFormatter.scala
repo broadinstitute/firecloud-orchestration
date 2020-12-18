@@ -48,7 +48,7 @@ object TSVFormatter {
   private def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
-        val columnPosition = headerValues.indexOf(attributeName.name)
+        val columnPosition = headerValues.indexOf(AttributeName.toDelimitedName(attributeName))
         val cellValue = AttributeStringifier(attribute)
         columnPosition -> cellValue
     }

@@ -2,11 +2,14 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import java.text.SimpleDateFormat
 
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.service._
-import spray.http.StatusCodes
-import spray.httpx.SprayJsonSupport
+
+import scala.concurrent.ExecutionContext
 import spray.json.{JsObject, JsString}
-import spray.routing._
 import spray.json.DefaultJsonProtocol._
 
 object BuildTimeVersion {
@@ -14,24 +17,24 @@ object BuildTimeVersion {
   val versionJson = JsObject(Map("version" -> JsString(version.getOrElse("n/a"))))
 }
 
-trait StatusApiService extends HttpService with PerRequestCreator with FireCloudDirectives with SprayJsonSupport {
+trait StatusApiService extends Directives with RequestBuilding with SprayJsonSupport {
 
   private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-  private implicit val executionContext = actorRefFactory.dispatcher
+  implicit val executionContext: ExecutionContext
 
   val statusServiceConstructor: () => StatusService
 
   val statusRoutes: Route = {
     path("status") {
-      get { requestContext =>
-        perRequest(requestContext, StatusService.props(statusServiceConstructor), StatusService.CollectStatusInfo)
+      get {
+        complete { statusServiceConstructor().CollectStatusInfo }
       }
     } ~
-    path( "version") {
-      get { requestContext =>
-        requestContext.complete(StatusCodes.OK, BuildTimeVersion.versionJson)
+      path( "version") {
+        get { requestContext =>
+          requestContext.complete(StatusCodes.OK, BuildTimeVersion.versionJson)
+        }
       }
-    }
   }
 
 }

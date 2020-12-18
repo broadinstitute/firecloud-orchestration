@@ -1,6 +1,8 @@
 import sbt.Keys._
 import sbt._
 
+import com.github.sbt.jacoco.JacocoKeys._
+
 object Testing {
 
   def isIntegrationTest(name: String) = name contains "integrationtest"
@@ -18,7 +20,15 @@ object Testing {
     javaOptions in Test += "-Des.set.netty.runtime.available.processors=false",
 
     fork in Test := true,
-    parallelExecution in Test := false
+    parallelExecution in Test := false,
+
+    jacocoReportSettings := JacocoReportSettings(
+      "Jacoco Coverage Report",
+      None,
+      JacocoThresholds(),
+      Seq(JacocoReportFormats.ScalaHTML, JacocoReportFormats.XML), // note XML formatter
+      "utf-8")
+
   )
 
   implicit class ProjectTestSettings(val project: Project) extends AnyVal {

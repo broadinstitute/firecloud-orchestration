@@ -1,12 +1,13 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
-import org.broadinstitute.dsde.firecloud.model.Trial.ProjectRoles.ProjectRole
-import org.broadinstitute.dsde.firecloud.model.Trial.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
+import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
+import org.broadinstitute.dsde.firecloud.model.Project.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.rawls.model._
@@ -83,7 +84,8 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse]
 
-  def createProject(projectName: String, billingAccount: String)(implicit userToken: WithAccessToken): Future[Boolean]
+  def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails]
+
   def getProjects(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMembership]]
 
   def getProjectMembers(projectId: String)(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMember]]
@@ -91,6 +93,10 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def addUserToBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean]
 
   def removeUserFromBillingProject(projectId: String, role: ProjectRole, email: String)(implicit userToken: WithAccessToken): Future[Boolean]
+
+  def batchUpsertEntities(workspaceNamespace: String, workspaceName: String, entityType: String, upserts: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse]
+
+  def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse]
 
   override def serviceName:String = RawlsDAO.serviceName
 

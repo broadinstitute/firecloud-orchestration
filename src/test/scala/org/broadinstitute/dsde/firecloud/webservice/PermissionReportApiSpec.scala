@@ -1,6 +1,8 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import org.broadinstitute.dsde.firecloud.{EntityClient, FireCloudExceptionWithErrorReport}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.{HttpMethods, HttpResponse}
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockAgoraDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.MethodRepository._
@@ -9,25 +11,25 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PermissionReportService, WorkspaceService}
 import org.broadinstitute.dsde.rawls.model.{MethodConfigurationShort, MethodRepoMethod, _}
 import org.scalatest.BeforeAndAfterEach
-import spray.http.{HttpMethods, HttpResponse}
-import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
+import akka.http.scaladsl.model.StatusCodes._
 import spray.json.DefaultJsonProtocol._
-import spray.routing.RequestContext
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach {
+class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   import PermissionReportMockMethods._
 
   def actorRefFactory = system
 
+  override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   val testApp = app.copy(agoraDAO=new PermissionReportMockAgoraDAO(), rawlsDAO=new PermissionReportMockRawlsDAO())
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(testApp)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(testApp)
-  val entityClientConstructor: (RequestContext, ModelSchema) => EntityClient = EntityClient.constructor(app)
+  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
   def permissionReportPath(ns:String,name:String) = s"/api/workspaces/$ns/$name/permissionReport"
 
@@ -236,8 +238,8 @@ class PermissionReportMockRawlsDAO extends MockRawlsDAO {
 
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL] = {
     ns match {
-      case "notfound" => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(HttpResponse(NotFound))))
-      case "notowner" => Future.failed(new FireCloudExceptionWithErrorReport(FCErrorReport(HttpResponse(Forbidden))))
+      case "notfound" => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(NotFound, "Not Found response from Mock")))
+      case "notowner" => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(Forbidden, "Forbidden response from Mock")))
       case _ => Future.successful(mockACL)
     }
   }

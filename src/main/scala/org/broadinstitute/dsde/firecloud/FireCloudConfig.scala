@@ -5,8 +5,9 @@ import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import spray.http.Uri
-import spray.http.Uri.{Authority, Host}
+
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.{Authority, Host, Query}
 
 import scala.util.Try
 
@@ -24,17 +25,7 @@ object FireCloudConfig {
     // credentials for the rawls service account, used for signing GCS urls
     val rawlsSAJsonFile = auth.getString("rawlsSA")
 
-    // credentials for the trial billing service account, used for free trial duties
-    val trialBillingSAJsonFile = auth.getString("trialBillingSA")
-
     val swaggerRealm = auth.getString("swaggerRealm")
-  }
-
-  object HttpConfig {
-    private val httpConfig = config.getConfig("http")
-    val interface = httpConfig.getString("interface")
-    val port = httpConfig.getInt("port")
-    val timeoutSeconds = httpConfig.getLong("timeoutSeconds")
   }
 
   object Agora {
@@ -96,7 +87,7 @@ object FireCloudConfig {
             case Some(f) => qMap + ("filterTerms" -> f)
             case _ => qMap
           }
-          baseEntityQueryUri.withQuery(filteredQMap)
+          baseEntityQueryUri.withQuery(Query(filteredQMap))
         case _ => baseEntityQueryUri
       }
     }
@@ -149,7 +140,7 @@ object FireCloudConfig {
     val whitelists: Set[NihWhitelist] = {
       val whitelistConfigs = nih.getConfig("whitelists")
 
-      whitelistConfigs.root.asScala.map { case (name, configObject: ConfigObject) =>
+      whitelistConfigs.root.asScala.collect { case (name, configObject:ConfigObject) =>
         val config = configObject.toConfig
         val rawlsGroup = config.getString("rawlsGroup")
         val fileName = config.getString("fileName")
@@ -165,7 +156,6 @@ object FireCloudConfig {
     val clusterName = elasticsearch.getString("clusterName")
     val indexName = elasticsearch.getString("index") // for library
     val ontologyIndexName = elasticsearch.getString("ontologyIndex")
-    val trialIndexName = elasticsearch.getString("trialIndex")
     val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
     val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
     val maxAggregations: Int = Try(elasticsearch.getInt("maxAggregations")).getOrElse(1000)
@@ -190,17 +180,6 @@ object FireCloudConfig {
     val baseConsentUrl = duos.getString("baseConsentUrl")
     val baseOntologyUrl = duos.getString("baseOntologyUrl")
     val dulvn = duos.getInt("dulvn")
-  }
-
-  object Trial {
-    private val trial = config.getConfig("trial")
-    val durationDays = trial.getInt("durationDays")
-    val managerGroup = trial.getString("managerGroup")
-    val billingAccount = trial.getString("billingAccount")
-    val projectBufferSize = trial.getInt("projectBufferSize")
-    val spreadsheet = trial.getConfig("spreadsheet")
-    val spreadsheetId = spreadsheet.getString("id")
-    val spreadsheetUpdateFrequencyMinutes = spreadsheet.getInt("updateFrequencyMinutes")
   }
 
   object Metrics {
