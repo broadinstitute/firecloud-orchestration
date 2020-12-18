@@ -8,5 +8,5 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build jar
-        run: ./scripts/build.sh jar
+        run: ./script/build.sh jar
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
