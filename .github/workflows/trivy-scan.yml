@@ -1,0 +1,10 @@
+name: Trivy scan
+on: [pull_request]
+
+jobs:
+  appsec-trivy:
+    name: DSP AppSec Trivy check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: broadinstitute/dsp-appsec-trivy-action@v1
