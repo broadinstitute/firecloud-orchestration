@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import spray.json._
 
-class DuosModelSpec extends FreeSpec with Matchers {
+class DuosModelSpec extends AnyFreeSpec with Matchers {
 
   private implicit val impDuosDataUse: ModelJsonProtocol.impDuosDataUse.type = ModelJsonProtocol.impDuosDataUse
 

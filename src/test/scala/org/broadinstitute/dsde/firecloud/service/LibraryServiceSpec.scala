@@ -11,15 +11,15 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
-import org.scalatest.FreeSpecLike
 import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.joda.time.DateTime
+import org.scalatest.freespec.AnyFreeSpecLike
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Try
@@ -57,7 +57,7 @@ object LibraryServiceSpec {
   val testLibraryMetadataJsObject = testLibraryMetadata.parseJson.asJsObject
 
 }
-class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
+class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
   implicit val userToken: WithAccessToken = AccessToken("LibraryServiceSpec")
@@ -85,7 +85,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
     bucketName = "bucketName",
     workflowCollectionName = Some("wf-collection"),
     workspaceVersion=WorkspaceVersions.V2,
-    googleProject="googleProject")
+    googleProject=GoogleProjectId("googleProject"))
 
 
   val DULAdditionalJsObject =
@@ -823,7 +823,7 @@ class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryS
           false, //locked
           Some(Set.empty), //authdomain
           WorkspaceVersions.V2,
-          "googleProject"
+          GoogleProjectId("googleProject")
         )
 
         attrMaps map { attrMap =>

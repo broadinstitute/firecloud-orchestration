@@ -5,14 +5,16 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging {
+class ResearchPurposeSearchUseCasesSpec extends AnyFreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging {
 
   // cases as defined in the doc at
   // https://docs.google.com/a/broadinstitute.org/spreadsheets/d/16XzKpOFCyqRTNy9XHFFPx-Vf4PWFydsWAS7exzx26WM/edit?usp=sharing
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -22,7 +24,7 @@ class ResearchPurposeSearchUseCasesSpec extends FreeSpec with SearchResultValida
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 

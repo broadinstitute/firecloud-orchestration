@@ -5,13 +5,15 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration.{Duration, MINUTES}
 
-class FilterLimitsSpec extends FreeSpec with Matchers with SearchResultValidation with BeforeAndAfterAll with LazyLogging {
+class FilterLimitsSpec extends AnyFreeSpec with Matchers with SearchResultValidation with BeforeAndAfterAll with LazyLogging {
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -21,7 +23,7 @@ class FilterLimitsSpec extends FreeSpec with Matchers with SearchResultValidatio
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 

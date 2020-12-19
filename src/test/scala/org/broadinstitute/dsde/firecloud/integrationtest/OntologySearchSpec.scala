@@ -3,11 +3,13 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, Ignore}
 
-class OntologySearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
+class OntologySearchSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -17,7 +19,7 @@ class OntologySearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll w
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 

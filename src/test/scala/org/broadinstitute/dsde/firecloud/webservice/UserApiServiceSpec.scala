@@ -312,7 +312,7 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
             org.mockserver.model.HttpResponse.response()
               .withHeaders(MockUtils.header)
               .withStatusCode(InternalServerError.intValue)
-              .withBody(Conflict.intValue + " " + Conflict.reason)
+              .withBody(s"${Conflict.intValue} ${Conflict.reason}")
           )
         Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
             sealRoute(registerRoutes) ~> check {

@@ -9,7 +9,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Metrics.AdminStats
 import org.broadinstitute.dsde.firecloud.model.MetricsFormat.AdminStatsFormat
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impRawlsBillingProjectMember, _}

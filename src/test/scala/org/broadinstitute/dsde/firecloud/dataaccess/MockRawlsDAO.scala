@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.firecloud.model._
@@ -15,7 +15,7 @@ import org.joda.time.DateTime
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import MockRawlsDAO._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiServiceSpec
@@ -180,7 +180,7 @@ class MockRawlsDAO extends RawlsDAO {
     false,
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject")
   )
 
   val publishedRawlsWorkspaceWithAttributes = WorkspaceDetails(
@@ -207,7 +207,7 @@ class MockRawlsDAO extends RawlsDAO {
     false,
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject")
   )
 
   val unpublishedRawlsWorkspaceLibraryValid = WorkspaceDetails(
@@ -245,7 +245,7 @@ class MockRawlsDAO extends RawlsDAO {
     false,
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject")
   )
 
   val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(false), canCompute = Some(true), catalog = Some(false), rawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
@@ -265,7 +265,7 @@ class MockRawlsDAO extends RawlsDAO {
       isLocked = true,
       authorizationDomain = Some(Set.empty),
       workspaceVersion = WorkspaceVersions.V2,
-      googleProject = "googleProject"
+      googleProject = GoogleProjectId("googleProject")
     )
   }
   
@@ -466,5 +466,5 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
 
-  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, "googleProject"))
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject")))
 }

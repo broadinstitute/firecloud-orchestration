@@ -19,7 +19,7 @@ import org.parboiled.common.FileUtils
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}

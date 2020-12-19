@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.server.{Directives, Route}
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.NamespaceService

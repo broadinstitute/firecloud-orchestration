@@ -4,19 +4,21 @@ import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.{LibrarySearchParams, LibrarySearchResponse}
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, Ignore}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsNumber, JsObject, JsString, JsValue}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SortSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
+class SortSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
 
   val dur = Duration(2, MINUTES)
 
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -26,7 +28,7 @@ class SortSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLo
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 

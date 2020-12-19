@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import com.typesafe.config.{ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
@@ -162,7 +162,7 @@ object FireCloudConfig {
   }
 
   def parseESServers(confString: String): Seq[Authority] = {
-    confString.split(',') map { hostport =>
+    confString.split(',').toIndexedSeq map { hostport =>
       val hp = hostport.split(':')
       Authority(Host(hp(0)), hp(1).toInt)
     }

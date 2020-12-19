@@ -8,13 +8,14 @@ import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.DataUse.StructuredDataRequest
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
 import org.broadinstitute.dsde.rawls.model._
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
 import scala.language.postfixOps
 
-class DataUseRestrictionSupportSpec extends FreeSpec with Matchers with DataUseRestrictionSupport {
+class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataUseRestrictionSupport {
 
   "DataUseRestrictionSupport" - {
 

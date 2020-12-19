@@ -4,9 +4,9 @@ import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class OntologyTermResourceSpec extends FreeSpec {
+class OntologyTermResourceSpec extends AnyFreeSpec {
 
   val mockdata = new MockOntologyDAO().data
 

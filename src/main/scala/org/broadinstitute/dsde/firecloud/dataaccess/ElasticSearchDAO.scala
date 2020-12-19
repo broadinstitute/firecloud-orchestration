@@ -29,25 +29,25 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
 
   private final val datatype = "dataset"
 
-  initIndex
+  initIndex()
 
   // if the index does not exist, create it.
-  override def initIndex = {
+  override def initIndex(): Unit = {
     conditionalRecreateIndex(false)
   }
 
   // delete an existing index, then re-create it.
-  override def recreateIndex = {
+  override def recreateIndex(): Unit = {
     conditionalRecreateIndex(true)
   }
 
-  override def indexExists: Boolean = {
+  override def indexExists(): Boolean = {
     executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
       client.admin.indices.prepareExists(indexName)
     ).isExists
   }
 
-  override def createIndex = {
+  override def createIndex(): Unit = {
     val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
     executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
       client.admin.indices.prepareCreate(indexName)
@@ -58,13 +58,13 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
   }
 
   // will throw an error if index does not exist
-  override def deleteIndex = {
+  override def deleteIndex(): Unit = {
     executeESRequest[DeleteIndexRequest, DeleteIndexResponse, DeleteIndexRequestBuilder](
       client.admin.indices.prepareDelete(indexName)
     )
   }
 
-  override def bulkIndex(docs: Seq[Document], refresh: Boolean = false) = {
+  override def bulkIndex(docs: Seq[Document], refresh: Boolean = false): LibraryBulkIndexResponse = {
     val bulkRequest = client.prepareBulk
     // only specify immediate refresh if caller specified true
     // this way, the ES client library can change its default for setRefreshPolicy, and we'll inherit the default.
@@ -83,31 +83,31 @@ class ElasticSearchDAO(client: TransportClient, indexName: String, researchPurpo
     LibraryBulkIndexResponse(bulkResponse.getItems.length, bulkResponse.hasFailures, msgs)
   }
 
-  override def indexDocument(doc: Document) = {
+  override def indexDocument(doc: Document): Unit = {
     executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder] (
       client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint, XContentType.JSON)
     )
   }
 
-  override def deleteDocument(id: String) = {
+  override def deleteDocument(id: String): Unit = {
     executeESRequest[DeleteRequest, DeleteResponse, DeleteRequestBuilder] (
       client.prepareDelete(indexName, datatype, id)
     )
   }
 
-  private def conditionalRecreateIndex(deleteFirst: Boolean = false) = {
+  private def conditionalRecreateIndex(deleteFirst: Boolean = false): Unit = {
     try {
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
-      val exists = indexExists
+      val exists = indexExists()
       logger.info(s"... ES index '%s' exists: %s".format(indexName, exists.toString))
       if (deleteFirst && exists) {
         logger.info(s"Deleting ES index '%s' before recreation ...".format(indexName))
-        deleteIndex
+        deleteIndex()
         logger.info(s"... ES index '%s' deleted.".format(indexName))
       }
       if (deleteFirst || !exists) {
         logger.info(s"Creating ES index '%s' ...".format(indexName))
-        createIndex
+        createIndex()
         logger.info(s"... ES index '%s' created.".format(indexName))
       }
     } catch {

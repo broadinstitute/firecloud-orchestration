@@ -13,7 +13,6 @@ import org.mockserver.model.HttpCallback.callback
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.{HttpRequest, HttpResponse}
-import org.scalatest.Matchers
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.model.UserInfo

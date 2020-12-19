@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.http.scaladsl.model.Uri
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, AgoraPermission, EntityAccessControlAgora, Method}
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.{ACLNames, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
@@ -27,7 +27,7 @@ class MockAgoraDAO extends AgoraDAO {
     Future(List(MockAgoraDAO.agoraPermission))
   }
 
-  override def getMultiEntityPermissions(entityType: _root_.org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo) = {
+  override def getMultiEntityPermissions(entityType: _root_.org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraEntityType.Value, entities: List[Method])(implicit userInfo: UserInfo) = {
     Future(List.empty[EntityAccessControlAgora])
   }
 

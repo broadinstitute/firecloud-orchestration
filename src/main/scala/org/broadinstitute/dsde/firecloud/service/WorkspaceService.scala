@@ -110,7 +110,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def exportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
       val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
-      val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).filterKeys(_ != AttributeName.withDefaultNS("description"))
+      val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).view.filterKeys(_ != AttributeName.withDefaultNS("description")).toMap
       val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
       val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
       // TODO: entity TSVs are downloaded as text/tab-separated-value, but workspace attributes are text/plain. Align these?
@@ -154,7 +154,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def putTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrList = AttributeValueList(tags map (tag => AttributeString(tag.trim)))
-    val op = AddUpdateAttribute(AttributeName.withTagsNS, attrList)
+    val op = AddUpdateAttribute(AttributeName.withTagsNS(), attrList)
     rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, Seq(op)) flatMap { ws =>
       republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
 
@@ -166,7 +166,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def patchTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { origWs =>
       val origTags = getTagsFromWorkspace(origWs.workspace)
-      val attrOps = (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
+      val attrOps = (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS(), AttributeString(tag.trim)))
       rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { patchedWs =>
         republishDocument(patchedWs, ontologyDAO, searchDAO, consentDAO)
 
@@ -177,7 +177,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
-    val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
+    val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS(), AttributeString(tag.trim)))
     rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { ws =>
       republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
 
@@ -213,7 +213,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   private def getTagsFromWorkspace(ws:WorkspaceDetails): Seq[String] = {
-    ws.attributes.getOrElse(Map.empty).get(AttributeName.withTagsNS) match {
+    ws.attributes.getOrElse(Map.empty).get(AttributeName.withTagsNS()) match {
       case Some(vals:AttributeValueList) => vals.list collect {
         case s:AttributeString => s.value
       }

@@ -7,10 +7,10 @@ object Dependencies {
   val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
-  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
-  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.12")
-  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12");
-  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12");
+  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
+  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
+  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13");
+  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.13");
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -27,15 +27,15 @@ object Dependencies {
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.8.2", // ... but we redirect log4j to logback.
     "ch.qos.logback"                 % "logback-classic"     % "1.2.2",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
-    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.7.2",
+    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
 
     "org.parboiled" % "parboiled-core" % "1.2.0",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-18b1c01e0")
-      exclude("com.typesafe.scala-logging", "scala-logging_2.12")
-      exclude("com.typesafe.akka", "akka-stream_2.12")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-2356e282")
+      exclude("com.typesafe.scala-logging", "scala-logging_2.13")
+      exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
@@ -72,11 +72,11 @@ object Dependencies {
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
     "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.0",
-    "com.github.pathikrit"          %% "better-files"        % "2.17.1",
+    "com.github.pathikrit"          %% "better-files"        % "3.9.1",
     "org.apache.httpcomponents"      % "httpclient"          % "4.5.3",
 
-    "org.specs2"                    %% "specs2-core"         % "3.10.0"     % "test",
-    "org.scalatest"                 %% "scalatest"           % "3.0.5"   % "test",
+    "org.specs2"                    %% "specs2-core"         % "4.10.0"     % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.3"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.10.2"  % "test"
   )
 }

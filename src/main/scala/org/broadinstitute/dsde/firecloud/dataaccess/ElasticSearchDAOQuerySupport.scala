@@ -19,7 +19,7 @@ import org.elasticsearch.search.sort.SortOrder
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
@@ -197,7 +197,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
         val terms: Terms = aggResults.get(field)
         LibraryAggregationResponse(terms.getName,
           AggregationFieldResults(terms.getSumOfOtherDocCounts.toInt,
-            terms.getBuckets.asScala map { bucket: Terms.Bucket =>
+            terms.getBuckets.asScala.toList map { bucket: Terms.Bucket =>
               AggregationTermResult(bucket.getKey.toString, bucket.getDocCount.toInt)
             }))
       }
@@ -284,7 +284,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
             logger.warn(s"failed to get populate suggestions for field [$field] and term [$text]")
             Seq.empty[String]
         }
-        Future(buckets)
+        Future(buckets.toList)
 
       case Failure(ex) =>
         logger.warn(s"failed to get populate suggestions for field [$field] and term [$text]: ${ex.getMessage}")

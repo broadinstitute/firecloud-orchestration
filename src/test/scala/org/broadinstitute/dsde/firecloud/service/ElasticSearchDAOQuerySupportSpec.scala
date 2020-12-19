@@ -9,13 +9,13 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
 import org.elasticsearch.action.search.SearchRequestBuilder
 import org.elasticsearch.client.transport.TransportClient
-import org.scalatest.FreeSpec
 import org.scalatest.Assertions._
+import org.scalatest.freespec.AnyFreeSpec
 import spray.json._
 
 import scala.collection.Set
 
-class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQuerySupport {
+class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAOQuerySupport {
 
   val indexname = "ElasticSearchSpec"
 
@@ -297,7 +297,7 @@ class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQue
                   val actualWorkspaces = t.fields("workspaceId.keyword")
                   assertResult(Set(JsString(wksp))) {actualWorkspaces.asInstanceOf[JsArray].elements.toSet}
                 }
-              case _ => Unit
+              case _ => ()
             }
             // assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
           case x => throw new Exception(s"unmatched case for  ${x.getClass.getName}: ${x.toString()}")
