@@ -7,13 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        # with:
-        #   fetch-depth: 0
-        #   # submodules: true
 
       - name: Build jar
         run: |
-          echo ${GITHUB_SHA:0:8}
           docker run --rm -e GIT_MODEL_HASH=${GITHUB_SHA:0:8} \
             -v $PWD:/working -w /working -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 \
             broadinstitute/scala-baseimage /working/src/docker/install.sh /working

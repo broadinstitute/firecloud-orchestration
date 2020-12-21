@@ -20,7 +20,7 @@ EOF
 )"
 
 # Enable strict evaluation semantics
-set -ex
+set -e
 
 # Set default variables
 DOCKER_CMD=
