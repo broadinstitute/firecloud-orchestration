@@ -7,16 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          # submodules: true
+        # with:
+        #   fetch-depth: 0
+        #   # submodules: true
 
       - name: Build jar
-        run: |
-          set -ex
-          echo ${BRANCH}
-          git rev-parse --abbrev-ref HEAD
-          git rev-parse --short origin/HEAD
-          #./script/build.sh jar
+        run:  docker run --rm -e GIT_MODEL_HASH=${GITHUB_SHA:0:8} \
+                -v $PWD:/working -w /working -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 \
+                broadinstitute/scala-baseimage /working/src/docker/install.sh /working
 
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
