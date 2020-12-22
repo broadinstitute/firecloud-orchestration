@@ -8,6 +8,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: touch build.jar
+      - run: touch FireCloud-Orchestration.jar
 
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
