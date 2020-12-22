@@ -8,15 +8,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/cache@v2
-        with:
-          path: /tmp/jar-cache
-          key: ${{ runner.os }}-${{ github.ref }}
-
-      - name: Build jar
-        run: |
-          docker run --rm -e GIT_MODEL_HASH=${GITHUB_SHA:0:8} \
-            -v $PWD:/working -w /working -v /tmp/jar-cache:/root/.ivy -v /tmp/jar-cache:/root/.ivy2 \
-            broadinstitute/scala-baseimage /working/src/docker/install.sh /working
+      - run: touch build.jar
 
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
