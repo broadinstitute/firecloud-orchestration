@@ -104,10 +104,7 @@ function docker_cmd()
         HASH_TAG=${GIT_SHA:0:12}
 
         echo "building ${DOCKERHUB_REGISTRY}:${HASH_TAG}..."
-        docker build -t $DOCKERHUB_REGISTRY:${HASH_TAG} .
-
-        echo "scanning docker image..."
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/trivy-cache:/root/.cache/ aquasec/trivy --severity CRITICAL --no-progress --ignore-unfixed --exit-code 1 "$DOCKERHUB_REGISTRY":"${HASH_TAG}"
+        docker build --pull -t $DOCKERHUB_REGISTRY:${HASH_TAG} .
 
         echo "building ${DOCKERHUB_TESTS_REGISTRY}:${HASH_TAG}..."
         cd automation
