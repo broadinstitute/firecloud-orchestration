@@ -8,6 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      # The Dockerfile copies this, so it needs to exist for the build to succeed
       - run: touch FireCloud-Orchestration.jar
 
+      # https://github.com/broadinstitute/dsp-appsec-trivy-action
       - uses: broadinstitute/dsp-appsec-trivy-action@v1
