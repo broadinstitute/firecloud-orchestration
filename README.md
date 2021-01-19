@@ -59,12 +59,20 @@ sbt test
 
 ## Integration Testing
 
+Start an Elasticsearch server in a docker container:
+```sh
+./docker/run-es.sh start
 ```
+
+Run integration tests. You can re-run tests multiple times against the same running Elasticsearch container.
+```sh
 sbt it:test
 ```
-You can create a file `src/test/resources/ittest.conf` to override configuration to be used during integration tests.
-You do not *need* to create this file; the it tests will look in your runtime `config/` directory if ittest.conf does
-not exist. Additionally, you can pass ElasticSearch urls using `-Desurls=host:port,host:port` on the sbt command line.
+
+Stop the Elasticsearch server once you are done with your tests:
+```sh
+./docker/run-es.sh stop
+```
 
 ## Docker
 
