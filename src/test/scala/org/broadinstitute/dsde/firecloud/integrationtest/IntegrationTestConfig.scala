@@ -7,6 +7,10 @@ import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 
 trait IntegrationTestConfig {
+
+  // TODO: most of this is now obsolete; we don't need to check various files for overrides, we should
+  // be able to count on the dockerized ES being available on localhost. Move that to reference.conf?
+
   val unitTestConf = ConfigFactory.load()
   val runtimeConf = ConfigFactory.parseFile(new File("config/firecloud-orchestration.conf"))
   val itTestConf = ConfigFactory
@@ -26,7 +30,9 @@ trait IntegrationTestConfig {
 
     private val systemESUrls = System.getProperty("esurls", envESUrls)
 
-    val servers: Seq[Authority] = FireCloudConfig.parseESServers(systemESUrls)
+    // val servers: Seq[Authority] = FireCloudConfig.parseESServers(systemESUrls)
+    val servers: Seq[Authority] = FireCloudConfig.parseESServers("localhost:9300")
+
     val clusterName: String = itTestConf.getConfig("elasticsearch").getString("clusterName")
   }
 
