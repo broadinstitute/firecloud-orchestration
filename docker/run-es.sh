@@ -9,12 +9,17 @@ start() {
     docker rm -f $CONTAINER || echo "docker rm failed. nothing to rm."
 
     # start up elasticsearch
-    # TODO: put in background
+    # ES recommends allocating at least 4GB of RAM to docker, for this image to run.
+    # We set ES's RAM to 512m via ES_JAVA_OPTS instead of its 2GB default, to reduce this need.
+    # However, if you find this script fails silently, fails mysteriously, or fails while attempting
+    # to pre-populate data, try increasing Docker's RAM allocation.
+    # https://www.elastic.co/guide/en/elasticsearch/reference/5.4/heap-size.html
     echo "starting up elasticsearch container..."
     docker run --name $CONTAINER -p 9200:9200 -p 9300:9300 -d \
       -e "cluster.name=elasticsearch5a" \
       -e "xpack.security.enabled=false" \
       -e "discovery.type=single-node" \
+      -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
       docker.elastic.co/elasticsearch/elasticsearch:$ELASTICSEARCH_VERSION
 
     # validate elasticsearch. we started it as a single node, so it can show its health as yellow, not green.
