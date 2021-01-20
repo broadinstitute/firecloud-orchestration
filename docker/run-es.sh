@@ -39,11 +39,12 @@ start() {
       --fsCompress \
       --type=mapping
 
+    # limit 100 is the default, but we list it explicitly here for clarity and to make it easy to change later
     docker run --net=host --rm -ti -v $PWD/docker/data:/tmp elasticdump/elasticsearch-dump \
       --input=/tmp/ontology_data_dump.json.gz \
       --output=http://localhost:9200/ontology-unittest \
       --fsCompress \
-      --limit 250 \
+      --limit 100 \
       --type=data
 
 }
