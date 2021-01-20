@@ -21,6 +21,7 @@ object Testing {
 
     fork in Test := true,
     parallelExecution in Test := false,
+    fork in IntegrationTest := false, // allow easy overriding of conf values via system props
 
     jacocoReportSettings := JacocoReportSettings(
       "Jacoco Coverage Report",
