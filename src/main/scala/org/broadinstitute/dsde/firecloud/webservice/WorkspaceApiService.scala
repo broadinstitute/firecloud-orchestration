@@ -97,12 +97,14 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     }
                   } ~
                     post {
-                      requireUserInfo() { _ =>
+                      requireUserInfo() { userInfo =>
                         entity(as[MethodConfiguration]) { methodConfig =>
-                          if (!methodConfig.outputs.exists { param => param._2.value.startsWith("this.library:") || param._2.value.startsWith("workspace.library:")})
-                            passthrough(workspacePath + "/methodconfigs", HttpMethods.GET, HttpMethods.POST)
-                          else
+                          if (!methodConfig.outputs.exists { param => param._2.value.startsWith("this.library:") || param._2.value.startsWith("workspace.library:")}) {
+                            val passthroughReq = Post(workspacePath + "/methodconfigs", methodConfig)
+                            complete { userAuthedRequest(passthroughReq)(userInfo) }
+                          } else {
                             complete(StatusCodes.Forbidden, ErrorReport("Methods and configurations can not create or modify library attributes"))
+                          }
                         }
                       }
                     }
