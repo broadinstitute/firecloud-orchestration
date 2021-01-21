@@ -285,6 +285,11 @@ object MockTSVStrings {
     List("king", "SELECT * FROM [bigquery-public-data:samples.king] LIMIT 1000").tabbed
   ).newlineSeparated
 
+  val validHugeFile = List(
+    (1 to 1000).map(num => s"header$num").toList.tabbed,
+    (1 to 1000).map(row => (1 to 1000).map(column => s"row${row}column$column").toList.tabbed ).toList.newlineSeparated
+  ).newlineSeparated
+
 }
 
 object MockTSVLoadFiles {
@@ -310,6 +315,11 @@ object MockTSVLoadFiles {
   val validNamespacedAttributes = TSVLoadFile("foo", Seq("foo", "tag:foo", "bar", "tag:bar"), Seq(Seq("1","2","3","4"), Seq("5","6","7","8")))
   val missingFields1 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("biz", "", "buz")))
   val missingFields2 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("", "", "buz"), Seq("abc", "123", "")))
+
+  val validHugeFile = TSVLoadFile("header1",
+    (1 to 1000).map(num => s"header$num"),
+    (1 to 1000).map(row => (1 to 1000).map(column => s"row${row}column$column") )
+  )
 }
 
 object MockTSVFormData {
