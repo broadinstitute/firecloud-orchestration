@@ -94,6 +94,13 @@ class TSVParserSpec extends FlatSpec {
     }
   }
 
+  it should "handle a ridiculous 1000x1000 tsv" in {
+    val parseResult = MockTSVLoadFiles.validHugeFile
+    assertResult(parseResult) {
+      TSVParser.parse(MockTSVStrings.validHugeFile)
+    }
+  }
+
   "EntityClient.backwardsCompatStripIdSuffixes" should "fix up the names of attributes for certain reference types for pairs" in {
     val entityType: String = "pair"
     val requiredAttributes: Map[String, String] = Map("case_sample_id" -> "sample",
