@@ -33,14 +33,13 @@ trait ApiServiceSpec extends FlatSpec with Matchers with ScalatestRouteTest with
     val searchDao: MockSearchDAO
     val researchPurposeSupport: MockResearchPurposeSupport
     val thurloeDao: MockThurloeDAO
-    val logitDao: LogitDAO
     val shareLogDao: MockShareLogDAO
     val importServiceDao: ImportServiceDAO
 
     def actorRefFactory = system
 
     val nihServiceConstructor = NihService.constructor(
-      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, logitDao, shareLogDao, importServiceDao)
+      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, shareLogDao, importServiceDao)
     ) _
 
   }

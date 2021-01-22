@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.Metrics.{LogitMetric, NumSubjects}
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -50,9 +49,6 @@ class MockSearchDAO extends SearchDAO {
     populateSuggestInvoked = true
     Future(Seq(field, text))
   }
-
-
-  override def statistics: LogitMetric = NumSubjects(-1)
 
   def reset = {
     indexDocumentInvoked = false
