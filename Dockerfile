@@ -1,4 +1,4 @@
-FROM us.gcr.io/broad-dsp-gcr-public/base/jre:8-debian
+FROM us.gcr.io/broad-dsp-gcr-public/base/jre:11-debian
 
 EXPOSE 8080
 
