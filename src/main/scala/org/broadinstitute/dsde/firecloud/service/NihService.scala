@@ -126,19 +126,18 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   }
 
   def updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink): Future[PerRequestMessage] = {
-    val linkResult = linkNihAccount(userInfo, nihLink)
-
-    val whitelistSyncResults = Future.traverse(nihWhitelists) { whitelist =>
-      syncNihWhitelistForUser(WorkbenchEmail(userInfo.userEmail), nihLink.linkedNihUsername, whitelist).map(NihDatasetPermission(whitelist.name, _))
-    }
-
-    linkResult.flatMap { response =>
-      if(response.isSuccess) {
-        whitelistSyncResults.map { datasetPermissions =>
-          RequestComplete(OK, NihStatus(Option(nihLink.linkedNihUsername), datasetPermissions, Option(nihLink.linkExpireTime)))
-        }
+    for {
+      linkResult <- linkNihAccount(userInfo, nihLink)
+      whitelistSyncResults <- Future.traverse(nihWhitelists) {
+        whitelist => syncNihWhitelistForUser(WorkbenchEmail(userInfo.userEmail), nihLink.linkedNihUsername, whitelist)
+          .map(NihDatasetPermission(whitelist.name, _))
       }
-      else Future.successful(RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link"))
+    } yield {
+      if (linkResult.isSuccess) {
+        RequestComplete(OK, NihStatus(Option(nihLink.linkedNihUsername), whitelistSyncResults, Option(nihLink.linkExpireTime)))
+      } else {
+        RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link")
+      }
     }
   }
 
