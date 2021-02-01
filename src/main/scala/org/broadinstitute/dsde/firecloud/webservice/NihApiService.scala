@@ -46,7 +46,7 @@ trait NihApiService extends Directives with RequestBuilding with StandardUserInf
               // validate the token.
               // the NIH JWT is nonstandard. The claims portion of the token *should* be json, but is in fact
               // a simple string. So, use decodeRaw here:
-              val decodeAttempt = Jwt.decodeRawAll(jwt, FireCloudConfig.Shibboleth.signingKey, Seq(JwtAlgorithm.HS256))
+              val decodeAttempt = Jwt.decodeRawAll(jwt, FireCloudConfig.Shibboleth.signingKey, Seq(JwtAlgorithm.RS256))
 
               decodeAttempt match {
                 case Success((_, linkedNihUsername, _)) =>
