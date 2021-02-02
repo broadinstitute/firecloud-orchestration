@@ -1,4 +1,4 @@
-FROM iflavoursbv/sbt-openjdk-8-alpine
+FROM hseeberger/scala-sbt:11.0.9.1_1.4.6_2.12.12
 
 COPY src /app/src
 COPY test.sh /app

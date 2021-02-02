@@ -12,7 +12,7 @@ FireCloud Orchestration Service
 * IntelliJ IDEA can be downloaded here : https://www.jetbrains.com/idea/ . It is an 'Intelligent Java IDE'
 * Configure the SBT plugin.  "IntelliJ IDEA" -> "Preferences" -> "Plugins" can be used to do so (download, install)
 * After running IntelliJ, open this source directory with File -> Open
-* In the Import Project dialog, check "Create directories for empty content roots automatically" and set your Project SDK to 1.8
+* In the Import Project dialog, check "Create directories for empty content roots automatically" and set your Project SDK to 11
 
 ## Plugins
 * spray-routing
