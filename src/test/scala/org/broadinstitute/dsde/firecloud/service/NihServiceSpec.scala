@@ -16,9 +16,10 @@ class NihServiceSpec extends FlatSpec with Matchers {
   val samDao = new MockSamDAO
   val thurloeDao = new MockThurloeDAO
   val googleDao = new MockGoogleServicesDAO
+  val shibbolethDao = new MockShibbolethDAO
 
   // build the service instance we'll use for tests
-  val nihService = new NihService(samDao, thurloeDao, googleDao)
+  val nihService = new NihService(samDao, thurloeDao, googleDao, shibbolethDao)
 
   val usernames = Map("fcSubjectId1" -> "nihUsername1", "fcSubjectId2" -> "nihUsername2")
 

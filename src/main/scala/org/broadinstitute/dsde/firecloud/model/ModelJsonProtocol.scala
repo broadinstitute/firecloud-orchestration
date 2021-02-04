@@ -213,6 +213,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
   implicit val impProfileKVP = jsonFormat2(ProfileKVP)
   implicit val impTerraPreference = jsonFormat2(TerraPreference)
+  implicit val impShibbolethToken = jsonFormat2(ShibbolethToken)
 
   implicit val impJWTWrapper = jsonFormat1(JWTWrapper)
 

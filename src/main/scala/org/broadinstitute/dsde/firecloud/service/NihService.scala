@@ -4,13 +4,18 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, SamDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, SamDAO, ShibbolethDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import org.slf4j.LoggerFactory
+import pdi.jwt.{Jwt, JwtAlgorithm}
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
@@ -36,14 +41,16 @@ object NihStatus {
 
 object NihService {
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO)
+    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.shibbolethDAO)
 }
 
-class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO)
+class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO, val shibbolethDao: ShibbolethDAO)
                 (implicit val executionContext: ExecutionContext) extends LazyLogging with SprayJsonSupport {
 
+  lazy val log = LoggerFactory.getLogger(getClass)
+
   def GetNihStatus(userInfo: UserInfo) = getNihStatus(userInfo)
-  def UpdateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink) = updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink)
+  def UpdateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper) = updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper)
   def SyncAllWhitelists = syncAllNihWhitelistsAllUsers
   def SyncWhitelist(whitelistName: String) = syncWhitelistAllUsers(whitelistName)
 
@@ -125,8 +132,19 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
   }
 
-  def updateNihLinkAndSyncSelf(userInfo: UserInfo, nihLink: NihLink): Future[PerRequestMessage] = {
-    for {
+  def updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper): Future[PerRequestMessage] = {
+    val res = for {
+      shibbolethPublicKey <- shibbolethDao.getPublicKey()
+      decodedToken <- Future.fromTry(Jwt.decodeRawAll(jwtWrapper.jwt, shibbolethPublicKey, Seq(JwtAlgorithm.RS256))).recoverWith {
+        // The exception's error message contains the raw JWT. For an abundance of security, don't
+        // log the error message - even though if we reached this point, the JWT is invalid. It could
+        // still contain sensitive info.
+        case _: Throwable => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "Failed to decode JWT")))
+      }
+      nihLink = decodedToken match {
+        case (_, rawTokenFromShibboleth, _) =>
+          rawTokenFromShibboleth.parseJson.convertTo[ShibbolethToken].toNihLink
+      }
       linkResult <- linkNihAccount(userInfo, nihLink)
       whitelistSyncResults <- Future.traverse(nihWhitelists) {
         whitelist => syncNihWhitelistForUser(WorkbenchEmail(userInfo.userEmail), nihLink.linkedNihUsername, whitelist)
@@ -138,6 +156,11 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
       } else {
         RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link")
       }
+    }
+
+    res.recoverWith {
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(BadRequest) =>
+        Future.successful(RequestCompleteWithErrorReport(BadRequest, e.errorReport.message))
     }
   }
 
