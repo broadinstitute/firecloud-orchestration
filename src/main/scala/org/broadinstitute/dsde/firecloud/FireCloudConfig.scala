@@ -131,7 +131,7 @@ object FireCloudConfig {
 
   object Shibboleth {
     private val shibboleth = config.getConfig("shibboleth")
-    val signingKey = shibboleth.getString("jwtSigningKey")
+    val publicKeyUrl = shibboleth.getString("publicKeyUrl")
   }
 
   object Nih {

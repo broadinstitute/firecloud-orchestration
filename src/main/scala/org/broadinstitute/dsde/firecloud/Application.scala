@@ -16,4 +16,5 @@ case class Application(agoraDAO: AgoraDAO,
                        researchPurposeSupport: ResearchPurposeSupport,
                        thurloeDAO: ThurloeDAO,
                        shareLogDAO: ShareLogDAO,
-                       importServiceDAO: ImportServiceDAO)
+                       importServiceDAO: ImportServiceDAO,
+                       shibbolethDAO: ShibbolethDAO)

@@ -17,22 +17,23 @@ class NihApiServiceSpec extends ApiServiceSpec {
   val tcgaDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TCGA")).head.groupToSync
   val targetDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TARGET")).head.groupToSync
 
+  // These tokens were encoded using the private key that pairs with the public key in MockShibbolethDAO
   //JWT for NIH username "firecloud-dev"
-  val firecloudDevJwt = JWTWrapper("eyJhbGciOiJIUzI1NiJ9.ZmlyZWNsb3VkLWRldg.NPXbSpTmAOUvJ1HX85TauAARnlMKfqBsPjumCC7zE7s")
+  val firecloudDevJwt = JWTWrapper("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlcmFDb21tb25zVXNlcm5hbWUiOiJmaXJlY2xvdWQtZGV2IiwiaWF0IjoxNjEyMjE4NzE2fQ.rObTxJcplho3AxI6oENAr4Km8O8XThUNu_fWnHspsLtuOlbMIBr3Cxp7gTKzI0raLY5oKNuHal9f6q4QS4aYzUq4E8IbuWHAA51wSevFvv7kzGy9fmdl757pYDwHXEeTKoTQa4enlcGAL3VSIHYLSrEy-PhYo3om_sXcsX86oVW4ogn79CoF4dTrLTSu9f9MWrwIxkbtXb-OUQaUGY6Tzhw_qdthcUbvC1cww00D-Tfx13oKVTGCv4wMiPXIbSjObQMTFJRuBzRpFUy4OWyq0AihSvSrbT47kTU4bw21QKavJMVlylwpmV60na310okEoHsOeGgnA0HlsJI55M8WrQ")
 
   //JWT for NIH username "tcga-user"
-  val tcgaUserJwt = JWTWrapper("eyJhbGciOiJIUzI1NiJ9.dGNnYS11c2Vy.js6xodKBskGhcvetna7N1t6ltZ71WJkgs1ucIwm0Mss")
+  val tcgaUserJwt = JWTWrapper("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlcmFDb21tb25zVXNlcm5hbWUiOiJ0Y2dhLXVzZXIiLCJpYXQiOjE2MTIyMTg3MzZ9.JbKZ7vRnD9iACOM9SCCnccoLy5RV78PvOHqcctshBzVjNKXX2xOyFcAo9iEwLoEq478a-WprrxTmHz8JcKSacMIFHSAy1EAcfEl9bUnbnt9qNTUFPrVFCsBMABw2CutMFdNDp3YdkBWa5wkRieb6uOf5ml6tnwFL6T-3ZIysl04XG_bUwsRFqLiMYX9ilVlDTvu67p2HKkhwbIpxFMTlZYPkWTeGqEkiS1_e-NKbk0Oh9ipCqglVxCzyBlh8XnkpggjUJ6V6Jc5wHctdu3RyOw9M0VY56nVGgAM86u-Uy6L32iavu50xHW3htOHRhtUOfqA0jKvq77rnZ1eyykvAjA")
 
   //JWT for NIH username "target-user"
-  val targetUserJwt = JWTWrapper("eyJhbGciOiJIUzI1NiJ9.dGFyZ2V0LXVzZXI.afm1xC0XfV0c_V34cy727P2-rlQQNbFhCFkEsDKwqH8")
+  val targetUserJwt = JWTWrapper("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlcmFDb21tb25zVXNlcm5hbWUiOiJ0YXJnZXQtdXNlciIsImlhdCI6MTYxMjIxODc1NH0.Tl5mNwExOcJMcWe3eEdihnUPOk5411Hi4DyVbjqqi3_RLy4TDtPr7h9RtUwHU7bvx7p1l0M78L9G1SqJiD_NB_GK8TttPLNncy9JLEeKYOglHA4ZI9BbBTEggym-axUherSZ8W2UuXzRruZ8K4NkVPyvJmmWc86iCdCTQd8ETxahwgGL5_PTvPtbg-XsASmjbrmAMN8r9_fhB_lU9ltRvbVCMmk34SNBQk8f5FISmW4zVfMVRy00Sx-UYASJzT5CJneiGAHNVGJCilFCs_626KP5YiVqg3tdEcz7O5Om0UDHQY07HZCaESO31FiVv1R3k1xy6rFzn_brwXWhMQGrYA")
 
   //JWT for NIH username "not-on-whitelist" (don't ever add this to the mock whitelists in MockGoogleServicesDAO.scala)
-  val validJwtNotOnWhitelist = JWTWrapper("eyJhbGciOiJIUzI1NiJ9.bm90LW9uLXdoaXRlbGlzdA.DayvfECuGAQsXx-MEwXiuQyq86Eqc3Lmn46_9BGs6t0")
+  val validJwtNotOnWhitelist = JWTWrapper("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlcmFDb21tb25zVXNlcm5hbWUiOiJub3Qtb24td2hpdGVsaXN0IiwiaWF0IjoxNjEyMjE4ODExfQ.OnVGz_9QJ5MhQbnDgz85sUDpFuSpLP0iMZymUNyIQX6I9wB_Q64yNMS34uq3tX33vioJ4HELWHtUssARXRn8YUntPm5tQO_pTLKuklx8V3HQXlvB_lN7lPAHR8EHY3NhYQsdxHnWfra7ZetmiakKmTu8AH3Lc6WOFUh18j4L-6nUKUW8mLY4hDMtAiAYMi6SIy4eISuuOVH3305gbqDKZOqNGfvzM19Vq7Gk5_zqEdRrQ9wYr_kDRIm7Sgok6Cd6GEF5FzILGWdXh2YKhzd_nVZR4aMb82NWUYSLgULpjX55kGxYWYI9pLbNPp97hB9qIE3-vufYoBc7PRnsAkpNCw")
 
-  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, shareLogDao: MockShareLogDAO, importServiceDao: MockImportServiceDAO)(implicit val executionContext: ExecutionContext) extends ApiServices
+  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, shareLogDao: MockShareLogDAO, importServiceDao: MockImportServiceDAO, shibbolethDao: MockShibbolethDAO)(implicit val executionContext: ExecutionContext) extends ApiServices
 
   def withDefaultApiServices[T](testCode: TestApiService => T): T = {
-    val apiService = TestApiService(new MockAgoraDAO, new MockGoogleServicesDAO, new MockOntologyDAO, new MockConsentDAO, new MockRawlsDAO, new MockSamDAO, new MockSearchDAO, new MockResearchPurposeSupport, new MockThurloeDAO, new MockShareLogDAO, new MockImportServiceDAO)
+    val apiService = TestApiService(new MockAgoraDAO, new MockGoogleServicesDAO, new MockOntologyDAO, new MockConsentDAO, new MockRawlsDAO, new MockSamDAO, new MockSearchDAO, new MockResearchPurposeSupport, new MockThurloeDAO, new MockShareLogDAO, new MockImportServiceDAO, new MockShibbolethDAO)
     testCode(apiService)
   }
 
