@@ -110,24 +110,24 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
       path("profile" / "importstatus") {
         get {
           requireUserInfo() { userInfo =>
-            complete { userServiceConstructor(userInfo).ImportPermission }
+            complete { userServiceConstructor(userInfo).importPermission() }
           }
         }
       } ~
       path("profile" / "terra") {
         get {
           requireUserInfo() { userInfo =>
-            complete { userServiceConstructor(userInfo).GetTerraPreference }
+            complete { userServiceConstructor(userInfo).getTerraPreference }
           }
         } ~
         post {
           requireUserInfo() { userInfo =>
-            complete { userServiceConstructor(userInfo).SetTerraPreference }
+            complete { userServiceConstructor(userInfo).setTerraPreference() }
           }
         } ~
         delete {
           requireUserInfo() { userInfo =>
-            complete { userServiceConstructor(userInfo).DeleteTerraPreference }
+            complete { userServiceConstructor(userInfo).deleteTerraPreference() }
           }
         }
       } ~
@@ -145,7 +145,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
       } ~
       path("userinfo") {
         requireUserInfo() { userInfo =>
-          complete { userServiceConstructor(userInfo).GetUserProfileGoogle }
+          complete { userServiceConstructor(userInfo).getUserProfileGoogle }
         }
       } ~
       pathPrefix("profile") {
@@ -153,7 +153,7 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         pathEnd {
           get {
             requireUserInfo() { userInfo =>
-              complete { userServiceConstructor(userInfo).GetAllUserKeys }
+              complete { userServiceConstructor(userInfo).getAllUserKeys }
             }
           }
         }

@@ -23,10 +23,6 @@ class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeSupport: 
                      (implicit protected val executionContext: ExecutionContext)
   extends DataUseRestrictionSupport with SprayJsonSupport with LazyLogging {
 
-  def AutocompleteOntology(term: String) = autocompleteOntology(term)
-  def ResearchPurposeQuery(researchPurposeRequest: ResearchPurposeRequest) = buildResearchPurposeQuery(researchPurposeRequest)
-  def DataUseLimitation(dataUseLimitation: StructuredDataRequest) = buildStructuredUseRestrictionAttribute(dataUseLimitation)
-
   def buildStructuredUseRestrictionAttribute(request: StructuredDataRequest): Future[PerRequestMessage] = {
     Future(RequestComplete(generateStructuredUseRestrictionAttribute(request, ontologyDAO)))
   }

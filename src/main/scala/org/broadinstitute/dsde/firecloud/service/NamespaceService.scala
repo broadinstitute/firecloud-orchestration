@@ -22,9 +22,6 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
 
   implicit val userInfo = argUserInfo
 
-  def GetPermissions(ns: String, entity: String) = { getFireCloudPermissions(ns, entity) }
-  def PostPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]) = { postFireCloudPermissions(ns, entity, permissions) }
-
   def getFireCloudPermissions(ns: String, entity: String): Future[PerRequestMessage] = {
     val agoraPermissions = agoraDAO.getNamespacePermissions(ns, entity)
     delegatePermissionsResponse(agoraPermissions)

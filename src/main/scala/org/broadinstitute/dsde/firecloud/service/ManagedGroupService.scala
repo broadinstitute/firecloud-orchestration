@@ -29,15 +29,6 @@ object ManagedGroupService {
 class ManagedGroupService(samDAO: SamDAO, userToken: WithAccessToken)(implicit protected val executionContext: ExecutionContext)
   extends LazyLogging with SprayJsonSupport {
 
-  def CreateGroup(groupName: WorkbenchGroupName) = createGroup(groupName)(userToken)
-  def DeleteGroup(groupName: WorkbenchGroupName) = deleteGroup(groupName)(userToken)
-  def ListGroups = listGroups(userToken)
-  def ListGroupMembers(groupName: WorkbenchGroupName) = listGroupMembers(groupName)(userToken)
-  def AddGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail) = addGroupMember(groupName, role, email)(userToken)
-  def RemoveGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail) = removeGroupMember(groupName, role, email)(userToken)
-  def OverwriteGroupMembers(groupName: WorkbenchGroupName, role: ManagedGroupRole, membersList: List[WorkbenchEmail]) = overwriteGroupMembers(groupName, role, membersList)(userToken)
-  def RequestGroupAccess(groupName: WorkbenchGroupName) = requestGroupAccess(groupName)(userToken)
-
   def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
     val membersList = for {
       _ <- samDAO.createGroup(groupName)

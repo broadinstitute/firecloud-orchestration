@@ -58,7 +58,7 @@ trait CookieAuthedApiService extends Directives with RequestBuilding with LazyLo
           cookie("FCtoken") { tokenCookie =>
             val userInfo = dummyUserInfo(tokenCookie.value)
 
-            complete { storageServiceConstructor(userInfo).GetDownload(bucket, obj.toString) }
+            complete { storageServiceConstructor(userInfo).getDownload(bucket, obj.toString) }
           }
         }
       }
