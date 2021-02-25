@@ -26,10 +26,10 @@ object ManagedGroupService {
 
 }
 
-class ManagedGroupService(samDAO: SamDAO, userToken: WithAccessToken)(implicit protected val executionContext: ExecutionContext)
+class ManagedGroupService(samDAO: SamDAO, implicit val userToken: WithAccessToken)(implicit protected val executionContext: ExecutionContext)
   extends LazyLogging with SprayJsonSupport {
 
-  def createGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def createGroup(groupName: WorkbenchGroupName): Future[PerRequestMessage] = {
     val membersList = for {
       _ <- samDAO.createGroup(groupName)
       listMembers <- listGroupMembersInternal(groupName)
@@ -38,37 +38,37 @@ class ManagedGroupService(samDAO: SamDAO, userToken: WithAccessToken)(implicit p
     membersList.map(response => RequestComplete(StatusCodes.Created, response))
   }
 
-  def deleteGroup(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def deleteGroup(groupName: WorkbenchGroupName): Future[PerRequestMessage] = {
     samDAO.deleteGroup(groupName).map(_ => RequestComplete(StatusCodes.NoContent))
   }
 
-  def listGroups(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def listGroups(): Future[PerRequestMessage] = {
     samDAO.listGroups.map(response => RequestComplete(StatusCodes.OK, response.map { group =>
        group.copy(role = group.role.capitalize)
     }))
   }
 
-  def listGroupMembers(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def listGroupMembers(groupName: WorkbenchGroupName): Future[PerRequestMessage] = {
     listGroupMembersInternal(groupName).map(response => RequestComplete(StatusCodes.OK, response))
   }
 
-  def addGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def addGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail): Future[PerRequestMessage] = {
     samDAO.addGroupMember(groupName, role, email).map(_ => RequestComplete(StatusCodes.NoContent))
   }
 
-  def removeGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def removeGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail): Future[PerRequestMessage] = {
     samDAO.removeGroupMember(groupName, role, email).map(_ => RequestComplete(StatusCodes.NoContent))
   }
 
-  def overwriteGroupMembers(groupName: WorkbenchGroupName, role: ManagedGroupRole, membersList: List[WorkbenchEmail])(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def overwriteGroupMembers(groupName: WorkbenchGroupName, role: ManagedGroupRole, membersList: List[WorkbenchEmail]): Future[PerRequestMessage] = {
     samDAO.overwriteGroupMembers(groupName, role, membersList).map(_ => RequestComplete(StatusCodes.NoContent))
   }
 
-  def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[PerRequestMessage] = {
+  def requestGroupAccess(groupName: WorkbenchGroupName): Future[PerRequestMessage] = {
     samDAO.requestGroupAccess(groupName).map(_ => RequestComplete(StatusCodes.NoContent))
   }
 
-  private def listGroupMembersInternal(groupName: WorkbenchGroupName)(implicit userToken: WithAccessToken): Future[FireCloudManagedGroup] = {
+  private def listGroupMembersInternal(groupName: WorkbenchGroupName): Future[FireCloudManagedGroup] = {
     for {
       adminsEmails <- samDAO.listGroupPolicyEmails(groupName, ManagedGroupRoles.Admin)
       membersEmails <- samDAO.listGroupPolicyEmails(groupName, ManagedGroupRoles.Member)
