@@ -68,7 +68,10 @@ object Dependencies {
     "org.webjars.npm"                % "swagger-ui-dist"     % "3.35.0",
     "org.webjars"                    % "webjars-locator"     % "0.40",
     "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
-    "com.sun.mail"                   % "javax.mail"          % "1.5.6",
+    // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
+    // refactoring that method to remove this entire dependency.
+    "com.sun.mail"                   % "javax.mail"          % "1.6.2"
+      exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.4.1",
     "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
     "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.0",
