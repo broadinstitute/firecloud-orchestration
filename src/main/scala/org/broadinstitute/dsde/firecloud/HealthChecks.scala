@@ -30,7 +30,8 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
   private def maybeRegisterServiceAccount(name: String, token: AccessToken): Future[Option[String]] = {
     val lookup = manageRegistration(name, app.samDAO.getRegistrationStatus(implicitly(token)))
     lookup flatMap {
-      case Some(_) if registerSAs =>
+      case Some(err) if registerSAs =>
+        logger.warn(s"registration lookup found: $err")
         logger.info(s"attempting to register $name ...")
         manageRegistration(name, app.samDAO.registerUser(implicitly(token)))
 
@@ -40,16 +41,29 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
   }
 
   private def manageRegistration(name: String, req: Future[RegistrationInfo]): Future[Option[String]] = {
-    req map {
-      case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
-      case regInfo => Option(s"$name is registered but not fully enabled: ${regInfo.enabled}!")
-    } recover {
+    req map { regInfo =>
+      logger.info("health check found RegistrationInfo: " + regInfo)
+      regInfo match {
+        case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
+        case regInfo => Option(s"$name is registered but not fully enabled: ${regInfo.enabled}!")
+      }
+    } recoverWith {
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
-        Option(s"$name is not registered!")
+        Future(Option(s"$name is not registered!"))
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.Conflict) =>
-        Option(s"$name already exists!")
+        // TODO: in production, we can reach here on an infrequent race condition: multiple orch instances
+        // see that the SA is not registered, so they all attempt to register it in parallel; one registration
+        // attempt succeeds but the others find a conflict. Add a retry here to get the reg status once more;
+        // iif the retry lookup fails should this throw error
+        val token = AccessToken(app.googleServicesDAO.getAdminUserAccessToken)
+        app.samDAO.getRegistrationStatus(token) map {
+          case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
+          case regInfo => Option(s"$name conflict-retry lookup found invalid registration: $regInfo")
+        } recover {
+          case e:Exception => Option(s"$name conflict-retry lookup found error: $e")
+        }
       case e: Exception =>
-        Option(s"Error on registration status for $name: ${e.getMessage}")
+        Future(Option(s"Error on registration status for $name: ${e.getMessage}"))
     }
   }
 
