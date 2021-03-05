@@ -43,8 +43,7 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
   private def manageRegistration(name: String, req: Future[RegistrationInfo], retry: Boolean = true): Future[Option[String]] = {
     req map {
       case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
-      case regInfo =>
-        Option(s"$name is registered but not fully enabled: $regInfo!")
+      case regInfo => Option(s"$name is registered but not fully enabled: $regInfo!")
     } recoverWith {
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
         Future.successful(Option(s"$name is not registered!"))
@@ -53,8 +52,8 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
             We can reach here in the case of transient errors during the registration lookup, or in case of an
             infrequent race condition: multiple orch instances see that the SA is not registered, so they all
             attempt to register it in parallel. One registration attempt succeeds but the others find a conflict.
-            Add a retry here to get the SA's registration status once more; iif the retry lookup fails should we
-            bubble up the Conflict error.
+            Add a retry here to get the SA's registration status once more; iif the retry lookup fails, we bubble
+            up its error.
          */
         if (retry) {
           val token = AccessToken(app.googleServicesDAO.getAdminUserAccessToken)
