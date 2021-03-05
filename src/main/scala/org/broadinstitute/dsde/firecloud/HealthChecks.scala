@@ -60,8 +60,8 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
         } else {
           Future.successful(Option(s"$name already exists!"))
         }
-      case errorReport: FireCloudExceptionWithErrorReport =>
-        Future.successful(Option(s"Error on registration status for $name: ${errorReport.getMessage}"))
+      case e: FireCloudExceptionWithErrorReport =>
+        Future.successful(Option(s"Error on registration status for $name: ${e.errorReport.message} (${e.errorReport.source})"))
       case e: Exception =>
         Future.successful(Option(s"Error on registration status for $name: ${e.getMessage}"))
     }
