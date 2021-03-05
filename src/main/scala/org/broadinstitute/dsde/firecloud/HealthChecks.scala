@@ -31,8 +31,7 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
     val lookup = manageRegistration(name, app.samDAO.getRegistrationStatus(token))
     lookup flatMap {
       case Some(err) if registerSAs =>
-        logger.warn(s"SA registration lookup found: $err")
-        logger.info(s"attempting to register $name ...")
+        logger.warn(s"SA registration lookup failed; attempting to register $name. Lookup failure was: $err")
         manageRegistration(name, app.samDAO.registerUser(token))
 
       case registerMessage =>
