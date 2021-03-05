@@ -28,42 +28,44 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
       AccessToken(app.googleServicesDAO.getAdminUserAccessToken))
 
   private def maybeRegisterServiceAccount(name: String, token: AccessToken): Future[Option[String]] = {
-    val lookup = manageRegistration(name, app.samDAO.getRegistrationStatus(implicitly(token)))
+    val lookup = manageRegistration(name, app.samDAO.getRegistrationStatus(token))
     lookup flatMap {
       case Some(err) if registerSAs =>
-        logger.warn(s"registration lookup found: $err")
+        logger.warn(s"SA registration lookup found: $err")
         logger.info(s"attempting to register $name ...")
-        manageRegistration(name, app.samDAO.registerUser(implicitly(token)))
+        manageRegistration(name, app.samDAO.registerUser(token))
 
       case registerMessage =>
         Future.successful(registerMessage)
     }
   }
 
-  private def manageRegistration(name: String, req: Future[RegistrationInfo]): Future[Option[String]] = {
-    req map { regInfo =>
-      logger.info("health check found RegistrationInfo: " + regInfo)
-      regInfo match {
-        case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
-        case regInfo => Option(s"$name is registered but not fully enabled: ${regInfo.enabled}!")
-      }
+  private def manageRegistration(name: String, req: Future[RegistrationInfo], retry: Boolean = true): Future[Option[String]] = {
+    req map {
+      case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
+      case regInfo =>
+        Option(s"$name is registered but not fully enabled: $regInfo!")
     } recoverWith {
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>
-        Future(Option(s"$name is not registered!"))
+        Future.successful(Option(s"$name is not registered!"))
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.Conflict) =>
-        // TODO: in production, we can reach here on an infrequent race condition: multiple orch instances
-        // see that the SA is not registered, so they all attempt to register it in parallel; one registration
-        // attempt succeeds but the others find a conflict. Add a retry here to get the reg status once more;
-        // iif the retry lookup fails should this throw error
-        val token = AccessToken(app.googleServicesDAO.getAdminUserAccessToken)
-        app.samDAO.getRegistrationStatus(token) map {
-          case RegistrationInfo(_, WorkbenchEnabled(true, true, true), _) => None
-          case regInfo => Option(s"$name conflict-retry lookup found invalid registration: $regInfo")
-        } recover {
-          case e:Exception => Option(s"$name conflict-retry lookup found error: $e")
+        /* Conflict status code indicates that we attempted to register the SA, but it was already registered.
+            We can reach here in the case of transient errors during the registration lookup, or in case of an
+            infrequent race condition: multiple orch instances see that the SA is not registered, so they all
+            attempt to register it in parallel. One registration attempt succeeds but the others find a conflict.
+            Add a retry here to get the SA's registration status once more; iif the retry lookup fails should we
+            bubble up the Conflict error.
+         */
+        if (retry) {
+          val token = AccessToken(app.googleServicesDAO.getAdminUserAccessToken)
+          manageRegistration(name, app.samDAO.getRegistrationStatus(token), retry = false)
+        } else {
+          Future.successful(Option(s"$name already exists!"))
         }
+      case errorReport: FireCloudExceptionWithErrorReport =>
+        Future.successful(Option(s"Error on registration status for $name: ${errorReport.getMessage}"))
       case e: Exception =>
-        Future(Option(s"Error on registration status for $name: ${e.getMessage}"))
+        Future.successful(Option(s"Error on registration status for $name: ${e.getMessage}"))
     }
   }
 
