@@ -1,9 +1,10 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class ProfileSpec extends FreeSpec with Matchers {
+class ProfileSpec extends AnyFreeSpec with Matchers {
 
   val randomString = MockUtils.randomAlpha()
 

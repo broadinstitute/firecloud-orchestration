@@ -3,9 +3,11 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class OntologySearchSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
+class OntologySearchSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
 
   override def beforeAll = {
     // use re-create here, since instantiating the DAO will create it in the first place

@@ -2,9 +2,9 @@ import sbt._
 
 object Dependencies {
   val akkaV = "2.5.32"
-  val akkaHttpV = "10.2.1"
-  val jacksonV = "2.10.0"
-  val jacksonHotfixV = "2.10.0" // for when only some of the Jackson libs have hotfix releases
+  val akkaHttpV = "10.2.4"
+  val jacksonV = "2.12.2"
+  val jacksonHotfixV = "2.12.2" // for when only some of the Jackson libs have hotfix releases
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
@@ -18,18 +18,18 @@ object Dependencies {
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
-    "io.netty"                       % "netty-codec"         % "4.1.46.Final",
-    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.2",
-    "com.google.guava"               % "guava"               % "28.1-android",
+    "io.netty"                       % "netty-codec"         % "4.1.60.Final",
+    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6",
+    "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
 
-    "org.apache.logging.log4j"       % "log4j-api"           % "2.8.2", // elasticsearch requires log4j ...
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.8.2", // ... but we redirect log4j to logback.
-    "ch.qos.logback"                 % "logback-classic"     % "1.2.2",
+    "org.apache.logging.log4j"       % "log4j-api"           % "2.14.1", // elasticsearch requires log4j ...
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.14.1", // ... but we redirect log4j to logback.
+    "ch.qos.logback"                 % "logback-classic"     % "1.2.3",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
-    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.7.2",
+    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
 
-    "org.parboiled" % "parboiled-core" % "1.2.0",
+    "org.parboiled" % "parboiled-core" % "1.3.2",
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-18b1c01e0")
       exclude("com.typesafe.scala-logging", "scala-logging_2.12")
       exclude("com.typesafe.akka", "akka-stream_2.12")
@@ -62,24 +62,24 @@ object Dependencies {
     excludeGuava("com.google.apis"     % "google-api-services-sheets"       % "v4-rev20191001-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-cloudbilling" % "v1-rev20191005-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
-    excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.18.0"),
+    excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "org.webjars.npm"                % "swagger-ui-dist"     % "3.35.0",
+    "org.webjars.npm"                % "swagger-ui-dist"     % "3.45.0",
     "org.webjars"                    % "webjars-locator"     % "0.40",
-    "com.pauldijou"                 %% "jwt-core"            % "3.1.0",
+    "com.github.jwt-scala"          %% "jwt-core"            % "7.1.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
-    "com.univocity"                  % "univocity-parsers"   % "2.4.1",
-    "org.ocpsoft.prettytime"         % "prettytime"          % "4.0.1.Final",
-    "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.0",
-    "com.github.pathikrit"          %% "better-files"        % "2.17.1",
-    "org.apache.httpcomponents"      % "httpclient"          % "4.5.3",
+    "com.univocity"                  % "univocity-parsers"   % "2.9.1",
+    "org.ocpsoft.prettytime"         % "prettytime"          % "5.0.0.Final",
+    "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.2",
+    "com.github.pathikrit"          %% "better-files"        % "3.9.1",
+    "org.apache.httpcomponents"      % "httpclient"          % "4.5.13",
 
-    "org.specs2"                    %% "specs2-core"         % "3.10.0"     % "test",
-    "org.scalatest"                 %% "scalatest"           % "3.0.5"   % "test",
-    "org.mock-server"                % "mockserver-netty"    % "3.10.2"  % "test"
+    "org.specs2"                    %% "specs2-core"         % "4.10.6"  % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.1.4"   % "test",
+    "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test"
   )
 }

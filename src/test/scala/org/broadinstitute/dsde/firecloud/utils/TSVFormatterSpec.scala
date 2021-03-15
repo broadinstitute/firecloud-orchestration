@@ -6,12 +6,14 @@ import org.broadinstitute.dsde.firecloud.service.TsvTypes
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FreeSpec, Inspectors, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.Inspectors
+import org.scalatest.matchers.should.Matchers
 
 import scala.io.Source
 import scala.language.postfixOps
 
-class TSVFormatterSpec extends FreeSpec with ScalaFutures with Matchers with Inspectors {
+class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with Inspectors {
 
   implicit val modelSchema: ModelSchema = FirecloudModelSchema
 

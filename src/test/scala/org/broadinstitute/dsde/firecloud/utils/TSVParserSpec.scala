@@ -1,11 +1,11 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 import org.broadinstitute.dsde.firecloud.EntityService
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVLoadFiles, MockTSVStrings}
 import org.broadinstitute.dsde.firecloud.model.FirecloudModelSchema
 
-class TSVParserSpec extends FlatSpec {
+class TSVParserSpec extends AnyFlatSpec {
   "TSV parser" should "throw an exception when given an empty file to parse" in {
     intercept[RuntimeException] {
       TSVParser.parse(MockTSVStrings.empty)

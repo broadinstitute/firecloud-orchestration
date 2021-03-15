@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseSe
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.mock.action.ExpectationCallback
-import org.mockserver.model.HttpCallback.callback
+import org.mockserver.model.HttpClassCallback.callback
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.{HttpRequest, HttpResponse}

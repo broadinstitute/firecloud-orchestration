@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.rawls.model.{WorkspaceDetails, WorkspaceVersions}
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpCallback._
+import org.mockserver.model.HttpClassCallback.callback
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
 import akka.http.scaladsl.model.StatusCodes._

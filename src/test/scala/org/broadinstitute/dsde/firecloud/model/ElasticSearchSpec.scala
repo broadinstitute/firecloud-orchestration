@@ -1,7 +1,8 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.model.DataUse.{DiseaseOntologyNodeId, ResearchPurpose}
-import org.scalatest.{Assertions, FreeSpec}
+import org.scalatest.Assertions
+import org.scalatest.freespec.AnyFreeSpec
 import spray.json.JsString
 import spray.json._
 import spray.json.DefaultJsonProtocol._
@@ -10,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 /**
   * Created by ahaessly on 1/19/17.
   */
-class ElasticSearchSpec  extends FreeSpec with Assertions {
+class ElasticSearchSpec  extends AnyFreeSpec with Assertions {
 
   "LibrarySearchParams model" - {
     "when unmarshalling from json" - {

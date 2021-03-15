@@ -5,14 +5,14 @@ import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
-import org.scalatest.FreeSpecLike
+import org.scalatest.freespec.AnyFreeSpecLike
 import akka.http.scaladsl.model.StatusCodes
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 
-class PermissionsSupportSpec extends PermissionsSupport with FreeSpecLike {
+class PermissionsSupportSpec extends PermissionsSupport with AnyFreeSpecLike {
   protected val rawlsDAO: RawlsDAO = new MockRawlsDAO
   protected val samDao: SamDAO = new PermissionsSupportMockSamDAO
   implicit protected val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global

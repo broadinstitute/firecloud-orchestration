@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpec._
 import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpecSupport._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
-import org.mockserver.model.HttpCallback.callback
+import org.mockserver.model.HttpClassCallback.callback
 import org.mockserver.model.HttpRequest.request
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._

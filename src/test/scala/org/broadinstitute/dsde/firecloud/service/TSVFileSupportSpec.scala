@@ -3,12 +3,12 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
 import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeString}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 
 /**
   * Created by ansingh on 11/16/16.
   */
-class TSVFileSupportSpec extends FreeSpec with TSVFileSupport {
+class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
 
 
   "getWorkspaceAttributeCalls" - {

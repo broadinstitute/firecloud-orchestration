@@ -9,13 +9,13 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
 import org.elasticsearch.action.search.SearchRequestBuilder
 import org.elasticsearch.client.transport.TransportClient
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.Assertions._
 import spray.json._
 
 import scala.collection.Set
 
-class ElasticSearchDAOQuerySupportSpec extends FreeSpec with ElasticSearchDAOQuerySupport {
+class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAOQuerySupport {
 
   val indexname = "ElasticSearchSpec"
 
