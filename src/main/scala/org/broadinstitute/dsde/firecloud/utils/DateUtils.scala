@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import org.ocpsoft.prettytime.PrettyTime
 import org.joda.time.{Seconds, Hours, DateTime}
 
 
@@ -43,11 +42,6 @@ object DateUtils {
 
   def secondsSince(seconds: Long): Int = {
     Seconds.secondsBetween(dtFromSeconds(seconds), nowDateTime).getSeconds
-  }
-
-
-  def prettySince(seconds: Long): String = {
-    new PrettyTime().format(new java.util.Date(seconds*EPOCH))
   }
 
 

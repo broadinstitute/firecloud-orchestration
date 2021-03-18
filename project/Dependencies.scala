@@ -73,13 +73,10 @@ object Dependencies {
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
-    "org.ocpsoft.prettytime"         % "prettytime"          % "5.0.0.Final",
     "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.2",
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
-    "org.apache.httpcomponents"      % "httpclient"          % "4.5.13",
 
-    "org.specs2"                    %% "specs2-core"         % "4.10.6"  % "test",
-    "org.scalatest"                 %% "scalatest"           % "3.1.4"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.5"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test"
   )
 }
