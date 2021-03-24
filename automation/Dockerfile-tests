@@ -1,4 +1,4 @@
-FROM broadinstitute/scala-baseimage:jdk11-2.12.12-1.4.6
+FROM broadinstitute/scala-baseimage:jdk11-2.12.12-1.4.9
 
 COPY src /app/src
 COPY test.sh /app

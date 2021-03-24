@@ -7,14 +7,16 @@ import org.broadinstitute.dsde.firecloud.model.{AccessToken, LibrarySearchRespon
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
 import org.broadinstitute.dsde.firecloud.service.{DataUseRestrictionTestFixtures, LibraryServiceSupport}
 import org.broadinstitute.dsde.rawls.model.{AttributeName, WorkspaceDetails}
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import spray.json.DefaultJsonProtocol._
 
-class DataUseRestrictionSearchSpec extends FreeSpec with SearchResultValidation with BeforeAndAfterAll with Matchers with LibraryServiceSupport {
+class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidation with BeforeAndAfterAll with Matchers with LibraryServiceSupport {
 
   val datasets: Seq[WorkspaceDetails] = DataUseRestrictionTestFixtures.allDatasets
 

@@ -4,14 +4,16 @@ import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.{LibrarySearchParams, LibrarySearchResponse}
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Ignore, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsNumber, JsObject, JsString, JsValue}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SortSpec extends FreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
+class SortSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
 
   val dur = Duration(2, MINUTES)
 

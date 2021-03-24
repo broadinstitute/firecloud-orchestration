@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
 import org.everit.json.schema.ValidationException
 import org.parboiled.common.FileUtils
-import org.scalatest.FreeSpecLike
+import org.scalatest.freespec.AnyFreeSpecLike
 import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -57,7 +57,7 @@ object LibraryServiceSpec {
   val testLibraryMetadataJsObject = testLibraryMetadata.parseJson.asJsObject
 
 }
-class LibraryServiceSpec extends BaseServiceSpec with FreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
+class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with LibraryServiceSupport with AttributeSupport with ElasticSearchDAOSupport {
   def toName(s:String) = AttributeName.fromDelimitedName(s)
 
   implicit val userToken: WithAccessToken = AccessToken("LibraryServiceSpec")

@@ -5,11 +5,13 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport.searchDAO
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.{Duration, MINUTES}
 
-class FilterLimitsSpec extends FreeSpec with Matchers with SearchResultValidation with BeforeAndAfterAll with LazyLogging {
+class FilterLimitsSpec extends AnyFreeSpec with Matchers with SearchResultValidation with BeforeAndAfterAll with LazyLogging {
 
   override def beforeAll = {
     // use re-create here, since instantiating the DAO will create it in the first place

@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model._
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpCallback._
+import org.mockserver.model.HttpClassCallback.callback
 import org.mockserver.model.HttpRequest._
 import spray.json.DefaultJsonProtocol._
 import spray.json._

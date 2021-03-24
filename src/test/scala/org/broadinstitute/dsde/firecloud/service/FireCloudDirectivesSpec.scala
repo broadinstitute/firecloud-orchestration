@@ -1,11 +1,11 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 
 import scala.concurrent.ExecutionContext
 
-class FireCloudDirectivesSpec extends FreeSpec with ScalatestRouteTest with FireCloudDirectives {
+class FireCloudDirectivesSpec extends AnyFreeSpec with ScalatestRouteTest with FireCloudDirectives {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 

@@ -1,14 +1,15 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.json.DefaultJsonProtocol._
 
 import scala.util.parsing.json.JSONFormat
 
-class SamResourceSpec extends FreeSpec with Matchers {
+class SamResourceSpec extends AnyFreeSpec with Matchers {
 
   val userPolicyJSON =     """
     |  {

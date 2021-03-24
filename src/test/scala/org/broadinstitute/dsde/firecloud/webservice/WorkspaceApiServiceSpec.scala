@@ -23,7 +23,7 @@ import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.Parameter
-import org.mockserver.socket.SSLFactory
+import org.mockserver.socket.KeyStoreFactory
 import org.scalatest.BeforeAndAfterEach
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -244,7 +244,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val bothBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/testbag.zip"))
     val neitherBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/nothingbag.zip"))
 
-    HttpsURLConnection.setDefaultSSLSocketFactory(SSLFactory.getInstance().sslContext().getSocketFactory())
+    HttpsURLConnection.setDefaultSSLSocketFactory(KeyStoreFactory.keyStoreFactory().sslContext().getSocketFactory())
 
     bagitServer
       .when(request().withMethod("GET").withPath("/both.zip"))

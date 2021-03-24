@@ -7,7 +7,8 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.service.NihService
 import org.broadinstitute.dsde.firecloud.utils.TestRequestBuilding
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
@@ -16,7 +17,7 @@ import scala.concurrent.duration._
   */
 
 // common trait to be inherited by API service tests
-trait ApiServiceSpec extends FlatSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with TestRequestBuilding {
+trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with TestRequestBuilding {
   // increase the timeout for ScalatestRouteTest from the default of 1 second, otherwise
   // intermittent failures occur on requests not completing in time
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)

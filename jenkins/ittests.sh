@@ -6,7 +6,7 @@ set -eux
 ./docker/run-es.sh start
 
 # execute tests, overriding elasticsearch.urls to point at the linked container
-SBT_IMAGE=broadinstitute/scala-baseimage:jdk11-2.12.12-1.4.6
+SBT_IMAGE=broadinstitute/scala-baseimage:jdk11-2.12.12-1.4.9
 docker run --rm \
   --link elasticsearch-ittest:elasticsearch-ittest \
   -v sbt-cache:/root/.sbt \
