@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import java.time.Instant
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.Coders._
@@ -13,7 +12,8 @@ import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.rawls.model.ErrorReportSource
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
+import spray.json.DeserializationException
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -112,6 +112,9 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
       response.status match {
         case s if s.isSuccess =>
           Unmarshal(response.entity).to[T].recoverWith {
+            case de: DeserializationException =>
+              throw new FireCloudExceptionWithErrorReport(
+                ErrorReport(s"could not deserialize response: ${de.msg}"))
             case e: Throwable => {
               FCErrorReport(response).map { errorReport =>
                 throw new FireCloudExceptionWithErrorReport(errorReport)
