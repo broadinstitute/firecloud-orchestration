@@ -15,6 +15,7 @@ import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
@@ -44,13 +45,17 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
           RequestComplete(Accepted, responsePayload)
         }
       case otherResp =>
-        // see if we can extract errors
-        val responseString = otherResp.entity match {
-          case HttpEntity.Strict(_, data) => data.utf8String
-          case _ => otherResp.toString()
-        }
-        Future.successful(RequestCompleteWithErrorReport(otherResp.status, responseString))
 
+        // see if we can extract errors
+        val responseStringFuture = otherResp.entity match {
+          case HttpEntity.Strict(_, data) =>
+            Future.successful(data.utf8String)
+          case _ =>
+            otherResp.entity.toStrict(10.seconds).map(_.data.utf8String)
+        }
+        responseStringFuture.map { responseString =>
+          RequestCompleteWithErrorReport(otherResp.status, responseString)
+        }
     }
   }
 }
