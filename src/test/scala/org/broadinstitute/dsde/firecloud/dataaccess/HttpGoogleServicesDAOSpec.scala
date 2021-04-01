@@ -19,7 +19,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class HttpGoogleServicesDAOSpec(implicit val materializer: Materializer) extends AnyFlatSpec with Matchers with PrivateMethodTester {
+class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
 
   val testProject = "broad-dsde-dev"
   implicit val system = ActorSystem("HttpGoogleCloudStorageDAOSpec")
