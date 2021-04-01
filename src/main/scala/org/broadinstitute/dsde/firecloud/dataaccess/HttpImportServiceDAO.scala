@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
@@ -27,7 +27,14 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
-    userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) flatMap {
+    userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) flatMap { isResponse =>
+      generateResponse(isResponse, workspaceNamespace, workspaceName, pfbRequest)
+    }
+  }
+
+  // separate method to ease unit testing
+  protected[dataaccess] def generateResponse(isResponse: HttpResponse, workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+    isResponse match {
       case resp if resp.status == Created =>
         val importServiceResponse = Unmarshal(resp).to[ImportServiceResponse]
 
@@ -50,7 +57,6 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
           case _ => otherResp.toString()
         }
         Future.successful(RequestCompleteWithErrorReport(otherResp.status, responseString))
-
     }
   }
 }
