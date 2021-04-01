@@ -15,6 +15,7 @@ import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
@@ -52,11 +53,20 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
         }
       case otherResp =>
         // see if we can extract errors
-        val responseString = otherResp.entity match {
-          case HttpEntity.Strict(_, data) => data.utf8String
-          case _ => otherResp.toString()
+        val responseStringFuture = otherResp.entity match {
+          case HttpEntity.Strict(_, data) =>
+            Future.successful(data.utf8String)
+          case nonStrictEntity =>
+            nonStrictEntity.toStrict(10.seconds).map(_.data.utf8String)
         }
-        Future.successful(RequestCompleteWithErrorReport(otherResp.status, responseString))
+        responseStringFuture.map { responseString =>
+          RequestCompleteWithErrorReport(otherResp.status, responseString)
+        } recover {
+          case t:Throwable =>
+            RequestCompleteWithErrorReport(InternalServerError,
+              s"Unexpected error reading response from import service: ${t.getMessage}",
+              t)
+        }
     }
   }
 }
