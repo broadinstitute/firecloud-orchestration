@@ -107,7 +107,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     }
   }
 
-  it should "return OK when an expired user re-links. their new link time should be 30 days in the future" in withDefaultApiServices { services =>
+  it should "return OK when an expired user re-links. their new link time should be in the future" in withDefaultApiServices { services =>
     //verify that their link is indeed already expired
     val toLink = WorkbenchEmail(services.thurloeDao.TCGA_AND_TARGET_LINKED_EXPIRED)
 
@@ -126,8 +126,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
       status should equal(OK)
       val linkExpireTime = responseAs[NihStatus].linkExpireTime.get
 
-      assert(linkExpireTime >= DateUtils.nowMinus1Hour) //link expire time is fresh
-      assert(linkExpireTime <= DateUtils.nowPlus30Days) //link expire time is approx 30 days in the future
+      assert(linkExpireTime >= DateUtils.now) //link expire time is fresh
       assert(services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
       assert(services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
     }

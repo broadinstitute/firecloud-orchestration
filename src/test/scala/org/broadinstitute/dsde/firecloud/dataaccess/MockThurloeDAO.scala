@@ -134,7 +134,11 @@ class MockThurloeDAO extends ThurloeDAO {
   }
 
   override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]] = {
-    val newKVsForUser = (userInfo.id -> (mockKeyValues(userInfo.id) ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value))}))
+    val newKVsForUser = userInfo.id -> (mockKeyValues(userInfo.id).filter {
+      case FireCloudKeyValue(Some(key), _) => !keyValues.contains(key)
+      case FireCloudKeyValue(_, _) => false
+    } ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value))})
+
     mockKeyValues = mockKeyValues + newKVsForUser
     Future.successful(Success(()))
   }
