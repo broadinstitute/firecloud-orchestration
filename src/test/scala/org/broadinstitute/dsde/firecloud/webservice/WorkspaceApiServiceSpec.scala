@@ -1369,7 +1369,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should return 200 with result for good request" in {
           Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
-            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.56")
+            // 256000000000 / (1024 * 1024 * 1024) *0.01
+            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.38")
           }
         }
       }
