@@ -52,7 +52,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
       case (usage, priceList) =>
         val rate = priceList.prices.cpBigstoreStorage.us
-        val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / 1000000000 * rate
+        // Convert bytes to GB since rate is based on GB.
+        val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / (1024 * 1024 * 1024) * rate
         RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
     }
   }
