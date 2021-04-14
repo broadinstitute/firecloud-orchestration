@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
 trait BillingApiService extends FireCloudDirectives {
   private val billingUrl = FireCloudConfig.Rawls.authUrl + "/billing"
   private val userBillingUrl = FireCloudConfig.Rawls.authUrl + "/user/billing"
+  private val v2BillingUrl = FireCloudConfig.Rawls.authUrl + "/billing/v2"
 
   val billingServiceRoutes: Route =
     pathPrefix("billing") {
@@ -29,6 +30,33 @@ trait BillingApiService extends FireCloudDirectives {
                   passthrough(s"$billingUrl/$projectId/$workbenchRole/$email", method)
                 }
               }
+            }
+        } ~
+        pathPrefix("v2") {
+          pathEnd {
+            post {
+              passthrough(v2BillingUrl, POST)
+            }
+          } ~
+            pathPrefix(Segment) { projectId =>
+              pathEnd {
+                get {
+                  passthrough(s"$v2BillingUrl/$projectId", GET)
+                }
+              } ~
+              path("members") {
+                get {
+                  passthrough(s"$v2BillingUrl/$projectId/members", GET)
+                }
+              } ~
+                // workbench project role: owner or user
+                path(Segment / Segment) { (workbenchRole, email) =>
+                  (delete | put) {
+                    extract(_.request.method) { method =>
+                      passthrough(s"$v2BillingUrl/$projectId/$workbenchRole/$email", method)
+                    }
+                  }
+                }
             }
         }
     } ~
