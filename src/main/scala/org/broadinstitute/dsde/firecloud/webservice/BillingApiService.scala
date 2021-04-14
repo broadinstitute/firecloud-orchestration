@@ -40,8 +40,10 @@ trait BillingApiService extends FireCloudDirectives {
           } ~
             pathPrefix(Segment) { projectId =>
               pathEnd {
-                get {
-                  passthrough(s"$v2BillingUrl/$projectId", GET)
+                (get | delete) {
+                  extract(_.request.method) { method =>
+                    passthrough(s"$v2BillingUrl/$projectId", method)
+                  }
                 }
               } ~
               path("members") {
