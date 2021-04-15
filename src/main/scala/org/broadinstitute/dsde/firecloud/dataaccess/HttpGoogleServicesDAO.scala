@@ -2,13 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.FileInputStream
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
-import akka.http.scaladsl.unmarshalling.Unmarshaller
-import akka.stream.Materializer
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
@@ -33,7 +26,6 @@ import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import spray.json.{DefaultJsonProtocol, _}
 
 import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -45,18 +37,19 @@ import scala.util.{Failure, Success, Try}
 case class GooglePriceList(prices: GooglePrices, version: String, updated: String)
 
 /** Partial price list. Attributes can be added as needed to import prices for more products. */
-case class GooglePrices(cpBigstoreStorage: UsPriceItem,
+case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal],
                         cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
 /** Price item containing only US currency. */
-case class UsPriceItem(us: BigDecimal)
+case class UsPriceItem(Map[String, BigDecimal])
+// case class UsPriceItem(us: BigDecimal, us-central1: BigDecimal, us-central1: BigDecimal, us-east1: BigDecimal, us-east4: BigDecimal, us-west4: BigDecimal, us-west1: BigDecima, us-west2: BigDecima, us-west3: BigDecima, europe-west1: BigDecima, europe-west2: BigDecima, europe-west3: BigDecima, europe-central2: BigDecima, europe-west4: BigDecima, europe-west6: BigDecima, europe-north1: BigDecima, northamerica-northeast1: BigDecima, asia-east1: BigDecima, asia-east2: BigDecima, asia-northeast1: BigDecima, asia-southeast2: BigDecima, asia-northeast2: BigDecima, asia-northeast3: BigDecima, asia-southeast1: BigDecima, australia-southeast1: BigDecima, southamerica-east1: BigDecima, asia-south1: BigDecimal)
 
 /** Tiered price item containing only US currency.
-  *
-  * Used for egress, may need to be altered to work with other types in the future.
-  * Contains a map of the different tiers of pricing, where the key is the size in GB
-  * for that tier and the value is the cost in USD for that tier.
-  */
+ *
+ * Used for egress, may need to be altered to work with other types in the future.
+ * Contains a map of the different tiers of pricing, where the key is the size in GB
+ * for that tier and the value is the cost in USD for that tier.
+ */
 case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
@@ -188,6 +181,20 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
+  }
+
+  def getBucket(bucketName: String): Future[Option[Bucket]] = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
+
+    Try(executeGoogleRequest[Objects](storage.buckets().get(bucketName))) match {
+      case Failure(ex) =>
+        // handle this case so we can give a good log message. In the future we may handle this
+        // differently, such as returning an empty list.
+        logger.warn(s"could not get $bucketName", ex)
+        throw ex
+      case Success(response) =>
+        return Option(response)
+    }
   }
 
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program

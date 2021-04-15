@@ -49,12 +49,15 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def CloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest) = cloneWorkspace(workspaceNamespace, workspaceName, cloneRequest)
 
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
-    rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
-      case (usage, priceList) =>
-        val rate = priceList.prices.cpBigstoreStorage.us
-        // Convert bytes to GB since rate is based on GB.
-        val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / (1024 * 1024 * 1024) * rate
-        RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+      googleServicesDAO.getBucket(workspaceResponse.workspace.bucket) flatMap { bucket =>
+        rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
+        case (usage, priceList) =>
+          val rate = priceList.prices.cpBigstoreStorage.get(bucket.location)
+          // Convert bytes to GB since rate is based on GB.
+          val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / (1024 * 1024 * 1024) * rate
+          RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
+      }
     }
   }
 

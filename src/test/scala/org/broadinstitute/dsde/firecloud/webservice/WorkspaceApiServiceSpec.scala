@@ -158,9 +158,26 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "googleProject"
   )
 
+  val withBucketNameWorkspace = WorkspaceDetails(
+    "attributes",
+    "att",
+    "id",
+    "mybucket", //bucketname
+    Some("wf-collection"),
+    DateTime.now(),
+    DateTime.now(),
+    "mb",
+    Some(Map()), //attrs
+    false,
+    Some(Set.empty), //authorizationDomain
+    WorkspaceVersions.V2,
+    "googleProject"
+  )
+
   val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
   val authDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), authDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
   val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+  val withBucketNameRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), withBucketNameWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
@@ -1367,6 +1384,18 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for good request" in {
+          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withBucketNameRawlsWorkspaceResponse.toJson.compactPrint))
+          Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+            status should be (OK)
+            // 256000000000 / (1024 * 1024 * 1024) *0.01
+            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.38")
+          }
+        }
+      }
+
+      "when calling GET on workspaces/*/*/storageCostEstimate" - {
+        "should return 200 with result for good request for different resgions." in {
+          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withBucketNameRawlsWorkspaceResponse.toJson.compactPrint))
           Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.01

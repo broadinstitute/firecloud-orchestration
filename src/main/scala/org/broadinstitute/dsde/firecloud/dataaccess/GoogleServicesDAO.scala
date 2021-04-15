@@ -41,4 +41,13 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   override def serviceName: String = GoogleServicesDAO.serviceName
 
   def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit]
+
+  /**
+   * Returns location of a regional bucket. If the bucket's location type is `multi-region`, it returns None
+
+   * @param bucketName       the bucket name
+   * @param userProject - the project to be billed - optional. If None, defaults to the bucket's project
+   * @return optional Google bucket region
+   */
+  def getRegionForRegionalBucket(bucketName: String, userProject: Option[String]): Future[Option[String]]
 }
