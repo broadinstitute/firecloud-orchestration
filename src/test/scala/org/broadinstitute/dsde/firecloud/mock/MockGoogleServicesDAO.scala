@@ -104,7 +104,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getBucket(bucketName: String): Option[Bucket] = {
     bucketName match {
       case "usBucket" => Option(new Bucket().setName("usBucket").setLocation("US"))
-      case "europeEast1Bucket"=> Option(new Bucket().setName("europeWest1").setLocation("US"))
+      case "europeWest1Bucket"=> Option(new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1"))
     }
   }
 
