@@ -93,7 +93,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
   private final val pfbImportPath = workspacesRoot + "/%s/%s/importPFB".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
-  private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
+  private final val usBucketStorageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
+  private final val europeEast1storageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("europeEast1BucketWorkspace", workspace.name)
   private final val tagAutocompletePath = s"$workspacesRoot/tags"
   private final val executionEngineVersionPath = "/version/executionEngine"
 
@@ -158,43 +159,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "googleProject"
   )
 
-  val withUsBucketNameWorkspace = WorkspaceDetails(
-    "attributes",
-    "att",
-    "id",
-    "usBucket", //bucketname
-    Some("wf-collection"),
-    DateTime.now(),
-    DateTime.now(),
-    "mb",
-    Some(Map()), //attrs
-    false,
-    Some(Set.empty), //authorizationDomain
-    WorkspaceVersions.V2,
-    "googleProject"
-  )
-
-  val withEuropeEast1BucketNameWorkspace = WorkspaceDetails(
-    "attributes",
-    "att",
-    "id",
-    "europeEast1Bucket", //bucketname
-    Some("wf-collection"),
-    DateTime.now(),
-    DateTime.now(),
-    "mb",
-    Some(Map()), //attrs
-    false,
-    Some(Set.empty), //authorizationDomain
-    WorkspaceVersions.V2,
-    "googleProject"
-  )
-
   val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
   val authDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), authDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
   val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
-  val withUsBucketNameRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), withUsBucketNameWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
-  val withEuropeEast1BucketNameRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), withEuropeEast1BucketNameWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
 
   var rawlsServer: ClientAndServer = _
   var gcsDao: ClientAndServer = _
@@ -1402,8 +1369,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for us region" in {
-          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withUsBucketNameRawlsWorkspaceResponse.toJson.compactPrint))
-          Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          Get(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.01
             responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.38")
@@ -1413,8 +1379,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for different europe east 1 region." in {
-          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withEuropeEast1BucketNameRawlsWorkspaceResponse.toJson.compactPrint))
-          Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          Get(europeEast1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.02
             responseAs[WorkspaceStorageCostEstimate].estimate should be ("$5.76")
