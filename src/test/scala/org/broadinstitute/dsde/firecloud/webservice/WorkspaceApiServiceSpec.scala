@@ -1422,7 +1422,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for good request" in {
+        "should return 200 with result for us region" in {
           stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withUsBucketNameRawlsWorkspaceResponse.toJson.compactPrint))
           Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
@@ -1433,7 +1433,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for good request for different resgions." in {
+        "should return 200 with result for different europe east 1 region." in {
           stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withEuropeEast1BucketNameRawlsWorkspaceResponse.toJson.compactPrint))
           Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
