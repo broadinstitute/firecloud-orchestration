@@ -164,7 +164,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
 
   var rawlsServer: ClientAndServer = _
-  var gcsDao: ClientAndServer = _
   var bagitServer: ClientAndServer = _
    var importServiceServer: ClientAndServer = _
 
