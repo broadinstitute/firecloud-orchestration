@@ -222,27 +222,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       .respond(response)
   }
 
-  /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
-   *
-   * @param method HTTP method to respond to
-   * @param path   request path
-   * @param status status for the response
-   */
-  def stubGcsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
-    gcsDao.reset()
-    val request = org.mockserver.model.HttpRequest.request()
-      .withMethod(method.name)
-      .withPath(path)
-    if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
-    requestBody.foreach(request.withBody)
-    val response = org.mockserver.model.HttpResponse.response()
-      .withHeaders(MockUtils.header).withStatusCode(status.intValue)
-    if (body.isDefined) response.withBody(body.get)
-    gcsDao
-      .when(request)
-      .respond(response)
-  }
-
   /** Stubs the mock Rawls service for creating a new workspace. This represents the expected Rawls API and response
     * behavior for of successful web service request.
     *
