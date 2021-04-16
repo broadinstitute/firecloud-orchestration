@@ -82,7 +82,6 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val (status, error) = rqComplete.response
       status should be (StatusCodes.InternalServerError)
     }
-
   }
 }
 

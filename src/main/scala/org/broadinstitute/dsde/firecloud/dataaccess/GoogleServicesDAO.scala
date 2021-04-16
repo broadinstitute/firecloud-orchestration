@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.InputStream
 
 import akka.http.scaladsl.model.HttpResponse
+import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
@@ -42,12 +43,5 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
   def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit]
 
-  /**
-   * Returns location of a regional bucket. If the bucket's location type is `multi-region`, it returns None
-
-   * @param bucketName       the bucket name
-   * @param userProject - the project to be billed - optional. If None, defaults to the bucket's project
-   * @return optional Google bucket region
-   */
-  def getRegionForRegionalBucket(bucketName: String, userProject: Option[String]): Future[Option[String]]
+  def getBucket(bucketName: String): Option[Bucket]
 }

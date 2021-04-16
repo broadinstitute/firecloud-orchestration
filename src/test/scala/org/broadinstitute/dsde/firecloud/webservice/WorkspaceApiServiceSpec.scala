@@ -158,11 +158,27 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "googleProject"
   )
 
-  val withBucketNameWorkspace = WorkspaceDetails(
+  val withUsBucketNameWorkspace = WorkspaceDetails(
     "attributes",
     "att",
     "id",
-    "mybucket", //bucketname
+    "usBucket", //bucketname
+    Some("wf-collection"),
+    DateTime.now(),
+    DateTime.now(),
+    "mb",
+    Some(Map()), //attrs
+    false,
+    Some(Set.empty), //authorizationDomain
+    WorkspaceVersions.V2,
+    "googleProject"
+  )
+
+  val withEuropeEast1BucketNameWorkspace = WorkspaceDetails(
+    "attributes",
+    "att",
+    "id",
+    "europeEast1Bucket", //bucketname
     Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
@@ -177,9 +193,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
   val authDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), authDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
   val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
-  val withBucketNameRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), withBucketNameWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+  val withUsBucketNameRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), withUsBucketNameWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+  val withEuropeEast1BucketNameRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), withEuropeEast1BucketNameWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
 
   var rawlsServer: ClientAndServer = _
+  var gcsDao: ClientAndServer = _
   var bagitServer: ClientAndServer = _
    var importServiceServer: ClientAndServer = _
 
@@ -200,6 +218,27 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       .withHeaders(MockUtils.header).withStatusCode(status.intValue)
     if (body.isDefined) response.withBody(body.get)
     rawlsServer
+      .when(request)
+      .respond(response)
+  }
+
+  /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
+   *
+   * @param method HTTP method to respond to
+   * @param path   request path
+   * @param status status for the response
+   */
+  def stubGcsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
+    gcsDao.reset()
+    val request = org.mockserver.model.HttpRequest.request()
+      .withMethod(method.name)
+      .withPath(path)
+    if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
+    requestBody.foreach(request.withBody)
+    val response = org.mockserver.model.HttpResponse.response()
+      .withHeaders(MockUtils.header).withStatusCode(status.intValue)
+    if (body.isDefined) response.withBody(body.get)
+    gcsDao
       .when(request)
       .respond(response)
   }
@@ -1384,7 +1423,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for good request" in {
-          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withBucketNameRawlsWorkspaceResponse.toJson.compactPrint))
+          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withUsBucketNameRawlsWorkspaceResponse.toJson.compactPrint))
           Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.01
@@ -1395,11 +1434,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for good request for different resgions." in {
-          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withBucketNameRawlsWorkspaceResponse.toJson.compactPrint))
+          stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(withEuropeEast1BucketNameRawlsWorkspaceResponse.toJson.compactPrint))
           Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
-            // 256000000000 / (1024 * 1024 * 1024) *0.01
-            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.38")
+            // 256000000000 / (1024 * 1024 * 1024) *0.02
+            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$5.76")
           }
         }
       }
