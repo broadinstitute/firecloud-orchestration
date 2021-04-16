@@ -41,8 +41,8 @@ case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal],
                         cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
 /** Price item containing only US currency. */
-case class UsPriceItem(Map[String, BigDecimal])
-// case class UsPriceItem(us: BigDecimal, us-central1: BigDecimal, us-central1: BigDecimal, us-east1: BigDecimal, us-east4: BigDecimal, us-west4: BigDecimal, us-west1: BigDecima, us-west2: BigDecima, us-west3: BigDecima, europe-west1: BigDecima, europe-west2: BigDecima, europe-west3: BigDecima, europe-central2: BigDecima, europe-west4: BigDecima, europe-west6: BigDecima, europe-north1: BigDecima, northamerica-northeast1: BigDecima, asia-east1: BigDecima, asia-east2: BigDecima, asia-northeast1: BigDecima, asia-southeast2: BigDecima, asia-northeast2: BigDecima, asia-northeast3: BigDecima, asia-southeast1: BigDecima, australia-southeast1: BigDecima, southamerica-east1: BigDecima, asia-south1: BigDecimal)
+//case class UsPriceItem(Map[String, BigDecimal])
+//case class UsPriceItem(us: BigDecimal, us-central1: BigDecimal, us-central1: BigDecimal, us-east1: BigDecimal, us-east4: BigDecimal, us-west4: BigDecimal, us-west1: BigDecima, us-west2: BigDecima, us-west3: BigDecima, europe-west1: BigDecima, europe-west2: BigDecima, europe-west3: BigDecima, europe-central2: BigDecima, europe-west4: BigDecima, europe-west6: BigDecima, europe-north1: BigDecima, northamerica-northeast1: BigDecima, asia-east1: BigDecima, asia-east2: BigDecima, asia-northeast1: BigDecima, asia-southeast2: BigDecima, asia-northeast2: BigDecima, asia-northeast3: BigDecima, asia-southeast1: BigDecima, australia-southeast1: BigDecima, southamerica-east1: BigDecima, asia-south1: BigDecimal)
 
 /** Tiered price item containing only US currency.
  *
@@ -183,10 +183,10 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
-  def getBucket(bucketName: String): Future[Option[Bucket]] = {
+  def getBucket(bucketName: String): Option[Bucket] = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
 
-    Try(executeGoogleRequest[Objects](storage.buckets().get(bucketName))) match {
+    Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
       case Failure(ex) =>
         // handle this case so we can give a good log message. In the future we may handle this
         // differently, such as returning an empty list.
