@@ -20,6 +20,7 @@ import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.sheets.v4.SheetsScopes
+import com.google.api.services.storage.model.Bucket
 import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
@@ -45,22 +46,18 @@ import scala.util.{Failure, Success, Try}
 case class GooglePriceList(prices: GooglePrices, version: String, updated: String)
 
 /** Partial price list. Attributes can be added as needed to import prices for more products. */
-case class GooglePrices(cpBigstoreStorage: UsPriceItem,
+case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal],
                         cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
-/** Price item containing only US currency. */
-case class UsPriceItem(us: BigDecimal)
-
 /** Tiered price item containing only US currency.
-  *
-  * Used for egress, may need to be altered to work with other types in the future.
-  * Contains a map of the different tiers of pricing, where the key is the size in GB
-  * for that tier and the value is the cost in USD for that tier.
-  */
+ *
+ * Used for egress, may need to be altered to work with other types in the future.
+ * Contains a map of the different tiers of pricing, where the key is the size in GB
+ * for that tier and the value is the cost in USD for that tier.
+ */
 case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
-  implicit val UsPriceItemFormat = jsonFormat1(UsPriceItem)
   implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
     override def write(value: UsTieredPriceItem): JsValue = ???
     override def read(json: JsValue): UsTieredPriceItem = json match {
@@ -188,6 +185,20 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
+  }
+
+  def getBucket(bucketName: String): Option[Bucket] = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
+
+    Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
+      case Failure(ex) =>
+        // handle this case so we can give a good log message. In the future we may handle this
+        // differently, such as returning an empty list.
+        logger.warn(s"could not get $bucketName", ex)
+        throw ex
+      case Success(response) =>
+        return Option(response)
+    }
   }
 
   // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program

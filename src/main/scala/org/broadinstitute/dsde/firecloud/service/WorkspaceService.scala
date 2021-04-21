@@ -49,12 +49,18 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def CloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest) = cloneWorkspace(workspaceNamespace, workspaceName, cloneRequest)
 
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
-    rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
-      case (usage, priceList) =>
-        val rate = priceList.prices.cpBigstoreStorage.us
-        // Convert bytes to GB since rate is based on GB.
-        val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / (1024 * 1024 * 1024) * rate
-        RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
+      googleServicesDAO.getBucket(workspaceResponse.workspace.bucketName) match {
+        case Some(bucket) =>
+          rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
+            case (usage, priceList) =>
+              val rate = priceList.prices.cpBigstoreStorage.getOrElse(bucket.getLocation.toLowerCase(), priceList.prices.cpBigstoreStorage("us"))
+              // Convert bytes to GB since rate is based on GB.
+              val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / (1024 * 1024 * 1024) * rate
+              RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
+          }
+        case None => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to fetch bucket to calculate storage cost"))
+      }
     }
   }
 

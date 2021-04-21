@@ -93,7 +93,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
   private final val pfbImportPath = workspacesRoot + "/%s/%s/importPFB".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
-  private final val storageCostEstimatePath = s"$workspacesPath/storageCostEstimate"
+  private final val usBucketStorageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
+  private final val europeWest1storageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("europeWest1BucketWorkspace", workspace.name)
   private final val tagAutocompletePath = s"$workspacesRoot/tags"
   private final val executionEngineVersionPath = "/version/executionEngine"
 
@@ -1358,7 +1359,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         "should return 405 Method Not Allowed for anything other than GET" in {
           List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.PATCH, HttpMethods.DELETE) map {
             method =>
-              new RequestBuilder(method)(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+              new RequestBuilder(method)(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
                 status should be (MethodNotAllowed)
               }
           }
@@ -1366,11 +1367,21 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for good request" in {
-          Get(storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        "should return 200 with result for us region" in {
+          Get(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
             status should be (OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.01
             responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.38")
+          }
+        }
+      }
+
+      "when calling GET on workspaces/*/*/storageCostEstimate" - {
+        "should return 200 with result for different europe east 1 region." in {
+          Get(europeWest1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+            status should be (OK)
+            // 256000000000 / (1024 * 1024 * 1024) *0.02
+            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$4.77")
           }
         }
       }

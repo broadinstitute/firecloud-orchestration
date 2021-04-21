@@ -7,6 +7,7 @@ import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.FireCloudException
+import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, ProfileWrapper, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -94,12 +95,18 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
                           (implicit executionContext: ExecutionContext): Future[PerRequestMessage] = {Future.successful(RequestComplete(StatusCodes.NotImplemented))}
   override def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList] = {
-    Future.successful(GooglePriceList(GooglePrices(UsPriceItem(BigDecimal(0.01)), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
+    Future.successful(GooglePriceList(GooglePrices(Map("us" -> 0.01, "europe-west1" -> 0.02), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
 
   override def deleteGoogleGroup(groupEmail: String): Unit = Unit
   override def createGoogleGroup(groupName: String): Option[String] = Option("new-google-group@support.something.firecloud.org")
   override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("user-email@something.com")
+  override def getBucket(bucketName: String): Option[Bucket] = {
+    bucketName match {
+      case "usBucket" => Option(new Bucket().setName("usBucket").setLocation("US"))
+      case "europeWest1Bucket"=> Option(new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1"))
+    }
+  }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 
