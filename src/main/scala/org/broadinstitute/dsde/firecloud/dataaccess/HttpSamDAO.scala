@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -19,6 +18,7 @@ import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGro
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
+import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.DefaultJsonProtocol._
@@ -126,6 +126,13 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
         quotedToken
       AccessToken.apply(token)
     }
+  }
+
+
+  def getPetServiceAccountKeyForUser(user: WithAccessToken, project: GoogleProject): Future[String] = {
+    implicit val accessToken = user
+
+    authedRequestToObject[String](Get(samPetKeyForProject.format(project.value)), label=Some("HttpSamDAO.getPetServiceAccountKeyForUser"))
   }
 
   override def status: Future[SubsystemStatus] = {

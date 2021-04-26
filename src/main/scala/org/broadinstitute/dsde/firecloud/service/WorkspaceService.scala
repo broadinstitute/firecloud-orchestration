@@ -15,6 +15,7 @@ import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -50,7 +51,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-      googleServicesDAO.getBucket(workspaceResponse.workspace.bucketName, argUserToken) match {
+      samDao.getPetServiceAccountKeyForUser(userToken, GoogleProject(workspaceNamespace)) flatMap { petKey =>
+      googleServicesDAO.getBucket(workspaceResponse.workspace.bucketName, petKey) match {
         case Some(bucket) =>
           rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
             case (usage, priceList) =>
@@ -61,6 +63,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
           }
         case None => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to fetch bucket to calculate storage cost"))
       }
+    }
     }
   }
 
