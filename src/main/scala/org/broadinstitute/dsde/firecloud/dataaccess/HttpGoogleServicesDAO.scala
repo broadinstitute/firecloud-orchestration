@@ -187,8 +187,8 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
-  def getBucket(bucketName: String): Option[Bucket] = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
+  def getBucket(bucketName: String, userAuthToken: WithAccessToken): Option[Bucket] = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(userAuthToken).setApplicationName(appName).build()
 
     Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
       case Failure(ex) =>
