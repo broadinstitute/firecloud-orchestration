@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io.FileInputStream
-
+import java.io.{ByteArrayInputStream, FileInputStream}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
@@ -187,8 +186,11 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
-  def getBucket(bucketName: String): Option[Bucket] = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
+  def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
+    val keyStream = new ByteArrayInputStream(petKey.getBytes)
+    val credential = getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
+
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential)).setApplicationName(appName).build()
 
     Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
       case Failure(ex) =>
