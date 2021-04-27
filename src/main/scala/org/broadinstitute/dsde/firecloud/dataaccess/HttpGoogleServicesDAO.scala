@@ -188,7 +188,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
 
   def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
     val keyStream = new ByteArrayInputStream(petKey.getBytes)
-    val credential = ServiceAccountCredentials.fromStream(keyStream).createScoped(storageReadOnly.asJava)
+    val credential = getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
 
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential)).setApplicationName(appName).build()
 
