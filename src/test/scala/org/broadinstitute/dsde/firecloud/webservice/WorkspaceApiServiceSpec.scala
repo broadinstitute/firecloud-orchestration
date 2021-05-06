@@ -45,7 +45,9 @@ object WorkspaceApiServiceSpec {
     false, //locked
     Some(Set.empty), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
 }
@@ -67,7 +69,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false, //locked
     Some(Set.empty), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   val jobId = "testOp"
@@ -124,7 +128,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false,
     Some(Set(nihProtectedAuthDomain)), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   val authDomainRawlsWorkspace = WorkspaceDetails(
@@ -140,7 +146,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false,
     Some(Set(ManagedGroupRef(RawlsGroupName("secret_realm")))), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   val nonAuthDomainRawlsWorkspace = WorkspaceDetails(
@@ -156,7 +164,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false,
     Some(Set.empty), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
@@ -202,7 +212,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")))
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -224,7 +234,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")))
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }

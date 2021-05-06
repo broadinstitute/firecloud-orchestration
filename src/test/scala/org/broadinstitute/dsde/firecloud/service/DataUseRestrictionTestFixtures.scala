@@ -126,7 +126,9 @@ object DataUseRestrictionTestFixtures {
       workflowCollectionName=Some("wf-collection"),
       authorizationDomain=Some(Set.empty[ManagedGroupRef]),
       workspaceVersion=WorkspaceVersions.V2,
-      googleProject="googleProject")
+      googleProjectId = GoogleProjectId("googleProject"),
+      googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
+      billingAccount = Some(RawlsBillingAccountName("billingAccount")))
   }
 
 }
