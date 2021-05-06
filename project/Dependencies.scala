@@ -30,7 +30,7 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
 
     "org.parboiled" % "parboiled-core" % "1.3.2",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-18b1c01e0")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-e55b488f-SNAP")
       exclude("com.typesafe.scala-logging", "scala-logging_2.12")
       exclude("com.typesafe.akka", "akka-stream_2.12")
       exclude("com.google.code.findbugs", "jsr305")
