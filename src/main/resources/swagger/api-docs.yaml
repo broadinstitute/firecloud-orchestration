@@ -257,7 +257,7 @@ paths:
         required: true
       responses:
         201:
-          description: Successfully Created Billing Project in Rawls
+          description: Successfully Created Billing Project in FireCloud
         400:
           description: both you and firecloud billing user must be a user of the billing account
           content:
@@ -268,7 +268,7 @@ paths:
           description: project already exists in rawls
           content: {}
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
@@ -300,7 +300,7 @@ paths:
           content:
             'application/json':
               schema:
-                $ref: '#/components/schemas/RawlsBillingProjectResponse'
+                $ref: '#/components/schemas/BillingProjectResponse'
         404:
           description: Project Not Found
           content:
@@ -363,7 +363,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RawlsBillingProjectMember'
+                  $ref: '#/components/schemas/BillingProjectMember'
         403:
           description: You must be a project owner to view the members of a project
           content:
@@ -371,7 +371,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
@@ -421,7 +421,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
@@ -470,7 +470,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
@@ -10201,6 +10201,30 @@ components:
         labels:
           type: string
           description: The custom labels as json
+    BillingProjectResponse:
+      required:
+        - projectName
+        - invalidBillingAccount
+        - roles
+      type: object
+      properties:
+        projectName:
+          type: string
+          description: the name of the project
+        billingAccount:
+          type: string
+          description: the billing account to use in google projects
+        servicePerimeter:
+          type: string
+          description: the name of the service permeters for google project
+        invalidBillingAccount:
+          type: boolean
+          description: whether or not the billing account is usable by Terra
+        roles:
+          type: array
+          items:
+            type: string
+          description: the roles the caller has on the project
   parameters:
     versionParam:
       name: version
