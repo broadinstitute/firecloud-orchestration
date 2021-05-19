@@ -101,10 +101,15 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def deleteGoogleGroup(groupEmail: String): Unit = Unit
   override def createGoogleGroup(groupName: String): Option[String] = Option("new-google-group@support.something.firecloud.org")
   override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("user-email@something.com")
-  override def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
-    bucketName match {
-      case "usBucket" => Option(new Bucket().setName("usBucket").setLocation("US"))
-      case "europeWest1Bucket"=> Option(new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1"))
+  override def getBucket(bucketName: String, petKey: String, userProject: Option[String]): Option[Bucket] = {
+    val bucket = bucketName match {
+      case "usBucket" => new Bucket().setName("usBucket").setLocation("US")
+      case "europeWest1Bucket"=> new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1")
+    }
+
+    userProject match {
+      case Some(project) => Option(bucket.setBilling(new Bucket.Billing().setRequesterPays(true)))
+      case None => Option(bucket)
     }
   }
 
