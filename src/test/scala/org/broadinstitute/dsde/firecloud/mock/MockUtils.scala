@@ -36,6 +36,10 @@ object MockUtils {
     scala.util.Random.nextBoolean()
   }
 
+  def randomDouble(): Double = {
+    scala.util.Random.nextDouble()
+  }
+
    def randomStringFromCharList(length: Int, chars: Seq[Char]): String = {
      val sb = new StringBuilder
      for (i <- 1 to length) {

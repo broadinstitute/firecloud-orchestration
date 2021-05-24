@@ -92,6 +92,7 @@ case class SubmissionRequest(
   useCallCache: Option[Boolean],
   deleteIntermediateOutputFiles: Option[Boolean],
   useReferenceDisks: Option[Boolean],
+  memoryRetryMultiplier: Option[Double],
   workflowFailureMode: Option[String])
 
 case class RawlsGroupMemberList(

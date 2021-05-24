@@ -93,7 +93,9 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
                 entityName = participantId,
                 expression = "this",
                 useCallCache = false,
-                deleteIntermediateOutputFiles = false
+                deleteIntermediateOutputFiles = false,
+                useReferenceDisks = false,
+                memoryRetryMultiplier = 1.0
               )
             }
 
