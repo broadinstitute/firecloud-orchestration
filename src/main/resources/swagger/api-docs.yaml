@@ -12,6 +12,7 @@ servers:
   - url: /
 tags:
   - name: Billing
+  - name: BillingV2
   - name: CromIAM Engine (for Job Manager)
   - name: CromIAM Workflows (for Admin)
   - name: CromIAM Workflows (for Job Manager)
@@ -87,80 +88,6 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
       x-codegen-request-body-name: createProjectRequest
-  /api/billing/v2/{projectId}/billingAccount:
-    put:
-      tags:
-        - Billing
-      summary: update billing account on billing project
-      description: update billing account on billing project
-      operationId: updateBillingProjectBillingAccount
-      parameters:
-        - name: projectId
-          in: path
-          description: Id of the billing project
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: update billing account request
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/UpdateRawlsBillingAccountRequest'
-        required: true
-      responses:
-        200:
-          description: Billing account successfully updated
-        400:
-          description: Billing account not found
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        404:
-          description: Billing Project Not Found
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        500:
-          description: Internal Server Error
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      x-passthrough: true
-      x-passthrough-target: rawls
-    delete:
-      tags:
-        - Billing
-      summary: deletes the billing account on billing project
-      description: deletes the billing account on billing project
-      operationId: deleteBillingProjectBillingAccount
-      parameters:
-        - name: projectId
-          in: path
-          description: Id of the billing project
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Billing account successfully removed
-        404:
-          description: Billing project Not Found
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        500:
-          description: Internal Server Error
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      x-passthrough: true
-      x-passthrough-target: rawls
   /api/billing/{projectId}/members:
     get:
       tags:
@@ -318,7 +245,7 @@ paths:
   /api/billing/v2:
     post:
       tags:
-        - billing_v2
+        - BillingV2
       summary: create billing project in rawls
       description: create new billing project in rawls
       operationId: createBillingProjectFullV2
@@ -357,7 +284,7 @@ paths:
   /api/billing/v2/{projectId}:
     get:
       tags:
-        - billing_v2
+        - BillingV2
       summary: get billing project
       description: get billing project
       operationId: getBillingProject
@@ -390,7 +317,7 @@ paths:
 
     delete:
       tags:
-        - billing_v2
+        - BillingV2
       summary: delete billing project
       description: delete billing project
       operationId: deleteBillingProject
@@ -416,10 +343,84 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
+  /api/billing/v2/{projectId}/billingAccount:
+    put:
+      tags:
+        - BillingV2
+      summary: update billing account on billing project
+      description: update billing account on billing project
+      operationId: updateBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: update billing account request
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/UpdateRawlsBillingAccountRequest'
+        required: true
+      responses:
+        200:
+          description: Billing account successfully updated
+        400:
+          description: Billing account not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Billing Project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    delete:
+      tags:
+        - BillingV2
+      summary: deletes the billing account on billing project
+      description: deletes the billing account on billing project
+      operationId: deleteBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Billing account successfully removed
+        404:
+          description: Billing project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
   /api/billing/v2/{projectId}/members:
     get:
       tags:
-        - billing_v2
+        - BillingV2
       summary: list members of billing project the caller owns
       description: list members of billing project the caller owns
       operationId: listBillingProjectMembers
@@ -454,7 +455,7 @@ paths:
   /api/billing/v2/{projectId}/members/{workbenchRole}/{email}:
     put:
       tags:
-        - billing_v2
+        - BillingV2
       summary: add user or group to billing project the caller owns
       description: add user or group to billing project the caller owns
       operationId: addUserToBillingProject
@@ -503,7 +504,7 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
     delete:
       tags:
-        - billing_v2
+        - BillingV2
       summary: remove user or group from billing project the caller owns
       description: remove user or group from billing project the caller owns
       operationId: removeUserFromBillingProject
