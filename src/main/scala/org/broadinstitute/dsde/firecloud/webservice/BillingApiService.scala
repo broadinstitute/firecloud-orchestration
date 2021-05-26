@@ -51,13 +51,6 @@ trait BillingApiService extends FireCloudDirectives {
                   passthrough(s"$v2BillingUrl/$projectId/members", GET)
                 }
               } ~
-              path("spendReportConfiguration") {
-                (put | delete) {
-                  extract(_.request.method) { method =>
-                    passthrough(s"$v2BillingUrl/$projectId/spendReportConfiguration", method)
-                  }
-                }
-              } ~
               path("billingAccount") {
                 (put | delete) {
                   extract(_.request.method) { method =>
