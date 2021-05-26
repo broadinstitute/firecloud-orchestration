@@ -90,7 +90,7 @@ paths:
   /api/billing/v2/{projectId}/billingAccount:
     put:
       tags:
-        - BillingV2
+        - Billing
       summary: update billing account on billing project
       description: update billing account on billing project
       operationId: updateBillingProjectBillingAccount
@@ -133,7 +133,7 @@ paths:
       x-passthrough-target: rawls
     delete:
       tags:
-        - BillingV2
+        - Billing
       summary: deletes the billing account on billing project
       description: deletes the billing account on billing project
       operationId: deleteBillingProjectBillingAccount
