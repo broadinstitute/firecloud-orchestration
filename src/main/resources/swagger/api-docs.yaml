@@ -87,6 +87,80 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
       x-codegen-request-body-name: createProjectRequest
+  /api/billing/v2/{projectId}/billingAccount:
+    put:
+      tags:
+        - BillingV2
+      summary: update billing account on billing project
+      description: update billing account on billing project
+      operationId: updateBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: update billing account request
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/UpdateRawlsBillingAccountRequest'
+        required: true
+      responses:
+        200:
+          description: Billing account successfully updated
+        400:
+          description: Billing account not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Billing Project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    delete:
+      tags:
+        - BillingV2
+      summary: deletes the billing account on billing project
+      description: deletes the billing account on billing project
+      operationId: deleteBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Billing account successfully removed
+        404:
+          description: Billing project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
   /api/billing/{projectId}/members:
     get:
       tags:
@@ -313,6 +387,7 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
+
     delete:
       tags:
         - billing_v2
