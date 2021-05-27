@@ -132,7 +132,7 @@ paths:
   /api/billing/v2/{projectId}/spendReportConfiguration:
     put:
       tags:
-        - billing_v2
+        - BillingV2
       summary: set the spend configuration for the billing project
       description: set the spend configuration for the billing project
       operationId: setSpendReportConfiguration
@@ -180,7 +180,7 @@ paths:
       x-passthrough-target: rawls
     delete:
       tags:
-        - billing_v2
+        - BillingV2
       summary: clear the spend configuration for the billing project
       description: clear the spend configuration for the billing project
       operationId: clearSpendReportConfiguration
