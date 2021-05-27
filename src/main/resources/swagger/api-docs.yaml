@@ -9234,6 +9234,14 @@ components:
           description: A friendly name that can be used in addition to the hostname
             to describe a registry
       description: Describes this registry to better allow for mirroring and indexing.
+    UpdateRawlsBillingAccountRequest:
+      required:
+        - billingAccount
+      type: object
+      properties:
+        billingAccount:
+          type: string
+          description: The name of the billing account to use
     UserImportPermission:
       type: object
       properties:
