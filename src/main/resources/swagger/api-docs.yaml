@@ -348,7 +348,7 @@ paths:
       tags:
         - BillingV2
       summary: update billing account on billing project
-      description: update billing account on billing project
+      description: Update the Billing Account on the Billing Project and on each Workspace in the Billing Project
       operationId: updateBillingProjectBillingAccount
       parameters:
         - name: projectId
