@@ -8875,6 +8875,15 @@ components:
           description: line number
           format: int32
       description: ""
+    SpendReportConfiguration:
+      required:
+        - datasetName
+      type: object
+      properties:
+        datasetName:
+          type: string
+          description: the name of the BigQuery dataset containing project spend data
+      description: ""
     StringArray:
       type: array
       example:
