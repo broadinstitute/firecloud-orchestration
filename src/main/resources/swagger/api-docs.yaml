@@ -391,7 +391,7 @@ paths:
       tags:
         - BillingV2
       summary: deletes the billing account on billing project
-      description: deletes the billing account on billing project
+      description: Clears the Billing Account on the Billing Project and on each Workspace in the Billing Project
       operationId: deleteBillingProjectBillingAccount
       parameters:
         - name: projectId
