@@ -366,7 +366,7 @@ paths:
         required: true
       responses:
         200:
-          description: Billing account successfully updated
+          description: Billing Account on Billing Project is successfully updated and process is started to update the Billing Account on each Workspace in the Billing Project
         400:
           description: Billing account not found
           content:
