@@ -49,11 +49,6 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  def GetNihStatus(userInfo: UserInfo) = getNihStatus(userInfo)
-  def UpdateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper) = updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper)
-  def SyncAllWhitelists = syncAllNihWhitelistsAllUsers
-  def SyncWhitelist(whitelistName: String) = syncWhitelistAllUsers(whitelistName)
-
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
 
   val nihWhitelists: Set[NihWhitelist] = FireCloudConfig.Nih.whitelists
@@ -94,7 +89,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   }
 
   // This syncs all of the whitelists for all of the users
-  def syncAllNihWhitelistsAllUsers: Future[PerRequestMessage] = {
+  def syncAllNihWhitelistsAllUsers(): Future[PerRequestMessage] = {
     val whitelistSyncResults = Future.traverse(nihWhitelists)(syncNihWhitelistAllUsers)
 
     whitelistSyncResults map { _ => RequestComplete(NoContent) }

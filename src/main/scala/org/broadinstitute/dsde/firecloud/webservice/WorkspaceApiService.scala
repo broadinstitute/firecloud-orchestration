@@ -41,7 +41,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
         (workspaceNamespace, workspaceName) =>
           cookie("FCtoken") { tokenCookie =>
             mapRequest(r => addCredentials(OAuth2BearerToken(tokenCookie.value)).apply(r)) {
-              complete { workspaceServiceConstructor(new AccessToken(OAuth2BearerToken(tokenCookie.value))).ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename) }
+              complete { workspaceServiceConstructor(new AccessToken(OAuth2BearerToken(tokenCookie.value))).exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename) }
             }
           }
       }
@@ -84,7 +84,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 } ~
                   delete {
                     requireUserInfo() { userInfo =>
-                      complete { workspaceServiceConstructor(userInfo).DeleteWorkspace(workspaceNamespace, workspaceName) }
+                      complete { workspaceServiceConstructor(userInfo).deleteWorkspace(workspaceNamespace, workspaceName) }
                     }
                   }
               } ~
@@ -113,7 +113,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
-                        complete { entityServiceConstructor(FlexibleModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
+                        complete { entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
                   }
@@ -122,7 +122,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       formFields('entities) { entitiesTSV =>
-                        complete { entityServiceConstructor(FirecloudModelSchema).ImportEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
+                        complete { entityServiceConstructor(FirecloudModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
                       }
                     }
                   }
@@ -131,7 +131,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[BagitImportRequest]) { bagitRq =>
-                        complete { entityServiceConstructor(FirecloudModelSchema).ImportBagit(workspaceNamespace, workspaceName, bagitRq, userInfo) }
+                        complete { entityServiceConstructor(FirecloudModelSchema).importBagit(workspaceNamespace, workspaceName, bagitRq, userInfo) }
                       }
                     }
                   }
@@ -140,7 +140,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       entity(as[PfbImportRequest]) { pfbRequest =>
-                        complete { entityServiceConstructor(FlexibleModelSchema).ImportPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
+                        complete { entityServiceConstructor(FlexibleModelSchema).importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
                       }
                     }
                   } ~
@@ -163,7 +163,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   patch {
                     requireUserInfo() { userInfo: UserInfo =>
                       entity(as[Seq[AttributeUpdateOperation]]) { replacementAttributes =>
-                        complete { workspaceServiceConstructor(userInfo).UpdateWorkspaceAttributes(workspaceNamespace, workspaceName, replacementAttributes) }
+                        complete { workspaceServiceConstructor(userInfo).updateWorkspaceAttributes(workspaceNamespace, workspaceName, replacementAttributes) }
                       }
                     }
                   }
@@ -173,7 +173,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     requireUserInfo() { userInfo =>
                       implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
                       entity(as[AttributeMap]) { newAttributes =>
-                        complete { workspaceServiceConstructor(userInfo).SetWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) }
+                        complete { workspaceServiceConstructor(userInfo).setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes) }
                       }
                     }
                   }
@@ -181,7 +181,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("exportAttributesTSV") {
                   get {
                     requireUserInfo() { userInfo =>
-                      complete { workspaceServiceConstructor(userInfo).ExportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename) }
+                      complete { workspaceServiceConstructor(userInfo).exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, workspaceName + filename) }
                     }
                   }
                 } ~
@@ -189,7 +189,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       formFields('attributes) { attributesTSV =>
-                        complete { workspaceServiceConstructor(userInfo).ImportAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV) }
+                        complete { workspaceServiceConstructor(userInfo).importAttributesFromTSV(workspaceNamespace, workspaceName, attributesTSV) }
                       }
                     }
                   }
@@ -199,7 +199,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     requireUserInfo() { userInfo =>
                       parameter('inviteUsersNotFound.?) { inviteUsersNotFound =>
                         entity(as[List[WorkspaceACLUpdate]]) { aclUpdates =>
-                          complete { workspaceServiceConstructor(userInfo).UpdateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail, userInfo.id, inviteUsersNotFound.getOrElse("false").toBoolean) }
+                          complete { workspaceServiceConstructor(userInfo).updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, userInfo.userEmail, userInfo.id, inviteUsersNotFound.getOrElse("false").toBoolean) }
                         }
                       }
                     }
@@ -213,13 +213,13 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("catalog") {
                   get {
                     requireUserInfo() { userInfo =>
-                      complete { workspaceServiceConstructor(userInfo).GetCatalog(workspaceNamespace, workspaceName, userInfo) }
+                      complete { workspaceServiceConstructor(userInfo).getCatalog(workspaceNamespace, workspaceName, userInfo) }
                     }
                   } ~
                     patch {
                       requireUserInfo() { userInfo =>
                         entity(as[Seq[WorkspaceCatalog]]) { updates =>
-                          complete { workspaceServiceConstructor(userInfo).UpdateCatalog(workspaceNamespace, workspaceName, updates, userInfo) }
+                          complete { workspaceServiceConstructor(userInfo).updateCatalog(workspaceNamespace, workspaceName, updates, userInfo) }
                         }
                       }
                     }
@@ -255,7 +255,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                       entity(as[WorkspaceRequest]) { createRequest =>
                         // the only reason this is not a passthrough is because library needs to overwrite any publish and discoverableByGroups values
                         val cloneRequest = createRequest.copy(attributes = createRequest.attributes + (AttributeName("library","published") -> AttributeBoolean(false)) + (AttributeName("library","discoverableByGroups") -> AttributeValueEmptyList))
-                        complete { workspaceServiceConstructor(userInfo).CloneWorkspace(workspaceNamespace, workspaceName, cloneRequest) }
+                        complete { workspaceServiceConstructor(userInfo).cloneWorkspace(workspaceNamespace, workspaceName, cloneRequest) }
                       }
                     }
                   }
@@ -276,28 +276,28 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("storageCostEstimate") {
                   get {
                     requireUserInfo() { userInfo =>
-                      complete { workspaceServiceConstructor(userInfo).GetStorageCostEstimate(workspaceNamespace, workspaceName) }
+                      complete { workspaceServiceConstructor(userInfo).getStorageCostEstimate(workspaceNamespace, workspaceName) }
                     }
                   }
                 } ~
                 path("tags") {
                   requireUserInfo() { userInfo =>
                     get {
-                      complete { workspaceServiceConstructor(userInfo).GetTags(workspaceNamespace, workspaceName) }
+                      complete { workspaceServiceConstructor(userInfo).getTags(workspaceNamespace, workspaceName) }
                     } ~
                       put {
                         entity(as[List[String]]) { tags =>
-                          complete { workspaceServiceConstructor(userInfo).PutTags(workspaceNamespace, workspaceName, tags) }
+                          complete { workspaceServiceConstructor(userInfo).putTags(workspaceNamespace, workspaceName, tags) }
                         }
                       } ~
                       patch {
                         entity(as[List[String]]) { tags =>
-                          complete { workspaceServiceConstructor(userInfo).PatchTags(workspaceNamespace, workspaceName, tags) }
+                          complete { workspaceServiceConstructor(userInfo).patchTags(workspaceNamespace, workspaceName, tags) }
                         }
                       } ~
                       delete {
                         entity(as[List[String]]) { tags =>
-                          complete { workspaceServiceConstructor(userInfo).DeleteTags(workspaceNamespace, workspaceName, tags) }
+                          complete { workspaceServiceConstructor(userInfo).deleteTags(workspaceNamespace, workspaceName, tags) }
                         }
                       }
                   }
@@ -306,7 +306,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   requireUserInfo() { userInfo =>
                     post {
                       entity(as[PermissionReportRequest]) { reportInput =>
-                        complete { permissionReportServiceConstructor(userInfo).GetPermissionReport(workspaceNamespace, workspaceName, reportInput) }
+                        complete { permissionReportServiceConstructor(userInfo).getPermissionReport(workspaceNamespace, workspaceName, reportInput) }
                       }
                     }
                   }

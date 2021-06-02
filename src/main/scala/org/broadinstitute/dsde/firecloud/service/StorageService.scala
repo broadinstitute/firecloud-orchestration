@@ -34,9 +34,6 @@ class StorageService(protected val argUserInfo: UserInfo, val googleServicesDAO:
 
   val storageScopes: Seq[String] = HttpGoogleServicesDAO.authScopes ++ HttpGoogleServicesDAO.storageReadOnly
 
-  def GetObjectStats(bucketName: String, objectName: String) = getObjectStats(bucketName, objectName)
-  def GetDownload(bucketName: String, objectName: String) = getDownload(bucketName, objectName)
-
   def getObjectStats(bucketName: String, objectName: String) = {
     samDAO.getPetServiceAccountTokenForUser(userInfo, storageScopes) flatMap { petToken =>
       googleServicesDAO.getObjectMetadata(bucketName, objectName, petToken.accessToken.token).zip(googleServicesDAO.fetchPriceList) map { case (objectMetadata, googlePrices) =>

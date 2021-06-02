@@ -34,21 +34,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   implicit val userToken = argUserToken
 
-  def GetCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo) = getCatalog(workspaceNamespace, workspaceName, userInfo)
-  def UpdateCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog], userInfo: UserInfo) = updateCatalog(workspaceNamespace, workspaceName, updates, userInfo)
-  def GetStorageCostEstimate(workspaceNamespace: String, workspaceName: String) = getStorageCostEstimate(workspaceNamespace, workspaceName)
-  def UpdateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) = updateWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson)
-  def SetWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) = setWorkspaceAttributes(workspaceNamespace, workspaceName, newAttributes)
-  def UpdateWorkspaceACL(workspaceNamespace: String, workspaceName: String, aclUpdates: Seq[WorkspaceACLUpdate], originEmail: String, originId: String, inviteUsersNotFound: Boolean) = updateWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, originEmail, originId, inviteUsersNotFound)
-  def ExportWorkspaceAttributesTSV(workspaceNamespace: String, workspaceName: String, filename: String) = exportWorkspaceAttributesTSV(workspaceNamespace, workspaceName, filename)
-  def ImportAttributesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String) = importAttributesFromTSV(workspaceNamespace, workspaceName, tsvString)
-  def GetTags(workspaceNamespace: String, workspaceName: String) = getTags(workspaceNamespace, workspaceName)
-  def PutTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = putTags(workspaceNamespace, workspaceName, tags)
-  def PatchTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = patchTags(workspaceNamespace, workspaceName, tags)
-  def DeleteTags(workspaceNamespace: String, workspaceName: String,tags:List[String]) = deleteTags(workspaceNamespace, workspaceName, tags)
-  def DeleteWorkspace(workspaceNamespace: String, workspaceName: String) = deleteWorkspace(workspaceNamespace, workspaceName)
-  def CloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest) = cloneWorkspace(workspaceNamespace, workspaceName, cloneRequest)
-
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
       samDao.getPetServiceAccountKeyForUser(userToken, GoogleProject(workspaceNamespace)) flatMap { petKey =>

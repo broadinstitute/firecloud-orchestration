@@ -19,7 +19,5 @@ class ShareLogService(val shareLogDAO: ShareLogDAO)(implicit protected val execu
 
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
-  def GetSharees(userId: String, shareType: Option[ShareType.Value]) = getSharees(userId, shareType)
-
   def getSharees(userId: String, shareType: Option[ShareType.Value] = None) = Future(RequestComplete(shareLogDAO.getShares(userId, shareType).map(_.sharee)))
 }
