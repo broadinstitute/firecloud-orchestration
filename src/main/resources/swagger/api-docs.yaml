@@ -8766,6 +8766,14 @@ components:
           type: boolean
           description: Whether or not to delete intermediate output files when the
             workflow completes. See Cromwell docs for more information.
+        useReferenceDisks:
+          type: boolean
+          description: Whether or not to use pre-built disks for common genome references
+        memoryRetryMultiplier:
+          type: number
+          description: If a task fails due to running out of memory and the task has `maxRetries` in its runtime attributes,
+            then it will be retried with its memory multiplied by this amount.  See [Cromwell docs](https://cromwell.readthedocs.io/en/develop/cromwell_features/RetryWithMoreMemory/#retry-with-more-memory)
+            for more information.
         workflowFailureMode:
           type: string
           description: What happens after a task fails. Choose from ContinueWhilePossible
@@ -8836,6 +8844,11 @@ components:
         useReferenceDisks:
           type: boolean
           description: Whether or not to use pre-built disks for common genome references
+        memoryRetryMultiplier:
+          type: number
+          description: If a task fails due to running out of memory and the task has `maxRetries` in its runtime attributes,
+            then it will be retried with its memory multiplied by this amount.  See [Cromwell docs](https://cromwell.readthedocs.io/en/develop/cromwell_features/RetryWithMoreMemory/#retry-with-more-memory)
+            for more information.
         workflowFailureMode:
           type: string
           description: What happens after a task fails. Choose from ContinueWhilePossible
