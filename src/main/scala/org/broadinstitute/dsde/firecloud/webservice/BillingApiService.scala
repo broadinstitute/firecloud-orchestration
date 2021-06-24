@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
+import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
@@ -51,14 +51,28 @@ trait BillingApiService extends FireCloudDirectives {
                   passthrough(s"$v2BillingUrl/$projectId/members", GET)
                 }
               } ~
-                // workbench project role: owner or user
-                path(Segment / Segment) { (workbenchRole, email) =>
-                  (delete | put) {
-                    extract(_.request.method) { method =>
-                      passthrough(s"$v2BillingUrl/$projectId/$workbenchRole/$email", method)
-                    }
+              path("billingAccount") {
+                (put | delete) {
+                  extract(_.request.method) { method =>
+                    passthrough(s"$v2BillingUrl/$projectId/billingAccount", method)
                   }
                 }
+              } ~
+              path("spendReportConfiguration") {
+                (put | delete) {
+                  extract(_.request.method) { method =>
+                    passthrough(s"$v2BillingUrl/$projectId/spendReportConfiguration", method)
+                  }
+                }
+              } ~
+              // workbench project role: owner or user
+              path(Segment / Segment) { (workbenchRole, email) =>
+                (delete | put) {
+                  extract(_.request.method) { method =>
+                    passthrough(s"$v2BillingUrl/$projectId/$workbenchRole/$email", method)
+                  }
+                }
+              }
             }
         }
     } ~
