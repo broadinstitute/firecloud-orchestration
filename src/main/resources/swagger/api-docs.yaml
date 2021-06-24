@@ -8877,9 +8877,13 @@ components:
       description: ""
     SpendReportConfiguration:
       required:
+        - datasetGoogleProject
         - datasetName
       type: object
       properties:
+        datasetGoogleProject:
+          type: string
+          description: the name of the Google Project where the BigQuery dataset resides
         datasetName:
           type: string
           description: the name of the BigQuery dataset containing project spend data
