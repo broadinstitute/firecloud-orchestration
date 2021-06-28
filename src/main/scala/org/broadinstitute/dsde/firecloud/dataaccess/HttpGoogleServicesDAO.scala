@@ -186,13 +186,15 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
-  def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
+  def getBucket(bucketName: String, petKey: String, userProject: Option[String]): Option[Bucket] = {
     val keyStream = new ByteArrayInputStream(petKey.getBytes)
     val credential = getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
 
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential)).setApplicationName(appName).build()
+    val getter = storage.buckets().get(bucketName)
+    userProject.map(getter.setUserProject(_))
 
-    Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
+    Try(executeGoogleRequest[Bucket](getter)) match {
       case Failure(ex) =>
         // handle this case so we can give a good log message. In the future we may handle this
         // differently, such as returning an empty list.
