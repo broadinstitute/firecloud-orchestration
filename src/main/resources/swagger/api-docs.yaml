@@ -130,6 +130,48 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/v2/{projectId}/spendReportConfiguration:
+    get:
+      tags:
+        - BillingV2
+      summary: get the spend report configuration for the billing project
+      description: get the spend report configuration for the billing project
+      operationId: getSpendReportConfiguration
+      parameters:
+        - name: projectId
+          in: path
+          description: Billing Project ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successfully retrieved spend report configuration
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/SpendReportConfiguration'
+        204:
+          description: The specified billing project exists but does not have spend reporting configured
+        403:
+          description: You must be a billing project owner to view the spend report configuration of the billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: The specified billing project could not be found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
     put:
       tags:
         - BillingV2
