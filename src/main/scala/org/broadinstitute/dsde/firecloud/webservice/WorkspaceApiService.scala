@@ -19,6 +19,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
+import scala.util.Try
 
 trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
@@ -112,8 +113,13 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("flexibleImportEntities") {
                   post {
                     requireUserInfo() { userInfo =>
-                      formFields('entities) { entitiesTSV =>
-                        complete { entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
+                      parameter("async" ? "false") { asyncStr =>
+                        formFields('entities) { entitiesTSV =>
+                          complete {
+                            val isAsync = java.lang.Boolean.valueOf(asyncStr) // for lenient parsing
+                            entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo, isAsync)
+                          }
+                        }
                       }
                     }
                   }
