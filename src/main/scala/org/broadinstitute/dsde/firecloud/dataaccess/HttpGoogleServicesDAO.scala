@@ -11,14 +11,13 @@ import akka.stream.Materializer
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
-import com.google.api.client.http.HttpResponseException
+import com.google.api.client.http.{ByteArrayContent, HttpResponseException}
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.admin.directory.model.{Group, Member}
 import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
-import com.google.api.services.storage.model.Bucket
-import com.google.api.services.storage.model.Objects
+import com.google.api.services.storage.model.{Bucket, Objects, StorageObject}
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
@@ -172,6 +171,17 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
     val is = storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
     scala.io.Source.fromInputStream(is).mkString
+  }
+
+  override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): StorageObject = {
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
+
+    val objectToWrite = new StorageObject()
+      objectToWrite.setName(objectKey)
+
+    val contentsToWrite = ByteArrayContent.fromString("application/json", objectContents)
+
+    storage.objects().insert(bucketName, objectToWrite, contentsToWrite).execute()
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

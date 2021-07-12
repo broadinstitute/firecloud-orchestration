@@ -4,13 +4,12 @@ import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
 import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipFile}
-
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.dataaccess.{ImportServiceDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -30,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 object EntityService {
 
   def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
-    new EntityService(app.rawlsDAO, app.importServiceDAO, modelSchema)
+    new EntityService(app.rawlsDAO, app.importServiceDAO, app.googleServicesDAO, modelSchema)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -98,7 +97,7 @@ object EntityService {
 
 }
 
-class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
+class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, googleServicesDAO: GoogleServicesDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
   extends TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -198,8 +197,22 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
 
   private def maybeAsyncBatchUpdate(isAsync: Boolean, workspaceNamespace: String, workspaceName: String,
                                     entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
+
+    import spray.json._
+
     if (isAsync) {
-      Future(RequestComplete(NotImplemented, "async TSV upload not yet implemented"))
+      // generate unique name for the file-to-upload
+      val fileToWrite = s"incoming/${java.util.UUID.randomUUID()}.json"
+      val bucketToWrite = FireCloudConfig.ImportService.bucket
+
+      // write rawlsCalls to import service's bucket
+      // TODO: Rawls SA needs write permission, not just read
+      val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
+
+      // TODO: trigger import service, passing filetype="batchUpsert" and the url we just wrote
+      val importRequest = PfbImportRequest(Option(insertedObject.getId))
+      importServiceDAO.importPFB(workspaceNamespace, workspaceName, importRequest)(userInfo)
+
     } else {
       val rawlsResponse = rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
       handleBatchRawlsResponse(entityType, rawlsResponse)
