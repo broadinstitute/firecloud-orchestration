@@ -71,6 +71,8 @@ object HttpGoogleServicesDAO {
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
+  // scope to write to GCS
+  val storageReadWrite = Seq(StorageScopes.DEVSTORAGE_READ_WRITE)
   // scope for creating anonymized Google groups
   val directoryScope = Seq(DirectoryScopes.ADMIN_DIRECTORY_GROUP)
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
@@ -174,16 +176,22 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
   }
 
   override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): StorageObject = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
 
-    val objectToWrite = new StorageObject()
-      objectToWrite.setName(objectKey)
+    val writeCreds = getScopedServiceAccountCredentials(rawlsSACreds, storageReadWrite)
+
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(writeCreds)).setApplicationName(appName).build()
+
+    val objectToWrite = new StorageObject().setName(objectKey)
 
     // TODO: don't hardcode the content type
     // TODO: allow a non-string to be written
     val contentsToWrite = ByteArrayContent.fromString("application/json", objectContents)
 
-    storage.objects().insert(bucketName, objectToWrite, contentsToWrite).execute()
+    val insertRequest = storage.objects().insert(bucketName, objectToWrite, contentsToWrite)
+    insertRequest.getMediaHttpUploader.setDirectUploadEnabled(true)
+
+    // TODO: add retries, or better yet use workbench-libs instead of coding this ourselves
+    insertRequest.execute()
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

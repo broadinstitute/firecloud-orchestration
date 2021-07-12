@@ -206,12 +206,12 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
       val bucketToWrite = FireCloudConfig.ImportService.bucket
 
       // write rawlsCalls to import service's bucket
-      // TODO: Rawls SA needs write permission, not just read
+      // TODO: Rawls SA needs write permission, not just read; Storage Object Creator is fine
       val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
+      val gcsPath = s"gs://${insertedObject.getBucket}/${insertedObject.getName}"
 
       // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
-      // TODO: what should we pass for the object's url?
-      val importRequest = PfbImportRequest(Option(insertedObject.getId))
+      val importRequest = PfbImportRequest(Option(gcsPath))
       importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
 
     } else {
