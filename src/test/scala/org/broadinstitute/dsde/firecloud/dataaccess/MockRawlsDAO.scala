@@ -180,7 +180,9 @@ class MockRawlsDAO extends RawlsDAO {
     false,
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   val publishedRawlsWorkspaceWithAttributes = WorkspaceDetails(
@@ -207,7 +209,9 @@ class MockRawlsDAO extends RawlsDAO {
     false,
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   val unpublishedRawlsWorkspaceLibraryValid = WorkspaceDetails(
@@ -245,7 +249,9 @@ class MockRawlsDAO extends RawlsDAO {
     false,
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(false), canCompute = Some(true), catalog = Some(false), rawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
@@ -265,10 +271,12 @@ class MockRawlsDAO extends RawlsDAO {
       isLocked = true,
       authorizationDomain = Some(Set.empty),
       workspaceVersion = WorkspaceVersions.V2,
-      googleProject = "googleProject"
+      googleProjectId = GoogleProjectId("googleProject"),
+      googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
+      billingAccount = Some(RawlsBillingAccountName("billingAccount"))
     )
   }
-  
+
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
 
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] = {
@@ -466,5 +474,5 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
 
-  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, "googleProject"))
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount"))))
 }
