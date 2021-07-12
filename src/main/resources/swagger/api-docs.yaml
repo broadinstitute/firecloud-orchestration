@@ -4962,6 +4962,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: async
+          in: query
+          description: Import asynchronously?
+          required: false
+          schema:
+            type: boolean
+            default: false
       requestBody:
         content:
           multipart/form-data:
@@ -4977,8 +4984,14 @@ paths:
         required: true
       responses:
         200:
-          description: Successful Request
+          description: Successful Request for synchronous import
           content: {}
+        202:
+          description: Successful Request for asynchronous import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PFBResponse'
         400:
           description: Bad Request
           content: {}
