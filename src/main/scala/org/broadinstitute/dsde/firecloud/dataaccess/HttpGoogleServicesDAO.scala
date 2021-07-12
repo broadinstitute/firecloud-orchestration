@@ -179,6 +179,8 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val objectToWrite = new StorageObject()
       objectToWrite.setName(objectKey)
 
+    // TODO: don't hardcode the content type
+    // TODO: allow a non-string to be written
     val contentsToWrite = ByteArrayContent.fromString("application/json", objectContents)
 
     storage.objects().insert(bucketName, objectToWrite, contentsToWrite).execute()

@@ -21,10 +21,18 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
   override def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    doImport(workspaceNamespace, workspaceName, pfbRequest, "pfb")
+  }
 
+
+  override def importBatchUpsertJson(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    doImport(workspaceNamespace, workspaceName, pfbRequest, "batchUpsert")
+  }
+
+  private def doImport(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     // the payload to Import Service sends "path" and filetype.  Here, we force-hardcode filetype because this API
     // should only be used for PFBs.
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url.getOrElse(""), filetype = "pfb")
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url.getOrElse(""), filetype = filetype)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 

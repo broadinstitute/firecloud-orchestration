@@ -209,9 +209,10 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
       // TODO: Rawls SA needs write permission, not just read
       val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
 
-      // TODO: trigger import service, passing filetype="batchUpsert" and the url we just wrote
+      // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
+      // TODO: what should we pass for the object's url?
       val importRequest = PfbImportRequest(Option(insertedObject.getId))
-      importServiceDAO.importPFB(workspaceNamespace, workspaceName, importRequest)(userInfo)
+      importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
 
     } else {
       val rawlsResponse = rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
