@@ -147,7 +147,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
             EntityUpdateDefinition(entityName,entityType,ops)
           }).toSeq
 
-          maybeAsyncBatchUpdate(isAsync, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
+          maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
         }
       }
     }
@@ -165,7 +165,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
             val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
 
-            maybeAsyncBatchUpdate(isAsync, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
+            maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
           }
         }
       }
@@ -188,14 +188,14 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
 
-              maybeAsyncBatchUpdate(isAsync, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
+              maybeAsyncBatchUpdate(isAsync, false, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
           }
         }
       }
     }
   }
 
-  private def maybeAsyncBatchUpdate(isAsync: Boolean, workspaceNamespace: String, workspaceName: String,
+  private def maybeAsyncBatchUpdate(isAsync: Boolean, isUpsert: Boolean, workspaceNamespace: String, workspaceName: String,
                                     entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
 
     import spray.json._
@@ -211,11 +211,16 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
       val gcsPath = s"gs://${insertedObject.getBucket}/${insertedObject.getName}"
 
       // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
+      // TODO: either support update-only (not upsert), or don't allow updates to be async
       val importRequest = PfbImportRequest(Option(gcsPath))
       importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
 
     } else {
-      val rawlsResponse = rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      val rawlsResponse = if (isUpsert) {
+        rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      } else {
+        rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      }
       handleBatchRawlsResponse(entityType, rawlsResponse)
     }
   }
