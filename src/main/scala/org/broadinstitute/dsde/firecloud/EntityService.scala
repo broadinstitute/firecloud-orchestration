@@ -211,7 +211,8 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
       val gcsPath = s"gs://${insertedObject.getBucket}/${insertedObject.getName}"
 
       // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
-      // TODO: either support update-only (not upsert), or don't allow updates to be async
+      // TODO: either support update-only (not upsert), or don't allow updates to be async. update-only TSVs, if
+      // imported async via import service, will lose their "update-only" restriction and become upserts.
       val importRequest = PfbImportRequest(Option(gcsPath))
       importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
 
