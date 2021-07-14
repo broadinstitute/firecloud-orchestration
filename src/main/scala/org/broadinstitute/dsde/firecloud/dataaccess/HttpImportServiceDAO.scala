@@ -26,7 +26,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
 
 
   override def importBatchUpsertJson(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    doImport(workspaceNamespace, workspaceName, pfbRequest, "batchUpsert")
+    doImport(workspaceNamespace, workspaceName, pfbRequest, "rawlsjson")
   }
 
   private def doImport(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
