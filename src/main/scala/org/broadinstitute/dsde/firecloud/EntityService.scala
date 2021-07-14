@@ -4,13 +4,12 @@ import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
 import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipFile}
-
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.dataaccess.{ImportServiceDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -30,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 object EntityService {
 
   def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
-    new EntityService(app.rawlsDAO, app.importServiceDAO, modelSchema)
+    new EntityService(app.rawlsDAO, app.importServiceDAO, app.googleServicesDAO, modelSchema)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -98,7 +97,7 @@ object EntityService {
 
 }
 
-class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
+class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, googleServicesDAO: GoogleServicesDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
   extends TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -135,22 +134,20 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
   /**
    * Imports collection members into a collection type entity. */
   private def importMembershipTSV(
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo, isAsync: Boolean ): Future[PerRequestMessage] = {
     withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
       validateMembershipTSV(tsv, memberTypeOpt) {
         withPlural(memberTypeOpt.get) { memberPlural =>
-          val rawlsCalls = tsv.tsvData groupBy(_.head) map { case (entityName, rows) =>
+          val rawlsCalls = (tsv.tsvData groupBy(_.head) map { case (entityName, rows) =>
             val ops = rows map { row =>
               //row(1) is the entity to add as a member of the entity in row.head
               val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
               Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
             }
             EntityUpdateDefinition(entityName,entityType,ops)
-          }
+          }).toSeq
 
-          val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq)(userInfo)
-
-          handleBatchRawlsResponse(entityType, rawlsResponse)
+          maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
         }
       }
     }
@@ -159,7 +156,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
   /**
    * Creates or updates entities from an entity TSV. Required attributes must exist in column headers. */
   private def importEntityTSV(
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo, isAsync: Boolean ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -168,9 +165,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
             val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
 
-            val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
-
-            handleBatchRawlsResponse(entityType, rawlsResponse)
+            maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
           }
         }
       }
@@ -180,7 +175,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
   /**
    * Updates existing entities from TSV. All entities must already exist. */
   private def importUpdateTSV(
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo, isAsync: Boolean ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -193,14 +188,44 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
 
-              val rawlsResponse = rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
-
-              handleBatchRawlsResponse(entityType, rawlsResponse)
+              maybeAsyncBatchUpdate(isAsync, false, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
           }
         }
       }
     }
   }
+
+  private def maybeAsyncBatchUpdate(isAsync: Boolean, isUpsert: Boolean, workspaceNamespace: String, workspaceName: String,
+                                    entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
+
+    import spray.json._
+
+    if (isAsync) {
+      // generate unique name for the file-to-upload
+      val fileToWrite = s"incoming/${java.util.UUID.randomUUID()}.json"
+      val bucketToWrite = FireCloudConfig.ImportService.bucket
+
+      // write rawlsCalls to import service's bucket
+      // TODO: Rawls SA needs write permission, not just read; Storage Object Creator is fine
+      val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
+      val gcsPath = s"gs://${insertedObject.getBucket}/${insertedObject.getName}"
+
+      // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
+      // TODO: either support update-only (not upsert), or don't allow updates to be async. update-only TSVs, if
+      // imported async via import service, will lose their "update-only" restriction and become upserts.
+      val importRequest = PfbImportRequest(Option(gcsPath))
+      importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
+
+    } else {
+      val rawlsResponse = if (isUpsert) {
+        rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      } else {
+        rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      }
+      handleBatchRawlsResponse(entityType, rawlsResponse)
+    }
+  }
+
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
     response map { response =>
@@ -218,18 +243,18 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
     }
   }
 
-  private def importEntitiesFromTSVLoadFile(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+  private def importEntitiesFromTSVLoadFile(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String, userInfo: UserInfo, isAsync: Boolean): Future[PerRequestMessage] = {
     tsvType match {
-      case TsvTypes.MEMBERSHIP => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
-      case TsvTypes.ENTITY => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
-      case TsvTypes.UPDATE => importUpdateTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
+      case TsvTypes.MEMBERSHIP => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync)
+      case TsvTypes.ENTITY => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync)
+      case TsvTypes.UPDATE => importUpdateTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync)
       case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid TSV type.")) //We should never get to this case
     }
   }
 
   /**
    * Determines the TSV type from the first column header and routes it to the correct import function. */
-  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo, isAsync: Boolean = false): Future[PerRequestMessage] = {
 
     def stripEntityType(entityTypeString: String): String = {
       val entityType = entityTypeString.stripSuffix("_id")
@@ -255,7 +280,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
         } else {
           tsv
         }
-      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType, userInfo)
+      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType, userInfo, isAsync)
     }
   }
 

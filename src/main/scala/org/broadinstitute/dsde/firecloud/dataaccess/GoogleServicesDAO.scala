@@ -1,9 +1,8 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.io.InputStream
-
 import akka.http.scaladsl.model.HttpResponse
-import com.google.api.services.storage.model.Bucket
+import com.google.api.services.storage.model.{Bucket, StorageObject}
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
@@ -31,6 +30,8 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
   def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
   def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
+
+  def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): StorageObject
 
   def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList]
 

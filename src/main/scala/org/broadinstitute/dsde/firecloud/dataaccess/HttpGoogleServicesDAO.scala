@@ -11,7 +11,7 @@ import akka.stream.Materializer
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
-import com.google.api.client.http.HttpResponseException
+import com.google.api.client.http.{ByteArrayContent, HttpResponseException}
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.admin.directory.model.{Group, Member}
 import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
@@ -19,8 +19,7 @@ import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.sheets.v4.SheetsScopes
-import com.google.api.services.storage.model.Bucket
-import com.google.api.services.storage.model.Objects
+import com.google.api.services.storage.model.{Bucket, Objects, StorageObject}
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
@@ -74,6 +73,8 @@ object HttpGoogleServicesDAO {
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
+  // scope to write to GCS
+  val storageReadWrite = Seq(StorageScopes.DEVSTORAGE_READ_WRITE)
   // scope for creating anonymized Google groups
   val directoryScope = Seq(DirectoryScopes.ADMIN_DIRECTORY_GROUP)
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
@@ -179,6 +180,25 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
     val is = storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
     scala.io.Source.fromInputStream(is).mkString
+  }
+
+  override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): StorageObject = {
+
+    val writeCreds = getScopedServiceAccountCredentials(rawlsSACreds, storageReadWrite)
+
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(writeCreds)).setApplicationName(appName).build()
+
+    val objectToWrite = new StorageObject().setName(objectKey)
+
+    // TODO: don't hardcode the content type
+    // TODO: allow a non-string to be written
+    val contentsToWrite = ByteArrayContent.fromString("application/json", objectContents)
+
+    val insertRequest = storage.objects().insert(bucketName, objectToWrite, contentsToWrite)
+    insertRequest.getMediaHttpUploader.setDirectUploadEnabled(true)
+
+    // TODO: add retries, or better yet use workbench-libs instead of coding this ourselves
+    insertRequest.execute()
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

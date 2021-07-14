@@ -2,12 +2,11 @@ package org.broadinstitute.dsde.firecloud.mock
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.util.concurrent.LinkedBlockingQueue
-
 import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import com.google.api.services.storage.model.Bucket
+import com.google.api.services.storage.model.{Bucket, StorageObject}
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, ProfileWrapper, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -89,6 +88,8 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
 
   override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = List("foo", "bar")
   override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = "my object contents"
+
+  override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): StorageObject = ???
 
   override def getUserProfile(accessToken: WithAccessToken)
                              (implicit executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
