@@ -106,7 +106,9 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
 
   private def userAuthedRequestToUnit(request: HttpRequest)(implicit userInfo: WithAccessToken): Future[Unit] = {
     userAuthedRequest(request).map { resp =>
-      if(resp.status.isSuccess) Future.successful(())
+      if(resp.status.isSuccess) Future.successful({
+        resp.discardEntityBytes()
+      })
       else {
         FCErrorReport(resp).flatMap { errorReport =>
           Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
