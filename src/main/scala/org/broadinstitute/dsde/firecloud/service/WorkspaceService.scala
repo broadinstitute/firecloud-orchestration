@@ -53,10 +53,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   }
 
   def updateWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, workspaceUpdateJson: Seq[AttributeUpdateOperation]) = {
-    rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson) map { ws =>
-      republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
-      RequestComplete(ws)
-    }
+    for {
+      ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson)
+      _ <- republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
+    } yield RequestComplete(ws)
   }
 
   def setWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) = {
@@ -150,11 +150,16 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def putTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrList = AttributeValueList(tags map (tag => AttributeString(tag.trim)))
     val op = AddUpdateAttribute(AttributeName.withTagsNS, attrList)
-    rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, Seq(op)) flatMap { ws =>
-      republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
+    patchAndRepublishWorkspace(workspaceNamespace, workspaceName, Seq(op))
+  }
 
+  private def patchAndRepublishWorkspace(workspaceNamespace: String, workspaceName: String, ops: Seq[AttributeUpdateOperation]) = {
+    for {
+      ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, ops)
+      _ <- republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
+    } yield {
       val tags = getTagsFromWorkspace(ws)
-      Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
+      RequestComplete(StatusCodes.OK, formatTags(tags))
     }
   }
 
@@ -162,24 +167,13 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { origWs =>
       val origTags = getTagsFromWorkspace(origWs.workspace)
       val attrOps = (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
-      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { patchedWs =>
-        republishDocument(patchedWs, ontologyDAO, searchDAO, consentDAO)
-
-        val tags = getTagsFromWorkspace(patchedWs)
-        Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
-      }
+      patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
     }
   }
 
   def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS, AttributeString(tag.trim)))
-    rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, attrOps) flatMap { ws =>
-      republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
-
-      val tags = getTagsFromWorkspace(ws)
-      Future(RequestComplete(StatusCodes.OK, formatTags(tags)))
-    }
-
+    patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
   }
 
   def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String = s" The workspace $workspaceNamespace:$workspaceName has been un-published."
