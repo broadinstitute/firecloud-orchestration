@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.JsValue
 
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -19,43 +20,43 @@ class MockSearchDAO extends SearchDAO {
   override def createIndex = Unit
   override def deleteIndex = Unit
 
-  var indexDocumentInvoked = false
-  var deleteDocumentInvoked = false
-  var findDocumentsInvoked = false
-  var autocompleteInvoked = false
-  var populateSuggestInvoked = false
+  var indexDocumentInvoked = new AtomicBoolean(false)
+  var deleteDocumentInvoked = new AtomicBoolean(false)
+  var findDocumentsInvoked = new AtomicBoolean(false)
+  var autocompleteInvoked = new AtomicBoolean(false)
+  var populateSuggestInvoked = new AtomicBoolean(false)
 
   override def bulkIndex(docs: Seq[Document], refresh:Boolean = false) = LibraryBulkIndexResponse(0, false, Map.empty)
 
   override def indexDocument(doc: Document) = {
-    indexDocumentInvoked = true
+    indexDocumentInvoked.set(true)
   }
 
   override def deleteDocument(id: String) = {
-    deleteDocumentInvoked = true
+    deleteDocumentInvoked.set(true)
   }
 
   override def findDocuments(librarySearchParams: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse] = {
-    findDocumentsInvoked = true
+    findDocumentsInvoked.set(true)
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
   override def suggestionsFromAll(librarySearchParams: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse] = {
-    autocompleteInvoked = true
+    autocompleteInvoked.set(true)
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
   override def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]] = {
-    populateSuggestInvoked = true
+    populateSuggestInvoked.set(true)
     Future(Seq(field, text))
   }
 
   def reset = {
-    indexDocumentInvoked = false
-    deleteDocumentInvoked = false
-    findDocumentsInvoked = false
-    autocompleteInvoked = false
-    populateSuggestInvoked = false
+    indexDocumentInvoked.set(false)
+    deleteDocumentInvoked.set(false)
+    findDocumentsInvoked.set(false)
+    autocompleteInvoked.set(false)
+    populateSuggestInvoked.set(false)
   }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
