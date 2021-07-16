@@ -81,10 +81,6 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
-        verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true)))
-
-        Orchestration.NIH.syncWhitelistFull
-
         verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
       }
     }

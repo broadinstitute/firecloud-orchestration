@@ -111,7 +111,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
         keyValues.filterKeys(subjectId => subjectIds.contains(subjectId)).values.map(WorkbenchEmail).toList
       }
 
-      _ <- ensureWhitelistGroupExists(nihWhitelist.groupToSync)
+      _ <- ensureWhitelistGroupsExists()
 
       // The request to rawls to completely overwrite the group
       // with the list of actively linked users on the whitelist
@@ -141,6 +141,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
           rawTokenFromShibboleth.parseJson.convertTo[ShibbolethToken].toNihLink
       }
       linkResult <- linkNihAccount(userInfo, nihLink)
+      _ <- ensureWhitelistGroupsExists()
       whitelistSyncResults <- Future.traverse(nihWhitelists) {
         whitelist => syncNihWhitelistForUser(WorkbenchEmail(userInfo.userEmail), nihLink.linkedNihUsername, whitelist)
           .map(NihDatasetPermission(whitelist.name, _))
@@ -164,17 +165,26 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
 
     if(whitelistUsers contains linkedNihUserName) {
       for {
-        _ <- ensureWhitelistGroupExists(nihWhitelist.groupToSync)
         _ <- samDao.addGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
       } yield true
-    } else Future.successful(false)
+    } else {
+      for {
+        _ <- samDao.removeGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
+      } yield false
+    }
   }
 
-  private def ensureWhitelistGroupExists(groupName: WorkbenchGroupName): Future[Unit] = {
-    samDao.listGroups(getAdminAccessToken).flatMap {
-      case groups if groups.map(_.groupName.toLowerCase).contains(groupName.value.toLowerCase) => Future.successful(())
-      case _ => samDao.createGroup(groupName)(getAdminAccessToken).recover {
-        case fce: FireCloudExceptionWithErrorReport if fce.errorReport.statusCode.contains(StatusCodes.Conflict) => // somebody else made it
+  private def ensureWhitelistGroupsExists(): Future[Unit] = {
+    samDao.listGroups(getAdminAccessToken).flatMap { groups =>
+      val missingGroupNames = nihWhitelists.map(_.groupToSync.value.toLowerCase()) -- groups.map(_.groupName.toLowerCase).toSet
+      if (missingGroupNames.isEmpty) {
+        Future.successful(())
+      } else {
+        Future.traverse(missingGroupNames) { groupName =>
+          samDao.createGroup(WorkbenchGroupName(groupName))(getAdminAccessToken).recover {
+            case fce: FireCloudExceptionWithErrorReport if fce.errorReport.statusCode.contains(StatusCodes.Conflict) => // somebody else made it
+          }
+        }.map(_ => ())
       }
     }
   }
