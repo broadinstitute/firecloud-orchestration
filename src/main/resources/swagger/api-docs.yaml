@@ -435,7 +435,6 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-
     delete:
       tags:
         - BillingV2
@@ -10456,6 +10455,26 @@ components:
           items:
             type: string
           description: the roles the caller has on the project
+        workspacesWithCorrectBillingAccount:
+          type: array
+          items:
+            type: string
+          description: A list of workspace names with the correct billing account contained within this billing project
+        workspacesWithIncorrectBillingAccount:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceBillingAccount'
+    WorkspaceBillingAccount:
+      required:
+        - workspaceName
+      type: object
+      properties:
+        workspaceName:
+          type: string
+          description: the name of the workspace
+        currentBillingAccountOnGoogleProject:
+          type: string
+          description: the billing project associated with the workspace
   parameters:
     versionParam:
       name: version
