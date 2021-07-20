@@ -15,7 +15,7 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
 
   implicit val userToken: WithAccessToken
 
-  def publishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Unit = {
+  def publishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Future[Unit] = {
     indexableDocuments(Seq(ws), ontologyDAO, consentDAO) map { ws =>
       assert(ws.size == 1)
       searchDAO.indexDocument(ws.head)
@@ -26,11 +26,13 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
     searchDAO.deleteDocument(ws.workspaceId)
   }
 
-  def republishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Unit = {
+  def republishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Future[Unit] = {
     if (isPublished(ws)) {
       // if already published, republish
       // we do not need to delete before republish
       publishDocument(ws, ontologyDAO, searchDAO, consentDAO)
+    } else {
+      Future.successful(())
     }
   }
 
@@ -43,19 +45,18 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
   }
 
   def setWorkspacePublishedStatus(ws: WorkspaceDetails, publishArg: Boolean, rawlsDAO: RawlsDAO, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
-    rawlsDAO.updateLibraryAttributes(ws.namespace, ws.name, updatePublishAttribute(publishArg)) map { workspace =>
-      val docPublishResult = Try {
-        if (publishArg)
-          publishDocument(workspace, ontologyDAO, searchDAO, consentDAO)
-        else
-          removeDocument(workspace, searchDAO)
-      }.isSuccess
-      if (docPublishResult)
-        workspace
-      else {
-        val message = s"Unable to update this workspace, ${ws.namespace}:${ws.name}, to $publishArg in elastic search."
-        logger.error(message)
-        throw new FireCloudException(message)
+    rawlsDAO.updateLibraryAttributes(ws.namespace, ws.name, updatePublishAttribute(publishArg)) flatMap { workspace =>
+      val docPublishFuture = if (publishArg) {
+        publishDocument(workspace, ontologyDAO, searchDAO, consentDAO)
+      } else {
+        Future(removeDocument(workspace, searchDAO))
+      }
+
+      docPublishFuture.map(_ => workspace).recover {
+        case throwable: Throwable =>
+          val message = s"Unable to update this workspace, ${ws.namespace}:${ws.name}, to $publishArg in elastic search."
+          logger.error(message, throwable)
+          throw new FireCloudException(message, throwable)
       }
     }
   }

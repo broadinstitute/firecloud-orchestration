@@ -29,7 +29,7 @@ trait EntityApiService extends FireCloudDirectives
           get {
             requireUserInfo() { userInfo =>
               //TODO: the model schema doesn't matter for this one. Ideally, make it Optional
-              complete { entityServiceConstructor(FlexibleModelSchema).GetEntitiesWithType(workspaceNamespace, workspaceName, userInfo) }
+              complete { entityServiceConstructor(FlexibleModelSchema).getEntitiesWithType(workspaceNamespace, workspaceName, userInfo) }
             }
           }
         } ~

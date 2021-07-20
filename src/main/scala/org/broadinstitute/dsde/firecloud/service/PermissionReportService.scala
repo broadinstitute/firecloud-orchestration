@@ -27,9 +27,7 @@ class PermissionReportService (protected val argUserInfo: UserInfo, val rawlsDAO
   import PermissionReportService._
 
   implicit val userInfo = argUserInfo
-
-  def GetPermissionReport(workspaceNamespace: String, workspaceName: String, reportInput: PermissionReportRequest) = getPermissionReport(workspaceNamespace, workspaceName, reportInput)
-
+  
   def getPermissionReport(workspaceNamespace: String, workspaceName: String, reportInput: PermissionReportRequest) = {
     // start the requests to get workspace users and workspace configs in parallel
     val futureWorkspaceACL = rawlsDAO.getWorkspaceACL(workspaceNamespace, workspaceName) recover {

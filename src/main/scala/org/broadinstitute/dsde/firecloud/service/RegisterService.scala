@@ -25,10 +25,7 @@ object RegisterService {
 class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO)
   (implicit protected val executionContext: ExecutionContext) extends LazyLogging {
 
-  def CreateUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile) = createUpdateProfile(userInfo, basicProfile)
-  def UpdateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]) = updateProfilePreferences(userInfo, preferences)
-
-  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
+  def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
       _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
@@ -70,7 +67,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     key.startsWith("notifications/")
   }
 
-  private def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {
+  def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {
     if (preferences.keys.forall(isValidPreferenceKey)) {
       thurloeDao.saveKeyValues(userInfo, preferences).map(_ => RequestComplete(StatusCodes.NoContent))
     } else {

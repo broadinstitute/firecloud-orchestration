@@ -63,11 +63,7 @@ object AgoraPermissionService {
 
 class AgoraPermissionService(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit val executionContext: ExecutionContext) extends LazyLogging with SprayJsonSupport {
 
-  def GetAgoraPermission(url: String): Future[PerRequestMessage] = getAgoraPermission(url, userInfo)
-  def CreateAgoraPermission(url: String, agoraPermissions: List[AgoraPermission]): Future[PerRequestMessage] = createAgoraPermission(url, agoraPermissions, userInfo)
-  def UpsertAgoraPermissions(inputs: List[EntityAccessControlAgora]): Future[PerRequestMessage] = batchInsertAgoraPermissions(inputs, userInfo)
-
-  def getAgoraPermission(url: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+  def getAgoraPermission(url: String): Future[PerRequestMessage] = {
     agoraDAO.getPermission(url)(userInfo).map { agoraPermissions =>
       try {
         val fireCloudPermissions = agoraPermissions.map(_.toFireCloudPermission)
@@ -83,7 +79,7 @@ class AgoraPermissionService(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implici
     }
   }
 
-  def createAgoraPermission(url: String, agoraPermissions: List[AgoraPermission], userInfo: UserInfo): Future[PerRequestMessage] = {
+  def createAgoraPermission(url: String, agoraPermissions: List[AgoraPermission]): Future[PerRequestMessage] = {
     agoraDAO.createPermission(url, agoraPermissions)(userInfo).map { agoraPermissions =>
       try {
         val fireCloudPermissions = agoraPermissions.map(_.toFireCloudPermission)
@@ -99,7 +95,7 @@ class AgoraPermissionService(userInfo: UserInfo, val agoraDAO: AgoraDAO)(implici
     }
   }
 
-  def batchInsertAgoraPermissions(inputs: List[EntityAccessControlAgora], userInfo: UserInfo): Future[PerRequestMessage] = {
+  def batchInsertAgoraPermissions(inputs: List[EntityAccessControlAgora]): Future[PerRequestMessage] = {
     agoraDAO.batchCreatePermissions(inputs)(userInfo).map { agoraResponse =>
       try {
         val fcResponse = agoraResponse.map { eaca =>

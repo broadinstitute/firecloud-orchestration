@@ -85,6 +85,24 @@ class NihApiServiceSpec extends ApiServiceSpec {
     }
   }
 
+  it should "link and sync when user relinks as a different user" in withDefaultApiServices { services =>
+    val toLink = WorkbenchEmail(services.thurloeDao.TARGET_UNLINKED)
+
+    assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    Post("/nih/callback", targetUserJwt) ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
+      status should equal(OK)
+      assert(services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    }
+    // notice tcgaUserJwt, not targetUserJwt as above
+    Post("/nih/callback", tcgaUserJwt) ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
+      status should equal(OK)
+      assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+      assert(services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    }
+  }
+
   it should "link and sync when user is on both the TARGET and TCGA whitelists" in withDefaultApiServices { services =>
     val toLink = WorkbenchEmail(services.thurloeDao.TCGA_AND_TARGET_UNLINKED)
 

@@ -73,7 +73,7 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
               get {
                 requireUserInfo() { userInfo =>
                   // pass to AgoraPermissionHandler
-                  complete { agoraPermissionService(userInfo).GetAgoraPermission(url) }
+                  complete { agoraPermissionService(userInfo).getAgoraPermission(url) }
                 }
               } ~
                 post {
@@ -83,7 +83,7 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
                     entity(as[List[FireCloudPermission]]) { fireCloudPermissions =>
                       requireUserInfo() { userInfo =>
                         complete {
-                          agoraPermissionService(userInfo).CreateAgoraPermission(url, fireCloudPermissions.map(_.toAgoraPermission))
+                          agoraPermissionService(userInfo).createAgoraPermission(url, fireCloudPermissions.map(_.toAgoraPermission))
                         }
                       }
                     }
@@ -108,7 +108,7 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
                       EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
                     }
                     requireUserInfo() { userInfo =>
-                      complete { agoraPermissionService(userInfo).UpsertAgoraPermissions(agoraPermissions) }
+                      complete { agoraPermissionService(userInfo).batchInsertAgoraPermissions(agoraPermissions) }
                     }
                 }
               }

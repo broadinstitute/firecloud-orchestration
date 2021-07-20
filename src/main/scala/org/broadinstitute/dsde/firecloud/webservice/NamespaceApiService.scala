@@ -21,13 +21,13 @@ trait NamespaceApiService extends Directives with RequestBuilding with StandardU
     pathPrefix("api" / "methods|configurations".r / Segment / "permissions") { (agoraEntity, namespace) =>
       requireUserInfo() { userInfo =>
         get {
-          complete { namespaceServiceConstructor(userInfo).GetPermissions(namespace, agoraEntity) }
+          complete { namespaceServiceConstructor(userInfo).getFireCloudPermissions(namespace, agoraEntity) }
         } ~
           post {
             // explicitly pull in the json-extraction error handler from ModelJsonProtocol
             handleRejections(entityExtractionRejectionHandler) {
               entity(as[List[FireCloudPermission]]) { permissions =>
-                complete { namespaceServiceConstructor(userInfo).PostPermissions(namespace, agoraEntity, permissions) }
+                complete { namespaceServiceConstructor(userInfo).postFireCloudPermissions(namespace, agoraEntity, permissions) }
               }
             }
           }

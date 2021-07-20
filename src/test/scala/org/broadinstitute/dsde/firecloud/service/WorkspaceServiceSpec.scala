@@ -133,9 +133,9 @@ class MockSearchDeleteWSDAO extends MockSearchDAO {
   override def deleteDocument(id: String): Unit = {
     id match {
       case "unpublishfailure" =>
-        deleteDocumentInvoked = false
+        deleteDocumentInvoked.set(false)
         throw new FireCloudException(s"Failed to remove document with id $id from elastic search")
-      case _ => deleteDocumentInvoked = true
+      case _ => deleteDocumentInvoked.set(true)
     }
   }
 

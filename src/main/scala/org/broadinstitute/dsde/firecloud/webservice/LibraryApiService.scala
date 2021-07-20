@@ -29,20 +29,20 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
     pathPrefix("duos") {
       path("autocomplete" / Segment) { (searchTerm) =>
         get {
-          complete { ontologyServiceConstructor().AutocompleteOntology(searchTerm) }
+          complete { ontologyServiceConstructor().autocompleteOntology(searchTerm) }
         }
       } ~
         path("researchPurposeQuery") {
           post {
             entity(as[ResearchPurposeRequest]) { researchPurposeRequest =>
-              complete { ontologyServiceConstructor().ResearchPurposeQuery(researchPurposeRequest) }
+              complete { ontologyServiceConstructor().buildResearchPurposeQuery(researchPurposeRequest) }
             }
           }
         } ~
         path("structuredData") {
           post {
             entity(as[StructuredDataRequest]) { request =>
-              complete { ontologyServiceConstructor().DataUseLimitation(request) }
+              complete { ontologyServiceConstructor().buildStructuredUseRestrictionAttribute(request) }
             }
           }
         }
@@ -87,44 +87,44 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                       parameter("validate" ? "false") { validationParam =>
                         val doValidate = java.lang.Boolean.valueOf(validationParam) // for lenient parsing
                         entity(as[String]) { rawAttrsString =>
-                          complete { libraryServiceConstructor(userInfo).UpdateLibraryMetadata(namespace, name, rawAttrsString, doValidate) }
+                          complete { libraryServiceConstructor(userInfo).updateLibraryMetadata(namespace, name, rawAttrsString, doValidate) }
                         }
                       }
                     } ~ {
                       get {
-                        complete { libraryServiceConstructor(userInfo).GetLibraryMetadata(namespace, name) }
+                        complete { libraryServiceConstructor(userInfo).getLibraryMetadata(namespace, name) }
                       }
                     }
                   } ~
                     path("discoverableGroups") {
                       put {
                         entity(as[Seq[String]]) { newGroups =>
-                          complete { libraryServiceConstructor(userInfo).UpdateDiscoverableByGroups(namespace, name, newGroups) }
+                          complete { libraryServiceConstructor(userInfo).updateDiscoverableByGroups(namespace, name, newGroups) }
                         }
                       } ~
                         get {
-                          complete { libraryServiceConstructor(userInfo).GetDiscoverableByGroups(namespace, name) }
+                          complete { libraryServiceConstructor(userInfo).getDiscoverableByGroups(namespace, name) }
                         }
                     } ~
                     path("published") {
                       post {
-                        complete { libraryServiceConstructor(userInfo).SetPublishAttribute(namespace, name, true) }
+                        complete { libraryServiceConstructor(userInfo).setWorkspaceIsPublished(namespace, name, true) }
                       } ~
-                        delete {
-                          complete { libraryServiceConstructor(userInfo).SetPublishAttribute(namespace, name, false) }
-                        }
+                      delete {
+                        complete { libraryServiceConstructor(userInfo).setWorkspaceIsPublished(namespace, name, false) }
+                      }
                     }
                 } ~
                 path("admin" / "reindex") {
                   post {
-                    complete { libraryServiceConstructor(userInfo).IndexAll }
+                    complete { libraryServiceConstructor(userInfo).adminIndexAllWorkspaces() }
                   }
                 } ~
                 pathPrefix("search") {
                   pathEndOrSingleSlash {
                     post {
                       entity(as[LibrarySearchParams]) { params =>
-                        complete { libraryServiceConstructor(userInfo).FindDocuments(params) }
+                        complete { libraryServiceConstructor(userInfo).findDocuments(params) }
                       }
                     }
                   }
@@ -133,7 +133,7 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                   pathEndOrSingleSlash {
                     post {
                       entity(as[LibrarySearchParams]) { params =>
-                        complete { libraryServiceConstructor(userInfo).Suggest(params) }
+                        complete { libraryServiceConstructor(userInfo).suggest(params) }
                       }
                     }
                   }
@@ -141,7 +141,7 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                 pathPrefix("populate" / "suggest" / Segment ) { (field) =>
                   get {
                     parameter('q) { text =>
-                      complete { libraryServiceConstructor(userInfo).PopulateSuggest(field, text) }
+                      complete { libraryServiceConstructor(userInfo).populateSuggest(field, text) }
                     }
                   }
                 }
