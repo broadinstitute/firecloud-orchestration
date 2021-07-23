@@ -24,7 +24,7 @@ trait RegisterApiService extends Directives with RequestBuilding with StandardUs
         post {
           requireUserInfo() { userInfo =>
             entity(as[BasicProfile]) { basicProfile =>
-              complete { registerServiceConstructor().CreateUpdateProfile(userInfo, basicProfile) }
+              complete { registerServiceConstructor().createUpdateProfile(userInfo, basicProfile) }
             }
           }
         }
@@ -37,7 +37,7 @@ trait RegisterApiService extends Directives with RequestBuilding with StandardUs
         post {
           requireUserInfo() { userInfo =>
             entity(as[Map[String, String]]) { preferences =>
-              complete { registerServiceConstructor().UpdateProfilePreferences(userInfo, preferences) }
+              complete { registerServiceConstructor().updateProfilePreferences(userInfo, preferences) }
             }
           }
         }

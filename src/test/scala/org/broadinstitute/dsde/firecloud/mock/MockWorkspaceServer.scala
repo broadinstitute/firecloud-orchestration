@@ -67,6 +67,7 @@ object MockWorkspaceServer {
     useCallCache = Option(randomBoolean()),
     deleteIntermediateOutputFiles = Option(randomBoolean()),
     useReferenceDisks = Option(randomBoolean()),
+    memoryRetryMultiplier = Option(1.1d),
     workflowFailureMode = Option(randomElement(List("ContinueWhilePossible", "NoNewCalls")))
   )
 
@@ -79,6 +80,7 @@ object MockWorkspaceServer {
     useCallCache = Option.empty,
     deleteIntermediateOutputFiles = Option.empty,
     useReferenceDisks = Option.empty,
+    memoryRetryMultiplier = Option(1.1d),
     workflowFailureMode = Option.empty
   )
 

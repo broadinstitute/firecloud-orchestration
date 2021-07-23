@@ -103,11 +103,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
 
-  def ImportEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo): Future[PerRequestMessage] = importEntitiesFromTSV(workspaceNamespace, workspaceName, tsvString, userInfo)
-  def ImportBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = importBagit(workspaceNamespace, workspaceName, bagitRq, userInfo)
-  def ImportPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo)
-  def GetEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = getEntitiesWithType(workspaceNamespace, workspaceName, userInfo)
-
   /**
    * Returns the plural form of the entity type.
    * Bails with a 400 Bad Request if the entity type is unknown to the schema and we are using firecloud model

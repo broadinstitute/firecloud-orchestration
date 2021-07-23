@@ -20,11 +20,11 @@ trait NihApiService extends Directives with RequestBuilding with StandardUserInf
   val syncRoute: Route =
     path("sync_whitelist" / Segment) { whitelistName =>
       post {
-        complete { nihServiceConstructor().SyncWhitelist(whitelistName) }
+        complete { nihServiceConstructor().syncWhitelistAllUsers(whitelistName) }
       }
     } ~ path("sync_whitelist") {
       post {
-        complete { nihServiceConstructor().SyncAllWhitelists }
+        complete { nihServiceConstructor().syncAllNihWhitelistsAllUsers() }
       }
     }
 
@@ -35,12 +35,12 @@ trait NihApiService extends Directives with RequestBuilding with StandardUserInf
         path("callback") {
           post {
             entity(as[JWTWrapper]) { jwtWrapper =>
-              complete { nihServiceConstructor().UpdateNihLinkAndSyncSelf(userInfo, jwtWrapper) }
+              complete { nihServiceConstructor().updateNihLinkAndSyncSelf(userInfo, jwtWrapper) }
             }
           }
         } ~
           path ("status") {
-            complete { nihServiceConstructor().GetNihStatus(userInfo) }
+            complete { nihServiceConstructor().getNihStatus(userInfo) }
           }
       }
     }

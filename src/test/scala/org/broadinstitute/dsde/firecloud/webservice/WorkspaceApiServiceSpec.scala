@@ -1240,7 +1240,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
+            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
         }
 
@@ -1257,7 +1257,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+            assert(this.searchDao.indexDocumentInvoked.get(), "Should have republished this published WS when changing attributes")
           }
         }
 
@@ -1293,7 +1293,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
+            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
         }
 
@@ -1306,7 +1306,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+            assert(this.searchDao.indexDocumentInvoked.get(), "Should have republished this published WS when changing attributes")
           }
         }
 

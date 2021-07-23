@@ -37,17 +37,10 @@ object UserService {
 class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO: GoogleServicesDAO, userToken: UserInfo)(implicit protected val executionContext: ExecutionContext)
   extends LazyLogging with SprayJsonSupport with DefaultJsonProtocol {
 
-  def ImportPermission = importPermission(userToken)
-  def GetTerraPreference = getTerraPreference(userToken)
-  def SetTerraPreference = setTerraPreference(userToken)
-  def DeleteTerraPreference = deleteTerraPreference(userToken)
-  def GetAllUserKeys = getAllUserKeys(userToken)
-  def GetUserProfileGoogle = getUserProfileGoogle(userToken)
-
-  def importPermission(implicit userToken: UserInfo): Future[PerRequestMessage] = {
+  def importPermission(): Future[PerRequestMessage] = {
     // start two requests, in parallel, to fire off workspace list and billing project list
-    val billingProjects = rawlsDAO.getProjects
-    val workspaces = rawlsDAO.getWorkspaces
+    val billingProjects = rawlsDAO.getProjects(userToken)
+    val workspaces = rawlsDAO.getWorkspaces(userToken)
 
     // for-comprehension to extract from the two vals
     // we intentionally only check write access on the workspace (not canCompute); write access without
@@ -68,10 +61,10 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
       .flatMap(_.value) // .value returns Option[String]
   }
 
-  def getTerraPreference(implicit userToken: UserInfo): Future[PerRequestMessage] = {
+  def getTerraPreference: Future[PerRequestMessage] = {
     // so, so many nested Options ...
     val futurePref: Future[TerraPreference] = thurloeDAO.getAllKVPs(userToken.id, userToken) map { // .getAllKVPs returns Option[ProfileWrapper]
-      case None => TerraPreference(true, 0)
+      case None => TerraPreference(preferTerra = true, 0)
       case Some(wrapper) => {
         val pref: Boolean = Try(getProfileValue(wrapper, UserService.TerraPreferenceKey).getOrElse("true").toBoolean)
           .toOption.getOrElse(true)
@@ -84,15 +77,15 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     futurePref map { pref: TerraPreference => RequestComplete(pref) }
   }
 
-  def setTerraPreference(userToken: UserInfo): Future[PerRequestMessage] = {
-    writeTerraPreference(userToken, prefValue = true)
+  def setTerraPreference(): Future[PerRequestMessage] = {
+    writeTerraPreference(prefValue = true)
   }
 
-  def deleteTerraPreference(userToken: UserInfo): Future[PerRequestMessage] = {
-    writeTerraPreference(userToken, prefValue = false)
+  def deleteTerraPreference(): Future[PerRequestMessage] = {
+    writeTerraPreference(prefValue = false)
   }
 
-  private def writeTerraPreference(userToken: UserInfo, prefValue: Boolean): Future[PerRequestMessage] = {
+  private def writeTerraPreference(prefValue: Boolean): Future[PerRequestMessage] = {
     val kvpsToUpdate = Map(
       UserService.TerraPreferenceKey -> prefValue.toString,
       UserService.TerraPreferenceLastUpdatedKey -> System.currentTimeMillis().toString
@@ -103,7 +96,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     thurloeDAO.saveKeyValues(userToken, kvpsToUpdate) flatMap {
       case Failure(exception) => Future(RequestCompleteWithErrorReport(StatusCodes.InternalServerError,
         "could not save Terra preference", exception))
-      case Success(_) => getTerraPreference(userToken)
+      case Success(_) => getTerraPreference
     }
   }
 
@@ -192,7 +185,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     * @param userToken
     * @return
     */
-  def getAllUserKeys(userToken: UserInfo): Future[PerRequestMessage] = {
+  def getAllUserKeys: Future[PerRequestMessage] = {
     val futureKeys:Future[ProfileWrapper] = getAllKeysFromThurloe(userToken)
     futureKeys flatMap { keys: ProfileWrapper =>
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
@@ -206,7 +199,7 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     }
   }
 
-  def getUserProfileGoogle(userToken: UserInfo): Future[PerRequestMessage] = {
+  def getUserProfileGoogle: Future[PerRequestMessage] = {
     googleServicesDAO.getUserProfile(userToken).map { resp =>
       RequestComplete(resp)
     }

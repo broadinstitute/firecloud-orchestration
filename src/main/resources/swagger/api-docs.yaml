@@ -12,6 +12,7 @@ servers:
   - url: /
 tags:
   - name: Billing
+  - name: BillingV2
   - name: CromIAM Engine (for Job Manager)
   - name: CromIAM Workflows (for Admin)
   - name: CromIAM Workflows (for Job Manager)
@@ -126,6 +127,127 @@ paths:
             - openid
             - email
             - profile
+      x-passthrough: true
+      x-passthrough-target: rawls
+  /api/billing/v2/{projectId}/spendReportConfiguration:
+    get:
+      tags:
+        - BillingV2
+      summary: get the spend report configuration for the billing project
+      description: get the spend report configuration for the billing project
+      operationId: getSpendReportConfiguration
+      parameters:
+        - name: projectId
+          in: path
+          description: Billing Project ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successfully retrieved spend report configuration
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/SpendReportConfiguration'
+        204:
+          description: The specified billing project exists but does not have spend reporting configured
+        403:
+          description: You must be a billing project owner to view the spend report configuration of the billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: The specified billing project could not be found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    put:
+      tags:
+        - BillingV2
+      summary: set the spend configuration for the billing project
+      description: set the spend configuration for the billing project
+      operationId: setSpendReportConfiguration
+      parameters:
+        - name: projectId
+          in: path
+          description: Billing Project ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: billing project spend configuration information
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/SpendReportConfiguration'
+      responses:
+        204:
+          description: Successfully updated spend configuration
+        400:
+          description: Either the billing project does not have an active billing account, the specified dataset does not exist, or the specified table does not exist
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: You must be a billing project owner to alter the spend configuration of the billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: The specified billing project could not be found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    delete:
+      tags:
+        - BillingV2
+      summary: clear the spend configuration for the billing project
+      description: clear the spend configuration for the billing project
+      operationId: clearSpendReportConfiguration
+      parameters:
+        - name: projectId
+          in: path
+          description: Billing Project ID
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Successfully cleared spend configuration
+        403:
+          description: You must be a billing project owner to alter the spend configuration of the billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/{projectId}/{workbenchRole}/{email}:
@@ -244,7 +366,7 @@ paths:
   /api/billing/v2:
     post:
       tags:
-        - billing_v2
+        - BillingV2
       summary: create billing project in rawls
       description: create new billing project in rawls
       operationId: createBillingProjectFullV2
@@ -257,7 +379,7 @@ paths:
         required: true
       responses:
         201:
-          description: Successfully Created Billing Project in Rawls
+          description: Successfully Created Billing Project in FireCloud
         400:
           description: both you and firecloud billing user must be a user of the billing account
           content:
@@ -268,7 +390,7 @@ paths:
           description: project already exists in rawls
           content: {}
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
@@ -283,7 +405,7 @@ paths:
   /api/billing/v2/{projectId}:
     get:
       tags:
-        - billing_v2
+        - BillingV2
       summary: get billing project
       description: get billing project
       operationId: getBillingProject
@@ -300,7 +422,7 @@ paths:
           content:
             'application/json':
               schema:
-                $ref: '#/components/schemas/RawlsBillingProjectResponse'
+                $ref: '#/components/schemas/BillingProjectResponse'
         404:
           description: Project Not Found
           content:
@@ -315,7 +437,7 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
     delete:
       tags:
-        - billing_v2
+        - BillingV2
       summary: delete billing project
       description: delete billing project
       operationId: deleteBillingProject
@@ -341,10 +463,84 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
+  /api/billing/v2/{projectId}/billingAccount:
+    put:
+      tags:
+        - BillingV2
+      summary: update billing account on billing project
+      description: Update the Billing Account on the Billing Project and on each Workspace in the Billing Project
+      operationId: updateBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: update billing account request
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/UpdateRawlsBillingAccountRequest'
+        required: true
+      responses:
+        200:
+          description: Billing Account on Billing Project is successfully updated and process is started to update the Billing Account on each Workspace in the Billing Project
+        400:
+          description: Billing account not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Billing Project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    delete:
+      tags:
+        - BillingV2
+      summary: deletes the billing account on billing project
+      description: Clears the Billing Account on the Billing Project and on each Workspace in the Billing Project
+      operationId: deleteBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Billing account successfully removed
+        404:
+          description: Billing project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
   /api/billing/v2/{projectId}/members:
     get:
       tags:
-        - billing_v2
+        - BillingV2
       summary: list members of billing project the caller owns
       description: list members of billing project the caller owns
       operationId: listBillingProjectMembers
@@ -363,7 +559,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RawlsBillingProjectMember'
+                  $ref: '#/components/schemas/BillingProjectMember'
         403:
           description: You must be a project owner to view the members of a project
           content:
@@ -371,7 +567,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
@@ -379,7 +575,7 @@ paths:
   /api/billing/v2/{projectId}/members/{workbenchRole}/{email}:
     put:
       tags:
-        - billing_v2
+        - BillingV2
       summary: add user or group to billing project the caller owns
       description: add user or group to billing project the caller owns
       operationId: addUserToBillingProject
@@ -421,14 +617,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
     delete:
       tags:
-        - billing_v2
+        - BillingV2
       summary: remove user or group from billing project the caller owns
       description: remove user or group from billing project the caller owns
       operationId: removeUserFromBillingProject
@@ -470,7 +666,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
         500:
-          description: Rawls Internal Error
+          description: FireCloud Internal Error
           content:
             'application/json':
               schema:
@@ -8720,6 +8916,19 @@ components:
           description: line number
           format: int32
       description: ""
+    SpendReportConfiguration:
+      required:
+        - datasetGoogleProject
+        - datasetName
+      type: object
+      properties:
+        datasetGoogleProject:
+          type: string
+          description: the name of the Google Project where the BigQuery dataset resides
+        datasetName:
+          type: string
+          description: the name of the BigQuery dataset containing project spend data
+      description: ""
     StringArray:
       type: array
       example:
@@ -8766,6 +8975,14 @@ components:
           type: boolean
           description: Whether or not to delete intermediate output files when the
             workflow completes. See Cromwell docs for more information.
+        useReferenceDisks:
+          type: boolean
+          description: Whether or not to use pre-built disks for common genome references
+        memoryRetryMultiplier:
+          type: number
+          description: If a task fails due to running out of memory and the task has `maxRetries` in its runtime attributes,
+            then it will be retried with its memory multiplied by this amount.  See [Cromwell docs](https://cromwell.readthedocs.io/en/develop/cromwell_features/RetryWithMoreMemory/#retry-with-more-memory)
+            for more information.
         workflowFailureMode:
           type: string
           description: What happens after a task fails. Choose from ContinueWhilePossible
@@ -8836,6 +9053,11 @@ components:
         useReferenceDisks:
           type: boolean
           description: Whether or not to use pre-built disks for common genome references
+        memoryRetryMultiplier:
+          type: number
+          description: If a task fails due to running out of memory and the task has `maxRetries` in its runtime attributes,
+            then it will be retried with its memory multiplied by this amount.  See [Cromwell docs](https://cromwell.readthedocs.io/en/develop/cromwell_features/RetryWithMoreMemory/#retry-with-more-memory)
+            for more information.
         workflowFailureMode:
           type: string
           description: What happens after a task fails. Choose from ContinueWhilePossible
@@ -9158,6 +9380,14 @@ components:
           description: A friendly name that can be used in addition to the hostname
             to describe a registry
       description: Describes this registry to better allow for mirroring and indexing.
+    UpdateRawlsBillingAccountRequest:
+      required:
+        - billingAccount
+      type: object
+      properties:
+        billingAccount:
+          type: string
+          description: The name of the billing account to use
     UserImportPermission:
       type: object
       properties:
@@ -10201,6 +10431,50 @@ components:
         labels:
           type: string
           description: The custom labels as json
+    BillingProjectResponse:
+      required:
+        - projectName
+        - invalidBillingAccount
+        - roles
+      type: object
+      properties:
+        projectName:
+          type: string
+          description: the name of the project
+        billingAccount:
+          type: string
+          description: the billing account to use in google projects
+        servicePerimeter:
+          type: string
+          description: the name of the service permeters for google project
+        invalidBillingAccount:
+          type: boolean
+          description: whether or not the billing account is usable by Terra
+        roles:
+          type: array
+          items:
+            type: string
+          description: the roles the caller has on the project
+        workspacesWithCorrectBillingAccount:
+          type: array
+          items:
+            type: string
+          description: A list of workspace names with the correct billing account contained within this billing project
+        workspacesWithIncorrectBillingAccount:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceBillingAccount'
+    WorkspaceBillingAccount:
+      required:
+        - workspaceName
+      type: object
+      properties:
+        workspaceName:
+          type: string
+          description: the name of the workspace
+        currentBillingAccountOnGoogleProject:
+          type: string
+          description: the billing project associated with the workspace
   parameters:
     versionParam:
       name: version

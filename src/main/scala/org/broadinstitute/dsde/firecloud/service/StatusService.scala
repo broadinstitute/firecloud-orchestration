@@ -26,8 +26,6 @@ class StatusService (val healthMonitor: ActorRef)
                     (implicit protected val executionContext: ExecutionContext) extends SprayJsonSupport {
   implicit val timeout = Timeout(1.minute) // timeout for the ask to healthMonitor for GetCurrentStatus
 
-  def CollectStatusInfo = collectStatusInfo()
-
   def collectStatusInfo(): Future[PerRequestMessage] = {
     (healthMonitor ? GetCurrentStatus).mapTo[StatusCheckResponse].map { statusCheckResponse =>
       // if we've successfully reached this point, always return a 200, so the load balancers
