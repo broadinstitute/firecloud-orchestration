@@ -39,6 +39,8 @@ class WorkspaceApiSpec extends FreeSpec with Matchers
           withWorkspace(projectName, prependUUID("writer-storage-cost"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
 
+            Thread.sleep(60 * 1000) // This was added as a workaround for https://broadworkbench.atlassian.net/browse/QA-1534
+
             val storageCostEstimate = Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)(writer.makeAuthToken()).parseJson.convertTo[StorageCostEstimate]
             storageCostEstimate.estimate should be ("$0.00")
           } (ownerAuthToken)
