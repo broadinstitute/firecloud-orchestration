@@ -46,9 +46,11 @@ trait BillingApiService extends FireCloudDirectives {
                   }
                 }
               } ~
-              path("members") {
-                get {
-                  passthrough(s"$v2BillingUrl/$projectId/members", GET)
+              pathPrefix("members") {
+                pathEnd {
+                  get {
+                    passthrough(s"$v2BillingUrl/$projectId/members", GET)
+                  }
                 } ~
                 // workbench project role: owner or user
                 path(Segment / Segment) { (workbenchRole, email) =>
