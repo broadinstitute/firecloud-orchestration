@@ -49,6 +49,14 @@ trait BillingApiService extends FireCloudDirectives {
               path("members") {
                 get {
                   passthrough(s"$v2BillingUrl/$projectId/members", GET)
+                } ~
+                // workbench project role: owner or user
+                path(Segment / Segment) { (workbenchRole, email) =>
+                  (delete | put) {
+                    extract(_.request.method) { method =>
+                      passthrough(s"$v2BillingUrl/$projectId/members/$workbenchRole/$email", method)
+                    }
+                  }
                 }
               } ~
               path("billingAccount") {
@@ -62,14 +70,6 @@ trait BillingApiService extends FireCloudDirectives {
                 (get | put | delete) {
                   extract(_.request.method) { method =>
                     passthrough(s"$v2BillingUrl/$projectId/spendReportConfiguration", method)
-                  }
-                }
-              } ~
-              // workbench project role: owner or user
-              path(Segment / Segment) { (workbenchRole, email) =>
-                (delete | put) {
-                  extract(_.request.method) { method =>
-                    passthrough(s"$v2BillingUrl/$projectId/$workbenchRole/$email", method)
                   }
                 }
               }
