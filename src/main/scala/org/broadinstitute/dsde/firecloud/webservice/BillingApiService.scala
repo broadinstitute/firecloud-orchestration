@@ -46,33 +46,35 @@ trait BillingApiService extends FireCloudDirectives {
                   }
                 }
               } ~
-              path("members") {
-                get {
-                  passthrough(s"$v2BillingUrl/$projectId/members", GET)
-                }
-              } ~
-              path("billingAccount") {
-                (put | delete) {
-                  extract(_.request.method) { method =>
-                    passthrough(s"$v2BillingUrl/$projectId/billingAccount", method)
+                pathPrefix("members") {
+                  pathEnd {
+                    get {
+                      passthrough(s"$v2BillingUrl/$projectId/members", GET)
+                    }
+                  } ~
+                    // workbench project role: owner or user
+                    path(Segment / Segment) { (workbenchRole, email) =>
+                      (delete | put) {
+                        extract(_.request.method) { method =>
+                          passthrough(s"$v2BillingUrl/$projectId/members/$workbenchRole/$email", method)
+                        }
+                      }
+                    }
+                } ~
+                path("billingAccount") {
+                  (put | delete) {
+                    extract(_.request.method) { method =>
+                      passthrough(s"$v2BillingUrl/$projectId/billingAccount", method)
+                    }
+                  }
+                } ~
+                path("spendReportConfiguration") {
+                  (get | put | delete) {
+                    extract(_.request.method) { method =>
+                      passthrough(s"$v2BillingUrl/$projectId/spendReportConfiguration", method)
+                    }
                   }
                 }
-              } ~
-              path("spendReportConfiguration") {
-                (get | put | delete) {
-                  extract(_.request.method) { method =>
-                    passthrough(s"$v2BillingUrl/$projectId/spendReportConfiguration", method)
-                  }
-                }
-              } ~
-              // workbench project role: owner or user
-              path(Segment / Segment) { (workbenchRole, email) =>
-                (delete | put) {
-                  extract(_.request.method) { method =>
-                    passthrough(s"$v2BillingUrl/$projectId/$workbenchRole/$email", method)
-                  }
-                }
-              }
             }
         }
     } ~
