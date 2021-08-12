@@ -271,7 +271,7 @@ class MockRawlsDAO extends RawlsDAO {
       isLocked = true,
       authorizationDomain = Some(Set.empty),
       workspaceVersion = WorkspaceVersions.V2,
-      googleProjectId = GoogleProjectId("googleProject"),
+      googleProject = GoogleProjectId("googleProject"),
       googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
       billingAccount = Some(RawlsBillingAccountName("billingAccount"))
     )
