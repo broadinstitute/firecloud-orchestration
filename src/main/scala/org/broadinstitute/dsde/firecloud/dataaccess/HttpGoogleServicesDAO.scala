@@ -18,7 +18,6 @@ import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
-import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.storage.model.Bucket
 import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
@@ -78,7 +77,6 @@ object HttpGoogleServicesDAO {
   val directoryScope = Seq(DirectoryScopes.ADMIN_DIRECTORY_GROUP)
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
-  val spreadsheetScopes = Seq(SheetsScopes.SPREADSHEETS)
 
   private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
     baseCreds.createScoped(scopes.asJava)
