@@ -85,7 +85,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
     bucketName = "bucketName",
     workflowCollectionName = Some("wf-collection"),
     workspaceVersion=WorkspaceVersions.V2,
-      googleProjectId = GoogleProjectId("googleProject"),
+      googleProject = GoogleProjectId("googleProject"),
       googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
       billingAccount = Some(RawlsBillingAccountName("billingAccount")))
 

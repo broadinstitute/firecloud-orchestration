@@ -9783,11 +9783,13 @@ components:
         - name
         - namespace
         - workspaceId
+        - googleProject
+        - workspaceVersion
       type: object
       properties:
         attributes:
           type: object
-          properties: {}
+          properties: { }
           description: Map[String, Attribute]
         authorizationDomain:
           type: array
@@ -9826,6 +9828,21 @@ components:
         workspaceId:
           type: string
           description: A UUID associated with the workspace
+        googleProject:
+          type: string
+          description: Identifies the google project used by the workspace for compute and storage
+        googleProjectNumber:
+          type: string
+          description: A different google project identifier for the same project identified by the googleProject; required by google for certain actions
+        workspaceVersion:
+          type: string
+          description: internal use
+        currentBillingAccountOnGoogleProject:
+          type: string
+          description: The current billing account being charged for activity within this workspace. For desired billing account, look to the billing account specified on this workspace's billing project
+        billingAccountErrorMessage:
+          type: string
+          description: Error message received during most recent attempt to update the current billing account on workspace's Google project. Empty if update was successful.
       description: ""
     WorkspaceListResponse:
       type: object
