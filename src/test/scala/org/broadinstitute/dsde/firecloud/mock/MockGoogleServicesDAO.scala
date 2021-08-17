@@ -5,7 +5,6 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
-import com.google.api.services.sheets.v4.model.{SpreadsheetProperties, ValueRange}
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
