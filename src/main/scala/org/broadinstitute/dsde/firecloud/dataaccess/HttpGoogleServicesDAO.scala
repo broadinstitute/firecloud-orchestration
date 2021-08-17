@@ -15,7 +15,6 @@ import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.admin.directory.model.{Group, Member}
 import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
-import com.google.api.services.cloudbilling.Cloudbilling
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.storage.model.Bucket
@@ -119,10 +118,6 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
 
   private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials= {
     baseCreds.createDelegated(user)
-  }
-
-  def getCloudBillingManager(credential: ServiceAccountCredentials): Cloudbilling = {
-    new Cloudbilling.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped((authScopes ++ billingScope).asJava))).setApplicationName(appName).build()
   }
 
   def getDirectoryManager(credential: GoogleCredentials): Directory = {
