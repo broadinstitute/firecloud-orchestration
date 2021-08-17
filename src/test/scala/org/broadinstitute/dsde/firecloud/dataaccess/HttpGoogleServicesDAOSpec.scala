@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, HttpRespo
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import com.google.api.services.sheets.v4.model.ValueRange
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.scalatest.flatspec.AnyFlatSpec

@@ -9,8 +9,8 @@ object Dependencies {
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
   val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.12")
-  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12");
-  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12");
+  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12")
+  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12")
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -59,8 +59,6 @@ object Dependencies {
       exclude("io.netty", "netty-common"),
 
     excludeGuava("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
-    excludeGuava("com.google.apis"     % "google-api-services-sheets"       % "v4-rev20191001-1.30.3"),
-    excludeGuava("com.google.apis"     % "google-api-services-cloudbilling" % "v1-rev20191005-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
