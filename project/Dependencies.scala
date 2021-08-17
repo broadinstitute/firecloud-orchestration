@@ -9,8 +9,8 @@ object Dependencies {
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
   val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.12")
-  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12");
-  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12");
+  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12")
+  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12")
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
