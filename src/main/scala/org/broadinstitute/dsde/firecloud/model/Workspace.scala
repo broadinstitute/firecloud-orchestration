@@ -93,6 +93,7 @@ case class SubmissionRequest(
   deleteIntermediateOutputFiles: Option[Boolean],
   useReferenceDisks: Option[Boolean],
   memoryRetryMultiplier: Option[Double],
+  userComment: Option[String],
   workflowFailureMode: Option[String])
 
 case class RawlsGroupMemberList(

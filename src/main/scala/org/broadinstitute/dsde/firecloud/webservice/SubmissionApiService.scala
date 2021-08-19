@@ -35,7 +35,7 @@ trait SubmissionApiService extends FireCloudDirectives {
               } ~
               pathPrefix(Segment) { submissionId =>
                 pathEnd {
-                  (delete | get) {
+                  (delete | get | patch) {
                     extract(_.request.method) { method =>
                       passthrough(encodeUri(s"$workspacesUrl/$namespace/$name/submissions/$submissionId"), method)
                     }

@@ -5876,6 +5876,53 @@ paths:
           content: {}
       x-passthrough: true
       x-passthrough-target: rawls
+    patch:
+      tags:
+        - submissions
+      summary: Update user comment for a submission
+      description: Update user comment for a submission
+      operationId: updateSubmissionUserComment
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+        - name: submissionId
+          in: path
+          description: Submission Id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: User comment to be updated
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/UserCommentUpdateOperation'
+        required: true
+      responses:
+        200:
+          description: Successful Request
+        404:
+          description: Workspace or submission not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
     post:
       tags:
@@ -9012,6 +9059,9 @@ components:
           enum:
             - NoNewCalls
             - ContinueWhilePossible
+        userComment:
+          type: string
+          description: Comment for the submission
       description: ""
     SubmissionsCountResponse:
       type: object
@@ -9087,6 +9137,9 @@ components:
           enum:
             - NoNewCalls
             - ContinueWhilePossible
+        userComment:
+          type: string
+          description: Freeform user defined description, optional.
       description: If the referenced method configuration takes no root entity, do
         not define `entityType`, `entityName` and `expression`.
     SubmissionStatus:
@@ -9494,6 +9547,15 @@ components:
           description: The run cost of this workflow
           format: float
       description: ""
+    UserCommentUpdateOperation:
+      required:
+        - userComment
+      type: object
+      properties:
+        userComment:
+          type: string
+          description: The updated value for user comment (max length 1000 characters)
+      description: Update user comment for submission
     WorkflowCost:
       type: object
       properties:
