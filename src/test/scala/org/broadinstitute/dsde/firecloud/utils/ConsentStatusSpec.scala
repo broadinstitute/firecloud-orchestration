@@ -43,6 +43,9 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with SprayJsonSupp
       val subsystemFuture = callGetStatusFromDropwizardChecks(consentStatusJsonSomeErrors)
       whenReady(subsystemFuture) { f =>
         assertResult(true)(f.ok)
+        // This is counterintuitive. The original logic does not add messages if the overall status
+        // is OK. We should maintain that to be backwards compatible with any other downstream
+        // checks that might break.
         assertResult(true)(f.messages.isEmpty)
       }
     }
