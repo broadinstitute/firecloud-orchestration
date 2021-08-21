@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.ReportsSubsystemStatus
@@ -12,7 +11,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with SprayJsonSupport with ReportsSubsystemStatus {
+class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsystemStatus {
 
   override def status: Future[SubsystemStatus] = {
     getStatusFromDropwizardChecks(Future.failed(new Exception("exception")))
