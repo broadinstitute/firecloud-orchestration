@@ -19,15 +19,15 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsys
 
   override def serviceName: String = "ConsentStatusSpec"
 
-  implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val system: ActorSystem = ActorSystem("ConsentStatusSpec")
+  implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(30, Seconds), interval = Span(5, Millis))
 
   "ReportsSubsystemStatus.getStatusFromDropwizardChecks" - {
     "successfully parse OK ConsentStatus, no errors" in {
       val consentStatusJsonNoErrors: String = "{\n\"ok\": true,\n\"degraded\": false,\n\"systems\": {\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479384812,\n\"duration\": 6,\n\"timestamp\": \"2021-08-20T17:09:44.812Z\"\n},\n\"elastic-search\": {\n\"healthy\": true,\n\"message\": \"ClusterHealth is GREEN\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629479382379,\n\"duration\": 1116,\n\"timestamp\": \"2021-08-20T17:09:42.379Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479384804,\n\"duration\": 1987,\n\"timestamp\": \"2021-08-20T17:09:44.804Z\"\n},\n\"ontology\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": {\n\"ok\": true,\n\"systems\": {\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385314,\n\"duration\": 0,\n\"timestamp\": \"2021-08-20T17:09:45.314Z\"\n},\n\"elastic-search\": {\n\"healthy\": true,\n\"message\": \"ClusterHealth is GREEN\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385299,\n\"duration\": 1,\n\"timestamp\": \"2021-08-20T17:09:45.299Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385314,\n\"duration\": 14,\n\"timestamp\": \"2021-08-20T17:09:45.314Z\"\n}\n}\n},\n\"time\": 1629479385506,\n\"duration\": 694,\n\"timestamp\": \"2021-08-20T17:09:45.506Z\"\n},\n\"postgresql\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479382792,\n\"duration\": 433,\n\"timestamp\": \"2021-08-20T17:09:42.792Z\"\n},\n\"sam\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": {\n\"ok\": true,\n\"systems\": {\n\"GooglePubSub\": {\n\"ok\": true\n},\n\"Database\": {\n\"ok\": true\n},\n\"GoogleGroups\": {\n\"ok\": true\n},\n\"GoogleIam\": {\n\"ok\": true\n},\n\"OpenDJ\": {\n\"ok\": true\n}\n}\n},\n\"time\": 1629479385898,\n\"duration\": 392,\n\"timestamp\": \"2021-08-20T17:09:45.898Z\"\n}\n}\n}"
-      val subsystemFuture = callGetStatusFromDropwizardChecks(consentStatusJsonNoErrors)
+      val subsystemFuture: Future[SubsystemStatus] = callGetStatusFromDropwizardChecks(consentStatusJsonNoErrors)
       whenReady(subsystemFuture) { f =>
         assertResult(true)(f.ok)
         assertResult(true)(f.messages.isEmpty)
@@ -35,7 +35,7 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsys
     }
     "successfully parse OK ConsentStatus with errors" in {
       val consentStatusJsonSomeErrors: String = "{\n\"ok\": true,\n\"degraded\": true,\n\"systems\": {\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479384812,\n\"duration\": 6,\n\"timestamp\": \"2021-08-20T17:09:44.812Z\"\n},\n\"elastic-search\": {\n\"healthy\": false,\n\"message\": \"ClusterHealth is RED\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629479382379,\n\"duration\": 1116,\n\"timestamp\": \"2021-08-20T17:09:42.379Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": false,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479384804,\n\"duration\": 1987,\n\"timestamp\": \"2021-08-20T17:09:44.804Z\"\n},\n\"ontology\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": {\n\"ok\": true,\n\"systems\": {\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385314,\n\"duration\": 0,\n\"timestamp\": \"2021-08-20T17:09:45.314Z\"\n},\n\"elastic-search\": {\n\"healthy\": true,\n\"message\": \"ClusterHealth is GREEN\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385299,\n\"duration\": 1,\n\"timestamp\": \"2021-08-20T17:09:45.299Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385314,\n\"duration\": 14,\n\"timestamp\": \"2021-08-20T17:09:45.314Z\"\n}\n}\n},\n\"time\": 1629479385506,\n\"duration\": 694,\n\"timestamp\": \"2021-08-20T17:09:45.506Z\"\n},\n\"postgresql\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479382792,\n\"duration\": 433,\n\"timestamp\": \"2021-08-20T17:09:42.792Z\"\n},\n\"sam\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": {\n\"ok\": true,\n\"systems\": {\n\"GooglePubSub\": {\n\"ok\": true\n},\n\"Database\": {\n\"ok\": true\n},\n\"GoogleGroups\": {\n\"ok\": true\n},\n\"GoogleIam\": {\n\"ok\": true\n},\n\"OpenDJ\": {\n\"ok\": true\n}\n}\n},\n\"time\": 1629479385898,\n\"duration\": 392,\n\"timestamp\": \"2021-08-20T17:09:45.898Z\"\n}\n}\n}"
-      val subsystemFuture = callGetStatusFromDropwizardChecks(consentStatusJsonSomeErrors)
+      val subsystemFuture: Future[SubsystemStatus] = callGetStatusFromDropwizardChecks(consentStatusJsonSomeErrors)
       whenReady(subsystemFuture) { f =>
         assertResult(true)(f.ok)
         // This is counterintuitive. The original logic does not add messages if the overall status
@@ -46,7 +46,7 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsys
     }
     "successfully parse NOT OK ConsentStatus with errors" in {
       val consentStatusJsonNotOK: String = "{\n\"ok\": false,\n\"degraded\": true,\n\"systems\": {\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479384812,\n\"duration\": 6,\n\"timestamp\": \"2021-08-20T17:09:44.812Z\"\n},\n\"elastic-search\": {\n\"healthy\": false,\n\"message\": \"ClusterHealth is RED\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629479382379,\n\"duration\": 1116,\n\"timestamp\": \"2021-08-20T17:09:42.379Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": false,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479384804,\n\"duration\": 1987,\n\"timestamp\": \"2021-08-20T17:09:44.804Z\"\n},\n\"ontology\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": {\n\"ok\": true,\n\"systems\": {\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385314,\n\"duration\": 0,\n\"timestamp\": \"2021-08-20T17:09:45.314Z\"\n},\n\"elastic-search\": {\n\"healthy\": true,\n\"message\": \"ClusterHealth is GREEN\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385299,\n\"duration\": 1,\n\"timestamp\": \"2021-08-20T17:09:45.299Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479385314,\n\"duration\": 14,\n\"timestamp\": \"2021-08-20T17:09:45.314Z\"\n}\n}\n},\n\"time\": 1629479385506,\n\"duration\": 694,\n\"timestamp\": \"2021-08-20T17:09:45.506Z\"\n},\n\"postgresql\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629479382792,\n\"duration\": 433,\n\"timestamp\": \"2021-08-20T17:09:42.792Z\"\n},\n\"sam\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": {\n\"ok\": true,\n\"systems\": {\n\"GooglePubSub\": {\n\"ok\": true\n},\n\"Database\": {\n\"ok\": true\n},\n\"GoogleGroups\": {\n\"ok\": true\n},\n\"GoogleIam\": {\n\"ok\": true\n},\n\"OpenDJ\": {\n\"ok\": true\n}\n}\n},\n\"time\": 1629479385898,\n\"duration\": 392,\n\"timestamp\": \"2021-08-20T17:09:45.898Z\"\n}\n}\n}"
-      val subsystemFuture = callGetStatusFromDropwizardChecks(consentStatusJsonNotOK)
+      val subsystemFuture: Future[SubsystemStatus] = callGetStatusFromDropwizardChecks(consentStatusJsonNotOK)
       whenReady(subsystemFuture) { f =>
         assertResult(false)(f.ok)
         assertResult(false)(f.messages.isEmpty)
@@ -54,7 +54,7 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsys
     }
     "successfully parse Map[String, DropwizardHealth]" in {
       val mapDWStatusJsonNoErrors: String = "{\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921326,\n\"duration\": 0,\n\"timestamp\": \"2021-08-20T20:22:01.326Z\"\n},\n\"elastic-search\": {\n\"healthy\": true,\n\"message\": \"ClusterHealth is GREEN\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921295,\n\"duration\": 1,\n\"timestamp\": \"2021-08-20T20:22:01.295Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921325,\n\"duration\": 28,\n\"timestamp\": \"2021-08-20T20:22:01.325Z\"\n},\n\"ontology\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921359,\n\"duration\": 34,\n\"timestamp\": \"2021-08-20T20:22:01.359Z\"\n},\n\"postgresql\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921297,\n\"duration\": 1,\n\"timestamp\": \"2021-08-20T20:22:01.297Z\"\n}\n}"
-      val subsystemFuture = callGetStatusFromDropwizardChecks(mapDWStatusJsonNoErrors)
+      val subsystemFuture: Future[SubsystemStatus] = callGetStatusFromDropwizardChecks(mapDWStatusJsonNoErrors)
       whenReady(subsystemFuture) { f =>
         assertResult(true)(f.ok)
         assertResult(true)(f.messages.isEmpty)
@@ -62,7 +62,7 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsys
     }
     "successfully parse Map[String, DropwizardHealth] with errors" in {
       val mapDWStatusJsonSomeErrors: String = "{\n\"deadlocks\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921326,\n\"duration\": 0,\n\"timestamp\": \"2021-08-20T20:22:01.326Z\"\n},\n\"elastic-search\": {\n\"healthy\": false,\n\"message\": \"ClusterHealth is RED\",\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921295,\n\"duration\": 1,\n\"timestamp\": \"2021-08-20T20:22:01.295Z\"\n},\n\"google-cloud-storage\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921325,\n\"duration\": 28,\n\"timestamp\": \"2021-08-20T20:22:01.325Z\"\n},\n\"ontology\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921359,\n\"duration\": 34,\n\"timestamp\": \"2021-08-20T20:22:01.359Z\"\n},\n\"postgresql\": {\n\"healthy\": true,\n\"message\": null,\n\"error\": null,\n\"details\": null,\n\"time\": 1629490921297,\n\"duration\": 1,\n\"timestamp\": \"2021-08-20T20:22:01.297Z\"\n}\n}"
-      val subsystemFuture = callGetStatusFromDropwizardChecks(mapDWStatusJsonSomeErrors)
+      val subsystemFuture: Future[SubsystemStatus] = callGetStatusFromDropwizardChecks(mapDWStatusJsonSomeErrors)
       whenReady(subsystemFuture) { f =>
         assertResult(false)(f.ok)
         assertResult(false)(f.messages.isEmpty)
@@ -71,14 +71,14 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsys
   }
 
   private def callGetStatusFromDropwizardChecks(entityContent: String): Future[SubsystemStatus] = {
-    val mediaType = MediaTypes.`application/json`
-    val response = HttpResponse.apply(
+    val mediaType: MediaType.WithFixedCharset = MediaTypes.`application/json`
+    val response: HttpResponse = HttpResponse.apply(
       StatusCodes.OK,
       List(headers.`Content-Type`.apply(mediaType)),
       HttpEntity.apply(entityContent).withContentType(ContentType.apply(mediaType)),
       HttpProtocols.`HTTP/2.0`
     )
-    val consentStatus = Future.successful(response)
+    val consentStatus: Future[HttpResponse] = Future.successful(response)
     getStatusFromDropwizardChecks(consentStatus)
   }
 }
