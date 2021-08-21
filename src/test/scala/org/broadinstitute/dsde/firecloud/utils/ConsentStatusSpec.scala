@@ -12,7 +12,6 @@ import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
 class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with SprayJsonSupport with ReportsSubsystemStatus {
 
   override def status: Future[SubsystemStatus] = {
