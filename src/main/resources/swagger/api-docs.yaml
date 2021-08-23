@@ -9912,6 +9912,10 @@ components:
           type: boolean
           description: Optional, false if not specified. If true, the workspace is created with a Billing Project owner but no workspace owner. Requires being a Billing Project owner.
           default: false
+        bucketLocation:
+          type: string
+          required: false
+          description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceResponse:
       type: object
