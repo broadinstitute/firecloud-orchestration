@@ -305,6 +305,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
   implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
+  implicit val impDuosConsentStatus = jsonFormat3(ConsentStatus)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler.newBuilder().handle {
