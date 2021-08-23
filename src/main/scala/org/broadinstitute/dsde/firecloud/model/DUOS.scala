@@ -110,4 +110,10 @@ object DUOS {
     code: Int
   )
 
+  case class ConsentStatus(
+    ok: Option[Boolean],
+    degraded: Option[Boolean],
+    systems: Option[Map[String, DropwizardHealth]]
+  )
+
 }
