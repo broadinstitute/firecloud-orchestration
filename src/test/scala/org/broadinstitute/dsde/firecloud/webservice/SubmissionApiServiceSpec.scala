@@ -38,6 +38,11 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockValidId)
 
+  val localSubmissionId1Path = FireCloudConfig.Rawls.submissionsIdPath.format(
+    MockWorkspaceServer.mockValidWorkspace.namespace,
+    MockWorkspaceServer.mockValidWorkspace.name,
+    MockWorkspaceServer.mockValidId1)
+
   val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
@@ -198,9 +203,19 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       }
     }
 
-    "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission" - {
+    "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission ID" - {
+      "NotFound response is returned" in {
+        (Patch(localInvalidSubmissionIdPath, MockWorkspaceServer.mockValidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
+          status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+    "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission ID" - {
       "BadRequest response is returned" in {
-        (Patch(localInvalidSubmissionIdPath, MockWorkspaceServer.mockInvalidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
+        (Patch(localSubmissionId1Path, MockWorkspaceServer.mockInvalidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(BadRequest)
           errorReportCheck("Rawls", BadRequest)
