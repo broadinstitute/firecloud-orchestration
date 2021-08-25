@@ -6,8 +6,10 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
+import org.broadinstitute.dsde.firecloud.model.{SubmissionRequest, UserCommentUpdateOperation}
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
+import spray.json.DefaultJsonProtocol.{StringJsonFormat, jsonFormat1}
+import spray.json.JsonFormat
 
 import scala.concurrent.ExecutionContext
 
@@ -184,10 +186,12 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
         }
       }
     }
+   // import spray.json.{JsString, _}
+    val impUserCommentUpdateOperationFormat = jsonFormat1(UserCommentUpdateOperation)
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with a valid submission" - {
       "OK response is returned" in {
-        (Patch(localSubmissionsPath, MockWorkspaceServer.mockValidComment)
+        (Patch(localSubmissionsPath, MockWorkspaceServer.mockValidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
@@ -196,7 +200,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission" - {
       "BadRequest response is returned" in {
-        (Patch(localSubmissionsPath, MockWorkspaceServer.mockInvalidComment)
+        (Patch(localSubmissionsPath, MockWorkspaceServer.mockInvalidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(BadRequest)
           errorReportCheck("Rawls", BadRequest)
