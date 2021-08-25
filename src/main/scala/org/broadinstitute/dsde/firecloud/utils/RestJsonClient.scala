@@ -110,13 +110,12 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
         perfLogger.info(perfmsg(label.get, response.status.value, tick, tock))
       }
 
-      import scala.concurrent.duration._
       response.status match {
         case s if s.isSuccess =>
           Unmarshal(response.entity).to[T].recoverWith {
             case de: DeserializationException =>
               throw new FireCloudExceptionWithErrorReport(
-                ErrorReport(s"could not deserialize response: ${de.msg}. Entity: ${Await.result(response.entity.toStrict(1000.millis), 1000.millis)}"))
+                ErrorReport(s"could not deserialize response: ${de.msg}"))
             case e: Throwable => {
               FCErrorReport(response).map { errorReport =>
                 throw new FireCloudExceptionWithErrorReport(errorReport)
