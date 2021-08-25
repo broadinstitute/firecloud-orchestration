@@ -8,20 +8,22 @@ import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
+import cats.effect.{Blocker, ContextShift, IO, Timer}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
-import com.google.api.client.http.{ByteArrayContent, HttpResponseException}
+import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.admin.directory.model.{Group, Member}
 import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
-import com.google.api.services.storage.model.{Bucket, Objects, StorageObject}
+import com.google.api.services.storage.model.{Bucket, Objects}
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
+import fs2.{Stream, text}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
@@ -29,7 +31,11 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import spray.json.{DefaultJsonProtocol, _}
 
 import collection.JavaConverters._
@@ -175,23 +181,35 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     scala.io.Source.fromInputStream(is).mkString
   }
 
-  override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): StorageObject = {
+  override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): GcsPath = {
+    // TODO: allow a non-string to be written (accept non-String in writeObjectAsRawlsSA arguments)
 
-    val writeCreds = getScopedServiceAccountCredentials(rawlsSACreds, storageReadWrite)
+    implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
+    implicit val t: Timer[IO] = IO.timer(executionContext)
+    implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(writeCreds)).setApplicationName(appName).build()
+    val blocker = Blocker.liftExecutionContext(executionContext)
 
-    val objectToWrite = new StorageObject().setName(objectKey)
+    // create the stream of data to upload
+    val dataStream: Stream[IO, Byte] = text.utf8Encode(Stream.emit(objectContents)).covary[IO]
 
-    // TODO: don't hardcode the content type
-    // TODO: allow a non-string to be written
-    val contentsToWrite = ByteArrayContent.fromString("application/json", objectContents)
+    // create the storage service, using the Rawls SA credentials
+    val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, blocker)
 
-    val insertRequest = storage.objects().insert(bucketName, objectToWrite, contentsToWrite)
-    insertRequest.getMediaHttpUploader.setDirectUploadEnabled(true)
+    val uploadAttempt = storageResource.use { storageService =>
+      // create the destination pipe to which we will write the file
+      // TODO: add a traceId?
+      // TODO: add content-type in metadata?
+      val uploadPipe = storageService.streamUploadBlob(GcsBucketName(bucketName), GcsBlobName(objectKey))
+      // stream the data to the destination pipe
+      dataStream.through(uploadPipe).compile.lastOrError
+    }
 
-    // TODO: add retries, or better yet use workbench-libs instead of coding this ourselves
-    insertRequest.execute()
+    // execute the upload
+    uploadAttempt.unsafeRunSync()
+
+    // finally, return a
+    GcsPath(GcsBucketName(bucketName), GcsObjectName(objectKey))
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

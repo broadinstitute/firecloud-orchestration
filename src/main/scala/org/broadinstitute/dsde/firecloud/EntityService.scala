@@ -208,7 +208,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
       // write rawlsCalls to import service's bucket
       // TODO: Rawls SA needs write permission, not just read; Storage Object Creator is fine
       val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
-      val gcsPath = s"gs://${insertedObject.getBucket}/${insertedObject.getName}"
+      val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
       // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
       // TODO: either support update-only (not upsert), or don't allow updates to be async. update-only TSVs, if
