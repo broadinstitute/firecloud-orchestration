@@ -224,7 +224,7 @@ object MockWorkspaceServer {
         response()
           .withHeaders(header)
           .withStatusCode(BadRequest.intValue)
-          .withBody(MockUtils.rawlsErrorReport(BadRequest).toJson.compactPrint)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
       )
 
     MockWorkspaceServer.workspaceServer
