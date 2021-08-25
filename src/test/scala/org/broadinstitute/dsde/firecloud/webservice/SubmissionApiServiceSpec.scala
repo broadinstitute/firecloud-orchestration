@@ -186,7 +186,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
         }
       }
     }
-   // import spray.json.{JsString, _}
+
     val impUserCommentUpdateOperationFormat = jsonFormat1(UserCommentUpdateOperation)
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with a valid submission" - {
@@ -199,11 +199,11 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
     }
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission" - {
-      "Not Found response is returned" in {
+      "BadRequest response is returned" in {
         (Patch(localInvalidSubmissionIdPath, MockWorkspaceServer.mockInvalidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
+          status should equal(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
         }
       }
     }
