@@ -191,7 +191,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with a valid submission" - {
       "OK response is returned" in {
-        (Patch(localSubmissionsPath, MockWorkspaceServer.mockValidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
+        (Patch(localSubmissionIdPath, MockWorkspaceServer.mockValidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
@@ -199,11 +199,11 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
     }
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission" - {
-      "BadRequest response is returned" in {
-        (Patch(localSubmissionsPath, MockWorkspaceServer.mockInvalidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
+      "Not Found response is returned" in {
+        (Patch(localInvalidSubmissionIdPath, MockWorkspaceServer.mockInvalidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-          status should equal(BadRequest)
-          errorReportCheck("Rawls", BadRequest)
+          status should equal(NotFound)
+          errorReportCheck("Rawls", NotFound)
         }
       }
     }
