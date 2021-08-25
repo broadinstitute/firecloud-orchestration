@@ -103,3 +103,5 @@ case class RawlsGroupMemberList(
   subGroupNames: Option[Seq[String]] = None)
 
 case class WorkspaceStorageCostEstimate(estimate: String)
+
+case class UserCommentUpdateOperation(userComment: String)

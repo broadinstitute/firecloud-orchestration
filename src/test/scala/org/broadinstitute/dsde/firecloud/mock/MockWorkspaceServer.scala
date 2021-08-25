@@ -53,6 +53,7 @@ object MockWorkspaceServer {
 
   val mockValidId = randomPositiveInt()
   val mockInvalidId = randomPositiveInt()
+  val mockValidId1 = randomPositiveInt()
 
   val mockValidSubmission = SubmissionRequest(
     methodConfigurationNamespace = Option(randomAlpha()),
@@ -80,6 +81,14 @@ object MockWorkspaceServer {
     userComment = Option("This invalid submission came from a mock server."),
     memoryRetryMultiplier = Option(1.1d),
     workflowFailureMode = Option.empty
+  )
+
+  val mockValidComment = UserCommentUpdateOperation(
+    userComment = "This submission came from a mock server."
+  )
+
+  val mockInvalidComment = UserCommentUpdateOperation(
+    userComment = "This invalid submission came from a mock server."
   )
 
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
@@ -195,6 +204,32 @@ object MockWorkspaceServer {
     MockWorkspaceServer.workspaceServer
       .when(
         request()
+          .withMethod("PATCH")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
+          .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId)))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(OK.intValue)
+          .withBody(mockValidSubmission.toJson.prettyPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("PATCH")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId1)))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(BadRequest.intValue)
+          .withBody(MockUtils.rawlsErrorReport(BadRequest).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
           .withMethod("GET")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId)))
@@ -209,6 +244,19 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("DELETE")
+          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
+            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId)))
+      .respond(
+        response()
+          .withHeaders(header)
+          .withStatusCode(NotFound.intValue)
+          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+      )
+
+    MockWorkspaceServer.workspaceServer
+      .when(
+        request()
+          .withMethod("PATCH")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId)))
       .respond(

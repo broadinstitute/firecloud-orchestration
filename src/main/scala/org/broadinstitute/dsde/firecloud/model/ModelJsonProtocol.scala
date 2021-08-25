@@ -202,6 +202,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
   implicit val impSubmissionRequest = jsonFormat11(SubmissionRequest)
+  implicit val impUserCommentUpdateOperationFormat = jsonFormat1(UserCommentUpdateOperation)
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
 

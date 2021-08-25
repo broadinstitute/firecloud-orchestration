@@ -185,6 +185,25 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       }
     }
 
+    "when calling PATCH on the /workspaces/*/*/submissions/* path with a valid submission" - {
+      "OK response is returned" in {
+        (Patch(localSubmissionsPath, MockWorkspaceServer.mockValidComment)
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
+          status should equal(OK)
+        }
+      }
+    }
+
+    "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission" - {
+      "BadRequest response is returned" in {
+        (Patch(localSubmissionsPath, MockWorkspaceServer.mockInvalidComment)
+          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
+          status should equal(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
+        }
+      }
+    }
+
     "when calling GET on the /workspaces/*/*/submissions/*/workflows/* path" - {
       "with a valid id, OK response is returned" in {
         Get(localSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
