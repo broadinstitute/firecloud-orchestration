@@ -35,7 +35,7 @@ object Dependencies {
       exclude("com.typesafe.akka", "akka-stream_2.12")
       exclude("com.google.code.findbugs", "jsr305")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.5-4bc7050"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.21-bf66e61",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
