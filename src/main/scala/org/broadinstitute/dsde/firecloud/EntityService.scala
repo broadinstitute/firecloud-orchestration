@@ -198,24 +198,14 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
   private def maybeAsyncBatchUpdate(isAsync: Boolean, isUpsert: Boolean, workspaceNamespace: String, workspaceName: String,
                                     entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
 
-    import spray.json._
 
     // The async path only supports upsert TSVs, not update TSVs. Import Service only operates in upsert mode;
     // if we tried to send an update TSV through it, it would lose its "update-only" restriction and become an upsert.
     if (isAsync && isUpsert) {
-      // generate unique name for the file-to-upload
-      val fileToWrite = s"incoming/${java.util.UUID.randomUUID()}.json"
-      val bucketToWrite = FireCloudConfig.ImportService.bucket
-
-      // write rawlsCalls to import service's bucket
-      // TODO: Rawls SA needs write permission, not just read; Storage Object Creator is fine
-      val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
-      val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
-
-      // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
-      val importRequest = PfbImportRequest(Option(gcsPath))
-      importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
-
+      asyncUpsert(workspaceNamespace, workspaceName, rawlsCalls, userInfo).recover {
+        case e: Exception =>
+          RequestCompleteWithErrorReport(InternalServerError, "Unexpected error during async TSV import", e)
+      }
     } else {
       val rawlsResponse = if (isUpsert) {
         rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
@@ -224,6 +214,25 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
       }
       handleBatchRawlsResponse(entityType, rawlsResponse)
     }
+  }
+
+  private def asyncUpsert(workspaceNamespace: String, workspaceName: String,
+                          rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
+    import spray.json._
+
+    // generate unique name for the file-to-upload
+    val fileToWrite = s"incoming/${java.util.UUID.randomUUID()}.json"
+    val bucketToWrite = FireCloudConfig.ImportService.bucket
+
+    // write rawlsCalls to import service's bucket
+    // TODO: Rawls SA needs write permission, not just read; Storage Object Creator is fine
+    val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
+    val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
+
+    // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
+    val importRequest = PfbImportRequest(Option(gcsPath))
+    importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
+
   }
 
 
