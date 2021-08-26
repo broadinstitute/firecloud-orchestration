@@ -200,7 +200,9 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
 
     import spray.json._
 
-    if (isAsync) {
+    // The async path only supports upsert TSVs, not update TSVs. Import Service only operates in upsert mode;
+    // if we tried to send an update TSV through it, it would lose its "update-only" restriction and become an upsert.
+    if (isAsync && isUpsert) {
       // generate unique name for the file-to-upload
       val fileToWrite = s"incoming/${java.util.UUID.randomUUID()}.json"
       val bucketToWrite = FireCloudConfig.ImportService.bucket
@@ -211,8 +213,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
       val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
       // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
-      // TODO: either support update-only (not upsert), or don't allow updates to be async. update-only TSVs, if
-      // imported async via import service, will lose their "update-only" restriction and become upserts.
       val importRequest = PfbImportRequest(Option(gcsPath))
       importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
 
