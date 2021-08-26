@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 
 import scala.concurrent.ExecutionContext
