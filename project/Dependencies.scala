@@ -34,6 +34,7 @@ object Dependencies {
       exclude("com.typesafe.scala-logging", "scala-logging_2.12")
       exclude("com.typesafe.akka", "akka-stream_2.12")
       exclude("com.google.code.findbugs", "jsr305")
+      exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.5-4bc7050"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.21-bf66e61",
@@ -76,6 +77,8 @@ object Dependencies {
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.5"   % "test",
-    "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test"
+    "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test",
+    // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
+    "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test"
   )
 }
