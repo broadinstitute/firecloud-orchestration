@@ -32,7 +32,7 @@ import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
-import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath, GoogleProject}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -194,11 +194,14 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
 
     // create the storage service, using the Rawls SA credentials
-    val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, blocker)
+    // the Rawls SA json creds do not contain a project, so also specify the project explicitly
+    val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, blocker,
+       project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
 
     val uploadAttempt = storageResource.use { storageService =>
       // create the destination pipe to which we will write the file
       // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
+      // TODO: streamUploadBlob also doesn't allow setting ACLs?
       val uploadPipe = storageService.streamUploadBlob(GcsBucketName(bucketName), GcsBlobName(objectKey))
       // stream the data to the destination pipe
       dataStream.through(uploadPipe).compile.lastOrError
@@ -207,7 +210,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     // execute the upload
     uploadAttempt.unsafeRunSync()
 
-    // finally, return a
+    // finally, return a GcsPath
     GcsPath(GcsBucketName(bucketName), GcsObjectName(objectKey))
   }
 
