@@ -23,7 +23,7 @@ import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
-import fs2.{Stream, text}
+import fs2.Stream
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
@@ -191,7 +191,7 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val blocker = Blocker.liftExecutionContext(executionContext)
 
     // create the stream of data to upload
-    val dataStream: Stream[IO, Byte] = text.utf8Encode(Stream.emits(objectContents)).covary[IO]
+    val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
 
     // create the storage service, using the Rawls SA credentials
     val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, blocker)
