@@ -83,14 +83,6 @@ object MockWorkspaceServer {
     workflowFailureMode = Option.empty
   )
 
-  val mockValidComment = UserCommentUpdateOperation(
-    userComment = "This submission came from a mock server."
-  )
-
-  val mockInvalidComment = UserCommentUpdateOperation(
-    userComment = "This invalid submission came from a mock server."
-  )
-
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   val notificationsBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.notificationsPath
 

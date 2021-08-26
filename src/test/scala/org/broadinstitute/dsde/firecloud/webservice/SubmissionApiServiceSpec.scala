@@ -6,10 +6,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{SubmissionRequest, UserCommentUpdateOperation}
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
-import spray.json.DefaultJsonProtocol.{StringJsonFormat, jsonFormat1}
-import spray.json.JsonFormat
 
 import scala.concurrent.ExecutionContext
 
@@ -192,11 +189,9 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       }
     }
 
-    val impUserCommentUpdateOperationFormat = jsonFormat1(UserCommentUpdateOperation)
-
     "when calling PATCH on the /workspaces/*/*/submissions/* path with a valid submission" - {
       "OK response is returned" in {
-        (Patch(localSubmissionIdPath, MockWorkspaceServer.mockValidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
+        (Patch(localSubmissionIdPath, "Never checked")
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(OK)
         }
@@ -205,7 +200,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission ID" - {
       "NotFound response is returned" in {
-        (Patch(localInvalidSubmissionIdPath, MockWorkspaceServer.mockValidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
+        (Patch(localInvalidSubmissionIdPath, "Never checked")
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(NotFound)
           errorReportCheck("Rawls", NotFound)
@@ -215,7 +210,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
 
     "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission ID" - {
       "BadRequest response is returned" in {
-        (Patch(localSubmissionId1Path, MockWorkspaceServer.mockInvalidComment)(impUserCommentUpdateOperationFormat, implicitly[ExecutionContext])
+        (Patch(localSubmissionId1Path, "Never checked")
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
           status should equal(BadRequest)
           errorReportCheck("Rawls", BadRequest)
