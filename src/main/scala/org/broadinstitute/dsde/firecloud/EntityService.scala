@@ -19,6 +19,7 @@ import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import org.broadinstitute.dsde.rawls.model._
 import spray.json.DefaultJsonProtocol._
 
+import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
@@ -226,7 +227,8 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
 
     // write rawlsCalls to import service's bucket
     // TODO: Rawls SA needs write permission, not just read; Storage Object Creator is fine
-    val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, rawlsCalls.toJson.prettyPrint)
+    val dataBytes = rawlsCalls.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8)
+    val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
     val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
     // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?

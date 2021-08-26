@@ -181,9 +181,9 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     scala.io.Source.fromInputStream(is).mkString
   }
 
-  override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): GcsPath = {
-    // TODO: allow a non-string to be written (accept non-String in writeObjectAsRawlsSA arguments)
-
+  override def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: Array[Byte]): GcsPath = {
+    // if other methods in this class use google2/need these implicits, consider moving to the class level
+    // instead of here at the method level
     implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
     implicit val t: Timer[IO] = IO.timer(executionContext)
     implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
@@ -191,15 +191,14 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val blocker = Blocker.liftExecutionContext(executionContext)
 
     // create the stream of data to upload
-    val dataStream: Stream[IO, Byte] = text.utf8Encode(Stream.emit(objectContents)).covary[IO]
+    val dataStream: Stream[IO, Byte] = text.utf8Encode(Stream.emits(objectContents)).covary[IO]
 
     // create the storage service, using the Rawls SA credentials
     val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, blocker)
 
     val uploadAttempt = storageResource.use { storageService =>
       // create the destination pipe to which we will write the file
-      // TODO: add a traceId?
-      // TODO: add content-type in metadata?
+      // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
       val uploadPipe = storageService.streamUploadBlob(GcsBucketName(bucketName), GcsBlobName(objectKey))
       // stream the data to the destination pipe
       dataStream.through(uploadPipe).compile.lastOrError

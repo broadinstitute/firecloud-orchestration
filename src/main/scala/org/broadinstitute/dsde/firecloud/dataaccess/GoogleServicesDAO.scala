@@ -32,7 +32,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
   def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
 
-  def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: String): GcsPath
+  def writeObjectAsRawlsSA(bucketName: String, objectKey: String, objectContents: Array[Byte]): GcsPath
 
   def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList]
 
