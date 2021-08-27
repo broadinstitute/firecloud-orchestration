@@ -4884,7 +4884,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PFBResponse'
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -4991,7 +4991,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PFBResponse'
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -8677,7 +8677,7 @@ components:
         url:
           type: string
           description: link to publically accessible PFB/Avro
-    PFBResponse:
+    ImportResponse:
       required:
         - jobId
         - url
@@ -8685,7 +8685,7 @@ components:
       properties:
         url:
           type: string
-          description: the link to PFB/Avro specified in the request
+          description: the link to TSV or PFB/Avro specified in the request
         jobId:
           type: string
           description: unique id for the import job.

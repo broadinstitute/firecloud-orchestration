@@ -77,8 +77,6 @@ object HttpGoogleServicesDAO {
   val authScopes = Seq("profile", "email")
   // the minimal scope to read from GCS
   val storageReadOnly = Seq(StorageScopes.DEVSTORAGE_READ_ONLY)
-  // scope to write to GCS
-  val storageReadWrite = Seq(StorageScopes.DEVSTORAGE_READ_WRITE)
   // scope for creating anonymized Google groups
   val directoryScope = Seq(DirectoryScopes.ADMIN_DIRECTORY_GROUP)
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
@@ -214,7 +212,6 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
     val uploadAttempt = storageResource.use { storageService =>
       // create the destination pipe to which we will write the file
       // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
-      // TODO: streamUploadBlob also doesn't allow setting ACLs?
       val uploadPipe = storageService.streamUploadBlob(bucketName, GcsBlobName(objectKey.value))
       // stream the data to the destination pipe
       dataStream.through(uploadPipe).compile.lastOrError

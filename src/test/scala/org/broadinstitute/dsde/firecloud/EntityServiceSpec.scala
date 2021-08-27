@@ -13,13 +13,12 @@ import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.parboiled.common.FileUtils
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.Eventually
 
 import java.util.zip.ZipFile
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 
-class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with Eventually {
+class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   override def beforeEach(): Unit = {
     searchDao.reset
   }
@@ -107,31 +106,51 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with Eve
   }
 
   "EntityService.importEntitiesFromTSV()" - {
-    // TODO: foreach entity, membership, update TSVs:
-
     val tsvParticipants = FileUtils.readAllTextFromResource("testfiles/tsv/ADD_PARTICIPANTS.txt")
+    val tsvMembership = FileUtils.readAllTextFromResource("testfiles/tsv/4-template-entity_set-table.tsv")
+    val tsvUpdate = FileUtils.readAllTextFromResource("testfiles/tsv/UPDATE_SAMPLES.txt")
     val tsvInvalid = FileUtils.readAllTextFromResource("testfiles/tsv/TEST_INVALID_COLUMNS.txt")
 
     val userToken: UserInfo = UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111")
 
-    "should return Created with an import jobId for async=true when all is well" in {
-      val testImportDAO = new SuccessfulImportServiceDAO
-      val entityService = getEntityService(mockImportServiceDAO = testImportDAO)
-      val response =
-        entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
-          tsvParticipants, userToken, isAsync = true).futureValue
-      response shouldBe testImportDAO.successDefinition
+    // (tsvType, tsvData)
+    val asyncTSVs = List(
+      ("upsert", tsvParticipants),
+      ("membership", tsvMembership))
+
+    asyncTSVs foreach {
+      case (tsvType, tsvData) =>
+        s"should return Created with an import jobId for (async=true + $tsvType TSV)" in {
+          val testImportDAO = new SuccessfulImportServiceDAO
+          val entityService = getEntityService(mockImportServiceDAO = testImportDAO)
+          val response =
+            entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
+              tsvData, userToken, isAsync = true).futureValue
+          response shouldBe testImportDAO.successDefinition
+        }
     }
 
-    "should return OK with the entity type for async=false when all is well" in {
-      val entityService = getEntityService()
-      val response =
-        entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
-          tsvParticipants, userToken).futureValue // isAsync defaults to false, so we omit it here
-      response shouldBe RequestComplete(StatusCodes.OK, "participant")
+    // should this case throw a BadRequest? or just ignore the async instruction and update synchronously?
+    "should return ??? for (async=true + update TSV)" is pending
+
+    // (tsvType, expectedEntityType, tsvData)
+    val goodTSVs = List(
+      ("upsert", "participant", tsvParticipants),
+      ("membership", "sample_set", tsvMembership),
+      ("update", "sample", tsvUpdate))
+
+    goodTSVs foreach {
+      case (tsvType, expectedEntityType, tsvData) =>
+        s"should return OK with the entity type for (async=false + $tsvType TSV)" in {
+          val entityService = getEntityService()
+          val response =
+            entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
+              tsvData, userToken).futureValue // isAsync defaults to false, so we omit it here
+          response shouldBe RequestComplete(StatusCodes.OK, expectedEntityType)
+        }
     }
 
-    "should return error for async=true when failed to write to GCS" in {
+    "should return error for (async=true) when failed to write to GCS" in {
       val testGoogleDAO = new ErroringGoogleServicesDAO
       val entityService = getEntityService(mockGoogleServicesDAO = testGoogleDAO)
       val caught = intercept[StorageException] {
@@ -142,7 +161,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with Eve
       caught shouldBe testGoogleDAO.errorDefinition
     }
 
-    "should return error for async=true when import service returns sync error" in {
+    "should return error for (async=true) when import service returns sync error" in {
       val testImportDAO = new ErroringImportServiceDAO
       val entityService = getEntityService(mockImportServiceDAO = testImportDAO)
       val response =
@@ -152,7 +171,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with Eve
     }
 
     List(true, false) foreach { async =>
-      s"should return error for async=$async when TSV is unparsable" in {
+      s"should return error for (async=$async) when TSV is unparsable" in {
         val entityService = getEntityService()
         val caught = intercept[FireCloudExceptionWithErrorReport] {
           entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
