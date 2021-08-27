@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.mock
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.util.concurrent.LinkedBlockingQueue
+
 import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import org.broadinstitute.dsde.firecloud.FireCloudException

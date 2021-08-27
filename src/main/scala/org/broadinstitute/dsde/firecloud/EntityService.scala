@@ -4,6 +4,7 @@ import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
 import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipFile}
+
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
@@ -175,7 +176,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
   /**
    * Updates existing entities from TSV. All entities must already exist. */
   private def importUpdateTSV(
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -228,9 +229,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
     val importRequest = PfbImportRequest(Option(gcsPath))
     importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
-
   }
-
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
     response map { response =>

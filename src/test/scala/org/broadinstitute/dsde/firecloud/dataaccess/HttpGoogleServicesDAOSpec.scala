@@ -22,7 +22,6 @@ import org.scalatest.PrivateMethodTester
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-//import spray.json._
 
 import java.nio.charset.StandardCharsets
 import scala.concurrent.{Await, ExecutionContext}

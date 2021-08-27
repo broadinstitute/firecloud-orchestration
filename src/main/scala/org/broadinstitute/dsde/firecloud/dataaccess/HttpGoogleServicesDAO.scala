@@ -18,7 +18,8 @@ import com.google.api.services.admin.directory.model.{Group, Member}
 import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
-import com.google.api.services.storage.model.{Bucket, Objects}
+import com.google.api.services.storage.model.Bucket
+import com.google.api.services.storage.model.Objects
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
