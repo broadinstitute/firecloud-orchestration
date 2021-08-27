@@ -89,7 +89,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = List("foo", "bar")
   override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = "my object contents"
 
-  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = ???
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = GcsPath(bucketName, objectKey)
 
   override def getUserProfile(accessToken: WithAccessToken)
                              (implicit executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)

@@ -1,15 +1,25 @@
 package org.broadinstitute.dsde.firecloud
 
-import java.util.zip.ZipFile
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, InternalServerError, TooManyRequests}
 
-import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
+import java.util.zip.ZipFile
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.scalatest.BeforeAndAfterEach
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.dsde.firecloud.dataaccess.MockImportServiceDAO
+import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.model.{FirecloudModelSchema, ModelSchema, PfbImportRequest, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.parboiled.common.FileUtils
+import org.scalatest.RecoverMethods.recoverToExceptionIf
+import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits._
 
-class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
+class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach with Eventually {
   override def beforeEach(): Unit = {
     searchDao.reset
   }
@@ -95,4 +105,69 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       ex.errorReport.message shouldEqual "More than one samples.tsv file found in bagit duplicate_samples_nested_testbag"
     }
   }
+
+  "EntityService.importEntitiesFromTSV()" - {
+    // TODO: foreach entity, membership, update TSVs:
+
+    "should return Created with an import jobId for async=true when all is well" is (pending)
+
+    "should return OK with the entity type for async=false when all is well" is (pending)
+
+    "should return error for async=true when failed to write to GCS" is (pending)
+
+    "should return error for async=true when import service returns sync error" in {
+      // read TEST_INVALID_COLUMNS.txt from resources/testfiles/tsv
+      val tsvString = FileUtils.readAllTextFromResource("testfiles/tsv/ADD_PARTICIPANTS.txt")
+
+      val entityService = getEntityService(mockImportServiceDAO = new ErroringImportServiceDAO)
+
+      val userToken: UserInfo = UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111")
+
+      val response =
+        entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
+          tsvString, userToken, isAsync = true).futureValue
+
+      val expected = new ErroringImportServiceDAO().errorDefinition()
+
+      response shouldBe expected
+    }
+
+    List(true, false) foreach { async =>
+      s"should return error for async=$async when TSV is unparsable" in {
+        // read TEST_INVALID_COLUMNS.txt from resources/testfiles/tsv
+        val tsvString = FileUtils.readAllTextFromResource("testfiles/tsv/TEST_INVALID_COLUMNS.txt")
+
+        val entityService = getEntityService()
+
+        val userToken: UserInfo = UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111")
+
+        val caught = intercept[FireCloudExceptionWithErrorReport] {
+          entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName", tsvString, userToken, async)
+        }
+        caught.errorReport.statusCode should contain(BadRequest)
+      }
+    }
+  }
+
+  private def getEntityService(mockGoogleServicesDAO: MockGoogleServicesDAO = new MockGoogleServicesDAO,
+                               mockImportServiceDAO: MockImportServiceDAO = new MockImportServiceDAO) = {
+    val application = app.copy(googleServicesDAO = mockGoogleServicesDAO, importServiceDAO = mockImportServiceDAO)
+
+    // instantiate an EntityService, specify importServiceDAO and googleServicesDAO
+    implicit val modelSchema: ModelSchema = FirecloudModelSchema
+    EntityService.constructor(application)(modelSchema)(global)
+  }
+
+  class ErroringImportServiceDAO extends MockImportServiceDAO {
+
+    def errorDefinition() = RequestCompleteWithErrorReport(TooManyRequests, "intentional ErroringImportServiceDAO error")
+
+
+    override def importBatchUpsertJson(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
+      // return a 429 so unit tests have an easy way to distinguish this error vs an error somewhere else in the stack
+      Future.successful(errorDefinition)
+    }
+  }
+
+
 }
