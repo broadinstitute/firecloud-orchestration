@@ -39,7 +39,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
   val localSubmissionId1Path = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
-    MockWorkspaceServer.mockValidId1)
+    MockWorkspaceServer.alternativeMockValidId)
 
   val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
@@ -190,31 +190,21 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       }
     }
 
-    "when calling PATCH on the /workspaces/*/*/submissions/* path with a valid submission" - {
-      "OK response is returned" in {
-        (Patch(localSubmissionIdPath, "Never checked")
-          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-          status should equal(OK)
-        }
-      }
-    }
+    "when calling PATCH on the /workspaces/*/*/submissions/* path" - {
+      MockWorkspaceServer.submissionIdPatchResponseMapping.foreach { case (id, expectedResponseCode, _) =>
+        s"HTTP $expectedResponseCode responses are forwarded back correctly" in {
+          val submissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
+            MockWorkspaceServer.mockValidWorkspace.namespace,
+            MockWorkspaceServer.mockValidWorkspace.name,
+            id)
 
-    "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission ID" - {
-      "NotFound response is returned" in {
-        (Patch(localInvalidSubmissionIdPath, "Never checked")
-          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-          status should equal(NotFound)
-          errorReportCheck("Rawls", NotFound)
-        }
-      }
-    }
-
-    "when calling PATCH on the /workspaces/*/*/submissions/* path with an invalid submission ID" - {
-      "BadRequest response is returned" in {
-        (Patch(localSubmissionId1Path, "Never checked")
-          ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-          status should equal(BadRequest)
-          errorReportCheck("Rawls", BadRequest)
+          (Patch(submissionIdPath, "Never checked")
+            ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
+            status should equal(expectedResponseCode)
+            if (status != OK) {
+              errorReportCheck("Rawls", status)
+            }
+          }
         }
       }
     }

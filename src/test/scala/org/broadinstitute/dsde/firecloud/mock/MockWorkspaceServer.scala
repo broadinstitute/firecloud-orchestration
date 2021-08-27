@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.mock
 
+import akka.http.scaladsl.model.{HttpResponse, StatusCode}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -53,7 +54,7 @@ object MockWorkspaceServer {
 
   val mockValidId = randomPositiveInt()
   val mockInvalidId = randomPositiveInt()
-  val mockValidId1 = randomPositiveInt()
+  val alternativeMockValidId = randomPositiveInt()
 
   val mockValidSubmission = SubmissionRequest(
     methodConfigurationNamespace = Option(randomAlpha()),
@@ -85,6 +86,12 @@ object MockWorkspaceServer {
 
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   val notificationsBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.notificationsPath
+
+  val submissionIdPatchResponseMapping = List(
+    (mockValidId, OK, mockValidSubmission.toJson.prettyPrint),
+    (alternativeMockValidId, BadRequest, MockUtils.rawlsErrorReport(BadRequest).toJson.compactPrint),
+    (mockInvalidId, NotFound, MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+  )
 
   var workspaceServer: ClientAndServer = _
 
@@ -193,31 +200,20 @@ object MockWorkspaceServer {
           .withStatusCode(204)
       )
 
-    MockWorkspaceServer.workspaceServer
-      .when(
-        request()
-          .withMethod("PATCH")
-          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
-          .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId)))
-      .respond(
-        response()
-          .withHeaders(header)
-          .withStatusCode(OK.intValue)
-          .withBody(mockValidSubmission.toJson.prettyPrint)
-      )
-
-    MockWorkspaceServer.workspaceServer
-      .when(
-        request()
-          .withMethod("PATCH")
-          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
-            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockValidId1)))
-      .respond(
-        response()
-          .withHeaders(header)
-          .withStatusCode(BadRequest.intValue)
-          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
-      )
+    MockWorkspaceServer.submissionIdPatchResponseMapping.foreach { case (id, responseCode, responseContent) =>
+      MockWorkspaceServer.workspaceServer
+        .when(
+          request()
+            .withMethod("PATCH")
+            .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
+              .format(mockValidWorkspace.namespace, mockValidWorkspace.name, id)))
+        .respond(
+          response()
+            .withHeaders(header)
+            .withStatusCode(responseCode.intValue)
+            .withBody(responseContent)
+        )
+    }
 
     MockWorkspaceServer.workspaceServer
       .when(
@@ -236,19 +232,6 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("DELETE")
-          .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
-            .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId)))
-      .respond(
-        response()
-          .withHeaders(header)
-          .withStatusCode(NotFound.intValue)
-          .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
-      )
-
-    MockWorkspaceServer.workspaceServer
-      .when(
-        request()
-          .withMethod("PATCH")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name, mockInvalidId)))
       .respond(
