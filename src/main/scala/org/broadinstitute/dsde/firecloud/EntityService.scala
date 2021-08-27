@@ -17,6 +17,7 @@ import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
 import spray.json.DefaultJsonProtocol._
 
 import java.nio.charset.StandardCharsets
@@ -222,8 +223,8 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     import spray.json._
 
     // generate unique name for the file-to-upload
-    val fileToWrite = s"incoming/${java.util.UUID.randomUUID()}.json"
-    val bucketToWrite = FireCloudConfig.ImportService.bucket
+    val fileToWrite = GcsObjectName(s"incoming/${java.util.UUID.randomUUID()}.json")
+    val bucketToWrite = GcsBucketName(FireCloudConfig.ImportService.bucket)
 
     // write rawlsCalls to import service's bucket
     // TODO: Rawls SA needs write permission, not just read; Storage Object Creator is fine
