@@ -36,11 +36,6 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockValidId)
 
-  val localSubmissionId1Path = FireCloudConfig.Rawls.submissionsIdPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace,
-    MockWorkspaceServer.mockValidWorkspace.name,
-    MockWorkspaceServer.alternativeMockValidId)
-
   val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
@@ -198,7 +193,8 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
             MockWorkspaceServer.mockValidWorkspace.name,
             id)
 
-          (Patch(submissionIdPath, "Never checked")
+          (Patch(submissionIdPath, "PATCH request body. The mock server will ignore this content and respond " +
+            "entirely based on submission ID instead")
             ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(expectedResponseCode)
             if (status != OK) {

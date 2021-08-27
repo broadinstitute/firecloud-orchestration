@@ -87,6 +87,7 @@ object MockWorkspaceServer {
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   val notificationsBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.notificationsPath
 
+  // Mapping from submission ID to the status code and response which the mock server should return when the PATCH endpoint is called
   val submissionIdPatchResponseMapping = List(
     (mockValidId, OK, mockValidSubmission.toJson.prettyPrint),
     (alternativeMockValidId, BadRequest, MockUtils.rawlsErrorReport(BadRequest).toJson.compactPrint),

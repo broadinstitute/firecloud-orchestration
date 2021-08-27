@@ -16,7 +16,7 @@ import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import spray.json.DeserializationException
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Created by davidan on 10/7/16.
