@@ -148,8 +148,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
             }
             EntityUpdateDefinition(entityName,entityType,ops)
           }).toSeq
-
-          maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
+          maybeAsyncBatchUpdate(isAsync, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
         }
       }
     }
@@ -166,8 +165,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
             val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
-
-            maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
+            maybeAsyncBatchUpdate(isAsync, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
           }
         }
       }
@@ -189,31 +187,25 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
             case Success(requiredAttributes) =>
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
-
-              maybeAsyncBatchUpdate(isAsync, false, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
+              val rawlsResponse = rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+              handleBatchRawlsResponse(entityType, rawlsResponse)
           }
         }
       }
     }
   }
 
-  private def maybeAsyncBatchUpdate(isAsync: Boolean, isUpsert: Boolean, workspaceNamespace: String, workspaceName: String,
+  private def maybeAsyncBatchUpdate(isAsync: Boolean, workspaceNamespace: String, workspaceName: String,
                                     entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
-
-
     // The async path only supports upsert TSVs, not update TSVs. Import Service only operates in upsert mode;
     // if we tried to send an update TSV through it, it would lose its "update-only" restriction and become an upsert.
-    if (isAsync && isUpsert) {
+    if (isAsync) {
       asyncUpsert(workspaceNamespace, workspaceName, rawlsCalls, userInfo).recover {
         case e: Exception =>
           RequestCompleteWithErrorReport(InternalServerError, "Unexpected error during async TSV import", e)
       }
     } else {
-      val rawlsResponse = if (isUpsert) {
-        rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
-      } else {
-        rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
-      }
+      val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
       handleBatchRawlsResponse(entityType, rawlsResponse)
     }
   }
