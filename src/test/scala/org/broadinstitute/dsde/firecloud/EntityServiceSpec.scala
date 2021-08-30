@@ -107,7 +107,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
   "EntityService.importEntitiesFromTSV()" - {
     val tsvParticipants = FileUtils.readAllTextFromResource("testfiles/tsv/ADD_PARTICIPANTS.txt")
-    val tsvMembership = FileUtils.readAllTextFromResource("testfiles/tsv/4-template-entity_set-table.tsv")
+    val tsvMembership = FileUtils.readAllTextFromResource("testfiles/tsv/MEMBERSHIP_SAMPLE_SET.tsv")
     val tsvUpdate = FileUtils.readAllTextFromResource("testfiles/tsv/UPDATE_SAMPLES.txt")
     val tsvInvalid = FileUtils.readAllTextFromResource("testfiles/tsv/TEST_INVALID_COLUMNS.txt")
 
