@@ -36,7 +36,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-      samDao.getPetServiceAccountKeyForUser(userToken, GoogleProject(workspaceNamespace)) flatMap { petKey =>
+      samDao.getPetServiceAccountKeyForUser(userToken, GoogleProject(workspaceResponse.workspace.googleProject)) flatMap { petKey =>
         googleServicesDAO.getBucket(workspaceResponse.workspace.bucketName, petKey) match {
           case Some(bucket) =>
             rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
