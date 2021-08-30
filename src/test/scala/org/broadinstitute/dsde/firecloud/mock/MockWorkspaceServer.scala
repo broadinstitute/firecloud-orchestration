@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.mock
 
+import akka.http.scaladsl.model.{HttpResponse, StatusCode}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -53,6 +54,7 @@ object MockWorkspaceServer {
 
   val mockValidId = randomPositiveInt()
   val mockInvalidId = randomPositiveInt()
+  val alternativeMockValidId = randomPositiveInt()
 
   val mockValidSubmission = SubmissionRequest(
     methodConfigurationNamespace = Option(randomAlpha()),
@@ -63,6 +65,7 @@ object MockWorkspaceServer {
     useCallCache = Option(randomBoolean()),
     deleteIntermediateOutputFiles = Option(randomBoolean()),
     useReferenceDisks = Option(randomBoolean()),
+    userComment = Option("This submission came from a mock server."),
     memoryRetryMultiplier = Option(1.1d),
     workflowFailureMode = Option(randomElement(List("ContinueWhilePossible", "NoNewCalls")))
   )
@@ -76,12 +79,20 @@ object MockWorkspaceServer {
     useCallCache = Option.empty,
     deleteIntermediateOutputFiles = Option.empty,
     useReferenceDisks = Option.empty,
+    userComment = Option("This invalid submission came from a mock server."),
     memoryRetryMultiplier = Option(1.1d),
     workflowFailureMode = Option.empty
   )
 
   val workspaceBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
   val notificationsBasePath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.notificationsPath
+
+  // Mapping from submission ID to the status code and response which the mock server should return when the PATCH endpoint is called
+  val submissionIdPatchResponseMapping = List(
+    (mockValidId, OK, mockValidSubmission.toJson.prettyPrint),
+    (alternativeMockValidId, BadRequest, MockUtils.rawlsErrorReport(BadRequest).toJson.compactPrint),
+    (mockInvalidId, NotFound, MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
+  )
 
   var workspaceServer: ClientAndServer = _
 
@@ -189,6 +200,21 @@ object MockWorkspaceServer {
           .withHeaders(header)
           .withStatusCode(204)
       )
+
+    MockWorkspaceServer.submissionIdPatchResponseMapping.foreach { case (id, responseCode, responseContent) =>
+      MockWorkspaceServer.workspaceServer
+        .when(
+          request()
+            .withMethod("PATCH")
+            .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s"
+              .format(mockValidWorkspace.namespace, mockValidWorkspace.name, id)))
+        .respond(
+          response()
+            .withHeaders(header)
+            .withStatusCode(responseCode.intValue)
+            .withBody(responseContent)
+        )
+    }
 
     MockWorkspaceServer.workspaceServer
       .when(
