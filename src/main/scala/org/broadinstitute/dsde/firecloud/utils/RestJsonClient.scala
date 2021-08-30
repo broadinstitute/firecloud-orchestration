@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import java.time.Instant
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.Coders._
