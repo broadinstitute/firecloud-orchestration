@@ -59,7 +59,7 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
     priceList.version should startWith ("v")
     priceList.updated should not be empty
     priceList.prices.cpBigstoreStorage("us") shouldBe BigDecimal(-0.11)
-    priceList.prices.cpComputeengineInternetEgressNA.tiers.size shouldBe BigDecimal(-0.22)
+    priceList.prices.cpComputeengineInternetEgressNA.tiers.size shouldBe 1
   }
 
   /** This test will fail if md5Hash is not optional. However, its relationship to the code that depends on this
