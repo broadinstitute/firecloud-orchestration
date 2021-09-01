@@ -6,13 +6,13 @@ import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.{ImportServiceRequest, ImportServiceResponse, PfbImportRequest, PfbImportResponse, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.model.WorkspaceName
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource, WorkspaceName}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -29,9 +29,10 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
   }
 
   private def doImport(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    // the payload to Import Service sends "path" and filetype.  Here, we force-hardcode filetype because this API
-    // should only be used for PFBs.
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url.getOrElse(""), filetype = filetype)
+    // the payload to Import Service sends "path" and filetype.
+    val path = pfbRequest.url.getOrElse(
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url cannot be empty")(ErrorReportSource("FireCloud"))))
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = path, filetype = filetype)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
