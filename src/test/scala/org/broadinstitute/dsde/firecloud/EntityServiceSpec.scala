@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{FirecloudModelSchema, ImportServiceResponse, ModelSchema, PfbImportRequest, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.parboiled.common.FileUtils
 import org.scalatest.BeforeAndAfterEach
@@ -130,8 +130,14 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         }
     }
 
-    // should this case throw a BadRequest? or just ignore the async instruction and update synchronously?
-    "should return ??? for (async=true + update TSV)" is pending
+    "should return BadRequest for (async=true + update TSV)" in {
+      val testImportDAO = new SuccessfulImportServiceDAO
+      val entityService = getEntityService(mockImportServiceDAO = testImportDAO)
+      val response =
+        entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
+          tsvUpdate, userToken, isAsync = true).futureValue
+      response shouldBe RequestComplete(StatusCodes.BadRequest, ErrorReport(StatusCodes.BadRequest, "Update-only TSVs cannot use async mode")(ErrorReportSource("FireCloud")))
+    }
 
     // (tsvType, expectedEntityType, tsvData)
     val goodTSVs = List(
