@@ -10,6 +10,7 @@ import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, ProfileWrapper, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.JsObject
 import spray.json._
@@ -88,6 +89,8 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
 
   override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = List("foo", "bar")
   override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = "my object contents"
+
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = GcsPath(bucketName, objectKey)
 
   override def getUserProfile(accessToken: WithAccessToken)
                              (implicit executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)

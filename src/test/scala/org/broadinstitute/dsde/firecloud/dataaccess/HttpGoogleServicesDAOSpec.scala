@@ -1,21 +1,31 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
+import cats.effect.{Blocker, ContextShift, IO, Resource, Timer}
+import cats.effect.concurrent.Semaphore
+import com.google.cloud.storage.{BlobInfo, Storage, StorageException}
+import com.google.cloud.storage.Storage.BlobWriteOption
+import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.workbench.google2.{GoogleStorageInterpreter, GoogleStorageService}
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.PrivateMethodTester
-import spray.json._
+import org.scalatestplus.mockito.MockitoSugar.mock
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-import scala.collection.JavaConverters._
-import scala.concurrent.Await
+import java.nio.charset.StandardCharsets
+import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.Duration
 
 class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
@@ -134,4 +144,54 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
     assertResult(expected) { objectMetadata }
 
   }
+
+  it should "return GcsPath for a successful object upload" in {
+    // create local storage service
+    val db = LocalStorageHelper.getOptions().getService()
+    val localStorage = storageResource(db)
+
+    val bucketName = GcsBucketName("some-bucket")
+    val objectName = GcsObjectName("folder/object.json")
+
+    val objectContents = "Hello world".getBytes(StandardCharsets.UTF_8)
+
+    assertResult(GcsPath(bucketName, objectName)) {
+      gcsDAO.streamUploadObject(localStorage, bucketName, objectName, objectContents)
+    }
+  }
+
+  it should "throw error for an unsuccessful object upload" in {
+    // under the covers, Storage.writer is the Google library method that gets called. So, mock that
+    // and force it to throw
+    val mockedException = new StorageException(418, "intentional unit test failure")
+    val throwingStorageHelper = mock[Storage]
+    when(throwingStorageHelper.writer(any[BlobInfo], any[BlobWriteOption]))
+      .thenThrow(mockedException)
+    val localStorage = storageResource(throwingStorageHelper)
+
+    val bucketName = GcsBucketName("some-bucket")
+    val objectName = GcsObjectName("folder/object.json")
+
+    val objectContents = "Hello world".getBytes(StandardCharsets.UTF_8)
+
+    val caught = intercept[StorageException] {
+      gcsDAO.streamUploadObject(localStorage, bucketName, objectName, objectContents)
+    }
+
+    assertResult(mockedException) {
+      caught
+    }
+  }
+
+  private def storageResource(backingStore: Storage): Resource[IO, GoogleStorageService[IO]] = {
+    // create local storage service
+    implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+    implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+    implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+    val blocker = Blocker.liftExecutionContext(global)
+    val semaphore = Semaphore[IO](1).unsafeRunSync
+    Resource.pure[IO, GoogleStorageService[IO]](GoogleStorageInterpreter[IO](backingStore, blocker, Some(semaphore)))
+  }
+
 }

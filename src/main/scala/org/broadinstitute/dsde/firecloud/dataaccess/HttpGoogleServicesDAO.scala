@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
+import cats.effect.{Blocker, ContextShift, IO, Resource, Timer}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
@@ -23,6 +24,7 @@ import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
+import fs2.Stream
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
@@ -30,7 +32,11 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath, GoogleProject}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import spray.json.{DefaultJsonProtocol, _}
 
 import collection.JavaConverters._
@@ -172,6 +178,51 @@ class HttpGoogleServicesDAO(defaultPriceList: GooglePriceList)(implicit val syst
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
     val is = storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
     scala.io.Source.fromInputStream(is).mkString
+  }
+
+  /**
+    * Uploads the supplied data to GCS, using the Rawls service account credentials
+    * @param bucketName target bucket name for upload
+    * @param objectKey target object name for upload
+    * @param objectContents byte array of the data to upload
+    * @return path to the uploaded GCS object
+    */
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
+    // if other methods in this class use google2/need these implicits, consider moving to the class level
+    // instead of here at the method level
+    implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
+    implicit val t: Timer[IO] = IO.timer(executionContext)
+    implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+    val blocker = Blocker.liftExecutionContext(executionContext)
+
+    // create the storage service, using the Rawls SA credentials
+    // the Rawls SA json creds do not contain a project, so also specify the project explicitly
+    val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, blocker,
+       project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
+
+    // call the upload implementation
+    streamUploadObject(storageResource, bucketName, objectKey, objectContents)
+  }
+
+  // separate method to perform the upload, to ease unit testing
+  protected[dataaccess] def streamUploadObject(storageResource: Resource[IO, GoogleStorageService[IO]], bucketName: GcsBucketName,
+                                   objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
+    // create the stream of data to upload
+    val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
+
+    val uploadAttempt = storageResource.use { storageService =>
+      // create the destination pipe to which we will write the file
+      // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
+      val uploadPipe = storageService.streamUploadBlob(bucketName, GcsBlobName(objectKey.value))
+      // stream the data to the destination pipe
+      dataStream.through(uploadPipe).compile.lastOrError
+    }
+
+    // execute the upload
+    uploadAttempt.unsafeRunSync()
+
+    // finally, return a GcsPath
+    GcsPath(bucketName, objectKey)
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

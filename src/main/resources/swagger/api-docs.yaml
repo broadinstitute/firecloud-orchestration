@@ -4884,7 +4884,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PFBResponse'
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -4962,6 +4962,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: async
+          in: query
+          description: Import asynchronously?
+          required: false
+          schema:
+            type: boolean
+            default: false
       requestBody:
         content:
           multipart/form-data:
@@ -4977,8 +4984,14 @@ paths:
         required: true
       responses:
         200:
-          description: Successful Request
+          description: Successful Request for synchronous import
           content: {}
+        202:
+          description: Successful Request for asynchronous import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -8711,7 +8724,7 @@ components:
         url:
           type: string
           description: link to publically accessible PFB/Avro
-    PFBResponse:
+    ImportResponse:
       required:
         - jobId
         - url
@@ -8719,7 +8732,7 @@ components:
       properties:
         url:
           type: string
-          description: the link to PFB/Avro specified in the request
+          description: the link to TSV or PFB/Avro specified in the request
         jobId:
           type: string
           description: unique id for the import job.
