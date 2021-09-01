@@ -104,7 +104,7 @@ object HttpGoogleServicesDAO {
   }
 }
 
-class HttpGoogleServicesDAO(defaultPriceList: GooglePriceList)(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with RestJsonClient with SprayJsonSupport {
+class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceList)(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with RestJsonClient with SprayJsonSupport {
 
   // application name to use within Google api libraries
   private final val appName = "firecloud:orchestration"
@@ -467,9 +467,7 @@ class HttpGoogleServicesDAO(defaultPriceList: GooglePriceList)(implicit val syst
   //default cached value in configuration to use as a backup. If we fallback to it, the error will be logged
   //but users will probably not notice a difference. They're cost *estimates*, after all.
   val fetchPriceList: Future[GooglePriceList] = {
-    val httpReq = Get(FireCloudConfig.GoogleCloud.priceListUrl)
-
-    println("fetching pricelist...")
+    val httpReq = Get(priceListUrl)
 
     unAuthedRequestToObject[GooglePriceList](httpReq).recover {
       case t: Throwable =>

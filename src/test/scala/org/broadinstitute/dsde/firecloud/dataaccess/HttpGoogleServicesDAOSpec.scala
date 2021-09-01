@@ -10,6 +10,8 @@ import cats.effect.concurrent.Semaphore
 import com.google.cloud.storage.{BlobInfo, Storage, StorageException}
 import com.google.cloud.storage.Storage.BlobWriteOption
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
+import com.typesafe.config.ConfigFactory
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.workbench.google2.{GoogleStorageInterpreter, GoogleStorageService}
@@ -31,9 +33,11 @@ import scala.concurrent.duration.Duration
 class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
 
   val testProject = "broad-dsde-dev"
+  val priceListUrl = ConfigFactory.load().getString("googlecloud.priceListUrl")
+  val defaultPriceList = GooglePriceList(GooglePrices(Map("us" -> BigDecimal(-0.11)), UsTieredPriceItem(Map(1L -> BigDecimal(-0.22)))), "v1", "1")
   implicit val system = ActorSystem("HttpGoogleCloudStorageDAOSpec")
   import system.dispatcher
-  val gcsDAO = new HttpGoogleServicesDAO
+  val gcsDAO = new HttpGoogleServicesDAO(priceListUrl, defaultPriceList)
 
   behavior of "HttpGoogleServicesDAO"
 
@@ -45,6 +49,17 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
     priceList.updated should not be empty
     priceList.prices.cpBigstoreStorage("us") should be > BigDecimal(0)
     priceList.prices.cpComputeengineInternetEgressNA.tiers.size should be > 0
+  }
+
+  it should "default to the cached price list if it cannot fetch/parse one from Google" in {
+    val errorGcsDAO = new HttpGoogleServicesDAO(priceListUrl + ".error", defaultPriceList)
+
+    val priceList: GooglePriceList = Await.result(errorGcsDAO.fetchPriceList, Duration.Inf)
+
+    priceList.version should startWith ("v")
+    priceList.updated should not be empty
+    priceList.prices.cpBigstoreStorage("us") shouldBe BigDecimal(-0.11)
+    priceList.prices.cpComputeengineInternetEgressNA.tiers.size shouldBe BigDecimal(-0.22)
   }
 
   /** This test will fail if md5Hash is not optional. However, its relationship to the code that depends on this
