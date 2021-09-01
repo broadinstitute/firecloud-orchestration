@@ -29,4 +29,6 @@ class MockImportServiceDAO extends ImportServiceDAO {
       case None => Future.successful(RequestComplete(EnhanceYourCalm))
     }
   }
+
+  override def importBatchUpsertJson(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = ???
 }
