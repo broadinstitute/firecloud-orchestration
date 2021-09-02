@@ -64,7 +64,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
@@ -98,7 +98,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             importJobIdValues should have size 1
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as writer
@@ -134,7 +134,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
@@ -205,7 +205,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
             val importJobId: String = importJobIdValues.head match {
               case js: JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
