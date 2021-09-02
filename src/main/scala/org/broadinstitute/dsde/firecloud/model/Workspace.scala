@@ -28,7 +28,7 @@ case class EntityId(entityType: String, entityName: String)
 
 case class BagitImportRequest(bagitURL: String, format: String)
 
-// the request payload sent by users to Orchestration for async PFB/TSV imports
+// the request payload sent by users to Orchestration for async PFB imports
 case class AsyncImportRequest(url: Option[String])
 
 // the response payload received by users from Orchestration for async PFB/TSV imports
