@@ -471,7 +471,7 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
     unAuthedRequestToObject[GooglePriceList](httpReq).recover {
       case t: Throwable =>
-        logger.warn(s"Unable to fetch/parse latest Google price list. A cached (possibly outdated) value will be used instead. Error: ${t.getMessage}")
+        logger.error(s"Unable to fetch/parse latest Google price list. A cached (possibly outdated) value will be used instead. Error: ${t.getMessage}")
         defaultPriceList
     }
   }
