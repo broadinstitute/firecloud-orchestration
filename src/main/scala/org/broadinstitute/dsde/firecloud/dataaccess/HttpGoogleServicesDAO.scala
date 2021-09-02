@@ -104,7 +104,7 @@ object HttpGoogleServicesDAO {
   }
 }
 
-class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with RestJsonClient with SprayJsonSupport {
+class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceList)(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with RestJsonClient with SprayJsonSupport {
 
   // application name to use within Google api libraries
   private final val appName = "firecloud:orchestration"
@@ -461,10 +461,19 @@ class HttpGoogleServicesDAO(implicit val system: ActorSystem, implicit val mater
   }
 
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
-  def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList] = {
-    val httpReq = Get(FireCloudConfig.GoogleCloud.priceListUrl)
+  //Why is this a val? Because the price lists do not change very often. This prevents making an HTTP call to Google
+  //every time we want to calculate a cost estimate (which happens extremely often in the Terra UI)
+  //Because the price list is brittle and Google sometimes changes the names of keys in the JSON, there is a
+  //default cached value in configuration to use as a backup. If we fallback to it, the error will be logged
+  //but users will probably not notice a difference. They're cost *estimates*, after all.
+  lazy val fetchPriceList: Future[GooglePriceList] = {
+    val httpReq = Get(priceListUrl)
 
-    unAuthedRequestToObject[GooglePriceList](httpReq)
+    unAuthedRequestToObject[GooglePriceList](httpReq).recover {
+      case t: Throwable =>
+        logger.error(s"Unable to fetch/parse latest Google price list. A cached (possibly outdated) value will be used instead. Error: ${t.getMessage}")
+        defaultPriceList
+    }
   }
 
   override def deleteGoogleGroup(groupEmail: String): Unit = {

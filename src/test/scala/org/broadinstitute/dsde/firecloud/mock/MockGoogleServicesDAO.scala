@@ -96,7 +96,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
                              (implicit executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
   override def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
                           (implicit executionContext: ExecutionContext): Future[PerRequestMessage] = {Future.successful(RequestComplete(StatusCodes.NotImplemented))}
-  override def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList] = {
+  override val fetchPriceList: Future[GooglePriceList] = {
     Future.successful(GooglePriceList(GooglePrices(Map("us" -> 0.01, "europe-west1" -> 0.02), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
 

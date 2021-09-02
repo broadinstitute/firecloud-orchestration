@@ -173,6 +173,10 @@ object FireCloudConfig {
     val priceListUrl = googlecloud.getString("priceListUrl")
     val priceListEgressKey = googlecloud.getString("priceListEgressKey")
     val priceListStorageKey = googlecloud.getString("priceListStorageKey")
+    val defaultStoragePriceListConf = googlecloud.getConfig("defaultStoragePriceList")
+    val defaultStoragePriceList = defaultStoragePriceListConf.root().keySet().asScala.map(key => key -> BigDecimal(defaultStoragePriceListConf.getDouble(key))).toMap
+    val defaultEgressPriceListConf = googlecloud.getConfig("defaultEgressPriceList")
+    val defaultEgressPriceList = defaultEgressPriceListConf.root().keySet().asScala.map(key => key.toLong -> BigDecimal(defaultEgressPriceListConf.getDouble(key))).toMap
   }
 
   object Duos {

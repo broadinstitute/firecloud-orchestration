@@ -32,9 +32,9 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
   def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
 
+  val fetchPriceList: Future[GooglePriceList]
+  
   def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath
-
-  def fetchPriceList(implicit executionContext: ExecutionContext): Future[GooglePriceList]
 
   def deleteGoogleGroup(groupEmail: String) : Unit
   def createGoogleGroup(groupName: String): Option[String]
