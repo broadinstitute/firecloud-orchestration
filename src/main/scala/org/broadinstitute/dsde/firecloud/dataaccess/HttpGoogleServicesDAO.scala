@@ -466,7 +466,7 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   //Because the price list is brittle and Google sometimes changes the names of keys in the JSON, there is a
   //default cached value in configuration to use as a backup. If we fallback to it, the error will be logged
   //but users will probably not notice a difference. They're cost *estimates*, after all.
-  val fetchPriceList: Future[GooglePriceList] = {
+  lazy val fetchPriceList: Future[GooglePriceList] = {
     val httpReq = Get(priceListUrl)
 
     unAuthedRequestToObject[GooglePriceList](httpReq).recover {
