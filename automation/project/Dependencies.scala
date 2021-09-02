@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val scalaV = "2.12"
 
-  val jacksonV = "2.8.4"
-  val akkaV = "2.5.7"
+  val jacksonV = "2.12.1"
+  val akkaV = "2.6.15"
   val akkaHttpV = "10.1.0"
 
   val workbenchModelV  = "0.13-58c913d"
@@ -15,7 +15,7 @@ object Dependencies {
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google" + scalaV)
 
-  val workbenchServiceTestV = "0.17-bb34724"
+  val workbenchServiceTestV = "0.19-84b9dfa2-SNAP"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
   val rootDependencies = Seq(
