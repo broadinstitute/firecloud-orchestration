@@ -22,6 +22,7 @@ import spray.json.DefaultJsonProtocol._
 
 import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
@@ -306,7 +307,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
 
         val rand = java.util.UUID.randomUUID.toString.take(8)
         val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
-        var bytesDownloaded = -1L
+        var bytesDownloaded = new AtomicLong(-1) // careful, this is a var
 
         try {
           val conn = bagitURL.openConnection()
@@ -324,7 +325,12 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
             // download the file
             val readFromBagit = Channels.newChannel(bagitURL.openStream())
             val writeToTemp = new FileOutputStream(bagItFile)
-            bytesDownloaded = writeToTemp.getChannel.transferFrom(readFromBagit, 0, length)
+            try {
+              bytesDownloaded = new AtomicLong(writeToTemp.getChannel.transferFrom(readFromBagit, 0, length))
+            } finally {
+              readFromBagit.close()
+              writeToTemp.close()
+            }
 
             val zipFile = new ZipFile(bagItFile.getAbsolutePath)
             if (!zipFile.entries().hasMoreElements) {
