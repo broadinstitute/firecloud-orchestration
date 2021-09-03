@@ -158,7 +158,8 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                       }
                     }
                 } ~
-                path("importPFB" / Segment) { jobId =>
+                // importPFB/jobId is deprecated; use importJob/jobId instead
+                path(("importPFB" | "importJob") / Segment) { jobId =>
                   get {
                     requireUserInfo() { userInfo =>
                       passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId")), HttpMethods.GET)
