@@ -41,147 +41,147 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
     "Orchestration" - {
 
-//    "should import a PFB file via import service" - {
-//      "for the owner of a workspace" in {
-//        implicit val token: AuthToken = ownerAuthToken
-//
-//        withCleanBillingProject(owner) { projectName =>
-//          withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
-//
-//            // call importPFB as owner
-//            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
-//            // expect to get exactly one jobId back
-//            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
-//            importJobIdValues should have size 1
-//
-//            val importJobId: String = importJobIdValues.head match {
-//              case js:JsString => js.value
-//              case x => fail("got an invalid jobId: " + x.toString())
-//            }
-//
-//            // poll for completion as owner
-//            eventually {
-//              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
-//              resp.status shouldBe StatusCodes.OK
-//              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
-//            }
-//
-//            // inspect data entities and confirm correct import as owner
-//            eventually {
-//              val resp = Orchestration.getRequest( s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
-//              compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
-//            }
-//
-//          }
-//        }
-//      }
-//
-//      "for writers of a workspace" in {
-//        val writer = UserPool.chooseStudent
-//        val writerToken = writer.makeAuthToken()
-//
-//        withCleanBillingProject(owner) { projectName =>
-//          withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-//
-//            // call importPFB as writer
-//            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
-//            // expect to get exactly one jobId back
-//            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
-//            importJobIdValues should have size 1
-//            val importJobId: String = importJobIdValues.head match {
-//              case js:JsString => js.value
-//              case x => fail("got an invalid jobId: " + x.toString())
-//            }
-//
-//            // poll for completion as writer
-//            eventually {
-//              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")(writerToken)
-//              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
-//            }
-//
-//            // inspect data entities and confirm correct import as writer
-//            eventually {
-//              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/entities")(writerToken)
-//              compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
-//            }
-//
-//          } (ownerAuthToken)
-//        }
-//      }
-//    }
-//
-//    "should asynchronously result in an error when attempting to import a PFB file via import service" - {
-//      "if the file to be imported is invalid" in {
-//        implicit val token: AuthToken = ownerAuthToken
-//
-//        withCleanBillingProject(owner) { projectName =>
-//          withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
-//
-//            // call importPFB as owner
-//            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
-//              Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/this-intentionally-does-not-exist"))
-//            // expect to get exactly one jobId back
-//            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
-//            importJobIdValues should have size 1
-//
-//            val importJobId: String = importJobIdValues.head match {
-//              case js:JsString => js.value
-//              case x => fail("got an invalid jobId: " + x.toString())
-//            }
-//
-//            // poll for completion as owner
-//            eventually {
-//              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
-//              resp.status shouldBe StatusCodes.OK
-//              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Error")
-//            }
-//          }
-//        }
-//      }
-//    }
-//
-//    "should synchronously return an error when attempting to import a PFB file via import service" - {
-//
-//      "for readers of a workspace" in {
-//        val reader = UserPool.chooseStudent
-//
-//        withCleanBillingProject(owner) { projectName =>
-//          withWorkspace(projectName, prependUUID("reader-pfb-import"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
-//
-//            // call importPFB as reader
-//            val exception = intercept[RestException] {
-//              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(reader.makeAuthToken())
-//            }
-//
-//            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
-//
-//            errorReport.statusCode.value shouldBe StatusCodes.Forbidden
-//            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
-//
-//          } (ownerAuthToken)
-//        }
-//      }
-//
-//      "with an invalid POST payload" in {
-//        implicit val token: AuthToken = ownerAuthToken
-//        withCleanBillingProject(owner) { projectName =>
-//          withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
-//
-//            // call importPFB with a payload of the wrong shape
-//            val exception = intercept[RestException] {
-//              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", "this is a string, not json")
-//            }
-//
-//            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
-//
-//            errorReport.statusCode.value shouldBe StatusCodes.BadRequest
-//            errorReport.message should include (s"Object expected in field 'url'")
-//
-//          } (ownerAuthToken)
-//        }
-//      }
-//
-//    }
+    "should import a PFB file via import service" - {
+      "for the owner of a workspace" in {
+        implicit val token: AuthToken = ownerAuthToken
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
+
+            // call importPFB as owner
+            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
+            // expect to get exactly one jobId back
+            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
+            importJobIdValues should have size 1
+
+            val importJobId: String = importJobIdValues.head match {
+              case js:JsString => js.value
+              case x => fail("got an invalid jobId: " + x.toString())
+            }
+
+            // poll for completion as owner
+            eventually {
+              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
+              resp.status shouldBe StatusCodes.OK
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
+            }
+
+            // inspect data entities and confirm correct import as owner
+            eventually {
+              val resp = Orchestration.getRequest( s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+              compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
+            }
+
+          }
+        }
+      }
+
+      "for writers of a workspace" in {
+        val writer = UserPool.chooseStudent
+        val writerToken = writer.makeAuthToken()
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
+
+            // call importPFB as writer
+            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
+            // expect to get exactly one jobId back
+            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
+            importJobIdValues should have size 1
+            val importJobId: String = importJobIdValues.head match {
+              case js:JsString => js.value
+              case x => fail("got an invalid jobId: " + x.toString())
+            }
+
+            // poll for completion as writer
+            eventually {
+              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")(writerToken)
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
+            }
+
+            // inspect data entities and confirm correct import as writer
+            eventually {
+              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/entities")(writerToken)
+              compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
+            }
+
+          } (ownerAuthToken)
+        }
+      }
+    }
+
+    "should asynchronously result in an error when attempting to import a PFB file via import service" - {
+      "if the file to be imported is invalid" in {
+        implicit val token: AuthToken = ownerAuthToken
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
+
+            // call importPFB as owner
+            val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
+              Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/this-intentionally-does-not-exist"))
+            // expect to get exactly one jobId back
+            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
+            importJobIdValues should have size 1
+
+            val importJobId: String = importJobIdValues.head match {
+              case js:JsString => js.value
+              case x => fail("got an invalid jobId: " + x.toString())
+            }
+
+            // poll for completion as owner
+            eventually {
+              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
+              resp.status shouldBe StatusCodes.OK
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Error")
+            }
+          }
+        }
+      }
+    }
+
+    "should synchronously return an error when attempting to import a PFB file via import service" - {
+
+      "for readers of a workspace" in {
+        val reader = UserPool.chooseStudent
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("reader-pfb-import"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
+
+            // call importPFB as reader
+            val exception = intercept[RestException] {
+              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(reader.makeAuthToken())
+            }
+
+            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
+
+            errorReport.statusCode.value shouldBe StatusCodes.Forbidden
+            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
+
+          } (ownerAuthToken)
+        }
+      }
+
+      "with an invalid POST payload" in {
+        implicit val token: AuthToken = ownerAuthToken
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
+
+            // call importPFB with a payload of the wrong shape
+            val exception = intercept[RestException] {
+              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", "this is a string, not json")
+            }
+
+            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
+
+            errorReport.statusCode.value shouldBe StatusCodes.BadRequest
+            errorReport.message should include (s"Object expected in field 'url'")
+
+          } (ownerAuthToken)
+        }
+      }
+
+    }
 
     "should import a TSV asynchronously" in {
         implicit val token: AuthToken = ownerAuthToken
