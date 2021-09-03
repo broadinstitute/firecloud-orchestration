@@ -322,7 +322,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
             val readFromBagit = Channels.newChannel(bagitURL.openStream())
             val writeToTemp = new FileOutputStream(bagItFile)
             try {
-              bytesDownloaded = new AtomicLong(writeToTemp.getChannel.transferFrom(readFromBagit, 0, length))
+              bytesDownloaded.set(writeToTemp.getChannel.transferFrom(readFromBagit, 0, length))
             } finally {
               readFromBagit.close()
               writeToTemp.close()
