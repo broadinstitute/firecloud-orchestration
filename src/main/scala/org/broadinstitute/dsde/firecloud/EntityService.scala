@@ -3,8 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
 import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
-import java.util.zip.{ZipEntry, ZipFile}
-
+import java.util.zip.{ZipEntry, ZipException, ZipFile}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
@@ -21,7 +20,9 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
 import spray.json.DefaultJsonProtocol._
 
+import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
@@ -299,41 +300,62 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
 
         val rand = java.util.UUID.randomUUID.toString.take(8)
         val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
+        var bytesDownloaded = new AtomicLong(-1) // careful, this is a var
 
         try {
           val conn = bagitURL.openConnection()
           val length = conn.getContentLength
           conn.asInstanceOf[HttpURLConnection].disconnect()
 
-          if (length > Rawls.entityBagitMaximumSize) {
+          if (length == 0) {
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag has content-length 0"))
+          } else if (length > Rawls.entityBagitMaximumSize) {
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
           } else {
-            //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
-            bagitURL #> bagItFile !!
+            // download the file
+            val readFromBagit = Channels.newChannel(bagitURL.openStream())
+            val writeToTemp = new FileOutputStream(bagItFile)
+            try {
+              bytesDownloaded.set(writeToTemp.getChannel.transferFrom(readFromBagit, 0, length))
+            } finally {
+              readFromBagit.close()
+              writeToTemp.close()
+            }
 
-            //make two big strings containing the participants and samples TSVs
-            //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
-            unzipTSVs(bagitRq.bagitURL, new ZipFile(bagItFile.getAbsolutePath)) { (participantsStr, samplesStr) =>
-              (participantsStr, samplesStr) match {
-                case (None, None) =>
-                  Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
-                case _ =>
-                  for {
-                    // This should vomit back errors from rawls.
-                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
-                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
-                  } yield {
-                    participantResult match {
-                      case RequestComplete((OK, _)) => sampleResult
-                      case _ => participantResult
+            val zipFile = new ZipFile(bagItFile.getAbsolutePath)
+            if (!zipFile.entries().hasMoreElements) {
+              Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag has no entries."))
+            } else {
+              //make two big strings containing the participants and samples TSVs
+              //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
+              unzipTSVs(bagitRq.bagitURL, zipFile) { (participantsStr, samplesStr) =>
+                (participantsStr, samplesStr) match {
+                  case (None, None) =>
+                    Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
+                  case _ =>
+                    for {
+                      // This should vomit back errors from rawls.
+                      participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
+                      sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
+                    } yield {
+                      participantResult match {
+                        case RequestComplete((OK, _)) => sampleResult
+                        case _ => participantResult
+                      }
                     }
-                  }
+                }
               }
             }
           }
         } catch {
-          case e: FileNotFoundException => Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
-          case e: Exception => throw e
+          case _:FileNotFoundException =>
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
+          case ze:ZipException =>
+            logger.info(s"ZipException: ${ze.getMessage} - ${bagItFile.getAbsolutePath} has length ${bagItFile.length}. " +
+              s"We originally downloaded $bytesDownloaded bytes.")
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"Problem with BDBag: ${ze.getMessage}"))
+          case e: Exception =>
+            throw e
         } finally {
           bagItFile.delete()
         }
