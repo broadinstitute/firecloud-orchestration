@@ -165,7 +165,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
-   var importServiceServer: ClientAndServer = _
+  var importServiceServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -272,13 +272,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
     bagitServer = startClientAndServer(MockUtils.bagitServerPort)
-     importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
+    bagitService()
+    importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
     bagitServer.stop
-     importServiceServer.stop
+    importServiceServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -286,7 +287,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def afterEach(): Unit = {
-     importServiceServer.reset
+    importServiceServer.reset
     this.searchDao.reset
   }
 
@@ -1008,7 +1009,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "WorkspaceService BagIt Tests" - {
       "should unbundle a bagit containing both participants and samples" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1018,7 +1018,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 400 if a bagit doesn't have either participants or samples" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/neither.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1028,7 +1027,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 400 if a bagit request has an invalid format" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"garbage" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1038,7 +1036,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 400 if a bagit is empty" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/empty.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1050,7 +1047,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 400 if a bagit is unzippable" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/notazip.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
