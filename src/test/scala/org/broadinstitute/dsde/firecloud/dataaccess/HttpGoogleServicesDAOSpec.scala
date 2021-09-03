@@ -47,7 +47,7 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
       [info] - should fetch the current price list *** FAILED ***
       [info]   -0.11 was not greater than 0 (HttpGoogleServicesDAOSpec.scala:50)
    */
-  it should "fetch the current price list" ignore {
+  it should "fetch the current price list" in {
 
     val priceList: GooglePriceList = Await.result(gcsDAO.fetchPriceList, Duration.Inf)
 
