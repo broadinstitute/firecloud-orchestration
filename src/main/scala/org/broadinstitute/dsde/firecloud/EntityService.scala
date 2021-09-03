@@ -311,7 +311,9 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
           val length = conn.getContentLength
           conn.asInstanceOf[HttpURLConnection].disconnect()
 
-          if (length > Rawls.entityBagitMaximumSize) {
+          if (length == 0) {
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag has content-length 0"))
+          } else if (length > Rawls.entityBagitMaximumSize) {
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
           } else {
             //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
@@ -346,6 +348,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
           case _:FileNotFoundException =>
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
           case ze:ZipException =>
+            logger.error(s"${ze.getMessage}: ${bagItFile.getAbsolutePath} has length ${bagItFile.length}")
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"Problem with BDBag: ${ze.getMessage}"))
           case e: Exception =>
             throw e
