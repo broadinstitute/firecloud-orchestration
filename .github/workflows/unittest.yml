@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        javadist: [ 'temurin', 'zulu', 'adopt-hotspot', 'adopt-openj9' ]
+        javadist: [ 'temurin', 'zulu', 'adopt-hotspot' ]
 
     steps:
 
