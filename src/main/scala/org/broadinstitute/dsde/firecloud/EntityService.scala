@@ -319,9 +319,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
           } else if (length > Rawls.entityBagitMaximumSize) {
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
           } else {
-            //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
-            // bagitURL #> bagItFile !
-
             // download the file
             val readFromBagit = Channels.newChannel(bagitURL.openStream())
             val writeToTemp = new FileOutputStream(bagItFile)
