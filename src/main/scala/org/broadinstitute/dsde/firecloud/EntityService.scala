@@ -20,6 +20,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
 import spray.json.DefaultJsonProtocol._
 
+import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -305,6 +306,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
 
         val rand = java.util.UUID.randomUUID.toString.take(8)
         val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
+        var bytesDownloaded = -1L
 
         try {
           val conn = bagitURL.openConnection()
@@ -317,7 +319,12 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
           } else {
             //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
-            bagitURL #> bagItFile !!
+            // bagitURL #> bagItFile !
+
+            // download the file
+            val readFromBagit = Channels.newChannel(bagitURL.openStream())
+            val writeToTemp = new FileOutputStream(bagItFile)
+            bytesDownloaded = writeToTemp.getChannel.transferFrom(readFromBagit, 0, length)
 
             val zipFile = new ZipFile(bagItFile.getAbsolutePath)
             if (!zipFile.entries().hasMoreElements) {
@@ -348,7 +355,8 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
           case _:FileNotFoundException =>
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
           case ze:ZipException =>
-            logger.error(s"${ze.getMessage}: ${bagItFile.getAbsolutePath} has length ${bagItFile.length}")
+            logger.info(s"ZipException: ${ze.getMessage} - ${bagItFile.getAbsolutePath} has length ${bagItFile.length}. " +
+              s"We originally downloaded $bytesDownloaded bytes.")
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"Problem with BDBag: ${ze.getMessage}"))
           case e: Exception =>
             throw e
