@@ -1092,7 +1092,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         val pfbPath = "https://good.avro"
 
-        val orchExpectedPayload = PfbImportResponse(url = pfbPath,
+        val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
                                                    jobId = "MockImportServiceDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
 
@@ -1100,7 +1100,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
-            val jobResponse = responseAs[PfbImportResponse]
+            val jobResponse = responseAs[AsyncImportResponse]
             jobResponse.url should be (orchExpectedPayload.url)
             jobResponse.workspace should be (orchExpectedPayload.workspace)
             jobResponse.jobId  should not be empty
