@@ -145,7 +145,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("importPFB") {
                   post {
                     requireUserInfo() { userInfo =>
-                      entity(as[PfbImportRequest]) { pfbRequest =>
+                      entity(as[AsyncImportRequest]) { pfbRequest =>
                         complete { entityServiceConstructor(FlexibleModelSchema).importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
                       }
                     }

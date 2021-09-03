@@ -229,9 +229,8 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
     val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
-    // TODO: this is functional, but the class name "PfbImportRequest" is misleading; rename it?
-    val importRequest = PfbImportRequest(Option(gcsPath))
-    importServiceDAO.importBatchUpsertJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
+    val importRequest = AsyncImportRequest(Option(gcsPath))
+    importServiceDAO.importRawlsJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
@@ -348,7 +347,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     }
   }
 
-  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
+  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
     importServiceDAO.importPFB(workspaceNamespace, workspaceName, pfbRequest)(userInfo)
   }
 

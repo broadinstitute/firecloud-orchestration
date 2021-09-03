@@ -6,7 +6,7 @@ import com.google.cloud.storage.StorageException
 import org.broadinstitute.dsde.firecloud.dataaccess.MockImportServiceDAO
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{FirecloudModelSchema, ImportServiceResponse, ModelSchema, PfbImportRequest, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{FirecloudModelSchema, ImportServiceResponse, ModelSchema, AsyncImportRequest, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
@@ -208,7 +208,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   class SuccessfulImportServiceDAO extends MockImportServiceDAO {
     def successDefinition: RequestComplete[(StatusCodes.Success, ImportServiceResponse)] = RequestComplete(StatusCodes.Created, ImportServiceResponse("unit-test-job-id", "unit-test-created-status", None))
 
-    override def importBatchUpsertJson(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
+    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
       Future.successful(successDefinition)
     }
   }
@@ -218,7 +218,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     // return a 429 so unit tests have an easy way to distinguish this error vs an error somewhere else in the stack
     def errorDefinition: RequestComplete[(StatusCode, ErrorReport)] = RequestCompleteWithErrorReport(StatusCodes.TooManyRequests, "intentional ErroringImportServiceDAO error")
 
-    override def importBatchUpsertJson(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
+    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
       Future.successful(errorDefinition)
     }
   }
