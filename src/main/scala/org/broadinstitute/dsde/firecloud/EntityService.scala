@@ -200,15 +200,9 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     // The async path only supports upsert TSVs, not update TSVs. Import Service only operates in upsert mode;
     // if we tried to send an update TSV through it, it would lose its "update-only" restriction and become an upsert.
     if (isAsync) {
-      if (!isUpsert) {
-        // until Rawls & Import Service implement update-only TSVs, throw a BadRequest if the user requested async
-        // but sent an update TSV.
-        Future(RequestCompleteWithErrorReport(BadRequest, "Update-only TSVs cannot use async mode"))
-      } else {
-        asyncUpsert(workspaceNamespace, workspaceName, rawlsCalls, userInfo).recover {
-          case e: Exception =>
-            RequestCompleteWithErrorReport(InternalServerError, "Unexpected error during async TSV import", e)
-        }
+      asyncUpsert(workspaceNamespace, workspaceName, isUpsert, rawlsCalls, userInfo).recover {
+        case e: Exception =>
+          RequestCompleteWithErrorReport(InternalServerError, "Unexpected error during async TSV import", e)
       }
     } else {
       val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
@@ -216,7 +210,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     }
   }
 
-  private def asyncUpsert(workspaceNamespace: String, workspaceName: String,
+  private def asyncUpsert(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean,
                           rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
     import spray.json._
 
@@ -230,7 +224,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
     val importRequest = AsyncImportRequest(Option(gcsPath))
-    importServiceDAO.importRawlsJson(workspaceNamespace, workspaceName, importRequest)(userInfo)
+    importServiceDAO.importRawlsJson(workspaceNamespace, workspaceName, isUpsert, importRequest)(userInfo)
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {

@@ -30,5 +30,5 @@ class MockImportServiceDAO extends ImportServiceDAO {
     }
   }
 
-  override def importRawlsJson(workspaceNamespace: String, workspaceName: String, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = ???
+  override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = ???
 }
