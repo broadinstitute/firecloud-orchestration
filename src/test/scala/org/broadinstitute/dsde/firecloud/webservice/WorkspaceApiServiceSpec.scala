@@ -244,22 +244,29 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def bagitService() = {
     val bothBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/testbag.zip"))
     val neitherBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/nothingbag.zip"))
+    val emptyBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/empty.zip"))
+    val notAZipBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/not_a_zip.txt"))
 
+    // url -> byte array for mockserver
+    val mappings = Map(
+      "/both.zip" -> bothBytes,
+      "/neither.zip" -> neitherBytes,
+      "/empty.zip" -> emptyBytes,
+      "/notazip.zip" -> notAZipBytes,
+    )
+
+    // bagit import requires https urls; set up SSL
     HttpsURLConnection.setDefaultSSLSocketFactory(KeyStoreFactory.keyStoreFactory().sslContext().getSocketFactory())
 
-    bagitServer
-      .when(request().withMethod("GET").withPath("/both.zip"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withStatusCode(200)
-          .withBody(org.mockserver.model.BinaryBody.binary(bothBytes)))
-
-    bagitServer
-      .when(request().withMethod("GET").withPath("/neither.zip"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withStatusCode(200)
-          .withBody(org.mockserver.model.BinaryBody.binary(neitherBytes)))
+    // set up mockserver for all paths defined above
+    mappings.foreach { entry =>
+      bagitServer
+        .when(request().withMethod("GET").withPath(entry._1))
+        .respond(
+          org.mockserver.model.HttpResponse.response()
+            .withStatusCode(200)
+            .withBody(org.mockserver.model.BinaryBody.binary(entry._2)))
+    }
   }
 
   override def beforeAll(): Unit = {
@@ -1027,6 +1034,30 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
+        }
+      }
+
+      "should 400 if a bagit is empty" in {
+        bagitService()
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/empty.zip", "format":"TSV" }"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+          val errRpt = responseAs[ErrorReport]
+          errRpt.message shouldBe s"BDBag has no entries."
+        }
+      }
+
+      "should 400 if a bagit is unzippable" in {
+        bagitService()
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/notazip.zip", "format":"TSV" }"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+          val errRpt = responseAs[ErrorReport]
+          errRpt.message shouldBe s"Problem with BDBag: zip END header not found"
         }
       }
     }
