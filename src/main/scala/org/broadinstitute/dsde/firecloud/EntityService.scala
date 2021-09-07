@@ -198,8 +198,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
 
   private def maybeAsyncBatchUpdate(isAsync: Boolean, isUpsert: Boolean, workspaceNamespace: String, workspaceName: String,
                                     entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
-    // The async path only supports upsert TSVs, not update TSVs. Import Service only operates in upsert mode;
-    // if we tried to send an update TSV through it, it would lose its "update-only" restriction and become an upsert.
     if (isAsync) {
       asyncUpsert(workspaceNamespace, workspaceName, isUpsert, rawlsCalls, userInfo).recover {
         case e: Exception =>
