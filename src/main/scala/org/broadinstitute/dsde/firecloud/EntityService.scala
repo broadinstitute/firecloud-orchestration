@@ -199,17 +199,21 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
   private def maybeAsyncBatchUpdate(isAsync: Boolean, isUpsert: Boolean, workspaceNamespace: String, workspaceName: String,
                                     entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
     if (isAsync) {
-      asyncUpsert(workspaceNamespace, workspaceName, isUpsert, rawlsCalls, userInfo).recover {
+      asyncImport(workspaceNamespace, workspaceName, isUpsert, rawlsCalls, userInfo).recover {
         case e: Exception =>
           RequestCompleteWithErrorReport(InternalServerError, "Unexpected error during async TSV import", e)
       }
     } else {
-      val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      val rawlsResponse = if (isUpsert) {
+        rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      } else {
+        rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      }
       handleBatchRawlsResponse(entityType, rawlsResponse)
     }
   }
 
-  private def asyncUpsert(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean,
+  private def asyncImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean,
                           rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
     import spray.json._
 
