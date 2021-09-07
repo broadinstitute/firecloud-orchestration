@@ -1,18 +1,22 @@
 package org.broadinstitute.dsde.firecloud
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.model.{HttpResponse, StatusCode, StatusCodes}
 import com.google.cloud.storage.StorageException
-import org.broadinstitute.dsde.firecloud.dataaccess.MockImportServiceDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockImportServiceDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{FirecloudModelSchema, ImportServiceResponse, ModelSchema, AsyncImportRequest, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.{times, verify, when}
 import org.parboiled.common.FileUtils
 import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.mockito.MockitoSugar.{mock => mockito}
 
 import java.util.zip.ZipFile
 import scala.concurrent.ExecutionContext.Implicits._
@@ -116,7 +120,8 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     // (tsvType, tsvData)
     val asyncTSVs = List(
       ("upsert", tsvParticipants),
-      ("membership", tsvMembership))
+      ("membership", tsvMembership),
+      ("update", tsvUpdate))
 
     asyncTSVs foreach {
       case (tsvType, tsvData) =>
@@ -128,15 +133,6 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
               tsvData, userToken, isAsync = true).futureValue
           response shouldBe testImportDAO.successDefinition
         }
-    }
-
-    "should return BadRequest for (async=true + update TSV)" in {
-      val testImportDAO = new SuccessfulImportServiceDAO
-      val entityService = getEntityService(mockImportServiceDAO = testImportDAO)
-      val response =
-        entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
-          tsvUpdate, userToken, isAsync = true).futureValue
-      response shouldBe RequestComplete(StatusCodes.BadRequest, ErrorReport(StatusCodes.BadRequest, "Update-only TSVs cannot use async mode")(ErrorReportSource("FireCloud")))
     }
 
     // (tsvType, expectedEntityType, tsvData)
@@ -154,6 +150,35 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
               tsvData, userToken).futureValue // isAsync defaults to false, so we omit it here
           response shouldBe RequestComplete(StatusCodes.OK, expectedEntityType)
         }
+
+        s"should call the appropriate upsert/update method for (async=false + $tsvType TSV)" in {
+          val mockedRawlsDAO = mockito[MockRawlsDAO] // mocking the mock
+          when(mockedRawlsDAO.batchUpdateEntities(any[String], any[String], any[String],
+            any[Seq[EntityUpdateDefinition]])(any[UserInfo]))
+            .thenReturn(Future.successful(HttpResponse(StatusCodes.NoContent)))
+
+          when(mockedRawlsDAO.batchUpsertEntities(any[String], any[String], any[String],
+            any[Seq[EntityUpdateDefinition]])(any[UserInfo]))
+            .thenReturn(Future.successful(HttpResponse(StatusCodes.NoContent)))
+
+          val entityService = getEntityService(rawlsDAO = mockedRawlsDAO)
+          val _ =
+            entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName",
+              tsvData, userToken).futureValue // isAsync defaults to false, so we omit it here
+
+          if (tsvType == "update") {
+            verify(mockedRawlsDAO, times(1)).batchUpdateEntities(
+              ArgumentMatchers.eq("workspaceNamespace"), ArgumentMatchers.eq("workspaceName"),
+              ArgumentMatchers.eq(expectedEntityType), any[Seq[EntityUpdateDefinition]])(any[UserInfo])
+          } else {
+            verify(mockedRawlsDAO, times(1)).batchUpsertEntities(
+              ArgumentMatchers.eq("workspaceNamespace"), ArgumentMatchers.eq("workspaceName"),
+              ArgumentMatchers.eq(expectedEntityType), ArgumentMatchers.any[Seq[EntityUpdateDefinition]])(ArgumentMatchers.any[UserInfo])
+
+          }
+
+        }
+
     }
 
     "should return error for (async=true) when failed to write to GCS" in {
@@ -189,8 +214,11 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   }
 
   private def getEntityService(mockGoogleServicesDAO: MockGoogleServicesDAO = new MockGoogleServicesDAO,
-                               mockImportServiceDAO: MockImportServiceDAO = new MockImportServiceDAO) = {
-    val application = app.copy(googleServicesDAO = mockGoogleServicesDAO, importServiceDAO = mockImportServiceDAO)
+                               mockImportServiceDAO: MockImportServiceDAO = new MockImportServiceDAO,
+                               rawlsDAO: MockRawlsDAO = new MockRawlsDAO) = {
+    val application = app.copy(googleServicesDAO = mockGoogleServicesDAO,
+                               importServiceDAO = mockImportServiceDAO,
+                               rawlsDAO = rawlsDAO)
 
     // instantiate an EntityService, specify importServiceDAO and googleServicesDAO
     implicit val modelSchema: ModelSchema = FirecloudModelSchema
@@ -208,7 +236,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   class SuccessfulImportServiceDAO extends MockImportServiceDAO {
     def successDefinition: RequestComplete[(StatusCodes.Success, ImportServiceResponse)] = RequestComplete(StatusCodes.Created, ImportServiceResponse("unit-test-job-id", "unit-test-created-status", None))
 
-    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
+    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
       Future.successful(successDefinition)
     }
   }
@@ -218,7 +246,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     // return a 429 so unit tests have an easy way to distinguish this error vs an error somewhere else in the stack
     def errorDefinition: RequestComplete[(StatusCode, ErrorReport)] = RequestCompleteWithErrorReport(StatusCodes.TooManyRequests, "intentional ErroringImportServiceDAO error")
 
-    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
+    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
       Future.successful(errorDefinition)
     }
   }

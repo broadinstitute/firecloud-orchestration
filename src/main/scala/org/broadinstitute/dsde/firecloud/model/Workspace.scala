@@ -39,7 +39,8 @@ case class AsyncImportResponse(url: String,
 // the request payload sent by Orchestration to Import Service
 case class ImportServiceRequest(
   path: String,
-  filetype: String)
+  filetype: String,
+  isUpsert: Boolean)
 // the response payload received by Orchestration from Import Service
 case class ImportServiceResponse(
   jobId: String,

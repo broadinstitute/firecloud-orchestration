@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.{ImportServiceRequest, ImportServiceResponse, AsyncImportRequest, AsyncImportResponse, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -21,18 +21,18 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
   override def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    doImport(workspaceNamespace, workspaceName, pfbRequest, "pfb")
+    doImport(workspaceNamespace, workspaceName, isUpsert = true, pfbRequest, "pfb")
   }
 
-  override def importRawlsJson(workspaceNamespace: String, workspaceName: String, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    doImport(workspaceNamespace, workspaceName, rawlsJsonRequest, "rawlsjson")
+  override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    doImport(workspaceNamespace, workspaceName, isUpsert, rawlsJsonRequest, "rawlsjson")
   }
 
-  private def doImport(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+  private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, pfbRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     // the payload to Import Service sends "path" and filetype.
     val path = pfbRequest.url.getOrElse(
       throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url cannot be empty")(ErrorReportSource("FireCloud"))))
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = path, filetype = filetype)
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = path, filetype = filetype, isUpsert = isUpsert)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
