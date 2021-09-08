@@ -24,6 +24,10 @@ trait ModelSchema {
   def getTypeSchema(entityType: String): Try[EntityMetadata]
   def supportsBackwardsCompatibleIds: Boolean
 
+  def isAttributeArray(value: String): Boolean = {
+    value.startsWith("[") && value.endsWith("]") //TODO: this would be much better with a regex
+  }
+
   def isEntityTypeInSchema(entityType: String): Boolean = {
     Try(this.getCollectionMemberType(entityType)) match {
       case Failure(_) => false

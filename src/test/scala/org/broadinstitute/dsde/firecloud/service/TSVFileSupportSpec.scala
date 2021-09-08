@@ -1,9 +1,13 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
-import org.broadinstitute.dsde.rawls.model.{AttributeName, AttributeString}
+import org.broadinstitute.dsde.firecloud.model.FlexibleModelSchema
+import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeString}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers.contain
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 /**
   * Created by ansingh on 11/16/16.
@@ -48,6 +52,33 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
         List(RemoveAttribute(AttributeName("default", "a1")),
           AddUpdateAttribute(AttributeName("default", "a2"), AttributeString("v2")))
       }
+    }
+  }
+
+  "setAttributesOnEntity" - {
+    "parse an attribute array consisting of all strings" in {
+      val resultingOps = setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeStringArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
+      println(resultingOps)
+      resultingOps.operations.size shouldBe 3
+      resultingOps.entityType shouldBe "some_type"
+      resultingOps.operations.map(_.values) should contain theSameElementsAs List(AttributeBoolean(true), AttributeBoolean(false), AttributeBoolean(true))
+    }
+
+    "parse an attribute array consisting of all numbers" in {
+      val resultingOps = setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeNumberArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
+      resultingOps.operations.size shouldBe 3
+    }
+
+    "parse an attribute array consisting of all booleans" in {
+      val resultingOps = setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeBooleanArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
+      resultingOps.operations.size shouldBe 3
+    }
+
+    "throw an exception when parsing an attribute array consisting of mixed attribute types" in {
+      intercept[FireCloudException] {
+        setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeMixedArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
+      }
+
     }
   }
 

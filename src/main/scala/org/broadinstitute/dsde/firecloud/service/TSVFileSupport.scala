@@ -7,6 +7,9 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import akka.http.scaladsl.model.StatusCodes._
+import spray.json._
+import DefaultJsonProtocol._
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -139,14 +142,36 @@ trait TSVFileSupport {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
+    println("hello!!")
     val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
       val nameEntry = "attributeName" -> AttributeString(attributeName)
+      val listNameEntry = "attributeListName" -> AttributeString(attributeName)
       def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
+      def listValEntry( attr: Attribute ) = "newMember" -> attr
       refTypeOpt match {
-        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeEntityReference(refType,value)))
+        case Some(refType) => Seq(Map(upsertAttrOperation,nameEntry,valEntry(AttributeEntityReference(refType,value))))
         case None => value match {
-          case "__DELETE__" => Map(removeAttrOperation,nameEntry)
-          case _ => Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value)))
+          case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry))
+          case value if modelSchema.isAttributeArray(value) => {
+            val listElements = value.parseJson.convertTo[JsArray].elements.toList
+
+            listElements match {
+              case elements if elements.forall(_.isInstanceOf[JsString]) =>
+                val typed: List[JsString] = elements.asInstanceOf[List[JsString]]
+                typed.map(jsstr => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeString(jsstr.value))))
+
+              case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
+                val typed: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
+                typed.map(jsnum => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeNumber(jsnum.value))))
+
+              case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
+                val typed: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
+                typed.map(jsbool => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeBoolean(jsbool.value))))
+
+              case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
+            }
+          }
+          case _ => Seq(Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value))))
         }
       }
     }
@@ -162,7 +187,9 @@ trait TSVFileSupport {
     } else {
       None
     }
-    EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
+    val x = EntityUpdateDefinition(row.headOption.get,entityType,ops.flatten ++ collectionMemberAttrOp )
+    println(x)
+    x
   }
 
 }

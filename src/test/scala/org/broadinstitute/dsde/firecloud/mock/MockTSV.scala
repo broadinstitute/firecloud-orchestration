@@ -133,6 +133,10 @@ object MockTSVStrings {
     List("part_01", "de").tabbed,
     List("part_01", "hip").tabbed).newlineSeparated
 
+  val entityHasArray = List(
+    List("entity:participant_id", "values").tabbed,
+    List("part_01", """["foo","bar","baz"]""").tabbed).newlineSeparated
+
   val entityHasCollectionMembers = List(
     List("entity:sample_set_id", "sample").tabbed,
     List("sset_01", "sample_01").tabbed,
@@ -315,6 +319,11 @@ object MockTSVLoadFiles {
   val validNamespacedAttributes = TSVLoadFile("foo", Seq("foo", "tag:foo", "bar", "tag:bar"), Seq(Seq("1","2","3","4"), Seq("5","6","7","8")))
   val missingFields1 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("biz", "", "buz")))
   val missingFields2 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("", "", "buz"), Seq("abc", "123", "")))
+
+  val entityWithAttributeBooleanArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[false,true,true]""")))
+  val entityWithAttributeNumberArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[1,2,3]""")))
+  val entityWithAttributeStringArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """["foo","bar","baz"]""")))
+  val entityWithAttributeMixedArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[false,"foo",1]""")))
 
   val validHugeFile = TSVLoadFile("header1",
     (1 to 1000).map(num => s"header$num"),
