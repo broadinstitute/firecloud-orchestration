@@ -144,28 +144,28 @@ trait TSVFileSupport {
     //string gets passed to Rawls, which should error as they're required?
     val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
       val nameEntry = "attributeName" -> AttributeString(attributeName)
-      val listNameEntry = "attributeListName" -> AttributeString(attributeName)
       def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
-      def listValEntry( attr: Attribute ) = "newMember" -> attr
       refTypeOpt match {
         case Some(refType) => Seq(Map(upsertAttrOperation,nameEntry,valEntry(AttributeEntityReference(refType,value))))
         case None => value match {
           case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry))
           case value if modelSchema.isAttributeArray(value) => {
             val listElements = value.parseJson.convertTo[JsArray].elements.toList
+            val listNameEntry = "attributeListName" -> AttributeString(attributeName)
+            def listValEntry( attr: Attribute ) = "newMember" -> attr
 
             listElements match {
               case elements if elements.forall(_.isInstanceOf[JsString]) =>
-                val typed: List[JsString] = elements.asInstanceOf[List[JsString]]
-                typed.map(jsstr => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeString(jsstr.value))))
+                val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
+                elementsTyped.map(jsstr => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeString(jsstr.value))))
 
               case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
-                val typed: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
-                typed.map(jsnum => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeNumber(jsnum.value))))
+                val elementsTyped: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
+                elementsTyped.map(jsnum => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeNumber(jsnum.value))))
 
               case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
-                val typed: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
-                typed.map(jsbool => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeBoolean(jsbool.value))))
+                val elementsTyped: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
+                elementsTyped.map(jsbool => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeBoolean(jsbool.value))))
 
               case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
             }

@@ -57,28 +57,27 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
 
   "setAttributesOnEntity" - {
     "parse an attribute array consisting of all strings" in {
-      val resultingOps = setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeStringArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
-      println(resultingOps)
+      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeStringArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
       resultingOps.operations.size shouldBe 3
       resultingOps.entityType shouldBe "some_type"
-      resultingOps.operations.map(_.values) should contain theSameElementsAs List(AttributeBoolean(true), AttributeBoolean(false), AttributeBoolean(true))
     }
 
     "parse an attribute array consisting of all numbers" in {
-      val resultingOps = setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeNumberArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
+      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeNumberArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
       resultingOps.operations.size shouldBe 3
+      resultingOps.entityType shouldBe "some_type"
     }
 
     "parse an attribute array consisting of all booleans" in {
-      val resultingOps = setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeBooleanArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
+      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeBooleanArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
       resultingOps.operations.size shouldBe 3
+      resultingOps.entityType shouldBe "some_type"
     }
 
     "throw an exception when parsing an attribute array consisting of mixed attribute types" in {
       intercept[FireCloudException] {
-        setAttributesOnEntity("some_type", Some("idc"), MockTSVLoadFiles.entityWithAttributeMixedArray.tsvData.head, Seq(("arrays", Some("foo"))), FlexibleModelSchema)
+        setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeMixedArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
       }
-
     }
   }
 
