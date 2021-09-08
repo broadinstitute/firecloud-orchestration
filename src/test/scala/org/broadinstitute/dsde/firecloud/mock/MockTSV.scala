@@ -133,10 +133,6 @@ object MockTSVStrings {
     List("part_01", "de").tabbed,
     List("part_01", "hip").tabbed).newlineSeparated
 
-  val entityHasArray = List(
-    List("entity:participant_id", "values").tabbed,
-    List("part_01", """["foo","bar","baz"]""").tabbed).newlineSeparated
-
   val entityHasCollectionMembers = List(
     List("entity:sample_set_id", "sample").tabbed,
     List("sset_01", "sample_01").tabbed,
