@@ -142,7 +142,6 @@ trait TSVFileSupport {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
-    println("hello!!")
     val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
       val nameEntry = "attributeName" -> AttributeString(attributeName)
       val listNameEntry = "attributeListName" -> AttributeString(attributeName)
@@ -187,9 +186,7 @@ trait TSVFileSupport {
     } else {
       None
     }
-    val x = EntityUpdateDefinition(row.headOption.get,entityType,ops.flatten ++ collectionMemberAttrOp )
-    println(x)
-    x
+    EntityUpdateDefinition(row.headOption.get,entityType,ops.flatten ++ collectionMemberAttrOp )
   }
 
 }
