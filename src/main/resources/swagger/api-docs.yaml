@@ -9899,7 +9899,7 @@ components:
         workspaceVersion:
           type: string
           description: internal use
-        currentBillingAccountOnGoogleProject:
+        billingAccount:
           type: string
           description: The current billing account being charged for activity within this workspace. For desired billing account, look to the billing account specified on this workspace's billing project
         billingAccountErrorMessage:
