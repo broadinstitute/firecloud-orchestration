@@ -70,9 +70,6 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       resultingOpNames.tail.map { op =>
         op shouldBe AttributeString("AddListMember")
       }
-
-      println(resultingOps)
-
     }
 
     "parse an attribute array consisting of all numbers" in {
