@@ -136,6 +136,11 @@ trait TSVFileSupport {
   val createRefListOperation: (String, AttributeString) = "op" -> AttributeString("CreateAttributeEntityReferenceList")
   val createAttrValueListOperation: (String, AttributeString) = "op" -> AttributeString("CreateAttributeValueList")
 
+  def nameEntry(attributeName: String) = "attributeName" -> AttributeString(attributeName)
+  def valEntry(attr: Attribute) = "addUpdateAttribute" -> attr
+  def listNameEntry(attributeName: String) = "attributeListName" -> AttributeString(attributeName)
+  def listValEntry(attr: Attribute) = "newMember" -> attr
+
   /**
     * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
     * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample */
@@ -143,42 +148,13 @@ trait TSVFileSupport {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
-    val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
-      val nameEntry = "attributeName" -> AttributeString(attributeName)
-      def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
+    val ops = for { (attributeValue,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !attributeValue.isEmpty } yield {
       refTypeOpt match {
-        case Some(refType) => Seq(Map(upsertAttrOperation,nameEntry,valEntry(AttributeEntityReference(refType,value))))
-        case None => value match {
-          case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry))
-          case value if modelSchema.isAttributeArray(value) => {
-            val listElements = value.parseJson.convertTo[JsArray].elements.toList
-            val listNameEntry = "attributeListName" -> AttributeString(attributeName)
-            def listValEntry( attr: Attribute ) = "newMember" -> attr
-
-            //if the list is empty, short-circuit and just replace any existing list with an empty list
-            if(listElements.isEmpty) {
-              Seq(Map(removeAttrOperation, nameEntry), Map(createAttrValueListOperation, nameEntry))
-            } else {
-              val addElements = listElements match {
-                case elements if elements.forall(_.isInstanceOf[JsString]) =>
-                  val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
-                  elementsTyped.map(jsstr => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeString(jsstr.value))))
-
-                case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
-                  val elementsTyped: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
-                  elementsTyped.map(jsnum => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeNumber(jsnum.value))))
-
-                case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
-                  val elementsTyped: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
-                  elementsTyped.map(jsbool => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeBoolean(jsbool.value))))
-
-                case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
-              }
-              val removeOldListOp = Seq(Map(removeAttrOperation, nameEntry))
-              removeOldListOp ++ addElements
-            }
-          }
-          case _ => Seq(Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value))))
+        case Some(refType) => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeEntityReference(refType,attributeValue))))
+        case None => attributeValue match {
+          case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry(attributeName)))
+          case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
+          case _ => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeString(attributeValue))))
         }
       }
     }
@@ -195,6 +171,33 @@ trait TSVFileSupport {
       None
     }
     EntityUpdateDefinition(row.headOption.get,entityType,ops.flatten ++ collectionMemberAttrOp )
+  }
+
+  def generateAttributeArrayOperations(attributeValue: String, attributeName: String): Seq[Map[String, Attribute]] = {
+    val listElements = attributeValue.parseJson.convertTo[JsArray].elements.toList
+
+    //if the list is empty, short-circuit and just replace any existing list with an empty list
+    if(listElements.isEmpty) {
+      Seq(Map(removeAttrOperation, nameEntry(attributeName)), Map(createAttrValueListOperation, nameEntry(attributeName)))
+    } else {
+      val addElements = listElements match {
+        case elements if elements.forall(_.isInstanceOf[JsString]) =>
+          val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
+          elementsTyped.map(jsstr => Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(AttributeString(jsstr.value))))
+
+        case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
+          val elementsTyped: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
+          elementsTyped.map(jsnum => Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(AttributeNumber(jsnum.value))))
+
+        case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
+          val elementsTyped: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
+          elementsTyped.map(jsbool => Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(AttributeBoolean(jsbool.value))))
+
+        case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
+      }
+      val removeOldListOp = Seq(Map(removeAttrOperation, nameEntry(attributeName)))
+      removeOldListOp ++ addElements
+    }
   }
 
 }
