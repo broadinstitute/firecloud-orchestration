@@ -3,7 +3,8 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
 import org.broadinstitute.dsde.firecloud.model.FlexibleModelSchema
-import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeString}
+import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
+import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeNumber, AttributeString, AttributeValue}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers.contain
@@ -56,51 +57,43 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
   }
 
   "setAttributesOnEntity" - {
-    "parse an attribute array consisting of all strings" in {
-      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeStringArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
-      resultingOps.operations.size shouldBe 4 //1 to remove any existing list, 3 to add the list elements
-      resultingOps.entityType shouldBe "some_type"
 
-      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
+    case class TsvArrayTestCase(loadFile: TSVLoadFile,
+                                testHint: String,
+                                exemplarValue: AttributeValue,
+                                expectedSize: Int = 4,
+                                colname: String = "arrays",
+                                entityType: String = "some_type")
 
-      //assert that these operations always remove the existing attribute by this name
-      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
+    val testCases = List(
+      TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeStringArray, "all strings", AttributeString("")),
+      TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeNumberArray, "all numbers", AttributeNumber(0)),
+      TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeBooleanArray, "all booleans", AttributeBoolean(true))
+    )
 
-      //assert that all of the remaining operations are adding a list member
-      resultingOpNames.tail.map { op =>
-        op shouldBe AttributeString("AddListMember")
-      }
-    }
+    testCases foreach { testCase =>
+      s"parse an attribute array consisting of ${testCase.testHint}" in {
+        val resultingOps = setAttributesOnEntity(testCase.entityType, None, testCase.loadFile.tsvData.head, Seq((testCase.colname, None)), FlexibleModelSchema)
+        resultingOps.operations.size shouldBe testCase.expectedSize //1 to remove any existing list, 3 to add the list elements
+        resultingOps.entityType shouldBe testCase.entityType
 
-    "parse an attribute array consisting of all numbers" in {
-      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeNumberArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
-      resultingOps.operations.size shouldBe 4 //1 to remove any existing list, 3 to add the list elements
-      resultingOps.entityType shouldBe "some_type"
+        // firstOp should be the RemoveAttribute
+        val firstOp = resultingOps.operations.head
+        firstOp.keySet should contain theSameElementsAs List("op", "attributeName")
+        firstOp("op") shouldBe AttributeString("RemoveAttribute")
+        firstOp("attributeName") shouldBe AttributeString(testCase.colname)
 
-      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
+        val expectedClass = testCase.exemplarValue.getClass
 
-      //assert that these operations always remove the existing attribute by this name
-      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
-
-      //assert that all of the remaining operations are adding a list member
-      resultingOpNames.tail.map { op =>
-        op shouldBe AttributeString("AddListMember")
-      }
-    }
-
-    "parse an attribute array consisting of all booleans" in {
-      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeBooleanArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
-      resultingOps.operations.size shouldBe 4 //1 to remove any existing list, 3 to add the list elements
-      resultingOps.entityType shouldBe "some_type"
-
-      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
-
-      //assert that these operations always remove the existing attribute by this name
-      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
-
-      //assert that all of the remaining operations are adding a list member
-      resultingOpNames.tail.map { op =>
-        op shouldBe AttributeString("AddListMember")
+        // remaining ops should be the AddListMembers
+        val tailOps = resultingOps.operations.tail
+        tailOps.foreach { op =>
+          op.keySet should contain theSameElementsAs List("attributeListName", "newMember", "op")
+          op("op") shouldBe AttributeString("AddListMember")
+          op("attributeListName") shouldBe AttributeString(testCase.colname)
+          val element = op("newMember")
+          element.getClass shouldBe(expectedClass)
+        }
       }
     }
 
@@ -115,13 +108,17 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
 
       resultingOps.operations.size shouldBe 2 //1 to remove any existing attribute with this name, 1 to create the empty attr value list
 
-      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
+      // firstOp should be the RemoveAttribute
+      val firstOp = resultingOps.operations.head
+      firstOp.keySet should contain theSameElementsAs List("op", "attributeName")
+      firstOp("op") shouldBe AttributeString("RemoveAttribute")
+      firstOp("attributeName") shouldBe AttributeString("arrays")
 
-      //assert that these operations always remove the existing attribute by this name
-      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
-
-      //assert that the second operation is creating the empty list
-      resultingOpNames.last shouldBe AttributeString("CreateAttributeValueList")
+      // second and final op should be the CreateAttributeValueList
+      val lastOp = resultingOps.operations.last
+      lastOp.keySet should contain theSameElementsAs List("op", "attributeName")
+      lastOp("op") shouldBe AttributeString("CreateAttributeValueList")
+      lastOp("attributeName") shouldBe AttributeString("arrays")
     }
   }
 
