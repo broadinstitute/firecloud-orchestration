@@ -70,6 +70,9 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       resultingOpNames.tail.map { op =>
         op shouldBe AttributeString("AddListMember")
       }
+
+      println(resultingOps)
+
     }
 
     "parse an attribute array consisting of all numbers" in {
@@ -108,6 +111,20 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       intercept[FireCloudException] {
         setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeMixedArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
       }
+    }
+
+    "parse an attribute empty array" in {
+      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithEmptyAttributeArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
+
+      resultingOps.operations.size shouldBe 2 //1 to remove any existing attribute with this name, 1 to create the empty attr value list
+
+      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
+
+      //assert that these operations always remove the existing attribute by this name
+      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
+
+      //assert that the second operation is creating the empty list
+      resultingOpNames.last shouldBe AttributeString("CreateAttributeValueList")
     }
   }
 

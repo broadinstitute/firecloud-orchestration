@@ -134,6 +134,7 @@ trait TSVFileSupport {
   val removeAttrOperation: (String, AttributeString) = "op" -> AttributeString("RemoveAttribute")
   val addListMemberOperation: (String, AttributeString) = "op" -> AttributeString("AddListMember")
   val createRefListOperation: (String, AttributeString) = "op" -> AttributeString("CreateAttributeEntityReferenceList")
+  val createAttrValueListOperation: (String, AttributeString) = "op" -> AttributeString("CreateAttributeValueList")
 
   /**
     * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
@@ -154,23 +155,28 @@ trait TSVFileSupport {
             val listNameEntry = "attributeListName" -> AttributeString(attributeName)
             def listValEntry( attr: Attribute ) = "newMember" -> attr
 
-            val addElements = listElements match {
-              case elements if elements.forall(_.isInstanceOf[JsString]) =>
-                val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
-                elementsTyped.map(jsstr => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeString(jsstr.value))))
+            //if the list is empty, short-circuit and just replace any existing list with an empty list
+            if(listElements.isEmpty) {
+              Seq(Map(removeAttrOperation, nameEntry), Map(createAttrValueListOperation, nameEntry))
+            } else {
+              val addElements = listElements match {
+                case elements if elements.forall(_.isInstanceOf[JsString]) =>
+                  val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
+                  elementsTyped.map(jsstr => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeString(jsstr.value))))
 
-              case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
-                val elementsTyped: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
-                elementsTyped.map(jsnum => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeNumber(jsnum.value))))
+                case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
+                  val elementsTyped: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
+                  elementsTyped.map(jsnum => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeNumber(jsnum.value))))
 
-              case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
-                val elementsTyped: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
-                elementsTyped.map(jsbool => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeBoolean(jsbool.value))))
+                case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
+                  val elementsTyped: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
+                  elementsTyped.map(jsbool => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeBoolean(jsbool.value))))
 
-              case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
+                case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
+              }
+              val removeOldListOp = Seq(Map(removeAttrOperation, nameEntry))
+              removeOldListOp ++ addElements
             }
-            val removeOldListOp = Seq(Map(removeAttrOperation,nameEntry))
-            removeOldListOp ++ addElements
           }
           case _ => Seq(Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value))))
         }
