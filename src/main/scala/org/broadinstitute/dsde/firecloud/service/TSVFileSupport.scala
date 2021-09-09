@@ -176,6 +176,9 @@ trait TSVFileSupport {
   def generateAttributeArrayOperations(attributeValue: String, attributeName: String): Seq[Map[String, Attribute]] = {
     val listElements = attributeValue.parseJson.convertTo[JsArray].elements.toList
 
+    def addListEntry(attrVal: AttributeValue) =
+      Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(attrVal))
+
     //if the list is empty, short-circuit and just replace any existing list with an empty list
     if(listElements.isEmpty) {
       Seq(Map(removeAttrOperation, nameEntry(attributeName)), Map(createAttrValueListOperation, nameEntry(attributeName)))
@@ -183,15 +186,15 @@ trait TSVFileSupport {
       val addElements = listElements match {
         case elements if elements.forall(_.isInstanceOf[JsString]) =>
           val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
-          elementsTyped.map(jsstr => Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(AttributeString(jsstr.value))))
+          elementsTyped.map(jsstr => addListEntry(AttributeString(jsstr.value)))
 
         case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
           val elementsTyped: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
-          elementsTyped.map(jsnum => Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(AttributeNumber(jsnum.value))))
+          elementsTyped.map(jsnum => addListEntry(AttributeNumber(jsnum.value)))
 
         case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
           val elementsTyped: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
-          elementsTyped.map(jsbool => Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(AttributeBoolean(jsbool.value))))
+          elementsTyped.map(jsbool => addListEntry(AttributeBoolean(jsbool.value)))
 
         case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
       }
