@@ -154,7 +154,7 @@ trait TSVFileSupport {
             val listNameEntry = "attributeListName" -> AttributeString(attributeName)
             def listValEntry( attr: Attribute ) = "newMember" -> attr
 
-            listElements match {
+            val addElements = listElements match {
               case elements if elements.forall(_.isInstanceOf[JsString]) =>
                 val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
                 elementsTyped.map(jsstr => Map(addListMemberOperation, listNameEntry, listValEntry(AttributeString(jsstr.value))))
@@ -169,6 +169,8 @@ trait TSVFileSupport {
 
               case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
             }
+            val removeOldListOp = Seq(Map(removeAttrOperation,nameEntry))
+            removeOldListOp ++ addElements
           }
           case _ => Seq(Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value))))
         }
