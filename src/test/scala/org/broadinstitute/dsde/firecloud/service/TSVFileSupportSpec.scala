@@ -58,20 +58,50 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
   "setAttributesOnEntity" - {
     "parse an attribute array consisting of all strings" in {
       val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeStringArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
-      resultingOps.operations.size shouldBe 3
+      resultingOps.operations.size shouldBe 4 //1 to remove any existing list, 3 to add the list elements
       resultingOps.entityType shouldBe "some_type"
+
+      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
+
+      //assert that these operations always remove the existing attribute by this name
+      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
+
+      //assert that all of the remaining operations are adding a list member
+      resultingOpNames.tail.map { op =>
+        op shouldBe AttributeString("AddListMember")
+      }
     }
 
     "parse an attribute array consisting of all numbers" in {
       val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeNumberArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
-      resultingOps.operations.size shouldBe 3
+      resultingOps.operations.size shouldBe 4 //1 to remove any existing list, 3 to add the list elements
       resultingOps.entityType shouldBe "some_type"
+
+      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
+
+      //assert that these operations always remove the existing attribute by this name
+      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
+
+      //assert that all of the remaining operations are adding a list member
+      resultingOpNames.tail.map { op =>
+        op shouldBe AttributeString("AddListMember")
+      }
     }
 
     "parse an attribute array consisting of all booleans" in {
       val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeBooleanArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
-      resultingOps.operations.size shouldBe 3
+      resultingOps.operations.size shouldBe 4 //1 to remove any existing list, 3 to add the list elements
       resultingOps.entityType shouldBe "some_type"
+
+      val resultingOpNames = resultingOps.operations.map(ops => ops("op"))
+
+      //assert that these operations always remove the existing attribute by this name
+      resultingOpNames.head shouldBe AttributeString("RemoveAttribute")
+
+      //assert that all of the remaining operations are adding a list member
+      resultingOpNames.tail.map { op =>
+        op shouldBe AttributeString("AddListMember")
+      }
     }
 
     "throw an exception when parsing an attribute array consisting of mixed attribute types" in {
