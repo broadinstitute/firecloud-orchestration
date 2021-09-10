@@ -4883,7 +4883,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PFBResponse'
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -4903,11 +4903,12 @@ paths:
       x-codegen-request-body-name: pfbImportRequest
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB/{jobId}:
     get:
+      deprecated: true
       tags:
         - Entities
-      summary: Report status on a PFB import job
+      summary: Use the importJob API instead.
       description: |
-        This API will return status of an import jobID. The jobID was returned from a previous import request.
+        Use /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob/{jobId} instead.
       operationId: importPFBStatus
       parameters:
         - name: workspaceNamespace
@@ -4934,7 +4935,48 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PFBStatusResponse'
+                $ref: '#/components/schemas/ImportJobStatusResponse'
+        404:
+          description: workspace or job ID not found
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+      x-passthrough: false
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob/{jobId}:
+    get:
+      tags:
+        - Entities
+      summary: Report status on an asynchronous import job
+      description: |
+        This API will return status of an import jobID. The jobID was returned from a previous import request.
+      operationId: importJobStatus
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          description: job ID of the import to check
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJobStatusResponse'
         404:
           description: workspace or job ID not found
           content: {}
@@ -4961,6 +5003,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: async
+          in: query
+          description: Import asynchronously?
+          required: false
+          schema:
+            type: boolean
+            default: false
       requestBody:
         content:
           multipart/form-data:
@@ -4976,8 +5025,14 @@ paths:
         required: true
       responses:
         200:
-          description: Successful Request
+          description: Successful Request for synchronous import
           content: {}
+        202:
+          description: Successful Request for asynchronous import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -8710,7 +8765,7 @@ components:
         url:
           type: string
           description: link to publically accessible PFB/Avro
-    PFBResponse:
+    ImportResponse:
       required:
         - jobId
         - url
@@ -8718,7 +8773,7 @@ components:
       properties:
         url:
           type: string
-          description: the link to PFB/Avro specified in the request
+          description: the link to TSV or PFB/Avro specified in the request
         jobId:
           type: string
           description: unique id for the import job.
@@ -8731,7 +8786,7 @@ components:
             name:
               type: string
               description: the workspace name specified in the request
-    PFBStatusResponse:
+    ImportJobStatusResponse:
       required:
         - jobId
         - status

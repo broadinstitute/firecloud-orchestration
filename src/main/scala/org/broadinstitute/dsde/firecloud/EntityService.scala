@@ -3,14 +3,13 @@ package org.broadinstitute.dsde.firecloud
 import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
 import java.net.{HttpURLConnection, URL}
 import java.text.SimpleDateFormat
-import java.util.zip.{ZipEntry, ZipFile}
-
+import java.util.zip.{ZipEntry, ZipException, ZipFile}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.dataaccess.{ImportServiceDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -18,8 +17,12 @@ import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
 import spray.json.DefaultJsonProtocol._
 
+import java.nio.channels.Channels
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
@@ -30,7 +33,7 @@ import scala.util.{Failure, Success, Try}
 object EntityService {
 
   def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
-    new EntityService(app.rawlsDAO, app.importServiceDAO, modelSchema)
+    new EntityService(app.rawlsDAO, app.importServiceDAO, app.googleServicesDAO, modelSchema)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -98,7 +101,7 @@ object EntityService {
 
 }
 
-class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
+class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, googleServicesDAO: GoogleServicesDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
   extends TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -135,22 +138,19 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
   /**
    * Imports collection members into a collection type entity. */
   private def importMembershipTSV(
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo, isAsync: Boolean ): Future[PerRequestMessage] = {
     withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
       validateMembershipTSV(tsv, memberTypeOpt) {
         withPlural(memberTypeOpt.get) { memberPlural =>
-          val rawlsCalls = tsv.tsvData groupBy(_.head) map { case (entityName, rows) =>
+          val rawlsCalls = (tsv.tsvData groupBy(_.head) map { case (entityName, rows) =>
             val ops = rows map { row =>
               //row(1) is the entity to add as a member of the entity in row.head
               val attrRef = AttributeEntityReference(memberTypeOpt.get,row(1))
               Map(addListMemberOperation,"attributeListName"->AttributeString(memberPlural),"newMember"->attrRef)
             }
             EntityUpdateDefinition(entityName,entityType,ops)
-          }
-
-          val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls.toSeq)(userInfo)
-
-          handleBatchRawlsResponse(entityType, rawlsResponse)
+          }).toSeq
+          maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
         }
       }
     }
@@ -159,7 +159,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
   /**
    * Creates or updates entities from an entity TSV. Required attributes must exist in column headers. */
   private def importEntityTSV(
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo, isAsync: Boolean ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -167,10 +167,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
           withRequiredAttributes(entityType, tsv.headers) { requiredAttributes =>
             val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
             val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
-
-            val rawlsResponse = rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
-
-            handleBatchRawlsResponse(entityType, rawlsResponse)
+            maybeAsyncBatchUpdate(isAsync, true, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
           }
         }
       }
@@ -180,7 +177,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
   /**
    * Updates existing entities from TSV. All entities must already exist. */
   private def importUpdateTSV(
-    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo ): Future[PerRequestMessage] = {
+    workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo, isAsync: Boolean ): Future[PerRequestMessage] = {
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -192,14 +189,45 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
             case Success(requiredAttributes) =>
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row => setAttributesOnEntity(entityType, memberTypeOpt, row, colInfo, modelSchema))
-
-              val rawlsResponse = rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
-
-              handleBatchRawlsResponse(entityType, rawlsResponse)
+              maybeAsyncBatchUpdate(isAsync, false, workspaceNamespace, workspaceName, entityType, rawlsCalls, userInfo)
           }
         }
       }
     }
+  }
+
+  private def maybeAsyncBatchUpdate(isAsync: Boolean, isUpsert: Boolean, workspaceNamespace: String, workspaceName: String,
+                                    entityType: String, rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
+    if (isAsync) {
+      asyncImport(workspaceNamespace, workspaceName, isUpsert, rawlsCalls, userInfo).recover {
+        case e: Exception =>
+          RequestCompleteWithErrorReport(InternalServerError, "Unexpected error during async TSV import", e)
+      }
+    } else {
+      val rawlsResponse = if (isUpsert) {
+        rawlsDAO.batchUpsertEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      } else {
+        rawlsDAO.batchUpdateEntities(workspaceNamespace, workspaceName, entityType, rawlsCalls)(userInfo)
+      }
+      handleBatchRawlsResponse(entityType, rawlsResponse)
+    }
+  }
+
+  private def asyncImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean,
+                          rawlsCalls: Seq[EntityUpdateDefinition], userInfo: UserInfo): Future[PerRequestMessage] = {
+    import spray.json._
+
+    // generate unique name for the file-to-upload
+    val fileToWrite = GcsObjectName(s"incoming/${java.util.UUID.randomUUID()}.json")
+    val bucketToWrite = GcsBucketName(FireCloudConfig.ImportService.bucket)
+
+    // write rawlsCalls to import service's bucket
+    val dataBytes = rawlsCalls.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8)
+    val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
+    val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
+
+    val importRequest = AsyncImportRequest(Option(gcsPath))
+    importServiceDAO.importRawlsJson(workspaceNamespace, workspaceName, isUpsert, importRequest)(userInfo)
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
@@ -218,18 +246,18 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
     }
   }
 
-  private def importEntitiesFromTSVLoadFile(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+  private def importEntitiesFromTSVLoadFile(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String, userInfo: UserInfo, isAsync: Boolean): Future[PerRequestMessage] = {
     tsvType match {
-      case TsvTypes.MEMBERSHIP => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
-      case TsvTypes.ENTITY => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
-      case TsvTypes.UPDATE => importUpdateTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo)
+      case TsvTypes.MEMBERSHIP => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync)
+      case TsvTypes.ENTITY => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync)
+      case TsvTypes.UPDATE => importUpdateTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync)
       case _ => Future(RequestCompleteWithErrorReport(BadRequest, "Invalid TSV type.")) //We should never get to this case
     }
   }
 
   /**
    * Determines the TSV type from the first column header and routes it to the correct import function. */
-  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo): Future[PerRequestMessage] = {
+  def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo, isAsync: Boolean = false): Future[PerRequestMessage] = {
 
     def stripEntityType(entityTypeString: String): String = {
       val entityType = entityTypeString.stripSuffix("_id")
@@ -255,7 +283,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
         } else {
           tsv
         }
-      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType, userInfo)
+      importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType, userInfo, isAsync)
     }
   }
 
@@ -274,41 +302,62 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
 
         val rand = java.util.UUID.randomUUID.toString.take(8)
         val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
+        var bytesDownloaded = new AtomicLong(-1) // careful, this is a var
 
         try {
           val conn = bagitURL.openConnection()
           val length = conn.getContentLength
           conn.asInstanceOf[HttpURLConnection].disconnect()
 
-          if (length > Rawls.entityBagitMaximumSize) {
+          if (length == 0) {
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag has content-length 0"))
+          } else if (length > Rawls.entityBagitMaximumSize) {
             Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
           } else {
-            //this magic creates a process that downloads a URL to a file (which is #>), and then runs the process (which is !!)
-            bagitURL #> bagItFile !!
+            // download the file
+            val readFromBagit = Channels.newChannel(bagitURL.openStream())
+            val writeToTemp = new FileOutputStream(bagItFile)
+            try {
+              bytesDownloaded.set(writeToTemp.getChannel.transferFrom(readFromBagit, 0, length))
+            } finally {
+              readFromBagit.close()
+              writeToTemp.close()
+            }
 
-            //make two big strings containing the participants and samples TSVs
-            //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
-            unzipTSVs(bagitRq.bagitURL, new ZipFile(bagItFile.getAbsolutePath)) { (participantsStr, samplesStr) =>
-              (participantsStr, samplesStr) match {
-                case (None, None) =>
-                  Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
-                case _ =>
-                  for {
-                    // This should vomit back errors from rawls.
-                    participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
-                    sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
-                  } yield {
-                    participantResult match {
-                      case RequestComplete((OK, _)) => sampleResult
-                      case _ => participantResult
+            val zipFile = new ZipFile(bagItFile.getAbsolutePath)
+            if (!zipFile.entries().hasMoreElements) {
+              Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag has no entries."))
+            } else {
+              //make two big strings containing the participants and samples TSVs
+              //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
+              unzipTSVs(bagitRq.bagitURL, zipFile) { (participantsStr, samplesStr) =>
+                (participantsStr, samplesStr) match {
+                  case (None, None) =>
+                    Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
+                  case _ =>
+                    for {
+                      // This should vomit back errors from rawls.
+                      participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
+                      sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
+                    } yield {
+                      participantResult match {
+                        case RequestComplete((OK, _)) => sampleResult
+                        case _ => participantResult
+                      }
                     }
-                  }
+                }
               }
             }
           }
         } catch {
-          case e: FileNotFoundException => Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
-          case e: Exception => throw e
+          case _:FileNotFoundException =>
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
+          case ze:ZipException =>
+            logger.info(s"ZipException: ${ze.getMessage} - ${bagItFile.getAbsolutePath} has length ${bagItFile.length}. " +
+              s"We originally downloaded $bytesDownloaded bytes.")
+            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"Problem with BDBag: ${ze.getMessage}"))
+          case e: Exception =>
+            throw e
         } finally {
           bagItFile.delete()
         }
@@ -316,7 +365,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, mode
     }
   }
 
-  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
+  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
     importServiceDAO.importPFB(workspaceNamespace, workspaceName, pfbRequest)(userInfo)
   }
 

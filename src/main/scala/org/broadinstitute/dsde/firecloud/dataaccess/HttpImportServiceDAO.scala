@@ -6,13 +6,13 @@ import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.{ImportServiceRequest, ImportServiceResponse, PfbImportRequest, PfbImportResponse, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.model.{ImportServiceRequest, ImportServiceResponse, AsyncImportRequest, AsyncImportResponse, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.model.WorkspaceName
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource, WorkspaceName}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -20,11 +20,19 @@ import scala.concurrent.duration._
 class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
-  override def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+  override def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    doImport(workspaceNamespace, workspaceName, isUpsert = true, pfbRequest, "pfb")
+  }
 
-    // the payload to Import Service sends "path" and filetype.  Here, we force-hardcode filetype because this API
-    // should only be used for PFBs.
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url.getOrElse(""), filetype = "pfb")
+  override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    doImport(workspaceNamespace, workspaceName, isUpsert, rawlsJsonRequest, "rawlsjson")
+  }
+
+  private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, pfbRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    // the payload to Import Service sends "path" and filetype.
+    val path = pfbRequest.url.getOrElse(
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url cannot be empty")(ErrorReportSource("FireCloud"))))
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = path, filetype = filetype, isUpsert = isUpsert)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
@@ -34,7 +42,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
   }
 
   // separate method to ease unit testing
-  protected[dataaccess] def generateResponse(isResponse: HttpResponse, workspaceNamespace: String, workspaceName: String, pfbRequest: PfbImportRequest): Future[PerRequestMessage] = {
+  protected[dataaccess] def generateResponse(isResponse: HttpResponse, workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest): Future[PerRequestMessage] = {
     isResponse match {
       case resp if resp.status == Created =>
         val importServiceResponse = Unmarshal(resp).to[ImportServiceResponse]
@@ -43,7 +51,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
         // and we return a different response payload than what import service returns.
 
         importServiceResponse.map { resp =>
-          val responsePayload:PfbImportResponse = PfbImportResponse(
+          val responsePayload:AsyncImportResponse = AsyncImportResponse(
             jobId = resp.jobId,
             url = pfbRequest.url.getOrElse(""),
             workspace = WorkspaceName(workspaceNamespace, workspaceName)

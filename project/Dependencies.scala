@@ -34,8 +34,10 @@ object Dependencies {
       exclude("com.typesafe.scala-logging", "scala-logging_2.12")
       exclude("com.typesafe.akka", "akka-stream_2.12")
       exclude("com.google.code.findbugs", "jsr305")
+      exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.3-12b7791-SNAP"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.5-4bc7050"),
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.21-bf66e61",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
@@ -74,7 +76,12 @@ object Dependencies {
     "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.2",
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.5"   % "test",
-    "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test"
+    "org.scalatest"                 %% "scalatest"           % "3.2.9"   % "test",
+    "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test",
+    // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
+    "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
+    // provides testing mocks
+    "com.google.cloud"               % "google-cloud-nio"    % "0.123.7" % "test",
+    "org.scalatestplus"             %% "mockito-3-4"         % "3.2.9.0" % "test"
   )
 }
