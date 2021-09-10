@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 import DefaultJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.WDLJsonSupport.AttributeReferenceFormat
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -176,7 +177,7 @@ trait TSVFileSupport {
   def generateAttributeArrayOperations(attributeValue: String, attributeName: String): Seq[Map[String, Attribute]] = {
     val listElements = attributeValue.parseJson.convertTo[JsArray].elements.toList
 
-    def addListEntry(attrVal: AttributeValue) =
+    def addListEntry(attrVal: AttributeListElementable) =
       Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(attrVal))
 
     //if the list is empty, short-circuit and just replace any existing list with an empty list
@@ -197,14 +198,23 @@ trait TSVFileSupport {
         case jsstr:JsString => addListEntry(AttributeString(jsstr.value))
         case jsnum:JsNumber => addListEntry(AttributeNumber(jsnum.value))
         case jsbool:JsBoolean => addListEntry(AttributeBoolean(jsbool.value))
+        case jsobj:JsObject =>
+          val entRefAttempt = Try(jsobj.convertTo[AttributeEntityReference])
+          entRefAttempt match {
+            case Success(ref) => addListEntry(ref)
+            case Failure(_) =>
+              throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, UNSUPPORTED_ARRAY_TYPE_ERROR_MSG))
+          }
         case _ =>
           // if we hit this case, it means we have a homogenous array, but the elements' datatype
           // is not one we support
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "Only arrays of strings, numbers, or booleans are supported."))
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, UNSUPPORTED_ARRAY_TYPE_ERROR_MSG))
       }
       val removeOldListOp = Seq(Map(removeAttrOperation, nameEntry(attributeName)))
       removeOldListOp ++ addElements
     }
   }
+
+  val UNSUPPORTED_ARRAY_TYPE_ERROR_MSG = "Only arrays of strings, numbers, booleans, or entity references are supported."
 
 }

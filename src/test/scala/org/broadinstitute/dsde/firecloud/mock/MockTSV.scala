@@ -319,6 +319,7 @@ object MockTSVLoadFiles {
   val entityWithAttributeBooleanArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[false,true,true]""")))
   val entityWithAttributeNumberArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[1,2,3]""")))
   val entityWithAttributeStringArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """["foo","bar","baz"]""")))
+  val entityWithAttributeEntityReferenceArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[{"entityType":"sample","entityName":"HCC1143"},{"entityType":"sample","entityName":"HCC1143_10"},{"entityType":"sample","entityName":"HCC1143_100"}]""")))
   val entityWithAttributeMixedArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[false,"foo",1]""")))
   val entityWithAttributeArrayOfObjects = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[{"one":"two"},{"three":"four"},{"five":"six"}]""")))
   val entityWithEmptyAttributeArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[]""")))

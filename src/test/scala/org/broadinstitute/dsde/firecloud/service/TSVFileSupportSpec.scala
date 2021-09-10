@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
 import org.broadinstitute.dsde.firecloud.model.FlexibleModelSchema
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
-import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeName, AttributeNumber, AttributeString, AttributeValue}
+import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeEntityReference, AttributeListElementable, AttributeName, AttributeNumber, AttributeString}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers.contain
@@ -61,7 +61,7 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
 
     case class TsvArrayTestCase(loadFile: TSVLoadFile,
                                 testHint: String,
-                                exemplarValue: AttributeValue,
+                                exemplarValue: AttributeListElementable,
                                 expectedSize: Int = 4,
                                 colname: String = "arrays",
                                 entityType: String = "some_type")
@@ -69,7 +69,9 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     val testCases = List(
       TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeStringArray, "all strings", AttributeString("")),
       TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeNumberArray, "all numbers", AttributeNumber(0)),
-      TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeBooleanArray, "all booleans", AttributeBoolean(true))
+      TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeBooleanArray, "all booleans", AttributeBoolean(true)),
+      TsvArrayTestCase(MockTSVLoadFiles.entityWithAttributeEntityReferenceArray,
+        "all entity references", AttributeEntityReference("entityType", "entityName"))
     )
 
     testCases foreach { testCase =>
@@ -111,7 +113,7 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
         setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeArrayOfObjects.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
       }
       caught.errorReport.statusCode should contain (BadRequest)
-      caught.errorReport.message shouldBe "Only arrays of strings, numbers, or booleans are supported."
+      caught.errorReport.message shouldBe UNSUPPORTED_ARRAY_TYPE_ERROR_MSG
     }
 
     "parse an attribute empty array" in {
