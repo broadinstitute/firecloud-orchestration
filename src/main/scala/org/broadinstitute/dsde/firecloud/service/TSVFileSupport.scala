@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
@@ -183,20 +183,24 @@ trait TSVFileSupport {
     if(listElements.isEmpty) {
       Seq(Map(removeAttrOperation, nameEntry(attributeName)), Map(createAttrValueListOperation, nameEntry(attributeName)))
     } else {
-      val addElements = listElements match {
-        case elements if elements.forall(_.isInstanceOf[JsString]) =>
-          val elementsTyped: List[JsString] = elements.asInstanceOf[List[JsString]]
-          elementsTyped.map(jsstr => addListEntry(AttributeString(jsstr.value)))
 
-        case elements if elements.forall(_.isInstanceOf[JsNumber]) =>
-          val elementsTyped: List[JsNumber] = elements.asInstanceOf[List[JsNumber]]
-          elementsTyped.map(jsnum => addListEntry(AttributeNumber(jsnum.value)))
+      // validate that all elements in the list are the same datatype.
+      // special handling for JsBoolean, which inside the list will be JsTrue/JsFalse and therefore cannot
+      // be equal
+      val headClass = listElements.head.getClass
+      if (listElements.exists(_.getClass != headClass) && !listElements.forall(_.isInstanceOf[JsBoolean])) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "Mixed-type entity attribute lists are not supported."))
+      }
 
-        case elements if elements.forall(_.isInstanceOf[JsBoolean]) =>
-          val elementsTyped: List[JsBoolean] = elements.asInstanceOf[List[JsBoolean]]
-          elementsTyped.map(jsbool => addListEntry(AttributeBoolean(jsbool.value)))
-
-        case _ => throw new FireCloudException("Mixed-type entity attribute lists are not supported.")
+      // since we know all list elements are the same datatype, we can match on them individually
+      val addElements = listElements map {
+        case jsstr:JsString => addListEntry(AttributeString(jsstr.value))
+        case jsnum:JsNumber => addListEntry(AttributeNumber(jsnum.value))
+        case jsbool:JsBoolean => addListEntry(AttributeBoolean(jsbool.value))
+        case _ =>
+          // if we hit this case, it means we have a homogenous array, but the elements' datatype
+          // is not one we support
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "Only arrays of strings, numbers, or booleans are supported."))
       }
       val removeOldListOp = Seq(Map(removeAttrOperation, nameEntry(attributeName)))
       removeOldListOp ++ addElements

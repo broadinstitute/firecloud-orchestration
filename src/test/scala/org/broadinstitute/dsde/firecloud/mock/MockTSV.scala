@@ -320,6 +320,7 @@ object MockTSVLoadFiles {
   val entityWithAttributeNumberArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[1,2,3]""")))
   val entityWithAttributeStringArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """["foo","bar","baz"]""")))
   val entityWithAttributeMixedArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[false,"foo",1]""")))
+  val entityWithAttributeArrayOfObjects = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[{"one":"two"},{"three":"four"},{"five":"six"}]""")))
   val entityWithEmptyAttributeArray = TSVLoadFile("array", Seq("array"), Seq(Seq("bla", """[]""")))
 
   val validHugeFile = TSVLoadFile("header1",

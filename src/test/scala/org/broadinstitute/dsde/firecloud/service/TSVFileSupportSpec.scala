@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import akka.http.scaladsl.model.StatusCodes.BadRequest
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
 import org.broadinstitute.dsde.firecloud.model.FlexibleModelSchema
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
@@ -98,9 +99,19 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     }
 
     "throw an exception when parsing an attribute array consisting of mixed attribute types" in {
-      intercept[FireCloudException] {
+      val caught = intercept[FireCloudExceptionWithErrorReport] {
         setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeMixedArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
       }
+      caught.errorReport.statusCode should contain (BadRequest)
+      caught.errorReport.message shouldBe "Mixed-type entity attribute lists are not supported."
+    }
+
+    "throw an exception when parsing an attribute array of objects" in {
+      val caught = intercept[FireCloudExceptionWithErrorReport] {
+        setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithAttributeArrayOfObjects.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
+      }
+      caught.errorReport.statusCode should contain (BadRequest)
+      caught.errorReport.message shouldBe "Only arrays of strings, numbers, or booleans are supported."
     }
 
     "parse an attribute empty array" in {
