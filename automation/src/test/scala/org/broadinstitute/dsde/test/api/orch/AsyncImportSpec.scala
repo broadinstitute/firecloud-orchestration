@@ -138,6 +138,49 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       }
     }
 
+    "should synchronously return an error when attempting to import a PFB file via import service" - {
+
+      "for readers of a workspace" in {
+        val reader = UserPool.chooseStudent
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("reader-pfb-import"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
+
+            // call importPFB as reader
+            val exception = intercept[RestException] {
+              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(reader.makeAuthToken())
+            }
+
+            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
+
+            errorReport.statusCode.value shouldBe StatusCodes.Forbidden
+            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
+
+          } (ownerAuthToken)
+        }
+      }
+
+      "with an invalid POST payload" in {
+        implicit val token: AuthToken = ownerAuthToken
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
+
+            // call importPFB with a payload of the wrong shape
+            val exception = intercept[RestException] {
+              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", "this is a string, not json")
+            }
+
+            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
+
+            errorReport.statusCode.value shouldBe StatusCodes.BadRequest
+            errorReport.message should include (s"Object expected in field 'url'")
+
+          } (ownerAuthToken)
+        }
+      }
+
+    }
+
     "should import a TSV asynchronously for entities and entity membership" in {
       implicit val token: AuthToken = ownerAuthToken
       withCleanBillingProject(owner) { projectName =>
