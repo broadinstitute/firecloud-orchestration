@@ -37,9 +37,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
   lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("AsyncImportSpec-pfb-expected-entities.json").getLines().mkString
     .parseJson.convertTo[Map[String, EntityTypeMetadata]]
 
-  private val tsvData = Source.fromResource("tsv-participants.tsv").getLines().mkString("\n")
-
-    "Orchestration" - {
+  "Orchestration" - {
 
     "should import a PFB file via import service" - {
       "for the owner of a workspace" in {
@@ -140,85 +138,60 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       }
     }
 
-    "should synchronously return an error when attempting to import a PFB file via import service" - {
+    "should import a TSV asynchronously for entities and entity membership" in {
+      implicit val token: AuthToken = ownerAuthToken
+      withCleanBillingProject(owner) { projectName =>
+        withWorkspace(projectName, prependUUID("tsv-entities")) { workspaceName =>
+          val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
+          val participantAndSetEntityMetadata = participantEntityMetadata + ("participant_set" -> EntityTypeMetadata(2, "participant_set_id", Seq("participants")))
 
-      "for readers of a workspace" in {
-        val reader = UserPool.chooseStudent
-
-        withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("reader-pfb-import"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
-
-            // call importPFB as reader
-            val exception = intercept[RestException] {
-              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(reader.makeAuthToken())
-            }
-
-            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
-
-            errorReport.statusCode.value shouldBe StatusCodes.Forbidden
-            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
-
-          } (ownerAuthToken)
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
+          importAsync(projectName, workspaceName, "MEMBERSHIP_PARTICIPANT_SET.tsv", participantAndSetEntityMetadata)
         }
       }
+    }
 
-      "with an invalid POST payload" in {
-        implicit val token: AuthToken = ownerAuthToken
-        withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
+    "should import a TSV asynchronously for updates" in {
+      implicit val token: AuthToken = ownerAuthToken
+      withCleanBillingProject(owner) { projectName =>
+        withWorkspace(projectName, prependUUID("tsv-updates")) { workspaceName =>
+          val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
+          val updatedParticipantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq("age")))
 
-            // call importPFB with a payload of the wrong shape
-            val exception = intercept[RestException] {
-              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", "this is a string, not json")
-            }
-
-            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
-
-            errorReport.statusCode.value shouldBe StatusCodes.BadRequest
-            errorReport.message should include (s"Object expected in field 'url'")
-
-          } (ownerAuthToken)
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
+          importAsync(projectName, workspaceName, "UPDATE_PARTICIPANTS.tsv", updatedParticipantEntityMetadata)
         }
       }
 
     }
+  }
 
-    "should import a TSV asynchronously" in {
-        implicit val token: AuthToken = ownerAuthToken
+  private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken) = {
+    val importFileString = FileUtils.readAllTextFromResource(importFilePath)
 
-        withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("owner-tsv-import")) { workspaceName =>
+    // call import as owner
+    val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, true, "entities", importFileString)
+    // expect to get exactly one jobId back
+    val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
+    importJobIdValues should have size 1
 
-            println("TSD DATA: " + tsvData)
+    val importJobId: String = importJobIdValues.head match {
+      case js: JsString => js.value
+      case x => fail("got an invalid jobId: " + x.toString ())
+    }
 
-            // call import as owner
-            val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, true, "entities", tsvData)
-            // expect to get exactly one jobId back
-            val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
-            importJobIdValues should have size 1
+    // poll for completion as owner
+    eventually {
+      val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
+      resp.status shouldBe StatusCodes.OK
+      blockForStringBody(resp).parseJson.asJsObject.fields.get ("status").value shouldBe JsString ("Done")
+    }
 
-            val importJobId: String = importJobIdValues.head match {
-              case js: JsString => js.value
-              case x => fail("got an invalid jobId: " + x.toString())
-            }
-
-            // poll for completion as owner
-            eventually {
-              // might be better for "importPFB" to be renamed generically as "asyncImport"
-              val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
-              resp.status shouldBe StatusCodes.OK
-              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
-            }
-
-            // inspect data entities and confirm correct import as owner
-            eventually {
-              val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
-              val result = blockForStringBody(resp).parseJson.asJsObject
-              compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]],
-                Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq())))
-            }
-          }
-      }
+    // inspect data entities and confirm correct import as owner
+    eventually {
+      val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+      val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
+      compareMetadata (result, expectedResult)
     }
   }
 
