@@ -316,7 +316,9 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     false, //locked
     Some(Set.empty), //authdomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount"))
   )
 
   private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(

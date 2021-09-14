@@ -435,7 +435,6 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-
     delete:
       tags:
         - BillingV2
@@ -9901,11 +9900,13 @@ components:
         - name
         - namespace
         - workspaceId
+        - googleProject
+        - workspaceVersion
       type: object
       properties:
         attributes:
           type: object
-          properties: {}
+          properties: { }
           description: Map[String, Attribute]
         authorizationDomain:
           type: array
@@ -9944,6 +9945,21 @@ components:
         workspaceId:
           type: string
           description: A UUID associated with the workspace
+        googleProject:
+          type: string
+          description: Identifies the google project used by the workspace for compute and storage
+        googleProjectNumber:
+          type: string
+          description: A different google project identifier for the same project identified by the googleProject; required by google for certain actions
+        workspaceVersion:
+          type: string
+          description: internal use
+        billingAccount:
+          type: string
+          description: The current billing account being charged for activity within this workspace. For desired billing account, look to the billing account specified on this workspace's billing project
+        billingAccountErrorMessage:
+          type: string
+          description: Error message received during most recent attempt to update the current billing account on workspace's Google project. Empty if update was successful.
       description: ""
     WorkspaceListResponse:
       type: object
@@ -9983,6 +9999,10 @@ components:
           type: boolean
           description: Optional, false if not specified. If true, the workspace is created with a Billing Project owner but no workspace owner. Requires being a Billing Project owner.
           default: false
+        bucketLocation:
+          type: string
+          required: false
+          description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceRequestClone:
       required:
@@ -10013,6 +10033,10 @@ components:
           type: boolean
           description: Optional, false if not specified. If true, the workspace is created with a Billing Project owner but no workspace owner. Requires being a Billing Project owner.
           default: false
+        bucketLocation:
+          type: string
+          required: false
+          description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceResponse:
       type: object
@@ -10592,6 +10616,11 @@ components:
           items:
             type: string
           description: the roles the caller has on the project
+        workspacesWithCorrectBillingAccount:
+          type: array
+          items:
+            type: string
+          description: A list of workspace names with the correct billing account contained within this billing project
         workspacesWithIncorrectBillingAccount:
           type: array
           items:
