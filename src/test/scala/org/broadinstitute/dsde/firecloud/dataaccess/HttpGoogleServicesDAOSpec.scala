@@ -41,22 +41,6 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
 
   behavior of "HttpGoogleServicesDAO"
 
-  // TODO: David An 2021-09-03: fix this test.
-  /* it is failing consistently for me with an error of:
-      Error:  [17:35:45.130] [HttpGoogleCloudStorageDAOSpec-akka.actor.default-dispatcher-17] o.b.d.f.d.HttpGoogleServicesDAO - Unable to fetch/parse latest Google price list. A cached (possibly outdated) value will be used instead. Error: Unexpected error: java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty
-      [info] - should fetch the current price list *** FAILED ***
-      [info]   -0.11 was not greater than 0 (HttpGoogleServicesDAOSpec.scala:50)
-   */
-  it should "fetch the current price list" ignore {
-
-    val priceList: GooglePriceList = Await.result(gcsDAO.fetchPriceList, Duration.Inf)
-
-    priceList.version should startWith ("v")
-    priceList.updated should not be empty
-    priceList.prices.cpBigstoreStorage("us") should be > BigDecimal(0)
-    priceList.prices.cpComputeengineInternetEgressNA.tiers.size should be > 0
-  }
-
   it should "default to the cached price list if it cannot fetch/parse one from Google" in {
     val errorGcsDAO = new HttpGoogleServicesDAO(priceListUrl + ".error", defaultPriceList)
 
