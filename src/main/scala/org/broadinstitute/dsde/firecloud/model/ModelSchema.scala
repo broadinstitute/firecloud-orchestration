@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import spray.json._
+import DefaultJsonProtocol._
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 
@@ -23,6 +24,10 @@ trait ModelSchema {
   def getRequiredAttributes(entityType: String): Try[Map[String, String]]
   def getTypeSchema(entityType: String): Try[EntityMetadata]
   def supportsBackwardsCompatibleIds: Boolean
+
+  def isAttributeArray(value: String): Boolean = {
+    Try(value.parseJson.convertTo[JsArray]).isSuccess
+  }
 
   def isEntityTypeInSchema(entityType: String): Boolean = {
     Try(this.getCollectionMemberType(entityType)) match {

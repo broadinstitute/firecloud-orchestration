@@ -1,12 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import akka.http.scaladsl.model.StatusCodes._
+import spray.json._
+import DefaultJsonProtocol._
+import org.broadinstitute.dsde.rawls.model.WDLJsonSupport.AttributeReferenceFormat
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -131,6 +135,12 @@ trait TSVFileSupport {
   val removeAttrOperation: (String, AttributeString) = "op" -> AttributeString("RemoveAttribute")
   val addListMemberOperation: (String, AttributeString) = "op" -> AttributeString("AddListMember")
   val createRefListOperation: (String, AttributeString) = "op" -> AttributeString("CreateAttributeEntityReferenceList")
+  val createAttrValueListOperation: (String, AttributeString) = "op" -> AttributeString("CreateAttributeValueList")
+
+  def nameEntry(attributeName: String) = "attributeName" -> AttributeString(attributeName)
+  def valEntry(attr: Attribute) = "addUpdateAttribute" -> attr
+  def listNameEntry(attributeName: String) = "attributeListName" -> AttributeString(attributeName)
+  def listValEntry(attr: Attribute) = "newMember" -> attr
 
   /**
     * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
@@ -139,14 +149,13 @@ trait TSVFileSupport {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
-    val ops = for { (value,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !value.isEmpty } yield {
-      val nameEntry = "attributeName" -> AttributeString(attributeName)
-      def valEntry( attr: Attribute ) = "addUpdateAttribute" -> attr
+    val ops = for { (attributeValue,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !attributeValue.isEmpty } yield {
       refTypeOpt match {
-        case Some(refType) => Map(upsertAttrOperation,nameEntry,valEntry(AttributeEntityReference(refType,value)))
-        case None => value match {
-          case "__DELETE__" => Map(removeAttrOperation,nameEntry)
-          case _ => Map(upsertAttrOperation,nameEntry,valEntry(AttributeString(value)))
+        case Some(refType) => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeEntityReference(refType,attributeValue))))
+        case None => attributeValue match {
+          case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry(attributeName)))
+          case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
+          case _ => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeString(attributeValue))))
         }
       }
     }
@@ -162,7 +171,50 @@ trait TSVFileSupport {
     } else {
       None
     }
-    EntityUpdateDefinition(row.headOption.get,entityType,ops ++ collectionMemberAttrOp )
+    EntityUpdateDefinition(row.headOption.get,entityType,ops.flatten ++ collectionMemberAttrOp )
   }
+
+  def generateAttributeArrayOperations(attributeValue: String, attributeName: String): Seq[Map[String, Attribute]] = {
+    val listElements = attributeValue.parseJson.convertTo[JsArray].elements.toList
+
+    def addListEntry(attrVal: AttributeListElementable) =
+      Map(addListMemberOperation, listNameEntry(attributeName), listValEntry(attrVal))
+
+    //if the list is empty, short-circuit and just replace any existing list with an empty list
+    if(listElements.isEmpty) {
+      Seq(Map(removeAttrOperation, nameEntry(attributeName)), Map(createAttrValueListOperation, nameEntry(attributeName)))
+    } else {
+
+      // validate that all elements in the list are the same datatype.
+      // special handling for JsBoolean, which inside the list will be JsTrue/JsFalse and therefore cannot
+      // be equal
+      val headClass = listElements.head.getClass
+      if (listElements.exists(_.getClass != headClass) && !listElements.forall(_.isInstanceOf[JsBoolean])) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "Mixed-type entity attribute lists are not supported."))
+      }
+
+      // since we know all list elements are the same datatype, we can match on them individually
+      val addElements = listElements map {
+        case jsstr:JsString => addListEntry(AttributeString(jsstr.value))
+        case jsnum:JsNumber => addListEntry(AttributeNumber(jsnum.value))
+        case jsbool:JsBoolean => addListEntry(AttributeBoolean(jsbool.value))
+        case jsobj:JsObject =>
+          val entRefAttempt = Try(jsobj.convertTo[AttributeEntityReference])
+          entRefAttempt match {
+            case Success(ref) => addListEntry(ref)
+            case Failure(_) =>
+              throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, UNSUPPORTED_ARRAY_TYPE_ERROR_MSG))
+          }
+        case _ =>
+          // if we hit this case, it means we have a homogenous array, but the elements' datatype
+          // is not one we support
+          throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, UNSUPPORTED_ARRAY_TYPE_ERROR_MSG))
+      }
+      val removeOldListOp = Seq(Map(removeAttrOperation, nameEntry(attributeName)))
+      removeOldListOp ++ addElements
+    }
+  }
+
+  val UNSUPPORTED_ARRAY_TYPE_ERROR_MSG = "Only arrays of strings, numbers, booleans, or entity references are supported."
 
 }
