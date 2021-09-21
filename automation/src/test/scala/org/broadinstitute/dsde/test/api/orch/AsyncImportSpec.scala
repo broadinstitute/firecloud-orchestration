@@ -3,6 +3,8 @@ package org.broadinstitute.dsde.test.api.orch
 import java.util.UUID
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.Multipart
+import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.EntityTypeMetadataFormat
@@ -12,6 +14,7 @@ import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixt
 import org.broadinstitute.dsde.workbench.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
+import org.parboiled.common.FileUtils
 import org.scalatest.OptionValues._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
@@ -20,7 +23,7 @@ import spray.json._
 
 import scala.io.Source
 
-class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
+class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
   with BillingFixtures with WorkspaceFixtures with Orchestration {
 
   val owner: Credentials = UserPool.chooseProjectOwner
@@ -30,7 +33,8 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
   private val testPayload = Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro")
-  lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("PFBImportSpec-expected-entities.json").getLines().mkString
+
+  lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("AsyncImportSpec-pfb-expected-entities.json").getLines().mkString
     .parseJson.convertTo[Map[String, EntityTypeMetadata]]
 
   "Orchestration" - {
@@ -50,7 +54,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
@@ -84,7 +88,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             importJobIdValues should have size 1
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as writer
@@ -120,7 +124,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
@@ -175,6 +179,62 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
         }
       }
 
+    }
+
+    "should import a TSV asynchronously for entities and entity membership" in {
+      implicit val token: AuthToken = ownerAuthToken
+      withCleanBillingProject(owner) { projectName =>
+        withWorkspace(projectName, prependUUID("tsv-entities")) { workspaceName =>
+          val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
+          val participantAndSetEntityMetadata = participantEntityMetadata + ("participant_set" -> EntityTypeMetadata(2, "participant_set_id", Seq("participants")))
+
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
+          importAsync(projectName, workspaceName, "MEMBERSHIP_PARTICIPANT_SET.tsv", participantAndSetEntityMetadata)
+        }
+      }
+    }
+
+    "should import a TSV asynchronously for updates" in {
+      implicit val token: AuthToken = ownerAuthToken
+      withCleanBillingProject(owner) { projectName =>
+        withWorkspace(projectName, prependUUID("tsv-updates")) { workspaceName =>
+          val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
+          val updatedParticipantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq("age")))
+
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
+          importAsync(projectName, workspaceName, "UPDATE_PARTICIPANTS.tsv", updatedParticipantEntityMetadata)
+        }
+      }
+
+    }
+  }
+
+  private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken) = {
+    val importFileString = FileUtils.readAllTextFromResource(importFilePath)
+
+    // call import as owner
+    val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, true, "entities", importFileString)
+    // expect to get exactly one jobId back
+    val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
+    importJobIdValues should have size 1
+
+    val importJobId: String = importJobIdValues.head match {
+      case js: JsString => js.value
+      case x => fail("got an invalid jobId: " + x.toString ())
+    }
+
+    // poll for completion as owner
+    eventually {
+      val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
+      resp.status shouldBe StatusCodes.OK
+      blockForStringBody(resp).parseJson.asJsObject.fields.get ("status").value shouldBe JsString ("Done")
+    }
+
+    // inspect data entities and confirm correct import as owner
+    eventually {
+      val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+      val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
+      compareMetadata (result, expectedResult)
     }
   }
 
