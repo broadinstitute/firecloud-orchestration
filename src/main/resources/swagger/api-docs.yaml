@@ -10602,6 +10602,15 @@ components:
         projectName:
           type: string
           description: the name of the project
+        status:
+          deprecated: true
+          type: string
+          enum:
+            - creating
+            - ready
+            - error
+            - addingtoperimeter
+          description: the status of allocating the billing project's resources.
         billingAccount:
           type: string
           description: the billing account to use in google projects
@@ -10616,15 +10625,6 @@ components:
           items:
             type: string
           description: the roles the caller has on the project
-        workspacesWithCorrectBillingAccount:
-          type: array
-          items:
-            type: string
-          description: A list of workspace names with the correct billing account contained within this billing project
-        workspacesWithIncorrectBillingAccount:
-          type: array
-          items:
-            $ref: '#/components/schemas/WorkspaceBillingAccount'
     WorkspaceBillingAccount:
       required:
         - workspaceName
