@@ -9960,6 +9960,11 @@ components:
         billingAccountErrorMessage:
           type: string
           description: Error message received during most recent attempt to update the current billing account on workspace's Google project. Empty if update was successful.
+        completedCloneWorkspaceFileTransfer:
+          type: string
+          description: The date all files were successfully transferred to the workspace bucket if applicable
+            in yyyy-MM-ddTHH:mm:ss.SSSZZ format
+          format: date-time
       description: ""
     WorkspaceListResponse:
       type: object
