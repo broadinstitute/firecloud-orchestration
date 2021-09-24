@@ -318,7 +318,9 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     WorkspaceVersions.V2,
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
-    Some(RawlsBillingAccountName("billingAccount"))
+    Some(RawlsBillingAccountName("billingAccount")),
+    None,
+    Option(DateTime.now())
   )
 
   private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(
