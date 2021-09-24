@@ -7485,6 +7485,7 @@ components:
             - Creating
             - Ready
             - Error
+            - AddingToPerimeter
       description: a billing project status
     BillingProjectMembership:
       required:
@@ -7505,6 +7506,7 @@ components:
             - Creating
             - Ready
             - Error
+            - AddingToPerimeter
         message:
           type: string
           description: informational message about the project
@@ -10621,15 +10623,19 @@ components:
           items:
             type: string
           description: the roles the caller has on the project
-        workspacesWithCorrectBillingAccount:
-          type: array
-          items:
-            type: string
-          description: A list of workspace names with the correct billing account contained within this billing project
-        workspacesWithIncorrectBillingAccount:
-          type: array
-          items:
-            $ref: '#/components/schemas/WorkspaceBillingAccount'
+        status:
+          deprecated: true
+          type: string
+          enum:
+            - Creating
+            - Ready
+            - Error
+            - AddingToPerimeter
+          description: the status of allocating the billing project's resources.
+        message:
+          deprecated: true
+          type: string
+          description: informational message about the project
     WorkspaceBillingAccount:
       required:
         - workspaceName
