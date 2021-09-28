@@ -64,7 +64,7 @@ class WorkspaceApiSpec extends FreeSpec with Matchers with Eventually
             }
             val exceptionMessage = exception.message.parseJson.asJsObject.fields("message").convertTo[String]
 
-            exceptionMessage.contains(s"insufficient permissions to perform operation on $projectName/$workspaceName") should be (true)
+            exceptionMessage should include(s"insufficient permissions to perform operation on $projectName/$workspaceName")
           } (ownerAuthToken)
         }
       }
