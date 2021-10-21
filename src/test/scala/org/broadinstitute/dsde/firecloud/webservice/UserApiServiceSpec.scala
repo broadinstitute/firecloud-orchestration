@@ -48,7 +48,8 @@ class UserApiServiceSpec extends BaseServiceSpec with RegisterApiService with Us
     programLocationState = randomAlpha(),
     programLocationCountry = randomAlpha(),
     pi = randomAlpha(),
-    nonProfitStatus = randomAlpha()
+    nonProfitStatus = randomAlpha(),
+    termsOfService = Option.empty
   )
   val allProperties: Map[String, String] = fullProfile.propertyValueMap
 

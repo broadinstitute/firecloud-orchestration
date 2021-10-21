@@ -21,7 +21,7 @@ class MockSamDAO extends SamDAO {
     WorkbenchGroupName("TARGET-dbGaP-Authorized") -> Set(WorkbenchEmail("target-linked"), WorkbenchEmail("target-linked-expired"), WorkbenchEmail("tcga-and-target-linked"), WorkbenchEmail("tcga-and-target-linked-expired"))
   )
 
-  override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = enabledUserInfo
+  override def registerUser(implicit userInfo: WithAccessToken, termsOfService: Option[String]): Future[RegistrationInfo] = enabledUserInfo
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = enabledUserInfo
 

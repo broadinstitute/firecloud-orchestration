@@ -149,7 +149,7 @@ class StartupChecksMockSamDAO(unregisteredTokens:Seq[String] = Seq.empty[String]
     }
   }
 
-  override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
+  override def registerUser(implicit userInfo: WithAccessToken, termsOfService: Option[String]): Future[RegistrationInfo] = {
     if (cantRegister.contains(userInfo.accessToken.token)) {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "unit test intentional registration fail")))
     } else {
