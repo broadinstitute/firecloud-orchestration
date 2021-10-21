@@ -52,7 +52,6 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
 
       val userInfo = Sam.user.getUserStatusInfo()(authToken).get
       userInfo.userEmail should include (user.email)
-      userInfo.userSubjectId should include (subjectId)
       userInfo.enabled shouldBe true
     }
   }
