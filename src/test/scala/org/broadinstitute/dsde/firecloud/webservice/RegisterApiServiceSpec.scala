@@ -36,7 +36,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
       "should succeed with multiple notifications keys" in {
         val payload = Map(
           "notifications/foo" -> "yes",
-          "notifications/bar" ->  "no",
+          "notifications/bar" -> "no",
           "notifications/baz" -> "astring"
         )
         assertPreferencesUpdate(payload, NoContent)
@@ -52,7 +52,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
       "should refuse with mixed notifications and disallowed keys" in {
         val payload = Map(
           "notifications/foo" -> "yes",
-          "notifications/bar" ->  "no",
+          "notifications/bar" -> "no",
           "secretsomething" -> "astring"
         )
         assertPreferencesUpdate(payload, BadRequest)
@@ -61,7 +61,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
       "should refuse with the string 'notifications/' in the middle of a key" in {
         val payload = Map(
           "notifications/foo" -> "yes",
-          "notifications/bar" ->  "no",
+          "notifications/bar" -> "no",
           "substring/notifications/arebad" -> "true"
         )
         assertPreferencesUpdate(payload, BadRequest)
@@ -75,48 +75,38 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     }
 
     "register-profile API" - {
-
-      val RANDOM_STRING = MockUtils.randomAlpha()
-      val BASIC_PROFILE = BasicProfile(
-        firstName = RANDOM_STRING,
-        lastName = RANDOM_STRING,
-        title = RANDOM_STRING,
-        contactEmail = Some("me@abc.com"),
-        institute = RANDOM_STRING,
-        institutionalProgram = RANDOM_STRING,
-        programLocationCity = RANDOM_STRING,
-        programLocationState = RANDOM_STRING,
-        programLocationCountry = RANDOM_STRING,
-        pi = RANDOM_STRING,
-        nonProfitStatus = RANDOM_STRING,
-        termsOfService = Some("app.terra.bio/#terms-of-service")
-      )
       implicit val impBasicProfile: RootJsonFormat[BasicProfile] = jsonFormat12(BasicProfile)
 
       "should succeed with no terms of service" in {
-        val payload = BasicProfile(
-          firstName = RANDOM_STRING,
-          lastName = RANDOM_STRING,
-          title = RANDOM_STRING,
-          contactEmail = Some("me@abc.com"),
-          institute = RANDOM_STRING,
-          institutionalProgram = RANDOM_STRING,
-          programLocationCity = RANDOM_STRING,
-          programLocationState = RANDOM_STRING,
-          programLocationCountry = RANDOM_STRING,
-          pi = RANDOM_STRING,
-          nonProfitStatus = RANDOM_STRING,
-          termsOfService = None
-        )
+        val payload = makeBasicProfile(false)
         Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
           status should be(OK)
         }
       }
 
       "should succeed with terms of service" in {
-        Post("/register/profile", BASIC_PROFILE) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
+        val payload = makeBasicProfile(true)
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
           status should be(OK)
         }
+      }
+
+      def makeBasicProfile(hasTermsOfService: Boolean): BasicProfile = {
+        val randomString = MockUtils.randomAlpha()
+        BasicProfile(
+          firstName = randomString,
+          lastName = randomString,
+          title = randomString,
+          contactEmail = Some("me@abc.com"),
+          institute = randomString,
+          institutionalProgram = randomString,
+          programLocationCity = randomString,
+          programLocationState = randomString,
+          programLocationCountry = randomString,
+          pi = randomString,
+          nonProfitStatus = randomString,
+          termsOfService = if (hasTermsOfService) Some("app.terra.bio/#terms-of-service") else None
+        )
       }
     }
   }
@@ -131,6 +121,5 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
   final class RegisterApiServiceSpecThurloeDAO extends MockThurloeDAO {
     override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String])= Future.successful(Success(()))
   }
-
 }
 
