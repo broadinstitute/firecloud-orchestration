@@ -3,9 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
@@ -36,8 +34,8 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
     authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")), label=Some("HttpSamDAO.listWorkspaceResources"))
   }
 
-  override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
-    authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl), label=Some("HttpSamDAO.registerUser"))
+  override def registerUser(implicit userInfo: WithAccessToken, termsOfService: Option[String]): Future[RegistrationInfo] = {
+    authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl, termsOfService), label=Some("HttpSamDAO.registerUser"))
   }
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {

@@ -23,7 +23,8 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           programLocationState = randomString,
           programLocationCountry = randomString,
           pi = randomString,
-          nonProfitStatus = randomString
+          nonProfitStatus = randomString,
+          termsOfService = Some("app.terra.bio/#terms-of-service")
         )
         basicProfile shouldNot be(null)
       }
@@ -91,7 +92,8 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             programLocationState = "",
             programLocationCountry = "",
             pi = "",
-            nonProfitStatus = ""
+            nonProfitStatus = "",
+            Option.empty
           )
         }
         ex shouldNot be(null)

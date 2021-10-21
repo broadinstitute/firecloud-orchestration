@@ -208,7 +208,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
   implicit val impThurloeKeyValues = jsonFormat2(ThurloeKeyValues)
-  implicit val impBasicProfile = jsonFormat11(BasicProfile)
+  implicit val impBasicProfile = jsonFormat12(BasicProfile)
   implicit val impProfile = jsonFormat13(Profile.apply)
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
   implicit val impProfileKVP = jsonFormat2(ProfileKVP)

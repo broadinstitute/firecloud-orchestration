@@ -32,7 +32,7 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
     lookup flatMap {
       case Some(err) if registerSAs =>
         logger.warn(s"SA registration lookup failed; attempting to register $name. Lookup failure was: $err")
-        manageRegistration(name, app.samDAO.registerUser(token))
+        manageRegistration(name, app.samDAO.registerUser(token, None))
 
       case registerMessage =>
         Future.successful(registerMessage)

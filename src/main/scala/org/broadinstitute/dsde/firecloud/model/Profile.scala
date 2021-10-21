@@ -34,7 +34,8 @@ case class BasicProfile (
     programLocationState: String,
     programLocationCountry: String,
     pi: String,
-    nonProfitStatus: String
+    nonProfitStatus: String,
+    termsOfService: Option[String]
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
