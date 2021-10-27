@@ -21,28 +21,42 @@ FireCloud Orchestration Service
 * sbt-revolver
 * mock-server
 
+## Running Locally
+
+### Requirements:
+
+* [Docker Desktop](https://www.docker.com/products/docker-desktop) (4GB+, 8GB recommended)
+* Broad internal internet connection (or VPN, non-split recommended)
+* Render the local configuration files. From the root of the [firecloud-develop](https://github.com/broadinstitute/firecloud-develop) repo, run:
+```sh
+sh run-context/local/scripts/firecloud-setup.sh
+```
+Note: this script will offer to set up configuration for several other services as well. You can skip those if you only want to set up configuration for Orch. If this is your first time running Orch or rendering configuration files, you will want to run through the "Setup vault" step.
+
+*  The `/etc/hosts` file on your machine must contain this entry (for calling Orch endpoints):
+```sh
+127.0.0.1	local.broadinstitute.org
+```
+
+### Running:
+
+After satisfying the above requirements, execute the following command from the root of the firecloud-orchestration repo:
+
+```sh
+./config/docker-rsync-local-orch.sh
+```
+
+If Orch successfully starts up, you can now access the Orch Swagger page: https://local.broadinstitute.org:10443/
+
 ## Development Notes
-* Configuration is excluded from the build package:
-    - When running via sbt, start sbt with the config file `sbt -Dconfig.file=src/main/resources/application.conf` and the run command will pick up your local configuration.
-    - Alternatively, add an `.sbotopts` file to the root directory of the project with the first line being `-Dconfig.file=src/main/resources/application.conf` or pointing to whichever config file you prefer to use.
-    - When running via sbt/revolver (i.e. using the re-start command), you can just run in sbt normally - the config is preset for you in build.sbt.
 * We push new features to a feature-branch and make pull requests against master.
-* New paths to external endpoints should be added to `src/main/resources/configurations.conf`. Existing endpoint URLs are configured in `application.conf` and `test.conf`
 
-## Building and Running
-
-See https://github.com/broadinstitute/firecloud-develop for directions on running locally within Broad's DSDE environment.
-* Local Orchestration URL: https://local.broadinstitute.org:10443/
+## Building
 
 Run the assembly task to build a fat jar:
 ```
 sbt
 > assembly
-```
-
-```
-java -Dconfig.file=src/main/resources/application.conf \
-  -jar $(ls target/scala-2.12/FireCloud-Orchestration-assembly-* | tail -n 1)
 ```
 
 For development, you can have sbt recompile and restart the server whenever a file changes on disk:
