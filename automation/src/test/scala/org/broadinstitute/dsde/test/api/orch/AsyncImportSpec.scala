@@ -46,6 +46,8 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
 
+            // TODO: convert to using importAsync() if possible
+
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
             // expect to get exactly one jobId back
@@ -81,6 +83,8 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
 
+            // TODO: convert to using importAsync() if possible
+
             // call importPFB as writer
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
             // expect to get exactly one jobId back
@@ -114,6 +118,8 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
+
+            // TODO: convert to using importAsync() if possible
 
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
