@@ -11,6 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object HealthChecks {
   val adminSaRegistered = Subsystems.Custom("is_admin_sa_registered")
+  val termsOfServiceUrl = "app.terra.bio/#terms-of-service"
 }
 
 class HealthChecks(app: Application, registerSAs: Boolean = true)
@@ -32,7 +33,7 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
     lookup flatMap {
       case Some(err) if registerSAs =>
         logger.warn(s"SA registration lookup failed; attempting to register $name. Lookup failure was: $err")
-        manageRegistration(name, app.samDAO.registerUser(token, None))
+        manageRegistration(name, app.samDAO.registerUser(Some(termsOfServiceUrl))(token))
 
       case registerMessage =>
         Future.successful(registerMessage)

@@ -34,7 +34,7 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
     authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")), label=Some("HttpSamDAO.listWorkspaceResources"))
   }
 
-  override def registerUser(implicit userInfo: WithAccessToken, termsOfService: Option[String]): Future[RegistrationInfo] = {
+  override def registerUser(termsOfService: Option[String])(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
     authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl, termsOfService), label=Some("HttpSamDAO.registerUser"))
   }
 

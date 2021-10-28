@@ -4,13 +4,13 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService}
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, NoContent, OK}
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NoContent, OK}
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import org.broadinstitute.dsde.firecloud.FireCloudApiService
+import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
-import spray.json.DefaultJsonProtocol.jsonFormat12
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -75,12 +75,10 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     }
 
     "register-profile API" - {
-      implicit val impBasicProfile: RootJsonFormat[BasicProfile] = jsonFormat12(BasicProfile)
-
-      "should succeed with no terms of service" in {
+      "should fail with no terms of service" in {
         val payload = makeBasicProfile(false)
         Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
-          status should be(OK)
+          status should be(Forbidden)
         }
       }
 
@@ -105,7 +103,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
           programLocationCountry = randomString,
           pi = randomString,
           nonProfitStatus = randomString,
-          termsOfService = if (hasTermsOfService) Some("app.terra.bio/#terms-of-service") else None
+          termsOfService = if (hasTermsOfService) Some(termsOfServiceUrl) else None
         )
       }
     }

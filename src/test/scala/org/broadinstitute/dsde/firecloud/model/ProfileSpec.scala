@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
+import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -24,7 +25,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           programLocationCountry = randomString,
           pi = randomString,
           nonProfitStatus = randomString,
-          termsOfService = Some("app.terra.bio/#terms-of-service")
+          termsOfService = Some(termsOfServiceUrl)
         )
         basicProfile shouldNot be(null)
       }
@@ -85,7 +86,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             firstName = "",
             lastName = "",
             title = "",
-            contactEmail = Option.empty,
+            contactEmail = None,
             institute = "",
             institutionalProgram = "",
             programLocationCity = "",
@@ -93,7 +94,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             programLocationCountry = "",
             pi = "",
             nonProfitStatus = "",
-            Option.empty
+            None
           )
         }
         ex shouldNot be(null)
