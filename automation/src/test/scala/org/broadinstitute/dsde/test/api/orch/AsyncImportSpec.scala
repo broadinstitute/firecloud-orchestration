@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
@@ -22,6 +21,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
   with BillingFixtures with WorkspaceFixtures with Orchestration {
@@ -226,28 +226,38 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     logger.info(s"$projectName/$workspaceName has import job $importJobId for file $importFilePath")
 
     // poll for completion as owner
-    eventually {
-      val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
-      val respStatus = resp.status
-      logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]")
-      respStatus shouldBe StatusCodes.OK
-      val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
-      logger.info(s"Import Service job status for import job $importJobId is [$importStatus]")
-      importStatus shouldBe JsString ("Done")
+    withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
+      eventually {
+        val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
+        val respStatus = resp.status
+        logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]")
+        respStatus shouldBe StatusCodes.OK
+        val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
+        logger.info(s"Import Service job status for import job $importJobId is [$importStatus]")
+        importStatus shouldBe JsString ("Done")
+      }
     }
 
     // inspect data entities and confirm correct import as owner
-    eventually {
-      val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
-      val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
-      compareMetadata (result, expectedResult)
+    withClue(s"import job $importJobId failed its eventually assertion on entity metadata: ") {
+      eventually {
+        val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+        val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
+        compareMetadata(result, expectedResult)
+      }
     }
   }
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
-  private def blockForStringBody(response: HttpResponse): String =
-    Unmarshal(response.entity).to[String].futureValue
+  private def blockForStringBody(response: HttpResponse): String = {
+    Try(Unmarshal(response.entity).to[String].futureValue) match {
+      case Success(s) => s
+      case Failure(ex) =>
+        logger.error(s"blockForStringBody failed with ${ex.getMessage}", ex)
+        throw ex
+    }
+  }
 
   private def workspaceUrl(projectName: String, wsName: String): String =
     s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName"
