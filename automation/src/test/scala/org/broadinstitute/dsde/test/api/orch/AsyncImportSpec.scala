@@ -223,11 +223,17 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       case x => fail("got an invalid jobId: " + x.toString ())
     }
 
+    logger.info(s"$projectName/$workspaceName has import job $importJobId for file $importFilePath")
+
     // poll for completion as owner
     eventually {
       val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
-      resp.status shouldBe StatusCodes.OK
-      blockForStringBody(resp).parseJson.asJsObject.fields.get ("status").value shouldBe JsString ("Done")
+      val respStatus = resp.status
+      logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]")
+      respStatus shouldBe StatusCodes.OK
+      val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
+      logger.info(s"Import Service job status for import job $importJobId is [$importStatus]")
+      importStatus shouldBe JsString ("Done")
     }
 
     // inspect data entities and confirm correct import as owner
