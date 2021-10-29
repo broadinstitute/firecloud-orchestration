@@ -20,6 +20,7 @@ import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
+import java.util.concurrent.TimeUnit
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -216,6 +217,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
   }
 
   private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken) = {
+    val startTime = System.currentTimeMillis()
     val importFileString = FileUtils.readAllTextFromResource(importFilePath)
 
     // call import as owner
@@ -236,7 +238,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       eventually {
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
         val respStatus = resp.status
-        logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]")
+        logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         respStatus shouldBe StatusCodes.OK
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
         logger.info(s"Import Service job status for import job $importJobId is [$importStatus]")
@@ -244,15 +246,29 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       }
     }
 
-    // inspect data entities and confirm correct import as owner
+    logger.info(s"$projectName/$workspaceName import job $importJobId completed for file $importFilePath in " +
+      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. Now checking metadata ... ")
+
+    // inspect data entities and confirm correct import as owner. With the import complete, the metadata should already
+    // be correct, so we don't need to use eventually here.
     withClue(s"import job $importJobId failed its eventually assertion on entity metadata: ") {
-      eventually {
-        val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
-        val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
-        compareMetadata(result, expectedResult)
-      }
+      val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+      val respStatus = resp.status
+      logger.info(s"HTTP response status for import job $importJobId metadata request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+      respStatus shouldBe StatusCodes.OK
+      val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
+      compareMetadata(result, expectedResult)
     }
+
+    logger.info(s"$projectName/$workspaceName import job $importJobId metadata check for file $importFilePath passed in " +
+      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. importAsync() complete.")
+
   }
+
+  private def humanReadableMillis(millis: Long) =
+    String.format("%d minutes, %d sec",
+      TimeUnit.MILLISECONDS.toMinutes(millis),
+      TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)))
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
