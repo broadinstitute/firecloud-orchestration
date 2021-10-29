@@ -39,13 +39,11 @@ class WorkspaceApiSpec extends FreeSpec with Matchers with Eventually
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-storage-cost"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
-
-            implicit val patienceConfig = PatienceConfig(Span(5, Minutes), Span(15, Seconds))
-            eventually { // This was added as a workaround for https://broadworkbench.atlassian.net/browse/QA-1534
-              val storageCostEstimate = Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)(writer.makeAuthToken()).parseJson.convertTo[StorageCostEstimate]
-              storageCostEstimate.estimate should be ("$0.00")
-            }
+            implicit val writerAuthToken: AuthToken = writer.makeAuthToken
+            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
+            Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)
+              .parseJson.convertTo[StorageCostEstimate]
+              .estimate should be("$0.00")
           } (ownerAuthToken)
         }
       }
@@ -57,10 +55,11 @@ class WorkspaceApiSpec extends FreeSpec with Matchers with Eventually
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("reader-storage-cost"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
-            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
+            implicit val readerAuthToken: AuthToken = reader.makeAuthToken
+            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
 
             val exception = intercept[RestException] {
-              Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)(reader.makeAuthToken())
+              Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)
             }
             val exceptionMessage = exception.message.parseJson.asJsObject.fields("message").convertTo[String]
 
