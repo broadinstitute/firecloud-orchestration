@@ -265,10 +265,11 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
   }
 
-  private def humanReadableMillis(millis: Long) =
-    String.format("%d minutes, %d sec",
-      TimeUnit.MILLISECONDS.toMinutes(millis),
-      TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)))
+  private def humanReadableMillis(millis: Long) = {
+    val mins: java.lang.Long = TimeUnit.MILLISECONDS.toMinutes(millis)
+    val secs: java.lang.Long = TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(mins) // the remainder of seconds
+    String.format("%d minutes, %d sec", mins, secs)
+  }
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
