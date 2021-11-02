@@ -7050,6 +7050,9 @@ paths:
         400:
           description: Bad request
           content: {}
+        403:
+          description: Forbidden
+          content: {}
         500:
           description: Internal server error
           content: {}

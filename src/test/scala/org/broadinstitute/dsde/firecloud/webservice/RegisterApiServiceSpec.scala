@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -77,12 +77,19 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     "register-profile API" - {
       "should fail with no terms of service" in {
         val payload = makeBasicProfile(false)
-        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(registerRoutes) ~> check {
           status should be(Forbidden)
         }
       }
 
       "should succeed with terms of service" in {
+        val payload = makeBasicProfile(true)
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(registerRoutes) ~> check {
+          status should be(OK)
+        }
+      }
+
+      "should succeed user who already exists" in {
         val payload = makeBasicProfile(true)
         Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
           status should be(OK)

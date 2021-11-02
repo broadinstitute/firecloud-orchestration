@@ -1,11 +1,12 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import akka.http.scaladsl.model.StatusCodes
+import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamResource, UserIdInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 
@@ -23,9 +24,12 @@ class MockSamDAO extends SamDAO {
 
   override def registerUser(termsOfService: Option[String])(implicit userInfo: WithAccessToken): Future[RegistrationInfo] =
     if (termsOfService.contains(termsOfServiceUrl)) enabledUserInfo
-    else Future.failed(new FireCloudException("You must accept the Terms of Service in order to register."))
+    else Future.failed(new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden,
+      s"You must accept the Terms of Service in order to register.")))
 
-  override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = enabledUserInfo
+  override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] =
+    if (userInfo.accessToken.token.equals("new")) unknownUserInfo
+    else enabledUserInfo
 
   override def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo] = customUserId(email.value)
 
@@ -84,6 +88,12 @@ class MockSamDAO extends SamDAO {
       RegistrationInfo(
         WorkbenchUserInfo(userSubjectId = "foo", userEmail = "bar"),
         WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true))
+  }
+
+  private val unknownUserInfo = Future.successful {
+    RegistrationInfo(
+      WorkbenchUserInfo(userSubjectId = "foo", userEmail = "bar"),
+      WorkbenchEnabled(google = false, ldap = false, allUsersGroup = false))
   }
 
   private def customUserInfo(email: String) = Future.successful {
