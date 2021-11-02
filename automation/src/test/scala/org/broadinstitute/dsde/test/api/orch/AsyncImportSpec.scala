@@ -226,13 +226,14 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     // poll for completion as owner
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
       eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
-        logger.info(s"About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        val requestId = scala.util.Random.nextString(8) // just to assist with logging
+        logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
         val respStatus = resp.status
-        logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         respStatus shouldBe StatusCodes.OK
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
-        logger.info(s"Import Service job status for import job $importJobId is [$importStatus]")
+        logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
         importStatus shouldBe JsString ("Done")
       }
     }
