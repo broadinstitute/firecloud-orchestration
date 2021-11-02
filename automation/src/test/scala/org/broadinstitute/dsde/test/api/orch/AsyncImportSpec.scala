@@ -15,7 +15,7 @@ import org.parboiled.common.FileUtils
 import org.scalatest.OptionValues._
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
@@ -225,13 +225,15 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
     // poll for completion as owner
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
-      eventually(Interval(scaled(Span(5, Seconds)))) {
+      eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
+        val requestId = scala.util.Random.nextString(8) // just to assist with logging
+        logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
         val respStatus = resp.status
-        logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         respStatus shouldBe StatusCodes.OK
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
-        logger.info(s"Import Service job status for import job $importJobId is [$importStatus]")
+        logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
         importStatus shouldBe JsString ("Done")
       }
     }
