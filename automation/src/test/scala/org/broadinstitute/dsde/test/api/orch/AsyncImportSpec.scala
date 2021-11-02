@@ -1,10 +1,7 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
-import akka.http.scaladsl.model.Multipart
-import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.EntityTypeMetadataFormat
@@ -16,12 +13,15 @@ import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorRepor
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
 import org.parboiled.common.FileUtils
 import org.scalatest.OptionValues._
+import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
+import java.util.concurrent.TimeUnit
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
   with BillingFixtures with WorkspaceFixtures with Orchestration {
@@ -45,7 +45,6 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
-
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
             // expect to get exactly one jobId back
@@ -80,7 +79,6 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-
             // call importPFB as writer
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
             // expect to get exactly one jobId back
@@ -114,7 +112,6 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
-
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
               Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/this-intentionally-does-not-exist"))
@@ -209,11 +206,12 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     }
   }
 
-  private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken) = {
+  private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken): Unit = {
+    val startTime = System.currentTimeMillis()
     val importFileString = FileUtils.readAllTextFromResource(importFilePath)
 
     // call import as owner
-    val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, true, "entities", importFileString)
+    val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, isAsync = true, "entities", importFileString)
     // expect to get exactly one jobId back
     val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
     importJobIdValues should have size 1
@@ -223,25 +221,56 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       case x => fail("got an invalid jobId: " + x.toString ())
     }
 
+    logger.info(s"$projectName/$workspaceName has import job $importJobId for file $importFilePath")
+
     // poll for completion as owner
-    eventually {
-      val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
-      resp.status shouldBe StatusCodes.OK
-      blockForStringBody(resp).parseJson.asJsObject.fields.get ("status").value shouldBe JsString ("Done")
+    withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
+      eventually(Interval(scaled(Span(5, Seconds)))) {
+        val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
+        val respStatus = resp.status
+        logger.info(s"HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        respStatus shouldBe StatusCodes.OK
+        val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
+        logger.info(s"Import Service job status for import job $importJobId is [$importStatus]")
+        importStatus shouldBe JsString ("Done")
+      }
     }
 
-    // inspect data entities and confirm correct import as owner
-    eventually {
+    logger.info(s"$projectName/$workspaceName import job $importJobId completed for file $importFilePath in " +
+      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. Now checking metadata ... ")
+
+    // inspect data entities and confirm correct import as owner. With the import complete, the metadata should already
+    // be correct, so we don't need to use eventually here.
+    withClue(s"import job $importJobId failed its eventually assertion on entity metadata: ") {
       val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+      val respStatus = resp.status
+      logger.info(s"HTTP response status for import job $importJobId metadata request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+      respStatus shouldBe StatusCodes.OK
       val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
-      compareMetadata (result, expectedResult)
+      compareMetadata(result, expectedResult)
     }
+
+    logger.info(s"$projectName/$workspaceName import job $importJobId metadata check for file $importFilePath passed in " +
+      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. importAsync() complete.")
+
+  }
+
+  private def humanReadableMillis(millis: Long) = {
+    val mins: java.lang.Long = TimeUnit.MILLISECONDS.toMinutes(millis)
+    val secs: java.lang.Long = TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(mins) // the remainder of seconds
+    String.format("%d minutes, %d sec", mins, secs)
   }
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
-  private def blockForStringBody(response: HttpResponse): String =
-    Unmarshal(response.entity).to[String].futureValue
+  private def blockForStringBody(response: HttpResponse): String = {
+    Try(Unmarshal(response.entity).to[String].futureValue(Timeout(scaled(Span(60, Seconds))))) match {
+      case Success(s) => s
+      case Failure(ex) =>
+        logger.error(s"blockForStringBody failed with ${ex.getMessage}", ex)
+        throw ex
+    }
+  }
 
   private def workspaceUrl(projectName: String, wsName: String): String =
     s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName"
