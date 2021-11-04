@@ -52,7 +52,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val samResourcesBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resources/v1"
   def samListResources(resourceTypeName: String): String = samResourcesBase + s"/$resourceTypeName"
 
-  def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
+  def registerUser(termsOfService: Option[String])(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
   def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
 
   def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo]
