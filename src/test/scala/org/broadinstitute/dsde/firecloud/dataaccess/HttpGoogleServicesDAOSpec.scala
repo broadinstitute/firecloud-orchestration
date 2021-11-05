@@ -5,8 +5,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import cats.effect.{Blocker, ContextShift, IO, Resource, Timer}
-import cats.effect.concurrent.Semaphore
+import cats.effect.{IO, Resource}
 import com.google.cloud.storage.{BlobInfo, Storage, StorageException}
 import com.google.cloud.storage.Storage.BlobWriteOption
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
@@ -29,6 +28,8 @@ import java.nio.charset.StandardCharsets
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.Duration
+import cats.effect.Temporal
+import cats.effect.std.Semaphore
 
 class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
 
@@ -190,13 +191,11 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
 
   private def storageResource(backingStore: Storage): Resource[IO, GoogleStorageService[IO]] = {
     // create local storage service
-    implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-    implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
     implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+    import cats.effect.unsafe.implicits.global
 
-    val blocker = Blocker.liftExecutionContext(global)
     val semaphore = Semaphore[IO](1).unsafeRunSync
-    Resource.pure[IO, GoogleStorageService[IO]](GoogleStorageInterpreter[IO](backingStore, blocker, Some(semaphore)))
+    Resource.pure[IO, GoogleStorageService[IO]](GoogleStorageInterpreter[IO](backingStore, Some(semaphore)))
   }
 
 }
