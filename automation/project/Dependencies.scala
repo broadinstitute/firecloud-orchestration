@@ -44,6 +44,8 @@ object Dependencies {
     "org.seleniumhq.selenium" % "selenium-java" % "3.11.0" % "test",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0",
 
+    "net.logstash.logback" % "logstash-logback-encoder" % "6.6", // needed by workbench-google
+
     workbenchServiceTest,
     workbenchModel,
     workbenchGoogle,
