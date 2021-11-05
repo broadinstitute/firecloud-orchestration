@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.test.api.orch
 import java.util.UUID
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import net.bytebuddy.utility.RandomString
 import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.EntityTypeMetadataFormat
 import org.broadinstitute.dsde.workbench.auth.AuthToken
