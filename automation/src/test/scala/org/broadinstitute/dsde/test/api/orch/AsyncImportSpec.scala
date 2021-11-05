@@ -226,7 +226,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     // poll for completion as owner
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
       eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
-        val requestId = scala.util.Random.nextString(8) // just to assist with logging
+        val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
         logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
         val respStatus = resp.status
