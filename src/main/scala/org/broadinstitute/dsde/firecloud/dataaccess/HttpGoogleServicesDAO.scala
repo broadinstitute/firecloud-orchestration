@@ -216,7 +216,7 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
       // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
       val uploadPipe = storageService.streamUploadBlob(bucketName, GcsBlobName(objectKey.value))
       // stream the data to the destination pipe
-      dataStream.through(uploadPipe).compile.lastOrError
+      dataStream.through(uploadPipe).compile.drain
     }
 
     // execute the upload
