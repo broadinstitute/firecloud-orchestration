@@ -36,7 +36,7 @@ object Dependencies {
       exclude("com.google.code.findbugs", "jsr305")
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-d7ed6bf"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.5-4bc7050"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.23-7ddf186",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
