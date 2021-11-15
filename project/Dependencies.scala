@@ -37,7 +37,7 @@ object Dependencies {
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.5-4bc7050"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.21-bf66e61",
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.23-7ddf186",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
@@ -81,7 +81,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.123.7" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.123.16" % "test",
     "org.scalatestplus"             %% "mockito-3-4"         % "3.2.9.0" % "test"
   )
 }

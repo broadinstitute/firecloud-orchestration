@@ -8,7 +8,8 @@ import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
-import cats.effect.{Blocker, ContextShift, IO, Resource, Timer}
+import cats.effect.{IO, Resource}
+import cats.effect.unsafe.implicits.global
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
@@ -42,6 +43,9 @@ import spray.json.{DefaultJsonProtocol, _}
 import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import cats.effect.Temporal
+import cats.effect.std.Semaphore
+import cats.effect.unsafe.IORuntime
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -190,14 +194,11 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
     // if other methods in this class use google2/need these implicits, consider moving to the class level
     // instead of here at the method level
-    implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
-    implicit val t: Timer[IO] = IO.timer(executionContext)
     implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
-    val blocker = Blocker.liftExecutionContext(executionContext)
 
     // create the storage service, using the Rawls SA credentials
     // the Rawls SA json creds do not contain a project, so also specify the project explicitly
-    val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, blocker,
+    val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, Option.empty[Semaphore[IO]],
        project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
 
     // call the upload implementation
@@ -215,7 +216,7 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
       // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
       val uploadPipe = storageService.streamUploadBlob(bucketName, GcsBlobName(objectKey.value))
       // stream the data to the destination pipe
-      dataStream.through(uploadPipe).compile.lastOrError
+      dataStream.through(uploadPipe).compile.drain
     }
 
     // execute the upload
