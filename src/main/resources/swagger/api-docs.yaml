@@ -7071,6 +7071,19 @@ paths:
           description: OK
           content: {}
       x-passthrough: false
+  /tos/text:
+    get:
+      tags:
+        - Terms of Service
+      summary: gets terms of service text
+      operationId: getTermsOfServiceText
+      responses:
+        200:
+          description: success
+          content:
+            text/plain:
+              schema:
+                type: string
   /ga4gh/v1/tools/{id}:
     get:
       tags:

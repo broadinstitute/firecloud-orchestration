@@ -43,6 +43,8 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     }
   }
 
+  def getTermsOfServiceText: Future[String] = samDao.getTermsOfServiceText
+
   private def isRegistered(userInfo: UserInfo): Future[RegistrationInfo] = {
     samDao.getRegistrationStatus(userInfo) recover {
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(StatusCodes.NotFound) =>

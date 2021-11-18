@@ -43,4 +43,15 @@ trait RegisterApiService extends Directives with RequestBuilding with StandardUs
         }
       }
     }
+
+  val tosRoutes: Route =
+    pathPrefix("tos") {
+      path("text") {
+        get {
+          complete {
+            log.info("TOS API called")
+            registerServiceConstructor().getTermsOfServiceText }
+        }
+      }
+    }
 }

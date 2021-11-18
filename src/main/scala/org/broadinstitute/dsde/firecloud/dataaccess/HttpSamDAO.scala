@@ -144,4 +144,13 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
       SubsystemStatus(ok, message.map(List(_)))
     }
   }
+
+  override def getTermsOfServiceText: Future[String] = {
+    for {
+      response <- unAuthedRequest(Get(samGetTosTextUrl))
+      message <- Unmarshal(response.entity).to[String]
+    } yield {
+      message
+    }
+  }
 }

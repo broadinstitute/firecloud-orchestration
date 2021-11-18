@@ -33,6 +33,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val samGetUserIdsUrl = FireCloudConfig.Sam.baseUrl + "/api/users/v1/%s"
   val samArbitraryPetTokenUrl = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/token"
   val samPetKeyForProject = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/%s/key"
+  val samGetTosTextUrl = FireCloudConfig.Sam.baseUrl + "/tos/text"
 
   val samManagedGroupsBase: String = FireCloudConfig.Sam.baseUrl + "/api/groups"
   val samManagedGroupBase: String = FireCloudConfig.Sam.baseUrl + "/api/group"
@@ -75,6 +76,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken]
   def getPetServiceAccountKeyForUser(user: WithAccessToken, project: GoogleProject): Future[String]
+  def getTermsOfServiceText: Future[String]
 
   val serviceName = SamDAO.serviceName
 }
