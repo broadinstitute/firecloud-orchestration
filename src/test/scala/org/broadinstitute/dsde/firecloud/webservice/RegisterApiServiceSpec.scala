@@ -8,9 +8,10 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NoContent, O
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
+import org.broadinstitute.dsde.firecloud.dataaccess.MockSamDAO.mockTermsOfServiceText
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
-import spray.json.{DefaultJsonProtocol}
+import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -112,6 +113,16 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
           nonProfitStatus = randomString,
           termsOfService = if (hasTermsOfService) Some(termsOfServiceUrl) else None
         )
+      }
+    }
+
+    "tos-text API" - {
+      "should get terms of service" in {
+        Get("/tos/text") ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(tosRoutes) ~> check {
+          status should be(OK)
+          val tosText = responseAs[String]
+          tosText should include(mockTermsOfServiceText)
+        }
       }
     }
   }

@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
+import org.broadinstitute.dsde.firecloud.dataaccess.MockSamDAO.mockTermsOfServiceText
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamResource, UserIdInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -16,7 +17,6 @@ import scala.concurrent.Future
   * Created by mbemis on 9/7/17.
   */
 class MockSamDAO extends SamDAO {
-
   var groups: Map[WorkbenchGroupName, Set[WorkbenchEmail]] = Map(
     WorkbenchGroupName("TCGA-dbGaP-Authorized") -> Set(WorkbenchEmail("tcga-linked"), WorkbenchEmail("tcga-linked-no-expire-date"), WorkbenchEmail("tcga-linked-expired"), WorkbenchEmail("tcga-linked-user-invalid-expire-date"), WorkbenchEmail("tcga-and-target-linked"), WorkbenchEmail("tcga-and-target-linked-expired")),
     WorkbenchGroupName("TARGET-dbGaP-Authorized") -> Set(WorkbenchEmail("target-linked"), WorkbenchEmail("target-linked-expired"), WorkbenchEmail("tcga-and-target-linked"), WorkbenchEmail("tcga-and-target-linked-expired"))
@@ -124,6 +124,10 @@ class MockSamDAO extends SamDAO {
   override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = Future.successful(())
 
   override def getTermsOfServiceText: Future[String] = {
-    Future.successful("Broad Terms of Service text here")
+    Future.successful(mockTermsOfServiceText)
   }
+}
+
+object MockSamDAO {
+  val mockTermsOfServiceText = "Broad Terms of Service text here"
 }

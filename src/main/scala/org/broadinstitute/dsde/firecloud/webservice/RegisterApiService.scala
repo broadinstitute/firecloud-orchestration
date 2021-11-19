@@ -49,7 +49,6 @@ trait RegisterApiService extends Directives with RequestBuilding with StandardUs
       path("text") {
         get {
           complete {
-            log.info("TOS API called")
             registerServiceConstructor().getTermsOfServiceText }
         }
       }
