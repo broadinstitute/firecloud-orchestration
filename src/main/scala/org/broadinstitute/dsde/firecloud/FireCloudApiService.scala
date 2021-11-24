@@ -183,6 +183,7 @@ trait FireCloudApiService extends CookieAuthedApiService
 
   def route: server.Route = (routeWrappers) {
     cromIamEngineRoutes ~
+      tosRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
       exportEntitiesRoutes ~
