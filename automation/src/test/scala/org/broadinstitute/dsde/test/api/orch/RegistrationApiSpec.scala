@@ -17,7 +17,6 @@ import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
   with BillingFixtures with BeforeAndAfterAll {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
-  implicit lazy val system = ActorSystem()
 
   val subjectId: String = Users.tempSubjectId
   val adminUser: Credentials = UserPool.chooseAdmin
