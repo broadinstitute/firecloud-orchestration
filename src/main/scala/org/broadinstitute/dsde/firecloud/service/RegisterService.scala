@@ -8,14 +8,13 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Notifications.{ActivationNotification, NotificationFormat}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserSubjectId}
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object RegisterService {
+  val samTosTextUrl = s"${Sam.baseUrl}/tos/text"
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)
@@ -42,8 +41,6 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       RequestComplete(StatusCodes.OK, userStatus)
     }
   }
-
-  def getTermsOfServiceText: Future[String] = samDao.getTermsOfServiceText
 
   private def isRegistered(userInfo: UserInfo): Future[RegistrationInfo] = {
     samDao.getRegistrationStatus(userInfo) recover {
@@ -76,5 +73,4 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "illegal preference key"))
     }
   }
-
 }

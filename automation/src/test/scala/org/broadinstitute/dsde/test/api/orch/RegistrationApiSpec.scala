@@ -1,10 +1,7 @@
 package org.broadinstitute.dsde.test.api.orch
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.testkit.TestKitBase
 import org.broadinstitute.dsde.test.OrchConfig.Users
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.service.Orchestration
@@ -18,7 +15,7 @@ import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
-  with BillingFixtures with BeforeAndAfterAll with TestKitBase {
+  with BillingFixtures with BeforeAndAfterAll {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
   implicit lazy val system = ActorSystem()
 
@@ -64,13 +61,7 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
     "should return terms of services with no auth token" in {
       val req = HttpRequest(GET, ServiceTestConfig.FireCloud.orchApiUrl + s"tos/text")
       val response = sendRequest(req)
-
-      val textFuture = Unmarshal(response.entity).to[String]
-
       response.status shouldEqual StatusCodes.OK
-      whenReady(textFuture) { text =>
-        text should include("Terms as of February 12, 2020.")
-      }
     }
   }
 }

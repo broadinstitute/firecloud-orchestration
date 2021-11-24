@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
-import org.broadinstitute.dsde.firecloud.dataaccess.MockSamDAO.mockTermsOfServiceText
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamResource, UserIdInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -122,12 +121,4 @@ class MockSamDAO extends SamDAO {
   override def getPetServiceAccountKeyForUser(user: WithAccessToken, project: GoogleProject): Future[String] = Future.successful("""{"fake":"key""}""")
 
   override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = Future.successful(())
-
-  override def getTermsOfServiceText: Future[String] = {
-    Future.successful(mockTermsOfServiceText)
-  }
-}
-
-object MockSamDAO {
-  val mockTermsOfServiceText = "Broad Terms of Service text here"
 }
