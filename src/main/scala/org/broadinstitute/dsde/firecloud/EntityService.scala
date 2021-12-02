@@ -366,10 +366,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     }
   }
 
-  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
-    importServiceDAO.importJob(workspaceNamespace, workspaceName, pfbRequest.copy(filetype = FILETYPE_PFB), isUpsert=true)(userInfo)
-  }
-
   def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
     // validate that filetype exists in the importRequest
     if (importRequest.filetype.isEmpty)
