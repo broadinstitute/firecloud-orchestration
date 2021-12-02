@@ -17,7 +17,7 @@ class MockImportServiceDAO extends ImportServiceDAO {
                          isUpsert: Boolean)
                         (implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
     importRequest.filetype match {
-      case FILETYPE_PFB =>
+      case FILETYPE_PFB | FILETYPE_TDR =>
         if(importRequest.url.contains("forbidden")) Future.successful(RequestComplete(Forbidden, "Missing Authorization: Bearer token in header"))
         else if(importRequest.url.contains("bad.request")) Future.successful(RequestComplete(BadRequest, "Bad request as reported by import service"))
         else if(importRequest.url.contains("its.lawsuit.time")) Future.successful(RequestComplete(UnavailableForLegalReasons, "import service message"))
@@ -28,7 +28,6 @@ class MockImportServiceDAO extends ImportServiceDAO {
         ))
         else Future.successful(RequestComplete(EnhanceYourCalm))
       case FILETYPE_RAWLS => ???
-      case FILETYPE_TDR => ???
       case _ => ???
     }
   }
