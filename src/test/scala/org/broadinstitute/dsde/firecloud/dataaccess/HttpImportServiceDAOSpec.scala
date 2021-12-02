@@ -27,7 +27,7 @@ class HttpImportServiceDAOSpec extends AsyncFlatSpec with Matchers with SprayJso
   val workspaceNamespace = "workspaceNamespace"
   val workspaceName = "workspaceName"
   val pfbUrl = "unittest-fixture-url"
-  val pfbRequest = AsyncImportRequest(Some(pfbUrl), FILETYPE_PFB)
+  val pfbRequest = AsyncImportRequest(pfbUrl, FILETYPE_PFB)
 
   val jobId = UUID.randomUUID()
   val importServicePayload = ImportServiceResponse(jobId.toString, "status", None).toJson.compactPrint

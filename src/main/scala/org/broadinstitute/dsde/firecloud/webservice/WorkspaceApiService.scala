@@ -1,11 +1,11 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import java.text.SimpleDateFormat
-
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_PFB
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
@@ -146,8 +146,9 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("importPFB") {
                   post {
                     requireUserInfo() { userInfo =>
-                      entity(as[AsyncImportRequest]) { pfbRequest =>
-                        complete { entityServiceConstructor(FlexibleModelSchema).importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
+                      entity(as[PFBImportRequest]) { pfbRequest =>
+                        val importRequest = AsyncImportRequest(pfbRequest.url, FILETYPE_PFB)
+                        complete { entityServiceConstructor(FlexibleModelSchema).importPFB(workspaceNamespace, workspaceName, importRequest, userInfo) }
                       }
                     }
                   }
@@ -155,8 +156,8 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("importJob") {
                   post {
                     requireUserInfo() { userInfo =>
-                      entity(as[AsyncImportRequest]) { pfbRequest =>
-                        complete { entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
+                      entity(as[AsyncImportRequest]) { importRequest =>
+                        complete { entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace, workspaceName, importRequest, userInfo) }
                       }
                     }
                   }

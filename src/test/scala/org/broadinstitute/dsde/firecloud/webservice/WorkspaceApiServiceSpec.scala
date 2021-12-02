@@ -1084,7 +1084,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should 400 if import service indicates a bad request" in {
 
-        (Post(pfbImportPath, AsyncImportRequest(Option("https://bad.request.avro"), FILETYPE_PFB))
+        (Post(pfbImportPath, PFBImportRequest("https://bad.request.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
@@ -1093,7 +1093,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 403 if import service access is forbidden" in {
-        (Post(pfbImportPath, AsyncImportRequest(Option("https://forbidden.avro"), FILETYPE_PFB))
+        (Post(pfbImportPath, PFBImportRequest("https://forbidden.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
@@ -1103,7 +1103,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-        (Post(pfbImportPath, AsyncImportRequest(Option("https://its.lawsuit.time.avro"), FILETYPE_PFB))
+        (Post(pfbImportPath, PFBImportRequest("https://its.lawsuit.time.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(UnavailableForLegalReasons)
@@ -1119,7 +1119,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
                                                    jobId = "MockImportServiceDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
 
-        (Post(pfbImportPath, AsyncImportRequest(Option("https://good.avro"), FILETYPE_PFB))
+        (Post(pfbImportPath, PFBImportRequest("https://good.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)

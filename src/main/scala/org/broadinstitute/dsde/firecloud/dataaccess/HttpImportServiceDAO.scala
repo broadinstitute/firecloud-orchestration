@@ -28,9 +28,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
 
   private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, pfbRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     // the payload to Import Service sends "path" and filetype.
-    val path = pfbRequest.url.getOrElse(
-      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url cannot be empty")))
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = path, filetype = filetype, isUpsert = isUpsert)
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = pfbRequest.url, filetype = filetype, isUpsert = isUpsert)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
@@ -51,7 +49,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
         importServiceResponse.map { resp =>
           val responsePayload:AsyncImportResponse = AsyncImportResponse(
             jobId = resp.jobId,
-            url = pfbRequest.url.getOrElse(""),
+            url = pfbRequest.url,
             workspace = WorkspaceName(workspaceNamespace, workspaceName)
           )
 

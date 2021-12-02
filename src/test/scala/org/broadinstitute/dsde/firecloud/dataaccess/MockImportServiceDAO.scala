@@ -18,22 +18,15 @@ class MockImportServiceDAO extends ImportServiceDAO {
                         (implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
     importRequest.filetype match {
       case FILETYPE_PFB =>
-        importRequest.url match {
-          case Some(url) => {
-            if(url.contains("forbidden")) Future.successful(RequestComplete(Forbidden, "Missing Authorization: Bearer token in header"))
-            else if(url.contains("bad.request")) Future.successful(RequestComplete(BadRequest, "Bad request as reported by import service"))
-            else if(url.contains("its.lawsuit.time")) Future.successful(RequestComplete(UnavailableForLegalReasons, "import service message"))
-            else if(url.contains("good")) Future.successful(RequestComplete(Accepted,
-              AsyncImportResponse(url = importRequest.url.getOrElse(""),
-                jobId = UUID.randomUUID().toString,
-                workspace = WorkspaceName(workspaceNamespace, workspaceName))
-            )
-
-            )
-            else Future.successful(RequestComplete(EnhanceYourCalm))
-          }
-          case None => Future.successful(RequestComplete(EnhanceYourCalm))
-        }
+        if(importRequest.url.contains("forbidden")) Future.successful(RequestComplete(Forbidden, "Missing Authorization: Bearer token in header"))
+        else if(importRequest.url.contains("bad.request")) Future.successful(RequestComplete(BadRequest, "Bad request as reported by import service"))
+        else if(importRequest.url.contains("its.lawsuit.time")) Future.successful(RequestComplete(UnavailableForLegalReasons, "import service message"))
+        else if(importRequest.url.contains("good")) Future.successful(RequestComplete(Accepted,
+          AsyncImportResponse(url = importRequest.url,
+            jobId = UUID.randomUUID().toString,
+            workspace = WorkspaceName(workspaceNamespace, workspaceName))
+        ))
+        else Future.successful(RequestComplete(EnhanceYourCalm))
       case FILETYPE_RAWLS => ???
       case FILETYPE_TDR => ???
       case _ => ???
