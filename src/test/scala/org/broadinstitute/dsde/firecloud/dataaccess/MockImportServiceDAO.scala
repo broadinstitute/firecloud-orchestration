@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.UUID
-
 import akka.http.scaladsl.model.StatusCodes._
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_RAWLS, FILETYPE_TDR}
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
@@ -17,7 +17,7 @@ class MockImportServiceDAO extends ImportServiceDAO {
                          isUpsert: Boolean)
                         (implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
     importRequest.filetype match {
-      case Some("pfb") =>
+      case FILETYPE_PFB =>
         importRequest.url match {
           case Some(url) => {
             if(url.contains("forbidden")) Future.successful(RequestComplete(Forbidden, "Missing Authorization: Bearer token in header"))
@@ -34,8 +34,8 @@ class MockImportServiceDAO extends ImportServiceDAO {
           }
           case None => Future.successful(RequestComplete(EnhanceYourCalm))
         }
-      case Some("rawlsjson") => ???
-      case Some("tdrexport") => ???
+      case FILETYPE_RAWLS => ???
+      case FILETYPE_TDR => ???
       case _ => ???
     }
   }

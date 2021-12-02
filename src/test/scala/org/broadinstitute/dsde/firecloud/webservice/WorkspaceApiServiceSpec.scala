@@ -1,14 +1,15 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import java.util.UUID
-
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+
 import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_PFB
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
@@ -1082,7 +1083,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "WorkspaceService importPFB Tests" - {
 
       "should 400 if import service indicates a bad request" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
+
+        (Post(pfbImportPath, AsyncImportRequest(Option("https://bad.request.avro"), FILETYPE_PFB))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
@@ -1091,7 +1093,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 403 if import service access is forbidden" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
+        (Post(pfbImportPath, AsyncImportRequest(Option("https://forbidden.avro"), FILETYPE_PFB))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
@@ -1101,7 +1103,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://its.lawsuit.time.avro"}"""))
+        (Post(pfbImportPath, AsyncImportRequest(Option("https://its.lawsuit.time.avro"), FILETYPE_PFB))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(UnavailableForLegalReasons)
@@ -1117,7 +1119,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
                                                    jobId = "MockImportServiceDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
 
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+        (Post(pfbImportPath, AsyncImportRequest(Option("https://good.avro"), FILETYPE_PFB))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)

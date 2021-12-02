@@ -5,6 +5,12 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 
 import scala.concurrent.Future
 
+object ImportServiceFiletypes {
+  final val FILETYPE_PFB = "pfb"
+  final val FILETYPE_TDR = "tdrexport"
+  final val FILETYPE_RAWLS = "rawlsjson"
+}
+
 trait ImportServiceDAO {
 
   def importJob(workspaceNamespace: String,

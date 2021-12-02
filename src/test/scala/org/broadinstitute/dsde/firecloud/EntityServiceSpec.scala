@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpResponse, StatusCode, StatusCodes}
 import com.google.cloud.storage.StorageException
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_RAWLS
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockImportServiceDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -238,7 +239,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
     override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
       importRequest.filetype match {
-        case Some("rawlsjson") => Future.successful(successDefinition)
+        case FILETYPE_RAWLS => Future.successful(successDefinition)
         case _ => ???
       }
     }
@@ -251,7 +252,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
     override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
       importRequest.filetype match {
-        case Some("rawlsjson") => Future.successful(errorDefinition)
+        case FILETYPE_RAWLS => Future.successful(errorDefinition)
         case _ => ???
       }
     }

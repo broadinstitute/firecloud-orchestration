@@ -23,11 +23,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
   implicit val errorReportSource = ErrorReportSource("FireCloud")
 
   override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    val filetype = importRequest.filetype match {
-      case Some(s) => s
-      case None => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype cannot be empty"))
-    }
-    doImport(workspaceNamespace, workspaceName, isUpsert, importRequest, filetype)
+    doImport(workspaceNamespace, workspaceName, isUpsert, importRequest, importRequest.filetype)
   }
 
   private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, pfbRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
