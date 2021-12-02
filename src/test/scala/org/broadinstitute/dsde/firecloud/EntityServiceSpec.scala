@@ -236,8 +236,11 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   class SuccessfulImportServiceDAO extends MockImportServiceDAO {
     def successDefinition: RequestComplete[(StatusCodes.Success, ImportServiceResponse)] = RequestComplete(StatusCodes.Created, ImportServiceResponse("unit-test-job-id", "unit-test-created-status", None))
 
-    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
-      Future.successful(successDefinition)
+    override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
+      importRequest.filetype match {
+        case Some("rawlsjson") => Future.successful(successDefinition)
+        case _ => ???
+      }
     }
   }
 
@@ -246,10 +249,12 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     // return a 429 so unit tests have an easy way to distinguish this error vs an error somewhere else in the stack
     def errorDefinition: RequestComplete[(StatusCode, ErrorReport)] = RequestCompleteWithErrorReport(StatusCodes.TooManyRequests, "intentional ErroringImportServiceDAO error")
 
-    override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
-      Future.successful(errorDefinition)
+    override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequest.PerRequestMessage] = {
+      importRequest.filetype match {
+        case Some("rawlsjson") => Future.successful(errorDefinition)
+        case _ => ???
+      }
     }
   }
-
 
 }

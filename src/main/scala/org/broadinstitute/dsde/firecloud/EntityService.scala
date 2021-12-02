@@ -226,8 +226,8 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
     val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
-    val importRequest = AsyncImportRequest(Option(gcsPath))
-    importServiceDAO.importRawlsJson(workspaceNamespace, workspaceName, isUpsert, importRequest)(userInfo)
+    val importRequest = AsyncImportRequest(Option(gcsPath), Option("rawlsjson"))
+    importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert)(userInfo)
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
@@ -366,7 +366,14 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
   }
 
   def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
-    importServiceDAO.importPFB(workspaceNamespace, workspaceName, pfbRequest)(userInfo)
+    importServiceDAO.importJob(workspaceNamespace, workspaceName, pfbRequest.copy(filetype = Option("pfb")), isUpsert=true)(userInfo)
+  }
+
+  def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
+    // validate that filetype exists in the importRequest
+    if (importRequest.filetype.isEmpty)
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype must be specified"))
+    importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
   }
 
   def getEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {

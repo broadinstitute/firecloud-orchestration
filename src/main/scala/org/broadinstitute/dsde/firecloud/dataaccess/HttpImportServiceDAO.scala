@@ -20,18 +20,20 @@ import scala.concurrent.duration._
 class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
-  override def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    doImport(workspaceNamespace, workspaceName, isUpsert = true, pfbRequest, "pfb")
-  }
+  implicit val errorReportSource = ErrorReportSource("FireCloud")
 
-  override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    doImport(workspaceNamespace, workspaceName, isUpsert, rawlsJsonRequest, "rawlsjson")
+  override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    val filetype = importRequest.filetype match {
+      case Some(s) => s
+      case None => throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype cannot be empty"))
+    }
+    doImport(workspaceNamespace, workspaceName, isUpsert, importRequest, filetype)
   }
 
   private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, pfbRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     // the payload to Import Service sends "path" and filetype.
     val path = pfbRequest.url.getOrElse(
-      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url cannot be empty")(ErrorReportSource("FireCloud"))))
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url cannot be empty")))
     val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = path, filetype = filetype, isUpsert = isUpsert)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")

@@ -142,6 +142,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     }
                   }
                 } ~
+                // POST importPFB will likely be deprecated in the future; use POST importJob instead
                 path("importPFB") {
                   post {
                     requireUserInfo() { userInfo =>
@@ -149,16 +150,28 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                         complete { entityServiceConstructor(FlexibleModelSchema).importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
                       }
                     }
-                  } ~
-                    get {
-                      requireUserInfo() { _ =>
-                        extract(_.request.uri.query()) { query =>
-                          passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")).withQuery(query), HttpMethods.GET)
-                        }
+                  }
+                } ~
+                path("importJob") {
+                  post {
+                    requireUserInfo() { userInfo =>
+                      entity(as[AsyncImportRequest]) { pfbRequest =>
+                        complete { entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
                       }
                     }
+                  }
                 } ~
-                // importPFB/jobId is deprecated; use importJob/jobId instead
+                // GET importPFB is deprecated; use GET importJob instead
+                path(("importPFB" | "importJob")) {
+                  get {
+                    requireUserInfo() { _ =>
+                      extract(_.request.uri.query()) { query =>
+                        passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")).withQuery(query), HttpMethods.GET)
+                      }
+                    }
+                  }
+                } ~
+                // GET importPFB/jobId is deprecated; use GET importJob/jobId instead
                 path(("importPFB" | "importJob") / Segment) { jobId =>
                   get {
                     requireUserInfo() { userInfo =>
