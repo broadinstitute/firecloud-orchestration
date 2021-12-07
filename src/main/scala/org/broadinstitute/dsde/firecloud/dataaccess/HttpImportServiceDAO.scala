@@ -20,29 +20,25 @@ import scala.concurrent.duration._
 class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
-  override def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    doImport(workspaceNamespace, workspaceName, isUpsert = true, pfbRequest, "pfb")
+  implicit val errorReportSource = ErrorReportSource("FireCloud")
+
+  override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+    doImport(workspaceNamespace, workspaceName, isUpsert, importRequest, importRequest.filetype)
   }
 
-  override def importRawlsJson(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, rawlsJsonRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
-    doImport(workspaceNamespace, workspaceName, isUpsert, rawlsJsonRequest, "rawlsjson")
-  }
-
-  private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, pfbRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
+  private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, importRequest: AsyncImportRequest, filetype: String)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     // the payload to Import Service sends "path" and filetype.
-    val path = pfbRequest.url.getOrElse(
-      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url cannot be empty")(ErrorReportSource("FireCloud"))))
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = path, filetype = filetype, isUpsert = isUpsert)
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = importRequest.url, filetype = filetype, isUpsert = isUpsert)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 
     userAuthedRequest(Post(importServiceUrl, importServicePayload))(userInfo) flatMap { isResponse =>
-      generateResponse(isResponse, workspaceNamespace, workspaceName, pfbRequest)
+      generateResponse(isResponse, workspaceNamespace, workspaceName, importRequest)
     }
   }
 
   // separate method to ease unit testing
-  protected[dataaccess] def generateResponse(isResponse: HttpResponse, workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest): Future[PerRequestMessage] = {
+  protected[dataaccess] def generateResponse(isResponse: HttpResponse, workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest): Future[PerRequestMessage] = {
     isResponse match {
       case resp if resp.status == Created =>
         val importServiceResponse = Unmarshal(resp).to[ImportServiceResponse]
@@ -53,7 +49,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
         importServiceResponse.map { resp =>
           val responsePayload:AsyncImportResponse = AsyncImportResponse(
             jobId = resp.jobId,
-            url = pfbRequest.url.getOrElse(""),
+            url = importRequest.url,
             workspace = WorkspaceName(workspaceNamespace, workspaceName)
           )
 
