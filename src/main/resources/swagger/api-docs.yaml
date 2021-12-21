@@ -8923,6 +8923,9 @@ components:
         jobId:
           type: string
           description: unique id for the import job.
+        filetype:
+          type: string
+          description: type of the import job.
         status:
           type: string
           description: short status for the import job.
