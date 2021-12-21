@@ -23,8 +23,8 @@ object Dependencies {
     "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
 
-    "org.apache.logging.log4j"       % "log4j-api"           % "2.15.0", // elasticsearch requires log4j ...
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.15.0", // ... but we redirect log4j to logback.
+    "org.apache.logging.log4j"       % "log4j-api"           % "2.17.0", // elasticsearch requires log4j ...
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.0", // ... but we redirect log4j to logback.
     "ch.qos.logback"                 % "logback-classic"     % "1.2.3",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
