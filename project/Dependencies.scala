@@ -24,6 +24,7 @@ object Dependencies {
     // END transitive dependency overrides
 
     "org.apache.logging.log4j"       % "log4j-api"           % "2.17.1", // elasticsearch requires log4j ...
+    "org.apache.logging.log4j"       % "log4j-core"          % "2.17.1",
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.1", // ... but we redirect log4j to logback.
     "ch.qos.logback"                 % "logback-classic"     % "1.2.3",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
