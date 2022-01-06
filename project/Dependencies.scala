@@ -23,9 +23,8 @@ object Dependencies {
     "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
 
-    "org.apache.logging.log4j"       % "log4j-api"           % "2.17.1", // elasticsearch requires log4j ...
-    "org.apache.logging.log4j"       % "log4j-core"          % "2.17.1",
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.1", // ... but we redirect log4j to logback.
+    // elasticsearch requires log4j, but we redirect log4j to logback
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.1",
     "ch.qos.logback"                 % "logback-classic"     % "1.2.3",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
@@ -59,7 +58,9 @@ object Dependencies {
       exclude("io.netty", "netty-transport")
       exclude("io.netty", "netty-resolver")
       exclude("io.netty", "netty-buffer")
-      exclude("io.netty", "netty-common"),
+      exclude("io.netty", "netty-common")
+      exclude("org.apache.logging.log4j", "log4j-api")
+      exclude("org.apache.logging.log4j", "log4j-core"),
 
     excludeGuava("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
