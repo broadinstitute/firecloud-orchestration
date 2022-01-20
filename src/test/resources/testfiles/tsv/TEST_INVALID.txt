@@ -1,1 +1,0 @@
-entity:sample_id	participant_id	sample_typeTCGA-5M-AAT4-01A	TCGA-5M-AAT4	primary_solid_tumorTCGA-5M-AAT4-10A	TCGA-5M-AAT4	blood_derived_normalTCGA-NH-A8F8-01A	TCGA-NH-A8F8	primary_solid_tumorTCGA-NH-A8F8-10A	TCGA-NH-A8F8	blood-derived_normal
