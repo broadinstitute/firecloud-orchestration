@@ -15,6 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object RegisterService {
   val samTosTextUrl = s"${Sam.baseUrl}/tos/text"
+  val samAcceptTosUrl = s"${Sam.baseUrl}/register/user/v1/termsofservice"
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)

@@ -32,6 +32,7 @@ tags:
   - name: Status
   - name: Storage
   - name: Submissions
+  - name: Terms of Service
   - name: Version
   - name: Womtool
   - name: Workspaces
@@ -7182,6 +7183,19 @@ paths:
             text/plain:
               schema:
                 type: string
+  /tos/accept:
+    post:
+      tags:
+        - Terms of Service
+      summary: Passes through to Sam API and accepts Terra Terms of Service
+      operationId: acceptTermsOfService
+      responses:
+        200:
+          description: OK
+          content: { }
+        404:
+          description: User Not Found.
+          content: { }
   /ga4gh/v1/tools/{id}:
     get:
       tags:
