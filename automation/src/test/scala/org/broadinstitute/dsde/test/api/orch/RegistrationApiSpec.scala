@@ -79,7 +79,7 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
       }
     }
 
-    "should accept the Terms of Service" in {
+    "should passthrough to Sam to accept the Terms of Service" in {
       val tosUrl = "app.terra.bio/#terms-of-service"
       val newUser = UserPool.chooseAnyUser
       val token = newUser.makeAuthToken()
