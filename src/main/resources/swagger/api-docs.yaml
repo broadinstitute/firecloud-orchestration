@@ -7183,12 +7183,19 @@ paths:
             text/plain:
               schema:
                 type: string
-  /tos/accept:
+  /register/termsofservice:
     post:
       tags:
         - Terms of Service
       summary: Passes through to Sam API and accepts Terra Terms of Service
       operationId: acceptTermsOfService
+      requestBody:
+        description: url
+        content:
+          'application/json':
+            schema:
+              type: string
+        required: true
       responses:
         200:
           description: OK

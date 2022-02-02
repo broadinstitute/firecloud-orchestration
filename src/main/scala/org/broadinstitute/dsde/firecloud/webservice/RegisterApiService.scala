@@ -50,10 +50,10 @@ trait RegisterApiService extends FireCloudDirectives with RequestBuilding with S
         passthrough(samTosTextUrl, GET)
       }
     } ~
-    pathPrefix("tos") {
-      path("accept") {
+    pathPrefix("register") {
+      path("termsofservice") {
         post {
-          requireUserInfo() { _ =>
+          requireUserInfo() { userInfo =>
             passthrough(samAcceptTosUrl, POST)
           }
         }
