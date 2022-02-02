@@ -1,8 +1,10 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods.GET
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
+import akka.http.javadsl.model.RequestEntity
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.HttpMethods.{GET, POST}
+import akka.http.scaladsl.model.{HttpEntity, HttpHeader, HttpRequest, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.testkit.TestKitBase
 import org.broadinstitute.dsde.test.OrchConfig.Users
@@ -27,6 +29,10 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
   implicit val authToken: AuthToken = adminUser.makeAuthToken()
 
   override protected def beforeAll() = {
+    removeUserFromTerra(subjectId)
+  }
+
+  private def removeUserFromTerra(subjectId: String) = {
     if (Sam.admin.doesUserExist(subjectId).getOrElse(false)) {
       try {
         Sam.admin.deleteUser(subjectId)
@@ -71,6 +77,40 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
       whenReady(textFuture) { text =>
         text.isEmpty() shouldBe false
       }
+    }
+
+    "should accept the Terms of Service" in {
+      val tosUrl = "app.terra.bio/#terms-of-service"
+      val newUser = UserPool.chooseAnyUser
+      val token = newUser.makeAuthToken()
+
+      // remove user from Terra if they have already been registered. this test will re-register them
+      val maybeUser = Sam.user.status()(token)
+      maybeUser.foreach(user => removeUserFromTerra(user.userInfo.userSubjectId))
+
+      val basicUser = Orchestration.profile.BasicProfile(
+        "Test",
+        "Dummy",
+        "Tester",
+        Some("test@firecloud.org"),
+        "Broad",
+        "DSDE",
+        "Cambridge",
+        "MA",
+        "USA",
+        "Nobody",
+        "true"
+      )
+
+      Orchestration.profile.registerUser(basicUser)(token)
+
+      val beforeAccepting = Sam.user.status()(token).get
+      beforeAccepting.enabled.getOrElse("tosAccepted", fail("tosAccepted not included")) shouldBe false
+
+      Orchestration.termsOfService.accept(tosUrl)(token)
+
+      val afterAccepting = Sam.user.status()(token).get
+      afterAccepting.enabled.getOrElse("tosAccepted", fail("tosAccepted not included")) shouldBe true
     }
   }
 }
