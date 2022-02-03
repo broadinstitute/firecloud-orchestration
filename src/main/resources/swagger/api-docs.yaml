@@ -7183,7 +7183,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /register/termsofservice:
+  /register/user/v1/termsofservice:
     post:
       tags:
         - Terms of Service
