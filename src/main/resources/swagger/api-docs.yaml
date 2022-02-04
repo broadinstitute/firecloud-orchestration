@@ -7211,7 +7211,7 @@ paths:
       tags:
         - Terms of Service
       summary: Check whether user has accepted the current version of the Terms of Service
-      operationId: getTermsOfServiceStatusj
+      operationId: getTermsOfServiceStatus
       responses:
         200:
           description: OK
