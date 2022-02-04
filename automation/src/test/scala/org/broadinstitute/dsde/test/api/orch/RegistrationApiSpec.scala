@@ -104,13 +104,13 @@ class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with 
 
       Orchestration.profile.registerUser(basicUser)(token)
 
-      val beforeAccepting = Sam.user.status()(token).get
-      beforeAccepting.enabled.getOrElse("tosAccepted", fail("tosAccepted not included")) shouldBe false
+      val beforeAccepting = Orchestration.termsOfService.status()(token).getOrElse(fail("failed to get ToS status"))
+      beforeAccepting shouldBe false
 
       Orchestration.termsOfService.accept(tosUrl)(token)
 
-      val afterAccepting = Sam.user.status()(token).get
-      afterAccepting.enabled.getOrElse("tosAccepted", fail("tosAccepted not included")) shouldBe true
+      val afterAccepting = Orchestration.termsOfService.status()(token).getOrElse(fail("failed to get ToS status"))
+      afterAccepting shouldBe true
     }
   }
 }
