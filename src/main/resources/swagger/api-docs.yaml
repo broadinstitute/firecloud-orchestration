@@ -7206,6 +7206,22 @@ paths:
         404:
           description: User Not Found.
           content: { }
+  /register/user/v1/termsofservice/status:
+    get:
+      tags:
+        - Terms of Service
+      summary: Check whether user has accepted the current version of the Terms of Service
+      operationId: getTermsOfServiceStatus
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        404:
+          description: User Not Found.
+          content: { }
   /ga4gh/v1/tools/{id}:
     get:
       tags:
