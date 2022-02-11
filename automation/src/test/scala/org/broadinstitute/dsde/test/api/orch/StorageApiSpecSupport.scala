@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.test.api.orch
 
-import java.util.{Calendar, UUID}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.test.OrchConfig
 import org.broadinstitute.dsde.workbench.auth.AuthToken
@@ -14,6 +13,7 @@ import org.broadinstitute.dsde.workbench.service.Sam
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Seconds, Span}
 
+import java.util.{Calendar, UUID}
 import scala.util.{Failure, Success, Try}
 
 trait StorageApiSpecSupport extends ScalaFutures with LazyLogging {

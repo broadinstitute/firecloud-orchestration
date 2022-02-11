@@ -3,19 +3,26 @@ package org.broadinstitute.dsde.test.api.orch
 import org.broadinstitute.dsde.test.LibraryData
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.UserPool
-import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
-import org.broadinstitute.dsde.workbench.service.test.RandomUtil
+import org.broadinstitute.dsde.workbench.fixture.BillingFixtures.withCleanBillingProject
+import org.broadinstitute.dsde.workbench.fixture.WorkspaceFixtures.withWorkspace
+import org.broadinstitute.dsde.workbench.service.test.{CleanUp, RandomUtil}
 import org.broadinstitute.dsde.workbench.service.{Orchestration, Rawls}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{FreeSpec, Matchers}
 import org.scalatest.time.{Seconds, Span}
+import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
 
-class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with BillingFixtures with Matchers with Eventually with RandomUtil {
+class PublishedWorkspaceSpec
+  extends FreeSpec
+    with Matchers
+    with Eventually
+    with RandomUtil
+    with CleanUp {
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
 
+  val billingAccountName: String = "billing-account-name"
   "a user with publish permissions" - {
     "can publish a workspace" - {
 
@@ -24,7 +31,7 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
         val curatorUser = UserPool.chooseCurator
         implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-        withCleanBillingProject(curatorUser) { billingProject =>
+        withCleanBillingProject(billingAccountName) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
@@ -57,7 +64,7 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-          withCleanBillingProject(curatorUser) { billingProject =>
+          withCleanBillingProject(billingAccountName) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
               withCleanUp {
 
@@ -89,7 +96,7 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-          withCleanBillingProject(curatorUser) { billingProject =>
+          withCleanBillingProject(billingAccountName) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
               withCleanUp {
 
@@ -122,7 +129,7 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
         val curatorUser = UserPool.chooseCurator
         implicit val authToken: AuthToken = curatorUser.makeAuthToken()
 
-        withCleanBillingProject(curatorUser) { billingProject =>
+        withCleanBillingProject(billingAccountName) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_consentcodes") { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName) ++ LibraryData.consentCodes
@@ -145,7 +152,7 @@ class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with Billin
         val curatorUser = UserPool.chooseCurator
         implicit val authToken: AuthToken = curatorUser.makeAuthToken()
 
-        withCleanBillingProject(curatorUser) { billingProject =>
+        withCleanBillingProject(billingAccountName) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_tags", attributes = Some(tags)) { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)

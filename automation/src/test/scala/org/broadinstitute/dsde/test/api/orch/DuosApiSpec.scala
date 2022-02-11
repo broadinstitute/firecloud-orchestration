@@ -5,8 +5,8 @@ import org.broadinstitute.dsde.workbench.config.UserPool
 import org.broadinstitute.dsde.workbench.service.Orchestration
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{JsObject, JsonParser}
 import spray.json.lenses.JsonLenses._
+import spray.json.{JsObject, JsonParser}
 
 class DuosApiSpec extends FreeSpec with Matchers {
 

@@ -2,21 +2,28 @@ package org.broadinstitute.dsde.test.api.orch
 
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.UserPool
+import org.broadinstitute.dsde.workbench.fixture.BillingFixtures.withCleanBillingProject
+import org.broadinstitute.dsde.workbench.fixture.WorkspaceFixtures.withWorkspace
 import org.broadinstitute.dsde.workbench.fixture._
+import org.broadinstitute.dsde.workbench.service.test.RandomUtil
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
 import org.scalatest.{FreeSpec, Matchers}
+import spray.json.DefaultJsonProtocol._
 import spray.json._
-import DefaultJsonProtocol._
-import org.broadinstitute.dsde.workbench.service.test.RandomUtil
 
-class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
-  with BillingFixtures with WorkspaceFixtures with MethodFixtures {
+class MethodApiSpec
+  extends FreeSpec
+    with Matchers
+    with RandomUtil
+    with MethodFixtures {
+
+  val billingAccountName: String = "billing-account-name"
 
   "For a method config that references a redacted method" - {
     "should be able to choose new method snapshot" in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
-      withCleanBillingProject(user) { billingProject =>
+      withCleanBillingProject(billingAccountName) { billingProject =>
         withWorkspace(billingProject, "MethodConfigApiSpec_choose_new_snapshot") { workspaceName =>
           withMethod("MethodRedactedSpec_choose_new_snapshot", MethodData.SimpleMethod, 2) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)
@@ -62,7 +69,7 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
     "launching an analysis should not be possible" in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
-      withCleanBillingProject(user) { billingProject =>
+      withCleanBillingProject(billingAccountName) { billingProject =>
         withWorkspace(billingProject, "MethodApiSpec_launch_after_redact") { workspaceName =>
           withMethod("MethodApiSpec_launch_after_redact", MethodData.SimpleMethod, cleanUp = false) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)
@@ -108,7 +115,7 @@ class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
     "the method config should be deleteable " in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
-      withCleanBillingProject(user) { billingProject =>
+      withCleanBillingProject(billingAccountName) { billingProject =>
         withWorkspace(billingProject, "MethodApiSpec_delete_after_redacted") { workspaceName =>
           withMethod("MethodApiSpec_delete_after_redacted", MethodData.SimpleMethod, cleanUp = false) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)
