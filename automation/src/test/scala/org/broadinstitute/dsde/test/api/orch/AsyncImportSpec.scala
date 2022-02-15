@@ -39,7 +39,6 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
   private val testAvroFile = "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro"
-  private val testPayload = Map("url" -> testAvroFile)
 
   lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("AsyncImportSpec-pfb-expected-entities.json").getLines().mkString
     .parseJson.convertTo[Map[String, EntityTypeMetadata]]
@@ -118,7 +117,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
             // call importPFB as reader
             val exception = intercept[RestException] {
-              Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(reader.makeAuthToken())
+              startImportJob(projectName, workspaceName, testAvroFile, "pfb")(reader.makeAuthToken())
             }
 
             val errorReport = exception.message.parseJson.convertTo[ErrorReport]
@@ -179,16 +178,14 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     }
 
     // N.B. there are also snapshot-import-by-reference integration tests in Rawls,
-    // this test only addresses snapshot-import-by-copy
+    // this spec only addresses snapshot-import-by-copy
     "should import-by-copy a Data Repo export asynchronously" - {
       "for the owner of a workspace" in {
-        val owner = UserPool.userConfig.Owners.getUserCredential("hermione")
         implicit val ownerAuthToken: AuthToken = owner.makeAuthToken()
 
         val (snapshotManifest, snapshotTableNames) = withClue("Unexpected problem while exporting snapshot from TDR: ") {
           exportTdrSnapshot()
         }
-
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-snapshot-import-by-copy")) { workspaceName =>
@@ -214,13 +211,115 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           }
         }
       }
-      "for a writer with can-share" is pending
+      "for a writer with can-share" in {
+        val writer = UserPool.chooseStudent
+        val writerToken = writer.makeAuthToken()
+
+        val (snapshotManifest, snapshotTableNames) = withClue("Unexpected problem while exporting snapshot from TDR: ") {
+          exportTdrSnapshot()(writerToken)
+        }
+
+        val writerWithCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(true))
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("writer-snapshot-import-by-copy"), aclEntries = List(writerWithCanShareAcl)) { workspaceName =>
+            val startTime = System.currentTimeMillis()
+
+            // verify that entity metadata for this workspace is empty
+            val metadataBefore = getEntityMetadata(projectName, workspaceName, "(job not started yet)")(writerToken)
+            withClue("before snapshot import-by-copy, no data tables should exist") {
+              metadataBefore shouldBe empty
+            }
+
+            // start async import of manifest file into a new workspace, response will be a jobid
+            val importJobId = startImportJob(projectName, workspaceName, snapshotManifest, "tdrexport")(writerToken)
+
+            // poll for completion as owner
+            waitForImportJob(projectName, workspaceName, importJobId, startTime)(writerToken)
+
+            // retrieve entity metadata for workspace, should have same types as snapshot tables
+            val metadataAfter = getEntityMetadata(projectName, workspaceName, importJobId)(writerToken)
+            withClue("after snapshot import-by-copy, should have the same data tables as TDR") {
+              metadataAfter.keySet should contain theSameElementsAs snapshotTableNames
+            }
+          } (ownerAuthToken)
+        }
+      }
+    }
+
+    "should asynchronously result in an error on Data Repo import-by-copy" - {
+      "for a nonexistent manifest file" in {
+        implicit val token: AuthToken = ownerAuthToken
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("owner-snapshot-import-by-copy-404")) { workspaceName =>
+            val startTime = System.currentTimeMillis()
+
+            // call importPFB as owner
+            val importJobId = startImportJob(projectName, workspaceName,
+              "gs://fixtures-for-tests/fixtures/this-intentionally-does-not-exist", "tdrexport")
+
+            // poll for completion as owner
+            waitForImportJob(projectName, workspaceName, importJobId, startTime,"Error")
+          }
+        }
+      }
     }
 
     "should throw a synchronous error on Data Repo import-by-copy" - {
-      "for a writer without can-share" is pending
-      "for a reader" is pending
-      "for a nonexistent manifest file" is pending
+      "for a writer without can-share" in {
+        val writer = UserPool.chooseStudent
+        val writerToken = writer.makeAuthToken()
+
+        val writerNoCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(false))
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("writer-snapshot-import-by-copy"), aclEntries = List(writerNoCanShareAcl)) { workspaceName =>
+            val startTime = System.currentTimeMillis()
+
+            // call importJob as writer, without can-share
+            val exception = intercept[RestException] {
+              // a bit of a hack - we ask to import the testAvroFile but specify "tdrexport" filetype.
+              // this allows the test to skip the work of exporting a snapshot in TDR, which adds time.
+              // Import Service should check the user's permission on the workspace and fail before even
+              // reading the input file, so this should be ok ... if Import Service gets to the point of
+              // trying to read testAvroFile, it'll throw a different error than what we're asserting on.
+              startImportJob(projectName, workspaceName, testAvroFile, "tdrexport")(writerToken)
+            }
+
+            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
+
+            errorReport.statusCode.value shouldBe StatusCodes.Forbidden
+            errorReport.message should include (s"Cannot perform the action read_policies on $projectName/$workspaceName")
+
+          } (ownerAuthToken)
+        }
+      }
+      "for a reader" in {
+        val reader = UserPool.chooseStudent
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("reader-snapshot-import-by-copy"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
+
+            // call importJob as reader
+            val exception = intercept[RestException] {
+              // a bit of a hack - we ask to import the testAvroFile but specify "tdrexport" filetype.
+              // this allows the test to skip the work of exporting a snapshot in TDR, which adds time.
+              // Import Service should check the user's permission on the workspace and fail before even
+              // reading the input file, so this should be ok ... if Import Service gets to the point of
+              // trying to read testAvroFile, it'll throw a different error than what we're asserting on.
+              startImportJob(projectName, workspaceName, testAvroFile, "tdrexport")(reader.makeAuthToken())
+            }
+
+            val errorReport = exception.message.parseJson.convertTo[ErrorReport]
+
+            errorReport.statusCode.value shouldBe StatusCodes.Forbidden
+            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
+
+          } (ownerAuthToken)
+        }
+
+      }
     }
   }
 
@@ -281,14 +380,20 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       }
     }
 
-    // on export completion, get job result
-    val jobResult = dataRepoApi.retrieveJobResult(exportJob.getId)
-    val snapshotExportModel:SnapshotExportResponseModel = jobResult match {
-      case snapshotExport:SnapshotExportResponseModel => snapshotExport
-      case x => fail(s"Data Repo snapshot export job result returned unexpected class ${x.getClass.getName}")
-    }
-    // parse job result, find manifest file
-    val snapshotManifest = snapshotExportModel.getFormat.getParquet.getManifest
+    // these classes are VERY non-comprehensive representations of SnapshotExportResponseModel,
+    // but they're all we need to extract the manifest value out of the response.
+    case class Parquet(manifest: String)
+    case class Format(parquet: Parquet)
+    case class ExportModel(format: Format)
+    implicit val parquetJsonFormat: RootJsonFormat[Parquet] = jsonFormat1(Parquet)
+    implicit val formatFormat: RootJsonFormat[Format] = jsonFormat1(Format)
+    implicit val exportModelFormat: RootJsonFormat[ExportModel] = jsonFormat1(ExportModel)
+
+    // on export completion, get job result. The data repo client, via retrieveJobResult(), returns a LinkedHashMap
+    // and is not strongly typed. So, we get the response as a string and parse it into our hacky case classes.
+    val jobResultHttpResponse = Orchestration.getRequest(s"${dataRepoBaseUrl}api/repository/v1/jobs/${exportJob.getId}/result")
+    val exportModel = blockForStringBody(jobResultHttpResponse).toJson.convertTo[ExportModel]
+    val snapshotManifest = exportModel.format.parquet.manifest
 
     (snapshotManifest, snapshotTableNames)
   }
