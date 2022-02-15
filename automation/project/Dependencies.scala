@@ -7,16 +7,18 @@ object Dependencies {
   val akkaV = "2.6.15"
   val akkaHttpV = "10.1.0"
 
-  val workbenchModelV  = "0.15-808590d"
+  val workbenchModelV  = "0.15-f9f0d4c"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
   val excludeWorkbenchModel = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-model_" + scalaV)
 
-  val workbenchGoogleV = "0.21-808590d"
+  val workbenchGoogleV = "0.21-ae11b9f"
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google" + scalaV)
 
-  val workbenchServiceTestV = "0.21-258d483"
+  val workbenchServiceTestV = "0.21-f84f06e"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
+
+  val dataRepoClient: ModuleID = "bio.terra" % "datarepo-client" % "1.294.0-SNAPSHOT"
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of Jackson libs, instead of relying on the versions
@@ -49,6 +51,7 @@ object Dependencies {
     workbenchServiceTest,
     workbenchModel,
     workbenchGoogle,
+    dataRepoClient,
 
     // required by workbenchGoogle
     "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.6" % "provided"

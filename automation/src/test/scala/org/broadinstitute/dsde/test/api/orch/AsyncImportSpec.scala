@@ -3,9 +3,14 @@ package org.broadinstitute.dsde.test.api.orch
 import java.util.UUID
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import bio.terra.datarepo.api.RepositoryApi
+import bio.terra.datarepo.client.ApiClient
+import bio.terra.datarepo.model.JobModel.JobStatusEnum
+import bio.terra.datarepo.model.{SnapshotExportResponseModel, SnapshotRetrieveIncludeModel}
 import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.EntityTypeMetadataFormat
 import org.broadinstitute.dsde.workbench.auth.AuthToken
+import org.broadinstitute.dsde.workbench.config.ServiceTestConfig.FireCloud
 import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
 import org.broadinstitute.dsde.workbench.model.ErrorReport
@@ -20,6 +25,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
 import java.util.concurrent.TimeUnit
+import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -203,6 +209,124 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         }
       }
 
+    }
+
+    // N.B. there are also snapshot-import-by-reference integration tests in Rawls,
+    // this test only addresses snapshot-import-by-copy
+    "should import a Data Repo export asynchronously" - {
+      "for the owner of a workspace" in {
+        val owner = UserPool.userConfig.Owners.getUserCredential("hermione")
+
+        implicit val ownerAuthToken: AuthToken = owner.makeAuthToken()
+
+        val dataRepoBaseUrl = FireCloud.dataRepoApiUrl
+
+        val apiClient: ApiClient = new ApiClient()
+        apiClient.setBasePath(dataRepoBaseUrl)
+        apiClient.setAccessToken(ownerAuthToken.value)
+
+        val dataRepoApi = new RepositoryApi(apiClient)
+
+        val numSnapshots = 1
+
+        // list and choose an available snapshot in TDR
+        logger.info(s"calling data repo at $dataRepoBaseUrl as user ${owner.email} ... ")
+        val drSnapshots = Try(dataRepoApi.enumerateSnapshots(
+          0, numSnapshots, "created_date", "desc", "", "", java.util.Collections.emptyList() )) match {
+          case Success(s) => s
+          case Failure(ex) =>
+            logger.error(s"data repo call as user ${owner.email} failed: ${ex.getMessage}", ex)
+            throw ex
+        }
+        assume(drSnapshots.getItems.size() == numSnapshots,
+          s"---> TDR at $dataRepoBaseUrl did not have $numSnapshots snapshots for this test to use!" +
+            s" This is likely a problem in environment setup, but has a chance of being a problem in runtime code. <---")
+
+        logger.info(s"found ${drSnapshots.getItems.size()} snapshot(s) from $dataRepoBaseUrl as user ${owner.email}: " +
+          s"${drSnapshots.getItems.asScala.map(_.getId).mkString(", ")}")
+
+        val snapshotFromList = drSnapshots.getItems.asScala.head
+
+        // describe tables for the snapshot in TDR
+        val snapshotModel = dataRepoApi.retrieveSnapshot(snapshotFromList.getId, List(SnapshotRetrieveIncludeModel.TABLES).asJava)
+        // collect the non-empty tables
+        val snapshotTableNames: Set[String] = snapshotModel.getTables.asScala.collect {
+          case table if table.getRowCount > 0 => table.getName
+        }.toSet
+
+        assume(snapshotTableNames.nonEmpty, "TDR snapshot should have at least 1 populated table!")
+
+        // start export for the snapshot, response will be a jobid
+        val exportJob = dataRepoApi.exportSnapshot(snapshotModel.getId)
+
+        // poll jobid for export completion
+        withClue("while polling for Data Repo snapshot export completion, an error occurred: ") {
+          eventually {
+            val currentJobStatus = dataRepoApi.retrieveJob(exportJob.getId)
+            val statusValue = currentJobStatus.getJobStatus
+            statusValue shouldNot be (JobStatusEnum.RUNNING)
+            if (statusValue == JobStatusEnum.FAILED) {
+              fail(s"Data Repo snapshot export failed for snapshotId ${snapshotModel.getId} and " +
+                s"jobId ${exportJob.getId}. Last status was: ${currentJobStatus.toString}")
+            }
+          }
+        }
+
+        // on export completion, get job result
+        val jobResult = dataRepoApi.retrieveJobResult(exportJob.getId)
+        val snapshotExportModel:SnapshotExportResponseModel = jobResult match {
+          case snapshotExport:SnapshotExportResponseModel => snapshotExport
+          case x => fail(s"Data Repo snapshot export job result returned unexpected class ${x.getClass.getName}")
+        }
+        // parse job result, find manifest file
+        val snapshotManifest = snapshotExportModel.getFormat.getParquet.getManifest
+
+        snapshotManifest shouldBe "intentional failure, but we got this far"
+
+        withCleanBillingProject(owner) { projectName =>
+          withWorkspace(projectName, prependUUID("owner-snapshot-import-by-copy")) { workspaceName =>
+            val entityTypeMetadataUrl = s"${workspaceUrl(projectName, workspaceName)}/entities"
+
+            // verify that entity metadata for this workspace is empty
+            val metadataResponse = Orchestration.getRequest(entityTypeMetadataUrl)
+            val metadataBefore = Unmarshal(metadataResponse).to[Map[String, EntityTypeMetadata]].futureValue
+            withClue("before snapshot import-by-copy, no data tables should exist") {
+              metadataBefore shouldBe empty
+            }
+
+            // start async import of manifest file into a new workspace, response will be a jobid
+            val startImportUrl = s"${workspaceUrl(projectName, workspaceName)}/importJob"
+            val importPayload = s"""{ "filetype" : "tdrexport", "url" : "$snapshotManifest" }"""
+            val importJobResponse = Orchestration.postRequest(startImportUrl, importPayload)
+
+            // expect to get exactly one jobId back
+            // TODO: centralize this jobId-extraction code into a reusable method
+            val importJobIdValues: Seq[JsValue] = importJobResponse.parseJson.asJsObject.getFields("jobId")
+            importJobIdValues should have size 1
+
+            val importJobId: String = importJobIdValues.head match {
+              case js:JsString => js.value
+              case x => fail("got an invalid jobId: " + x.toString())
+            }
+
+            // poll for completion as owner
+            eventually {
+              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
+              resp.status shouldBe StatusCodes.OK
+              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
+            }
+
+            // retrieve entity metadata for workspace, should have same types as snapshot tables
+            val metadataAfter = Unmarshal(metadataResponse).to[Map[String, EntityTypeMetadata]].futureValue
+            withClue("after snapshot import-by-copy, should have the same data tables as TDR") {
+              metadataAfter.keySet should contain theSameElementsAs snapshotTableNames
+            }
+          }
+        }
+
+
+
+      }
     }
   }
 
