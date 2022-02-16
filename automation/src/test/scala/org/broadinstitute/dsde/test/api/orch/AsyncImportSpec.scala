@@ -101,7 +101,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
               "https://storage.googleapis.com/fixtures-for-tests/fixtures/this-intentionally-does-not-exist", "pfb")
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime,"Error")
+            waitForImportJob(projectName, workspaceName, importJobId, startTime, expectedStatus = "Error", failIfStatuses = List("Done"))
           }
         }
       }
@@ -269,7 +269,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
               "gs://fixtures-for-tests/fixtures/this-intentionally-does-not-exist", "tdrexport")
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime,"Error")
+            waitForImportJob(projectName, workspaceName, importJobId, startTime, expectedStatus = "Error", failIfStatuses = List("Done"))
           }
         }
       }
@@ -436,8 +436,13 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
   /** poll for an import job to be complete */
   private def waitForImportJob(projectName: String, workspaceName: String, importJobId: String,
                                startTime: Long,
-                               expectedStatus: String = "Done")
+                               expectedStatus: String = "Done",
+                               failIfStatuses: List[String] = List("Error"))
                               (implicit authToken: AuthToken) = {
+    // for json deserialization
+    case class ImportJobResponse(status: String, message: String)
+    implicit val importJobResponseFormat: RootJsonFormat[ImportJobResponse] = jsonFormat2(ImportJobResponse)
+
     // poll for completion
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
       eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
@@ -447,9 +452,14 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         val respStatus = resp.status
         logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         respStatus shouldBe StatusCodes.OK
-        val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
+        val importResponse = blockForStringBody(resp).parseJson.convertTo[ImportJobResponse]
+        val importStatus = importResponse.status
         logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
-        importStatus shouldBe JsString (expectedStatus)
+        importStatus shouldBe expectedStatus
+        // checking for fail conditions allows the test to exit earlier than the eventually{} timeout if we detect a problem
+        withClue(s"Import job $importJobId with message [${importResponse.message}] should not be in status $importStatus: ") {
+          failIfStatuses shouldNot contain (importStatus)
+        }
       }
     }
 
