@@ -402,7 +402,10 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     // on export completion, get job result. The data repo client, via retrieveJobResult(), returns a LinkedHashMap
     // and is not strongly typed. So, we get the response as a string and parse it into our hacky case classes.
     val jobResultHttpResponse = Orchestration.getRequest(s"${dataRepoBaseUrl}api/repository/v1/jobs/${exportJob.getId}/result")(credentials.makeAuthToken())
-    val exportModel = blockForStringBody(jobResultHttpResponse).toJson.convertTo[ExportModel]
+    val jobResultStringResponse = blockForStringBody(jobResultHttpResponse)
+    logger.info(s"Data Repo snapshot export job result for snapshotId ${snapshotModel.getId} and " +
+      s"jobId ${exportJob.getId} is: $jobResultStringResponse")
+    val exportModel = jobResultStringResponse.toJson.convertTo[ExportModel]
     val snapshotManifest = exportModel.format.parquet.manifest
 
     (snapshotManifest, snapshotTableNames)
