@@ -181,41 +181,45 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     // this spec only addresses snapshot-import-by-copy
     "should import-by-copy a Data Repo export asynchronously" - {
       "for the owner of a workspace" in {
-        val workspaceOwner = UserPool.userConfig.Owners.getUserCredential("hermione")
-        implicit val workspaceOwnerAuthToken: AuthToken = owner.makeAuthToken()
+        val workspaceOwner = UserPool.chooseProjectOwner
+        val workspaceOwnerAuthToken: AuthToken = workspaceOwner.makeAuthToken()
+        val additionalOwner = UserPool.userConfig.Owners.getUserCredential("hermione")
+        val additionalOwnerToken = additionalOwner.makeAuthToken()
 
         val (snapshotManifest, snapshotTableNames) = withClue("Unexpected problem while exporting snapshot from TDR: ") {
-          exportTdrSnapshot()(workspaceOwner)
+          exportTdrSnapshot()(additionalOwner)
         }
 
+        val additionalOwnerAcl = AclEntry(additionalOwner.email, WorkspaceAccessLevel.Owner)
+
         withCleanBillingProject(workspaceOwner) { projectName =>
-          withWorkspace(projectName, prependUUID("owner-tdr-by-copy")) { workspaceName =>
+          withWorkspace(projectName, prependUUID("owner-tdr-by-copy"), aclEntries = List(additionalOwnerAcl)) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
             // verify that entity metadata for this workspace is empty
-            val metadataBefore = getEntityMetadata(projectName, workspaceName, "(job not started yet)")
+            val metadataBefore = getEntityMetadata(projectName, workspaceName, "(job not started yet)")(additionalOwnerToken)
             withClue("before snapshot import-by-copy, no data tables should exist") {
               metadataBefore shouldBe empty
             }
 
             // start async import of manifest file into a new workspace, response will be a jobid
-            val importJobId = startImportJob(projectName, workspaceName, snapshotManifest, "tdrexport")
+            val importJobId = startImportJob(projectName, workspaceName, snapshotManifest, "tdrexport")(additionalOwnerToken)
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime)
+            waitForImportJob(projectName, workspaceName, importJobId, startTime)(additionalOwnerToken)
 
             // retrieve entity metadata for workspace, should have same types as snapshot tables
-            val metadataAfter = getEntityMetadata(projectName, workspaceName, importJobId)
+            val metadataAfter = getEntityMetadata(projectName, workspaceName, importJobId)(additionalOwnerToken)
             withClue("after snapshot import-by-copy, should have the same data tables as TDR") {
               metadataAfter.keySet should contain theSameElementsAs snapshotTableNames
             }
-          }
+          }(workspaceOwnerAuthToken)
         }
       }
       "for a writer with can-share" in {
         // hermione has access to snapshots, so in this test we use a student as the workspace owner,
         // and hermione as the writer
-        val workspaceOwner = UserPool.chooseStudent
+        val workspaceOwner = UserPool.chooseProjectOwner
         val workspaceOwnerAuthToken: AuthToken = workspaceOwner.makeAuthToken()
         val writer = UserPool.userConfig.Owners.getUserCredential("hermione")
         val writerToken = writer.makeAuthToken()
@@ -226,7 +230,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
         val writerWithCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(true))
 
-        withCleanBillingProject(owner) { projectName =>
+        withCleanBillingProject(workspaceOwner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-tdr-by-copy"), aclEntries = List(writerWithCanShareAcl)) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
@@ -260,7 +264,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           withWorkspace(projectName, prependUUID("tdr-by-copy-404")) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
-            // call importPFB as owner
+            // call importJobas owner
             val importJobId = startImportJob(projectName, workspaceName,
               "gs://fixtures-for-tests/fixtures/this-intentionally-does-not-exist", "tdrexport")
 
@@ -272,21 +276,18 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     }
 
     "should throw a synchronous error on Data Repo import-by-copy" - {
-      // TODO: failing - 500 in withWorkspace???
       "for a writer without can-share" ignore {
         // hermione has access to snapshots, so in this test we use a student as the workspace owner,
         // and hermione as the writer
-        val workspaceOwner = UserPool.chooseStudent
+        val workspaceOwner = UserPool.chooseProjectOwner
         val workspaceOwnerAuthToken: AuthToken = workspaceOwner.makeAuthToken()
         val writer = UserPool.userConfig.Owners.getUserCredential("hermione")
         val writerToken = writer.makeAuthToken()
 
         val writerNoCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(false))
 
-        withCleanBillingProject(owner) { projectName =>
+        withCleanBillingProject(workspaceOwner) { projectName =>
           withWorkspace(projectName, prependUUID("noshare-tdr-by-copy"), aclEntries = List(writerNoCanShareAcl)) { workspaceName =>
-            val startTime = System.currentTimeMillis()
-
             // call importJob as writer, without can-share
             val exception = intercept[RestException] {
               // a bit of a hack - we ask to import the testAvroFile but specify "tdrexport" filetype.
@@ -306,9 +307,11 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         }
       }
       "for a reader" in {
+        val workspaceOwner = UserPool.chooseProjectOwner
+        val workspaceOwnerAuthToken: AuthToken = workspaceOwner.makeAuthToken()
         val reader = UserPool.chooseStudent
 
-        withCleanBillingProject(owner) { projectName =>
+        withCleanBillingProject(workspaceOwner) { projectName =>
           withWorkspace(projectName, prependUUID("reader-tdr-by-copy"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
 
             // call importJob as reader
@@ -326,7 +329,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             errorReport.statusCode.value shouldBe StatusCodes.Forbidden
             errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
 
-          } (ownerAuthToken)
+          } (workspaceOwnerAuthToken)
         }
 
       }
