@@ -405,7 +405,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     val jobResultStringResponse = blockForStringBody(jobResultHttpResponse)
     logger.info(s"Data Repo snapshot export job result for snapshotId ${snapshotModel.getId} and " +
       s"jobId ${exportJob.getId} is: $jobResultStringResponse")
-    val exportModel = jobResultStringResponse.toJson.convertTo[ExportModel]
+    val exportModel = jobResultStringResponse.parseJson.convertTo[ExportModel]
     val snapshotManifest = exportModel.format.parquet.manifest
 
     (snapshotManifest, snapshotTableNames)
