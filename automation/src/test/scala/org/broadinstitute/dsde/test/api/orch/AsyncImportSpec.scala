@@ -258,7 +258,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         implicit val token: AuthToken = ownerAuthToken
 
         withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("owner-snapshot-import-by-copy-404")) { workspaceName =>
+          withWorkspace(projectName, prependUUID("snapshot-import-by-copy-404")) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
             // call importPFB as owner
