@@ -185,7 +185,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         implicit val workspaceOwnerAuthToken: AuthToken = owner.makeAuthToken()
 
         val (snapshotManifest, snapshotTableNames) = withClue("Unexpected problem while exporting snapshot from TDR: ") {
-          exportTdrSnapshot()
+          exportTdrSnapshot()(workspaceOwner)
         }
 
         withCleanBillingProject(workspaceOwner) { projectName =>
@@ -221,7 +221,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         val writerToken = writer.makeAuthToken()
 
         val (snapshotManifest, snapshotTableNames) = withClue("Unexpected problem while exporting snapshot from TDR: ") {
-          exportTdrSnapshot()(writerToken)
+          exportTdrSnapshot()(writer)
         }
 
         val writerWithCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(true))
@@ -336,31 +336,31 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
   /** find a snapshot in TDR, describe its tables, and export it.
     * returns a tuple of (export manifest file, Set(non-empty table names in snapshot)
     * */
-  private def exportTdrSnapshot()(implicit authToken: AuthToken): (String, Set[String]) = {
+  private def exportTdrSnapshot()(implicit credentials: Credentials): (String, Set[String]) = {
     val dataRepoBaseUrl = FireCloud.dataRepoApiUrl
 
     val apiClient: ApiClient = new ApiClient()
     apiClient.setBasePath(dataRepoBaseUrl)
-    apiClient.setAccessToken(ownerAuthToken.value)
+    apiClient.setAccessToken(credentials.makeAuthToken().value)
 
     val dataRepoApi = new RepositoryApi(apiClient)
 
     val numSnapshots = 1
 
     // list and choose an available snapshot in TDR
-    logger.info(s"calling data repo at $dataRepoBaseUrl as user ${owner.email} ... ")
+    logger.info(s"calling data repo at $dataRepoBaseUrl as user ${credentials.email} ... ")
     val drSnapshots = Try(dataRepoApi.enumerateSnapshots(
       0, numSnapshots, EnumerateSortByParam.CREATED_DATE, SqlSortDirection.DESC, "", "", java.util.Collections.emptyList() )) match {
       case Success(s) => s
       case Failure(ex) =>
-        logger.error(s"data repo call as user ${owner.email} failed: ${ex.getMessage}", ex)
+        logger.error(s"data repo call as user ${credentials.email} failed: ${ex.getMessage}", ex)
         throw ex
     }
     assume(drSnapshots.getItems.size() == numSnapshots,
       s"---> TDR at $dataRepoBaseUrl did not have $numSnapshots snapshots for this test to use!" +
         s" This is likely a problem in environment setup, but has a chance of being a problem in runtime code. <---")
 
-    logger.info(s"found ${drSnapshots.getItems.size()} snapshot(s) from $dataRepoBaseUrl as user ${owner.email}: " +
+    logger.info(s"found ${drSnapshots.getItems.size()} snapshot(s) from $dataRepoBaseUrl as user ${credentials.email}: " +
       s"${drSnapshots.getItems.asScala.map(_.getId).mkString(", ")}")
 
     val snapshotFromList = drSnapshots.getItems.asScala.head
@@ -401,7 +401,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
     // on export completion, get job result. The data repo client, via retrieveJobResult(), returns a LinkedHashMap
     // and is not strongly typed. So, we get the response as a string and parse it into our hacky case classes.
-    val jobResultHttpResponse = Orchestration.getRequest(s"${dataRepoBaseUrl}api/repository/v1/jobs/${exportJob.getId}/result")
+    val jobResultHttpResponse = Orchestration.getRequest(s"${dataRepoBaseUrl}api/repository/v1/jobs/${exportJob.getId}/result")(credentials.makeAuthToken())
     val exportModel = blockForStringBody(jobResultHttpResponse).toJson.convertTo[ExportModel]
     val snapshotManifest = exportModel.format.parquet.manifest
 
