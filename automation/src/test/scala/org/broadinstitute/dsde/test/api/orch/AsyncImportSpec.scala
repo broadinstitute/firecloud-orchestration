@@ -189,7 +189,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         }
 
         withCleanBillingProject(workspaceOwner) { projectName =>
-          withWorkspace(projectName, prependUUID("owner-snapshot-import-by-copy")) { workspaceName =>
+          withWorkspace(projectName, prependUUID("owner-tdr-by-copy")) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
             // verify that entity metadata for this workspace is empty
@@ -227,7 +227,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         val writerWithCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(true))
 
         withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("writer-snapshot-import-by-copy"), aclEntries = List(writerWithCanShareAcl)) { workspaceName =>
+          withWorkspace(projectName, prependUUID("writer-tdr-by-copy"), aclEntries = List(writerWithCanShareAcl)) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
             // verify that entity metadata for this workspace is empty
@@ -253,12 +253,11 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     }
 
     "should asynchronously result in an error on Data Repo import-by-copy" - {
-      // TODO: failing - "Path Not Allowed - File cannot be imported from this URL.: gs://fixtures-for-tests/fixtures/this-intentionally-does-not-exist"
       "for a nonexistent manifest file" in {
         implicit val token: AuthToken = ownerAuthToken
 
         withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("snapshot-import-by-copy-404")) { workspaceName =>
+          withWorkspace(projectName, prependUUID("tdr-by-copy-404")) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
             // call importPFB as owner
@@ -285,7 +284,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         val writerNoCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(false))
 
         withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("writer-snapshot-import-by-copy"), aclEntries = List(writerNoCanShareAcl)) { workspaceName =>
+          withWorkspace(projectName, prependUUID("noshare-tdr-by-copy"), aclEntries = List(writerNoCanShareAcl)) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
             // call importJob as writer, without can-share
@@ -310,7 +309,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
         val reader = UserPool.chooseStudent
 
         withCleanBillingProject(owner) { projectName =>
-          withWorkspace(projectName, prependUUID("reader-snapshot-import-by-copy"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
+          withWorkspace(projectName, prependUUID("reader-tdr-by-copy"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
 
             // call importJob as reader
             val exception = intercept[RestException] {
