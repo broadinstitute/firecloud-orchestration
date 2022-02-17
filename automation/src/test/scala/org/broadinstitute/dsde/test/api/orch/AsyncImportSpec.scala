@@ -6,7 +6,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import bio.terra.datarepo.api.RepositoryApi
 import bio.terra.datarepo.client.ApiClient
 import bio.terra.datarepo.model.JobModel.JobStatusEnum
-import bio.terra.datarepo.model.{EnumerateSortByParam, SnapshotExportResponseModel, SnapshotRetrieveIncludeModel, SqlSortDirection}
+import bio.terra.datarepo.model.{EnumerateSortByParam, SnapshotRetrieveIncludeModel, SqlSortDirection}
 import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.EntityTypeMetadataFormat
 import org.broadinstitute.dsde.workbench.auth.AuthToken
@@ -57,7 +57,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             val importJobId = startImportJob(projectName, workspaceName, testAvroFile, "pfb")
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime)
+            waitForImportJob(projectName, workspaceName, importJobId, startTime)(owner)
 
             // inspect data entities and confirm correct import as owner
             val actualMetadata = getEntityMetadata(projectName, workspaceName, importJobId)
@@ -78,7 +78,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             val importJobId = startImportJob(projectName, workspaceName, testAvroFile, "pfb")(writerToken)
 
             // poll for completion as writer
-            waitForImportJob(projectName, workspaceName, importJobId, startTime)(writerToken)
+            waitForImportJob(projectName, workspaceName, importJobId, startTime)(writer)
 
             // inspect data entities and confirm correct import as writer
             val actualMetadata = getEntityMetadata(projectName, workspaceName, importJobId)(writerToken)
@@ -101,7 +101,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
               "https://storage.googleapis.com/fixtures-for-tests/fixtures/this-intentionally-does-not-exist", "pfb")
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime, expectedStatus = "Error", failIfStatuses = List("Done"))
+            waitForImportJob(projectName, workspaceName, importJobId, startTime, expectedStatus = "Error", failIfStatuses = List("Done"))(owner)
           }
         }
       }
@@ -157,8 +157,8 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
           val participantAndSetEntityMetadata = participantEntityMetadata + ("participant_set" -> EntityTypeMetadata(2, "participant_set_id", Seq("participants")))
 
-          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
-          importAsync(projectName, workspaceName, "MEMBERSHIP_PARTICIPANT_SET.tsv", participantAndSetEntityMetadata)
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)(owner)
+          importAsync(projectName, workspaceName, "MEMBERSHIP_PARTICIPANT_SET.tsv", participantAndSetEntityMetadata)(owner)
         }
       }
     }
@@ -170,8 +170,8 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
           val updatedParticipantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq("age")))
 
-          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
-          importAsync(projectName, workspaceName, "UPDATE_PARTICIPANTS.tsv", updatedParticipantEntityMetadata)
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)(owner)
+          importAsync(projectName, workspaceName, "UPDATE_PARTICIPANTS.tsv", updatedParticipantEntityMetadata)(owner)
         }
       }
 
@@ -206,7 +206,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             val importJobId = startImportJob(projectName, workspaceName, snapshotManifest, "tdrexport")(additionalOwnerToken)
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime)(additionalOwnerToken)
+            waitForImportJob(projectName, workspaceName, importJobId, startTime)(additionalOwner)
 
             // retrieve entity metadata for workspace, should have same types as snapshot tables
             val metadataAfter = getEntityMetadata(projectName, workspaceName, importJobId)(additionalOwnerToken)
@@ -244,7 +244,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             val importJobId = startImportJob(projectName, workspaceName, snapshotManifest, "tdrexport")(writerToken)
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime)(writerToken)
+            waitForImportJob(projectName, workspaceName, importJobId, startTime)(writer)
 
             // retrieve entity metadata for workspace, should have same types as snapshot tables
             val metadataAfter = getEntityMetadata(projectName, workspaceName, importJobId)(writerToken)
@@ -264,12 +264,12 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           withWorkspace(projectName, prependUUID("tdr-by-copy-404")) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
-            // call importJobas owner
+            // call importJob as owner
             val importJobId = startImportJob(projectName, workspaceName,
               "gs://fixtures-for-tests/fixtures/this-intentionally-does-not-exist", "tdrexport")
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime, expectedStatus = "Error", failIfStatuses = List("Done"))
+            waitForImportJob(projectName, workspaceName, importJobId, startTime, expectedStatus = "Error", failIfStatuses = List("Done"))(owner)
           }
         }
       }
@@ -438,7 +438,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
                                startTime: Long,
                                expectedStatus: String = "Done",
                                failIfStatuses: List[String] = List("Error"))
-                              (implicit authToken: AuthToken) = {
+                              (implicit creds: Credentials) = {
     // for json deserialization
     case class ImportJobResponse(status: String, message: Option[String])
     implicit val importJobResponseFormat: RootJsonFormat[ImportJobResponse] = jsonFormat2(ImportJobResponse)
@@ -448,7 +448,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
         val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
         logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
-        val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
+        val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")(creds.makeAuthToken())
         val respStatus = resp.status
         logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         respStatus shouldBe StatusCodes.OK
@@ -476,12 +476,12 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
   }
 
-  private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken): Unit = {
+  private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit creds: Credentials): Unit = {
     val startTime = System.currentTimeMillis()
     val importFileString = FileUtils.readAllTextFromResource(importFilePath)
 
     // call import as owner
-    val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, isAsync = true, "entities", importFileString)
+    val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, isAsync = true, "entities", importFileString)(creds.makeAuthToken())
     // expect to get exactly one jobId back
     val importJobId: String = extractJobId(postResponse)
 
@@ -496,7 +496,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     // inspect data entities and confirm correct import as owner. With the import complete, the metadata should already
     // be correct, so we don't need to use eventually here.
     withClue(s"import job $importJobId failed its eventually assertion on entity metadata: ") {
-      val result = getEntityMetadata(projectName, workspaceName, importJobId)
+      val result = getEntityMetadata(projectName, workspaceName, importJobId)(creds.makeAuthToken())
       compareMetadata(result, expectedResult)
     }
 
