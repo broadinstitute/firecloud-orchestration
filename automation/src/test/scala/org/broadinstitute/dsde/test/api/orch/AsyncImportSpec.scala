@@ -40,15 +40,6 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
   lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("AsyncImportSpec-pfb-expected-entities.json").getLines().mkString
     .parseJson.convertTo[Map[String, EntityTypeMetadata]]
 
-  "Import Service SA should be an admin in Sam" in {
-    // import-service@terra-importservice-qa.iam.gserviceaccount.com
-    val admin = UserPool.chooseAdmin
-    val userCheckUrl = s"${FireCloud.samApiUrl}api/admin/user/email/import-service@terra-importservice-qa.iam.gserviceaccount.com"
-    val userCheckResponse = Orchestration.getRequest(userCheckUrl)(admin.makeAuthToken())
-    val userCheck = blockForStringBody(userCheckResponse)
-    assert (userCheck == "this will fail")
-  }
-
   "Orchestration" - {
 
     "should import a PFB file via import service" - {
