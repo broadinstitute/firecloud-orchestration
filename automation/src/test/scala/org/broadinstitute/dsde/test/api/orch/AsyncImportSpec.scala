@@ -25,6 +25,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
 import java.util.concurrent.TimeUnit
+import javax.xml.parsers.FactoryConfigurationError
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
@@ -434,22 +435,29 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
     // poll for completion
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
-      eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
-        val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
-        logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
-        val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")(creds.makeAuthToken())
-        val respStatus = resp.status
-        logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
-        respStatus shouldBe StatusCodes.OK
-        val importResponse = blockForStringBody(resp).parseJson.convertTo[ImportJobResponse]
-        val importStatus = importResponse.status
-        logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
-        // checking for fail conditions allows the test to exit earlier than the eventually{} timeout if we detect a problem
-        if (failIfStatuses.contains(importStatus)) {
-          fail(s"Import job $importJobId with message [${importResponse.message}] should not be in status $importStatus")
+      try {
+        eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
+          val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
+          logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+          val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")(creds.makeAuthToken())
+          val respStatus = resp.status
+          logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+          respStatus shouldBe StatusCodes.OK
+          val importResponse = blockForStringBody(resp).parseJson.convertTo[ImportJobResponse]
+          val importStatus = importResponse.status
+          logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
+          // checking for fail conditions allows the test to exit earlier than the eventually{} timeout if we detect a problem
+          if (failIfStatuses.contains(importStatus)) {
+            // eventually {...} retries all exceptions but for a very select few. We need to throw one of the few exceptions
+            // that will allow us to break out of the loop. This is an utter hack but it cuts down on test-suite duration
+            // significantly for failures.
+            throw new FactoryConfigurationError(s"Import job $importJobId with message [${importResponse.message}] should not be in status $importStatus")
+          }
+          importStatus shouldBe expectedStatus
         }
-        importStatus shouldBe expectedStatus
-
+      } catch {
+        // catch the hacky thrown exception and remake it into something less hacky
+        case hack:FactoryConfigurationError => throw new Exception(hack.getMessage, hack.getCause)
       }
     }
 
