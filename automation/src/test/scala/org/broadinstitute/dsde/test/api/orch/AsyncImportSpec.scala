@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.test.api.orch
 
-import java.util.UUID
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import bio.terra.datarepo.api.RepositoryApi
@@ -15,6 +14,7 @@ import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig,
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
 import org.broadinstitute.dsde.workbench.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorReportFormat
+import org.broadinstitute.dsde.workbench.service.util.Tags
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
 import org.parboiled.common.FileUtils
 import org.scalatest.OptionValues._
@@ -24,6 +24,7 @@ import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.xml.parsers.FactoryConfigurationError
 import scala.collection.JavaConverters._
@@ -177,45 +178,41 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     // N.B. there are also snapshot-import-by-reference integration tests in Rawls,
     // this spec only addresses snapshot-import-by-copy
     "should import-by-copy a Data Repo export asynchronously" - {
-      "for the owner of a workspace" in {
-        val workspaceOwner = UserPool.chooseProjectOwner
-        val additionalOwner = UserPool.userConfig.Owners.getUserCredential("hermione")
+      "for the owner of a workspace" taggedAs(Tags.AlphaTest, Tags.ExcludeInFiab) in {
+        val workspaceOwner = UserPool.userConfig.Owners.getUserCredential("hermione")
 
         val (snapshotManifest, snapshotTableNames) = withClue("Unexpected problem while exporting snapshot from TDR: ") {
-          exportTdrSnapshot()(additionalOwner)
+          exportTdrSnapshot()(workspaceOwner)
         }
 
-        val additionalOwnerAcl = AclEntry(additionalOwner.email, WorkspaceAccessLevel.Owner)
-
         withCleanBillingProject(workspaceOwner) { projectName =>
-          withWorkspace(projectName, prependUUID("owner-tdr-by-copy"), aclEntries = List(additionalOwnerAcl)) { workspaceName =>
+          withWorkspace(projectName, prependUUID("owner-tdr-by-copy")) { workspaceName =>
             val startTime = System.currentTimeMillis()
 
             // verify that entity metadata for this workspace is empty
-            val metadataBefore = getEntityMetadata(projectName, workspaceName, "(job not started yet)")(additionalOwner.makeAuthToken())
+            val metadataBefore = getEntityMetadata(projectName, workspaceName, "(job not started yet)")(workspaceOwner.makeAuthToken())
             withClue("before snapshot import-by-copy, no data tables should exist") {
               metadataBefore shouldBe empty
             }
 
             // start async import of manifest file into a new workspace, response will be a jobid
-            val importJobId = startImportJob(projectName, workspaceName, snapshotManifest, "tdrexport")(additionalOwner.makeAuthToken())
+            val importJobId = startImportJob(projectName, workspaceName, snapshotManifest, "tdrexport")(workspaceOwner.makeAuthToken())
 
             // poll for completion as owner
-            waitForImportJob(projectName, workspaceName, importJobId, startTime)(additionalOwner)
+            waitForImportJob(projectName, workspaceName, importJobId, startTime)(workspaceOwner)
 
             // retrieve entity metadata for workspace, should have same types as snapshot tables
-            val metadataAfter = getEntityMetadata(projectName, workspaceName, importJobId)(additionalOwner.makeAuthToken())
+            val metadataAfter = getEntityMetadata(projectName, workspaceName, importJobId)(workspaceOwner.makeAuthToken())
             withClue("after snapshot import-by-copy, should have the same data tables as TDR") {
               metadataAfter.keySet should contain theSameElementsAs snapshotTableNames
             }
           }(workspaceOwner.makeAuthToken())
         }
       }
-      "for a writer with can-share" in {
-        // hermione has access to snapshots, so in this test we use a student as the workspace owner,
-        // and hermione as the writer
+      "for a writer with can-share" taggedAs(Tags.AlphaTest, Tags.ExcludeInFiab) in {
+        // draco has access to snapshots
         val workspaceOwner = UserPool.chooseProjectOwner
-        val writer = UserPool.userConfig.Owners.getUserCredential("hermione")
+        val writer = UserPool.userConfig.Students.getUserCredential("draco")
 
         val (snapshotManifest, snapshotTableNames) = withClue("Unexpected problem while exporting snapshot from TDR: ") {
           exportTdrSnapshot()(writer)
@@ -250,7 +247,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     }
 
     "should asynchronously result in an error on Data Repo import-by-copy" - {
-      "for a nonexistent manifest file" in {
+      "for a nonexistent manifest file" taggedAs(Tags.AlphaTest, Tags.ExcludeInFiab) in {
         val owner = UserPool.chooseProjectOwner
 
         withCleanBillingProject(owner) { projectName =>
@@ -269,11 +266,10 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
     }
 
     "should throw a synchronous error on Data Repo import-by-copy" - {
-      "for a writer without can-share" ignore {
-        // hermione has access to snapshots, so in this test we use a student as the workspace owner,
-        // and hermione as the writer
+      "for a writer without can-share" taggedAs(Tags.AlphaTest, Tags.ExcludeInFiab) in {
+        // draco has access to snapshots
         val workspaceOwner = UserPool.chooseProjectOwner
-        val writer = UserPool.userConfig.Owners.getUserCredential("hermione")
+        val writer = UserPool.userConfig.Students.getUserCredential("draco")
 
         val writerNoCanShareAcl = AclEntry(writer.email, WorkspaceAccessLevel.Writer, canShare = Option(false))
 
@@ -297,7 +293,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           } (workspaceOwner.makeAuthToken())
         }
       }
-      "for a reader" in {
+      "for a reader" taggedAs(Tags.AlphaTest, Tags.ExcludeInFiab) in {
         val workspaceOwner = UserPool.chooseProjectOwner
         val reader = UserPool.chooseStudent
 
@@ -372,14 +368,22 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
 
     // poll jobid for export completion
     withClue("while polling for Data Repo snapshot export completion, an error occurred: ") {
-      eventually {
-        val currentJobStatus = dataRepoApi.retrieveJob(exportJob.getId)
-        val statusValue = currentJobStatus.getJobStatus
-        statusValue shouldNot be (JobStatusEnum.RUNNING)
-        if (statusValue == JobStatusEnum.FAILED) {
-          fail(s"Data Repo snapshot export failed for snapshotId ${snapshotModel.getId} and " +
-            s"jobId ${exportJob.getId}. Last status was: ${currentJobStatus.toString}")
+      try {
+        eventually {
+          val currentJobStatus = dataRepoApi.retrieveJob(exportJob.getId)
+          val statusValue = currentJobStatus.getJobStatus
+          statusValue shouldNot be (JobStatusEnum.RUNNING)
+          if (statusValue == JobStatusEnum.FAILED) {
+            // eventually {...} retries all exceptions but for a very select few. We need to throw one of the few exceptions
+            // that will allow us to break out of the loop. This is an utter hack but it cuts down on test-suite duration
+            // significantly for failures.
+            throw new FactoryConfigurationError(s"Data Repo snapshot export failed for snapshotId ${snapshotModel.getId} and " +
+              s"jobId ${exportJob.getId}. Last status was: ${currentJobStatus.toString}")
+          }
         }
+      } catch {
+        // catch the hacky thrown exception and remake it into something less hacky
+        case hack:FactoryConfigurationError => throw new Exception(hack.getMessage, hack.getCause)
       }
     }
 
