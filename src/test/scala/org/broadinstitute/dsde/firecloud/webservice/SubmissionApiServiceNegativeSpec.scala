@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
+import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, PATCH, POST}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.service.ServiceSpec
@@ -48,15 +48,14 @@ final class SubmissionApiServiceNegativeSpec extends ServiceSpec with Submission
     }
 
     "non-POST requests hitting the /workspaces/*/*/submissions/validate path are not passed through" in {
-      // Also excluding DELETE and GET since the path matches
       // /workspaces/*/*/submissions/{submissionId} APIs as well
-      allHttpMethodsExcept(DELETE, GET, POST) foreach { method =>
+      allHttpMethodsExcept(POST) foreach { method =>
         checkIfPassedThrough(submissionServiceRoutes, method, s"$localSubmissionsPath/validate", toBeHandled = false)
       }
     }
 
-    "non-DELETE/GET requests hitting the /workspaces/*/*/submissions/* path are not passed through" in {
-      allHttpMethodsExcept(DELETE, GET) foreach { method =>
+    "non-DELETE/GET/PATCH requests hitting the /workspaces/*/*/submissions/* path are not passed through" in {
+      allHttpMethodsExcept(DELETE, GET, PATCH) foreach { method =>
         checkIfPassedThrough(submissionServiceRoutes, method, localSubmissionIdPath, toBeHandled = false)
       }
     }

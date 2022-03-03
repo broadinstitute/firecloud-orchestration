@@ -3,19 +3,19 @@ import sbt._
 object Dependencies {
   val scalaV = "2.12"
 
-  val jacksonV = "2.8.4"
-  val akkaV = "2.5.7"
+  val jacksonV = "2.12.1"
+  val akkaV = "2.6.15"
   val akkaHttpV = "10.1.0"
 
-  val workbenchModelV  = "0.13-58c913d"
+  val workbenchModelV  = "0.15-808590d"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
   val excludeWorkbenchModel = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-model_" + scalaV)
 
-  val workbenchGoogleV = "0.21-890a74f"
+  val workbenchGoogleV = "0.21-808590d"
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google" + scalaV)
 
-  val workbenchServiceTestV = "0.17-bb34724"
+  val workbenchServiceTestV = "0.21-8ce5b9b"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
   val rootDependencies = Seq(
@@ -43,6 +43,8 @@ object Dependencies {
     "org.scalatest"       %%  "scalatest"     % "3.0.5"   % "test",
     "org.seleniumhq.selenium" % "selenium-java" % "3.11.0" % "test",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0",
+
+    "net.logstash.logback" % "logstash-logback-encoder" % "6.6", // needed by workbench-google
 
     workbenchServiceTest,
     workbenchModel,

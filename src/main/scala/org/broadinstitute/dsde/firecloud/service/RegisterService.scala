@@ -8,14 +8,15 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, 
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Notifications.{ActivationNotification, NotificationFormat}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserSubjectId}
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import spray.json.DefaultJsonProtocol._
+import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object RegisterService {
+  val samTosTextUrl = s"${Sam.baseUrl}/tos/text"
+  val samAcceptTosUrl = s"${Sam.baseUrl}/register/user/v1/termsofservice"
+  val samTosStatusUrl = s"${samAcceptTosUrl}/status"
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)
@@ -25,10 +26,7 @@ object RegisterService {
 class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO)
   (implicit protected val executionContext: ExecutionContext) extends LazyLogging {
 
-  def CreateUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile) = createUpdateProfile(userInfo, basicProfile)
-  def UpdateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]) = updateProfilePreferences(userInfo, preferences)
-
-  private def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
+  def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
       _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
@@ -36,7 +34,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
         for {
           _ <- thurloeDao.saveKeyValues(userInfo,  Map("email" -> userInfo.userEmail))
-          registerResult <- registerUser(userInfo)
+          registerResult <- registerUser(userInfo, basicProfile.termsOfService)
         } yield registerResult
       } else {
         Future.successful(isRegistered)
@@ -53,9 +51,9 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     }
   }
 
-  private def registerUser(userInfo: UserInfo): Future[RegistrationInfo] = {
+  private def registerUser(userInfo: UserInfo, termsOfService: Option[String]): Future[RegistrationInfo] = {
     for {
-      registrationInfo <- samDao.registerUser(userInfo)
+      registrationInfo <- samDao.registerUser(termsOfService)(userInfo)
       _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(ActivationNotification(RawlsUserSubjectId(userInfo.id))).compactPrint))
     } yield {
       registrationInfo
@@ -70,12 +68,11 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     key.startsWith("notifications/")
   }
 
-  private def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {
+  def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {
     if (preferences.keys.forall(isValidPreferenceKey)) {
       thurloeDao.saveKeyValues(userInfo, preferences).map(_ => RequestComplete(StatusCodes.NoContent))
     } else {
       throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "illegal preference key"))
     }
   }
-
 }

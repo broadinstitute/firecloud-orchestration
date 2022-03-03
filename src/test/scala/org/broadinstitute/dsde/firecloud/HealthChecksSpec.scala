@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.scalatest.concurrent.ScalaFutures
 import akka.http.scaladsl.model.StatusCodes.{InternalServerError, NotFound}
+import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -149,12 +150,12 @@ class StartupChecksMockSamDAO(unregisteredTokens:Seq[String] = Seq.empty[String]
     }
   }
 
-  override def registerUser(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
+  override def registerUser(termsOfService: Option[String])(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
     if (cantRegister.contains(userInfo.accessToken.token)) {
       Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(InternalServerError, "unit test intentional registration fail")))
     } else {
       registerUserStateActor ! RegisterUserToken(userInfo.accessToken.token)
-      super.registerUser
+      super.registerUser(termsOfService)
     }
   }
 

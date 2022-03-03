@@ -185,6 +185,26 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       }
     }
 
+    "when calling PATCH on the /workspaces/*/*/submissions/* path" - {
+      MockWorkspaceServer.submissionIdPatchResponseMapping.foreach { case (id, expectedResponseCode, _) =>
+        s"HTTP $expectedResponseCode responses are forwarded back correctly" in {
+          val submissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
+            MockWorkspaceServer.mockValidWorkspace.namespace,
+            MockWorkspaceServer.mockValidWorkspace.name,
+            id)
+
+          (Patch(submissionIdPath, "PATCH request body. The mock server will ignore this content and respond " +
+            "entirely based on submission ID instead")
+            ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
+            status should equal(expectedResponseCode)
+            if (status != OK) {
+              errorReportCheck("Rawls", status)
+            }
+          }
+        }
+      }
+    }
+
     "when calling GET on the /workspaces/*/*/submissions/*/workflows/* path" - {
       "with a valid id, OK response is returned" in {
         Get(localSubmissionWorkflowIdPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {

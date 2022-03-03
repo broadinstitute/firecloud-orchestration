@@ -249,15 +249,15 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in {
           new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "indexDocument should have been invoked")
-            assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
+            assert(this.searchDao.indexDocumentInvoked.get(), "indexDocument should have been invoked")
+            assert(!this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should not have been invoked")
           }
         }
         "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(BadRequest)
-            assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
-            assert(!this.searchDao.deleteDocumentInvoked, "deleteDocument should not have been invoked")
+            assert(!this.searchDao.indexDocumentInvoked.get(), "indexDocument should not have been invoked")
+            assert(!this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should not have been invoked")
           }
         }
       }
@@ -270,8 +270,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         "as return OK and invoke deleteDocument for published workspace" in {
           new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDao.deleteDocumentInvoked, "deleteDocument should have been invoked")
-            assert(!this.searchDao.indexDocumentInvoked, "indexDocument should not have been invoked")
+            assert(this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should have been invoked")
+            assert(!this.searchDao.indexDocumentInvoked.get(), "indexDocument should not have been invoked")
           }
         }
       }
@@ -282,7 +282,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           val content = HttpEntity(ContentTypes.`application/json`, "{}")
           new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
+            assert(this.searchDao.findDocumentsInvoked.get(), "findDocuments should have been invoked")
           }
         }
       }
@@ -291,7 +291,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
           new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDao.findDocumentsInvoked, "findDocuments should have been invoked")
+            assert(this.searchDao.findDocumentsInvoked.get(), "findDocuments should have been invoked")
             val respdata = Await.result(Unmarshal(response).to[LibrarySearchResponse], Duration.Inf)
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.isEmpty, "results array should be empty")
@@ -303,7 +303,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
           val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
           new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDao.autocompleteInvoked, "autocompleteInvoked should have been invoked")
+            assert(this.searchDao.autocompleteInvoked.get(), "autocompleteInvoked should have been invoked")
             val respdata = Await.result(Unmarshal(response).to[LibrarySearchResponse], Duration.Inf)
             assert(respdata.total == 0, "total results should be 0")
             assert(respdata.results.isEmpty, "results array should be empty")
@@ -314,7 +314,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         "should return autcomplete suggestions" in {
           new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
-            assert(this.searchDao.populateSuggestInvoked, "populateSuggestInvoked should have been invoked")
+            assert(this.searchDao.populateSuggestInvoked.get(), "populateSuggestInvoked should have been invoked")
             val respdata = Await.result(Unmarshal(response).to[String], Duration.Inf)
             assert(respdata.contains("library:datasetOwner"))
             assert(respdata.contains("aha"))

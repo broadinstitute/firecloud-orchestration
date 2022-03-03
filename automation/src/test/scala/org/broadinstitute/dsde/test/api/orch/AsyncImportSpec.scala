@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
@@ -12,15 +11,19 @@ import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixt
 import org.broadinstitute.dsde.workbench.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
+import org.parboiled.common.FileUtils
 import org.scalatest.OptionValues._
+import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
+import java.util.concurrent.TimeUnit
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
-class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
+class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
   with BillingFixtures with WorkspaceFixtures with Orchestration {
 
   val owner: Credentials = UserPool.chooseProjectOwner
@@ -30,7 +33,8 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
   // this test.avro is copied from PyPFB's fixture at https://github.com/uc-cdis/pypfb/tree/master/tests/pfb-data
   private val testPayload = Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/public/test.avro")
-  lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("PFBImportSpec-expected-entities.json").getLines().mkString
+
+  lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("AsyncImportSpec-pfb-expected-entities.json").getLines().mkString
     .parseJson.convertTo[Map[String, EntityTypeMetadata]]
 
   "Orchestration" - {
@@ -41,7 +45,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
-
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
             // expect to get exactly one jobId back
@@ -50,7 +53,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
@@ -76,7 +79,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-
             // call importPFB as writer
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
             // expect to get exactly one jobId back
@@ -84,7 +86,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
             importJobIdValues should have size 1
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as writer
@@ -110,7 +112,6 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
-
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
               Map("url" -> "https://storage.googleapis.com/fixtures-for-tests/fixtures/this-intentionally-does-not-exist"))
@@ -120,7 +121,7 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
 
             val importJobId: String = importJobIdValues.head match {
               case js:JsString => js.value
-              case x => fail("got in invalid jobId: " + x.toString())
+              case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
@@ -176,12 +177,102 @@ class PFBImportSpec extends FreeSpec with Matchers with Eventually with ScalaFut
       }
 
     }
+
+    "should import a TSV asynchronously for entities and entity membership" in {
+      implicit val token: AuthToken = ownerAuthToken
+      withCleanBillingProject(owner) { projectName =>
+        withWorkspace(projectName, prependUUID("tsv-entities")) { workspaceName =>
+          val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
+          val participantAndSetEntityMetadata = participantEntityMetadata + ("participant_set" -> EntityTypeMetadata(2, "participant_set_id", Seq("participants")))
+
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
+          importAsync(projectName, workspaceName, "MEMBERSHIP_PARTICIPANT_SET.tsv", participantAndSetEntityMetadata)
+        }
+      }
+    }
+
+    "should import a TSV asynchronously for updates" in {
+      implicit val token: AuthToken = ownerAuthToken
+      withCleanBillingProject(owner) { projectName =>
+        withWorkspace(projectName, prependUUID("tsv-updates")) { workspaceName =>
+          val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
+          val updatedParticipantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq("age")))
+
+          importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
+          importAsync(projectName, workspaceName, "UPDATE_PARTICIPANTS.tsv", updatedParticipantEntityMetadata)
+        }
+      }
+
+    }
+  }
+
+  private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken): Unit = {
+    val startTime = System.currentTimeMillis()
+    val importFileString = FileUtils.readAllTextFromResource(importFilePath)
+
+    // call import as owner
+    val postResponse: String = Orchestration.importMetaDataFlexible(projectName, workspaceName, isAsync = true, "entities", importFileString)
+    // expect to get exactly one jobId back
+    val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
+    importJobIdValues should have size 1
+
+    val importJobId: String = importJobIdValues.head match {
+      case js: JsString => js.value
+      case x => fail("got an invalid jobId: " + x.toString ())
+    }
+
+    logger.info(s"$projectName/$workspaceName has import job $importJobId for file $importFilePath")
+
+    // poll for completion as owner
+    withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
+      eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
+        val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
+        logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
+        val respStatus = resp.status
+        logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        respStatus shouldBe StatusCodes.OK
+        val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
+        logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
+        importStatus shouldBe JsString ("Done")
+      }
+    }
+
+    logger.info(s"$projectName/$workspaceName import job $importJobId completed for file $importFilePath in " +
+      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. Now checking metadata ... ")
+
+    // inspect data entities and confirm correct import as owner. With the import complete, the metadata should already
+    // be correct, so we don't need to use eventually here.
+    withClue(s"import job $importJobId failed its eventually assertion on entity metadata: ") {
+      val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+      val respStatus = resp.status
+      logger.info(s"HTTP response status for import job $importJobId metadata request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+      respStatus shouldBe StatusCodes.OK
+      val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
+      compareMetadata(result, expectedResult)
+    }
+
+    logger.info(s"$projectName/$workspaceName import job $importJobId metadata check for file $importFilePath passed in " +
+      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. importAsync() complete.")
+
+  }
+
+  private def humanReadableMillis(millis: Long) = {
+    val mins: java.lang.Long = TimeUnit.MILLISECONDS.toMinutes(millis)
+    val secs: java.lang.Long = TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(mins) // the remainder of seconds
+    String.format("%d minutes, %d sec", mins, secs)
   }
 
   private def prependUUID(suffix: String): String = s"${UUID.randomUUID().toString}-$suffix"
 
-  private def blockForStringBody(response: HttpResponse): String =
-    Unmarshal(response.entity).to[String].futureValue
+  private def blockForStringBody(response: HttpResponse): String = {
+    Try(Unmarshal(response.entity).to[String].futureValue(Timeout(scaled(Span(60, Seconds))))) match {
+      case Success(s) => s
+      case Failure(ex) =>
+        logger.error(s"blockForStringBody failed with ${ex.getMessage}", ex)
+        throw ex
+    }
+  }
 
   private def workspaceUrl(projectName: String, wsName: String): String =
     s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$wsName"

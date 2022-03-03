@@ -2,12 +2,14 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService}
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, NoContent}
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NoContent, OK}
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import org.broadinstitute.dsde.firecloud.FireCloudApiService
+import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
 import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,7 +36,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
       "should succeed with multiple notifications keys" in {
         val payload = Map(
           "notifications/foo" -> "yes",
-          "notifications/bar" ->  "no",
+          "notifications/bar" -> "no",
           "notifications/baz" -> "astring"
         )
         assertPreferencesUpdate(payload, NoContent)
@@ -50,7 +52,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
       "should refuse with mixed notifications and disallowed keys" in {
         val payload = Map(
           "notifications/foo" -> "yes",
-          "notifications/bar" ->  "no",
+          "notifications/bar" -> "no",
           "secretsomething" -> "astring"
         )
         assertPreferencesUpdate(payload, BadRequest)
@@ -59,7 +61,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
       "should refuse with the string 'notifications/' in the middle of a key" in {
         val payload = Map(
           "notifications/foo" -> "yes",
-          "notifications/bar" ->  "no",
+          "notifications/bar" -> "no",
           "substring/notifications/arebad" -> "true"
         )
         assertPreferencesUpdate(payload, BadRequest)
@@ -70,6 +72,47 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
         assertPreferencesUpdate(payload, NoContent)
       }
 
+    }
+
+    "register-profile API" - {
+      "should fail with no terms of service" in {
+        val payload = makeBasicProfile(false)
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(registerRoutes) ~> check {
+          status should be(Forbidden)
+        }
+      }
+
+      "should succeed with terms of service" in {
+        val payload = makeBasicProfile(true)
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(registerRoutes) ~> check {
+          status should be(OK)
+        }
+      }
+
+      "should succeed user who already exists" in {
+        val payload = makeBasicProfile(true)
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
+          status should be(OK)
+        }
+      }
+
+      def makeBasicProfile(hasTermsOfService: Boolean): BasicProfile = {
+        val randomString = MockUtils.randomAlpha()
+        BasicProfile(
+          firstName = randomString,
+          lastName = randomString,
+          title = randomString,
+          contactEmail = Some("me@abc.com"),
+          institute = randomString,
+          institutionalProgram = randomString,
+          programLocationCity = randomString,
+          programLocationState = randomString,
+          programLocationCountry = randomString,
+          pi = randomString,
+          nonProfitStatus = randomString,
+          termsOfService = if (hasTermsOfService) Some(termsOfServiceUrl) else None
+        )
+      }
     }
   }
 
@@ -83,6 +126,5 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
   final class RegisterApiServiceSpecThurloeDAO extends MockThurloeDAO {
     override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String])= Future.successful(Success(()))
   }
-
 }
 

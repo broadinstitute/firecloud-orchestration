@@ -27,7 +27,7 @@ object Boot extends App with LazyLogging {
     val rawlsDAO:RawlsDAO = new HttpRawlsDAO
     val samDAO:SamDAO = new HttpSamDAO
     val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
-    val googleServicesDAO:GoogleServicesDAO = new HttpGoogleServicesDAO
+    val googleServicesDAO:GoogleServicesDAO = new HttpGoogleServicesDAO(FireCloudConfig.GoogleCloud.priceListUrl, GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList, UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)), "v1", "1"))
     val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.ontologyIndexName)
     val consentDAO:ConsentDAO = new HttpConsentDAO
     val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(ontologyDAO)

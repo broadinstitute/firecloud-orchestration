@@ -85,7 +85,10 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
     bucketName = "bucketName",
     workflowCollectionName = Some("wf-collection"),
     workspaceVersion=WorkspaceVersions.V2,
-    googleProject="googleProject")
+    googleProject = GoogleProjectId("googleProject"),
+    googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
+    billingAccount = Some(RawlsBillingAccountName("billingAccount")),
+    completedCloneWorkspaceFileTransfer = Some(DateTime.now()))
 
 
   val DULAdditionalJsObject =
@@ -823,7 +826,11 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           false, //locked
           Some(Set.empty), //authdomain
           WorkspaceVersions.V2,
-          "googleProject"
+          GoogleProjectId("googleProject"),
+          Some(GoogleProjectNumber("googleProjectNumber")),
+          Some(RawlsBillingAccountName("billingAccount")),
+          None,
+          Option(DateTime.now())
         )
 
         attrMaps map { attrMap =>

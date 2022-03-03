@@ -9,8 +9,10 @@ import org.broadinstitute.dsde.workbench.service.OrchestrationModel._
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 import DefaultJsonProtocol._
+import org.scalatest.time.{Minutes, Seconds, Span}
+import org.scalatest.concurrent.Eventually
 
-class WorkspaceApiSpec extends FreeSpec with Matchers
+class WorkspaceApiSpec extends FreeSpec with Matchers with Eventually
   with BillingFixtures with WorkspaceFixtures {
 
   val owner: Credentials = UserPool.chooseProjectOwner
@@ -37,10 +39,11 @@ class WorkspaceApiSpec extends FreeSpec with Matchers
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-storage-cost"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
-
-            val storageCostEstimate = Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)(writer.makeAuthToken()).parseJson.convertTo[StorageCostEstimate]
-            storageCostEstimate.estimate should be ("$0.00")
+            implicit val writerAuthToken: AuthToken = writer.makeAuthToken
+            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
+            Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)
+              .parseJson.convertTo[StorageCostEstimate]
+              .estimate should be("$0.00")
           } (ownerAuthToken)
         }
       }
@@ -52,14 +55,15 @@ class WorkspaceApiSpec extends FreeSpec with Matchers
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("reader-storage-cost"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
-            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)(ownerAuthToken)
+            implicit val readerAuthToken: AuthToken = reader.makeAuthToken
+            Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
 
             val exception = intercept[RestException] {
-              Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)(reader.makeAuthToken())
+              Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)
             }
             val exceptionMessage = exception.message.parseJson.asJsObject.fields("message").convertTo[String]
 
-            exceptionMessage.contains(s"insufficient permissions to perform operation on $projectName/$workspaceName") should be (true)
+            exceptionMessage should include(s"insufficient permissions to perform operation on $projectName/$workspaceName")
           } (ownerAuthToken)
         }
       }

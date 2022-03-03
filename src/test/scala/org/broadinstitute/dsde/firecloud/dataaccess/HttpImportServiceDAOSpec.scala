@@ -6,8 +6,9 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impImportServiceResponse, impPfbImportResponse}
-import org.broadinstitute.dsde.firecloud.model.{ImportServiceResponse, PfbImportRequest, PfbImportResponse, RequestCompleteWithErrorReport}
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_PFB
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impAsyncImportResponse, impImportServiceResponse}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceResponse, RequestCompleteWithErrorReport}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -26,12 +27,12 @@ class HttpImportServiceDAOSpec extends AsyncFlatSpec with Matchers with SprayJso
   val workspaceNamespace = "workspaceNamespace"
   val workspaceName = "workspaceName"
   val pfbUrl = "unittest-fixture-url"
-  val pfbRequest = PfbImportRequest(Some(pfbUrl))
+  val pfbRequest = AsyncImportRequest(pfbUrl, FILETYPE_PFB)
 
   val jobId = UUID.randomUUID()
   val importServicePayload = ImportServiceResponse(jobId.toString, "status", None).toJson.compactPrint
 
-  val expectedSuccessPayload = PfbImportResponse(
+  val expectedSuccessPayload = AsyncImportResponse(
     pfbUrl,
     jobId.toString,
     WorkspaceName(workspaceNamespace, workspaceName))

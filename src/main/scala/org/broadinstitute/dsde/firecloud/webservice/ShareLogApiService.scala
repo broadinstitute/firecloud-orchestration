@@ -20,7 +20,7 @@ trait ShareLogApiService extends FireCloudDirectives
         get {
           parameter("shareType".?) { shareType =>
             requireUserInfo() { userInfo =>
-              complete { shareLogServiceConstructor().GetSharees(userInfo.id, shareType.map(ShareType.withName)) }
+              complete { shareLogServiceConstructor().getSharees(userInfo.id, shareType.map(ShareType.withName)) }
             }
           }
         }

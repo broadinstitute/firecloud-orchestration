@@ -32,7 +32,16 @@ object FireCloudApiService extends LazyLogging {
 
     ExceptionHandler {
       case withErrorReport: FireCloudExceptionWithErrorReport =>
-        complete(withErrorReport.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError) -> withErrorReport.errorReport)
+        extractUri { uri =>
+          extractMethod { method =>
+            val statusCode = withErrorReport.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError)
+            if (statusCode.intValue / 100 == 5) {
+              // mimic the log pattern from logRequests, below
+              logger.error(s"${method} ${uri}: ${statusCode} error: ${withErrorReport.getMessage}")
+            }
+            complete(statusCode -> withErrorReport.errorReport)
+          }
+        }
       case e: Throwable =>
         // so we don't log the error twice when debug is enabled
         if (logger.underlying.isDebugEnabled) {
@@ -174,6 +183,7 @@ trait FireCloudApiService extends CookieAuthedApiService
 
   def route: server.Route = (routeWrappers) {
     cromIamEngineRoutes ~
+      tosRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
       exportEntitiesRoutes ~

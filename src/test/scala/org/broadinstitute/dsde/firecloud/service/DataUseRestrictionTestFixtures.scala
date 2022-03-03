@@ -126,7 +126,11 @@ object DataUseRestrictionTestFixtures {
       workflowCollectionName=Some("wf-collection"),
       authorizationDomain=Some(Set.empty[ManagedGroupRef]),
       workspaceVersion=WorkspaceVersions.V2,
-      googleProject="googleProject")
+      googleProject = GoogleProjectId("googleProject"),
+      googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
+      billingAccount = Some(RawlsBillingAccountName("billingAccount")),
+      completedCloneWorkspaceFileTransfer = Option(DateTime.now())
+    )
   }
 
 }

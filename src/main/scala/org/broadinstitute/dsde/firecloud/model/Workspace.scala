@@ -28,16 +28,22 @@ case class EntityId(entityType: String, entityName: String)
 
 case class BagitImportRequest(bagitURL: String, format: String)
 
-case class PfbImportRequest(url: Option[String])
+// legacy class specific to PFB import; prefer AsyncImportRequest instead
+case class PFBImportRequest(url: String)
+// the request payload sent by users to Orchestration for async PFB and TDR snapshot imports
+case class AsyncImportRequest(url: String, filetype: String)
 
-case class PfbImportResponse(url: String,
-                             jobId: String,
-                             workspace: WorkspaceName)
+// the response payload received by users from Orchestration for async PFB/TSV/TDR snapshot imports
+case class AsyncImportResponse(url: String,
+                               jobId: String,
+                               workspace: WorkspaceName)
 
+// the request payload sent by Orchestration to Import Service
 case class ImportServiceRequest(
   path: String,
-  filetype: String)
-
+  filetype: String,
+  isUpsert: Boolean)
+// the response payload received by Orchestration from Import Service
 case class ImportServiceResponse(
   jobId: String,
   status: String,
@@ -92,6 +98,8 @@ case class SubmissionRequest(
   useCallCache: Option[Boolean],
   deleteIntermediateOutputFiles: Option[Boolean],
   useReferenceDisks: Option[Boolean],
+  memoryRetryMultiplier: Option[Double],
+  userComment: Option[String],
   workflowFailureMode: Option[String])
 
 case class RawlsGroupMemberList(

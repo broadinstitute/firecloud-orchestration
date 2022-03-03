@@ -201,14 +201,14 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
   implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
-  implicit val impSubmissionRequest = jsonFormat9(SubmissionRequest)
+  implicit val impSubmissionRequest = jsonFormat11(SubmissionRequest)
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
 
   implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
   implicit val impThurloeKeyValues = jsonFormat2(ThurloeKeyValues)
-  implicit val impBasicProfile = jsonFormat11(BasicProfile)
+  implicit val impBasicProfile = jsonFormat12(BasicProfile)
   implicit val impProfile = jsonFormat13(Profile.apply)
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
   implicit val impProfileKVP = jsonFormat2(ProfileKVP)
@@ -229,9 +229,10 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impUserImportPermission = jsonFormat2(UserImportPermission)
 
   implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
-  implicit val impPfbImportRequest = jsonFormat1(PfbImportRequest)
-  implicit val impPfbImportResponse = jsonFormat3(PfbImportResponse)
-  implicit val impImportServiceRequest = jsonFormat2(ImportServiceRequest)
+  implicit val impPFBImportRequest = jsonFormat1(PFBImportRequest)
+  implicit val impAsyncImportRequest = jsonFormat2(AsyncImportRequest)
+  implicit val impAsyncImportResponse = jsonFormat3(AsyncImportResponse)
+  implicit val impImportServiceRequest = jsonFormat3(ImportServiceRequest)
   implicit val impImportServiceResponse = jsonFormat3(ImportServiceResponse)
 
   implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
@@ -305,6 +306,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
   implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
   implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
+  implicit val impDuosConsentStatus = jsonFormat3(ConsentStatus)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler.newBuilder().handle {

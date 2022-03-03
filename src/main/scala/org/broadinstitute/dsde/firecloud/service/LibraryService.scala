@@ -51,16 +51,6 @@ class LibraryService (protected val argUserInfo: UserInfo,
   // we need to use the plain-array deserialization.
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
-  def UpdateLibraryMetadata(ns: String, name: String, attrsJsonString: String, validate: Boolean) = updateLibraryMetadata(ns, name, attrsJsonString, validate)
-  def GetLibraryMetadata(ns: String, name: String) = getLibraryMetadata(ns, name)
-  def UpdateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]) = updateDiscoverableByGroups(ns, name, newGroups)
-  def GetDiscoverableByGroups(ns: String, name: String) = getDiscoverableByGroups(ns, name)
-  def SetPublishAttribute(ns: String, name: String, value: Boolean) = setWorkspaceIsPublished(ns, name, value)
-  def IndexAll = asAdmin {indexAllWorkspaces}
-  def FindDocuments(criteria: LibrarySearchParams) = findDocuments(criteria)
-  def Suggest(criteria: LibrarySearchParams) = suggest(criteria)
-  def PopulateSuggest(field: String, text: String) = populateSuggest(field: String, text: String)
-
   def updateDiscoverableByGroups(ns: String, name: String, newGroups: Seq[String]): Future[PerRequestMessage] = {
     if (newGroups.forall { g => FireCloudConfig.ElasticSearch.discoverGroupNames.contains(g) }) {
       rawlsDAO.getWorkspace(ns, name) flatMap { workspaceResponse =>
@@ -150,10 +140,10 @@ class LibraryService (protected val argUserInfo: UserInfo,
    * Will republish if it is currently in the published state.
    */
   private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[WorkspaceDetails] = {
-    rawlsDAO.updateLibraryAttributes(ns, name, allOperations) map { newws =>
-      republishDocument(newws, ontologyDAO, searchDAO, consentDAO)
-      newws
-    }
+    for {
+      newws <- rawlsDAO.updateLibraryAttributes(ns, name, allOperations)
+      _ <- republishDocument(newws, ontologyDAO, searchDAO, consentDAO)
+    } yield newws
   }
 
   // should only be used to change published state
@@ -181,24 +171,26 @@ class LibraryService (protected val argUserInfo: UserInfo,
     }
   }
 
-  def indexAllWorkspaces: Future[PerRequestMessage] = {
-    logger.info("reindex: requesting workspaces from rawls ...")
-    rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[WorkspaceDetails] =>
-      if (workspaces.isEmpty)
-        Future(RequestComplete(NoContent))
-      else {
-        logger.info("reindex: requesting ontology parents for workspaces ...")
-        val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO, consentDAO)
-        toIndex map { documents =>
-          logger.info("reindex: resetting index ...")
-          searchDAO.recreateIndex()
-          logger.info("reindex: indexing datasets ...")
-          val indexedDocuments = searchDAO.bulkIndex(documents)
-          logger.info("reindex: ... done.")
-          if (indexedDocuments.hasFailures) {
-            RequestComplete(InternalServerError, indexedDocuments)
-          } else {
-            RequestComplete(OK, indexedDocuments)
+  def adminIndexAllWorkspaces(): Future[PerRequestMessage] = {
+    asAdmin {
+      logger.info("reindex: requesting workspaces from rawls ...")
+      rawlsDAO.getAllLibraryPublishedWorkspaces flatMap { workspaces: Seq[WorkspaceDetails] =>
+        if (workspaces.isEmpty)
+          Future(RequestComplete(NoContent))
+        else {
+          logger.info("reindex: requesting ontology parents for workspaces ...")
+          val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO, consentDAO)
+          toIndex map { documents =>
+            logger.info("reindex: resetting index ...")
+            searchDAO.recreateIndex()
+            logger.info("reindex: indexing datasets ...")
+            val indexedDocuments = searchDAO.bulkIndex(documents)
+            logger.info("reindex: ... done.")
+            if (indexedDocuments.hasFailures) {
+              RequestComplete(InternalServerError, indexedDocuments)
+            } else {
+              RequestComplete(OK, indexedDocuments)
+            }
           }
         }
       }

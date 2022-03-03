@@ -12,6 +12,7 @@ servers:
   - url: /
 tags:
   - name: Billing
+  - name: BillingV2
   - name: CromIAM Engine (for Job Manager)
   - name: CromIAM Workflows (for Admin)
   - name: CromIAM Workflows (for Job Manager)
@@ -31,6 +32,7 @@ tags:
   - name: Status
   - name: Storage
   - name: Submissions
+  - name: Terms of Service
   - name: Version
   - name: Womtool
   - name: Workspaces
@@ -126,6 +128,127 @@ paths:
             - openid
             - email
             - profile
+      x-passthrough: true
+      x-passthrough-target: rawls
+  /api/billing/v2/{projectId}/spendReportConfiguration:
+    get:
+      tags:
+        - BillingV2
+      summary: get the spend report configuration for the billing project
+      description: get the spend report configuration for the billing project
+      operationId: getSpendReportConfiguration
+      parameters:
+        - name: projectId
+          in: path
+          description: Billing Project ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successfully retrieved spend report configuration
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/SpendReportConfiguration'
+        204:
+          description: The specified billing project exists but does not have spend reporting configured
+        403:
+          description: You must be a billing project owner to view the spend report configuration of the billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: The specified billing project could not be found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    put:
+      tags:
+        - BillingV2
+      summary: set the spend configuration for the billing project
+      description: set the spend configuration for the billing project
+      operationId: setSpendReportConfiguration
+      parameters:
+        - name: projectId
+          in: path
+          description: Billing Project ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: billing project spend configuration information
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/SpendReportConfiguration'
+      responses:
+        204:
+          description: Successfully updated spend configuration
+        400:
+          description: Either the billing project does not have an active billing account, the specified dataset does not exist, or the specified table does not exist
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: You must be a billing project owner to alter the spend configuration of the billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: The specified billing project could not be found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    delete:
+      tags:
+        - BillingV2
+      summary: clear the spend configuration for the billing project
+      description: clear the spend configuration for the billing project
+      operationId: clearSpendReportConfiguration
+      parameters:
+        - name: projectId
+          in: path
+          description: Billing Project ID
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Successfully cleared spend configuration
+        403:
+          description: You must be a billing project owner to alter the spend configuration of the billing project
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/{projectId}/{workbenchRole}/{email}:
@@ -244,7 +367,7 @@ paths:
   /api/billing/v2:
     post:
       tags:
-        - billing_v2
+        - BillingV2
       summary: create billing project in rawls
       description: create new billing project in rawls
       operationId: createBillingProjectFullV2
@@ -253,7 +376,7 @@ paths:
         content:
           'application/json':
             schema:
-              $ref: '#/components/schemas/CreateRawlsBillingProjectFullRequest'
+              $ref: '#/components/schemas/CreateRawlsV2BillingProjectFullRequest'
         required: true
       responses:
         201:
@@ -283,7 +406,7 @@ paths:
   /api/billing/v2/{projectId}:
     get:
       tags:
-        - billing_v2
+        - BillingV2
       summary: get billing project
       description: get billing project
       operationId: getBillingProject
@@ -315,7 +438,7 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
     delete:
       tags:
-        - billing_v2
+        - BillingV2
       summary: delete billing project
       description: delete billing project
       operationId: deleteBillingProject
@@ -341,10 +464,84 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
+  /api/billing/v2/{projectId}/billingAccount:
+    put:
+      tags:
+        - BillingV2
+      summary: update billing account on billing project
+      description: Update the Billing Account on the Billing Project and on each Workspace in the Billing Project
+      operationId: updateBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: update billing account request
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/UpdateRawlsBillingAccountRequest'
+        required: true
+      responses:
+        200:
+          description: Billing Account on Billing Project is successfully updated and process is started to update the Billing Account on each Workspace in the Billing Project
+        400:
+          description: Billing account not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Billing Project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
+    delete:
+      tags:
+        - BillingV2
+      summary: deletes the billing account on billing project
+      description: Clears the Billing Account on the Billing Project and on each Workspace in the Billing Project
+      operationId: deleteBillingProjectBillingAccount
+      parameters:
+        - name: projectId
+          in: path
+          description: Id of the billing project
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Billing account successfully removed
+        404:
+          description: Billing project Not Found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Internal Server Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: true
+      x-passthrough-target: rawls
   /api/billing/v2/{projectId}/members:
     get:
       tags:
-        - billing_v2
+        - BillingV2
       summary: list members of billing project the caller owns
       description: list members of billing project the caller owns
       operationId: listBillingProjectMembers
@@ -379,7 +576,7 @@ paths:
   /api/billing/v2/{projectId}/members/{workbenchRole}/{email}:
     put:
       tags:
-        - billing_v2
+        - BillingV2
       summary: add user or group to billing project the caller owns
       description: add user or group to billing project the caller owns
       operationId: addUserToBillingProject
@@ -428,7 +625,7 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
     delete:
       tags:
-        - billing_v2
+        - BillingV2
       summary: remove user or group from billing project the caller owns
       description: remove user or group from billing project the caller owns
       operationId: removeUserFromBillingProject
@@ -4610,6 +4807,7 @@ paths:
       x-passthrough: false
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB:
     get:
+      deprecated: true
       tags:
         - Entities
       summary: List PFB import jobs in this workspace
@@ -4643,7 +4841,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PFBStatusResponse'
+                  $ref: '#/components/schemas/ImportJobStatusResponse'
         400:
           description: Bad Request
           content: {}
@@ -4687,7 +4885,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PFBResponse'
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -4707,11 +4905,12 @@ paths:
       x-codegen-request-body-name: pfbImportRequest
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB/{jobId}:
     get:
+      deprecated: true
       tags:
         - Entities
-      summary: Report status on a PFB import job
+      summary: Use the importJob API instead.
       description: |
-        This API will return status of an import jobID. The jobID was returned from a previous import request.
+        Use /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob/{jobId} instead.
       operationId: importPFBStatus
       parameters:
         - name: workspaceNamespace
@@ -4738,7 +4937,145 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PFBStatusResponse'
+                $ref: '#/components/schemas/ImportJobStatusResponse'
+        404:
+          description: workspace or job ID not found
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+      x-passthrough: false
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob:
+    get:
+      tags:
+        - Entities
+      summary: List asynchronous import jobs in this workspace
+      description: |
+        Lists all imports for this workspace, optionally filtered to only those imports currently in progress
+      operationId: listImportJobs
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+        - name: running_only
+          in: query
+          description: When true, filters to only those imports currently in progress
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ImportJobStatusResponse'
+        400:
+          description: Bad Request
+          content: {}
+        404:
+          description: Workspace not found
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+      x-passthrough: false
+    post:
+      tags:
+        - Entities
+      summary: Import data from a PFB file or TDR snapshot
+      description: |
+        This API will return a jobID representing the import operation. The import itself will continue asynchronously in the background.
+      operationId: createImportJob
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: JSON object containing URL to import
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/ImportRequest'
+        required: true
+      responses:
+        202:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+        400:
+          description: Bad Request
+          content: {}
+        401:
+          description: Unauthorized access to Workspace
+          content: {}
+        403:
+          description: Forbidden access to Workspace
+          content: {}
+        404:
+          description: Workspace not found
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+      x-passthrough: false
+      x-codegen-request-body-name: importRequest
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob/{jobId}:
+    get:
+      tags:
+        - Entities
+      summary: Report status on an asynchronous import job
+      description: |
+        This API will return status of an import jobID. The jobID was returned from a previous import request.
+      operationId: importJobStatus
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          description: job ID of the import to check
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJobStatusResponse'
         404:
           description: workspace or job ID not found
           content: {}
@@ -4765,6 +5102,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: async
+          in: query
+          description: Import asynchronously?
+          required: false
+          schema:
+            type: boolean
+            default: false
       requestBody:
         content:
           multipart/form-data:
@@ -4780,8 +5124,14 @@ paths:
         required: true
       responses:
         200:
-          description: Successful Request
+          description: Successful Request for synchronous import
           content: {}
+        202:
+          description: Successful Request for asynchronous import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
         400:
           description: Bad Request
           content: {}
@@ -5679,6 +6029,53 @@ paths:
           content: {}
       x-passthrough: true
       x-passthrough-target: rawls
+    patch:
+      tags:
+        - Submissions
+      summary: Update user comment for a submission
+      description: Update user comment for a submission
+      operationId: updateSubmissionUserComment
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+        - name: submissionId
+          in: path
+          description: Submission Id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: User comment to be updated
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/UserCommentUpdateOperation'
+        required: true
+      responses:
+        200:
+          description: Successful Request
+        404:
+          description: Workspace or submission not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions/validate:
     post:
       tags:
@@ -6752,6 +7149,9 @@ paths:
         400:
           description: Bad request
           content: {}
+        403:
+          description: Forbidden
+          content: {}
         500:
           description: Internal server error
           content: {}
@@ -6770,6 +7170,58 @@ paths:
           description: OK
           content: {}
       x-passthrough: false
+  /tos/text:
+    get:
+      tags:
+        - Terms of Service
+      summary: gets terms of service text
+      operationId: getTermsOfServiceText
+      responses:
+        200:
+          description: success
+          content:
+            text/plain:
+              schema:
+                type: string
+  /register/user/v1/termsofservice:
+    post:
+      tags:
+        - Terms of Service
+      summary: Passes through to Sam API and accepts Terra Terms of Service
+      operationId: acceptTermsOfService
+      requestBody:
+        description: url
+        content:
+          'application/json':
+            schema:
+              type: string
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawlsMe'
+        404:
+          description: User Not Found.
+          content: { }
+  /register/user/v1/termsofservice/status:
+    get:
+      tags:
+        - Terms of Service
+      summary: Check whether user has accepted the current version of the Terms of Service
+      operationId: getTermsOfServiceStatus
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        404:
+          description: User Not Found.
+          content: { }
   /ga4gh/v1/tools/{id}:
     get:
       tags:
@@ -7187,6 +7639,7 @@ components:
             - Creating
             - Ready
             - Error
+            - AddingToPerimeter
       description: a billing project status
     BillingProjectMembership:
       required:
@@ -7207,6 +7660,7 @@ components:
             - Creating
             - Ready
             - Error
+            - AddingToPerimeter
         message:
           type: string
           description: informational message about the project
@@ -7629,6 +8083,25 @@ components:
             specified. If true, it configures the VPC network to only allow access
             to GCP APIs that are protected by the project's service perimeter and
             routes all allowed API traffic through a narrow IP range.
+        servicePerimeter:
+          type: string
+          description: The fully qualified name of the GCP service perimeter to put
+            this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME].
+            Caller must have the add_project action for this service perimeter in
+            Sam.
+      description: ""
+    CreateRawlsV2BillingProjectFullRequest:
+      required:
+        - billingAccount
+        - projectName
+      type: object
+      properties:
+        projectName:
+          type: string
+          description: the name of the project to create
+        billingAccount:
+          type: string
+          description: the id of the billing account to use, must start with 'billingAccounts/'
         servicePerimeter:
           type: string
           description: The fully qualified name of the GCP service perimeter to put
@@ -8448,7 +8921,19 @@ components:
         url:
           type: string
           description: link to publically accessible PFB/Avro
-    PFBResponse:
+    ImportRequest:
+      required:
+        - filetype
+        - url
+      type: object
+      properties:
+        filetype:
+          type: string
+          description: "'pfb' or 'tdrexport'; the type of import to perform"
+        url:
+          type: string
+          description: link to publically accessible file to import
+    ImportResponse:
       required:
         - jobId
         - url
@@ -8456,7 +8941,7 @@ components:
       properties:
         url:
           type: string
-          description: the link to PFB/Avro specified in the request
+          description: the link to TSV or PFB/Avro specified in the request
         jobId:
           type: string
           description: unique id for the import job.
@@ -8469,7 +8954,7 @@ components:
             name:
               type: string
               description: the workspace name specified in the request
-    PFBStatusResponse:
+    ImportJobStatusResponse:
       required:
         - jobId
         - status
@@ -8478,6 +8963,9 @@ components:
         jobId:
           type: string
           description: unique id for the import job.
+        filetype:
+          type: string
+          description: type of the import job.
         status:
           type: string
           description: short status for the import job.
@@ -8531,6 +9019,11 @@ components:
         nonProfitStatus:
           type: string
           description: User's program non-profit status
+        termsOfService:
+          type: string
+          description:
+            The Terms of Service url, "app.terra.bio/#terms-of-service", which a user
+            must include to show they accept the Terms of Service
     PublishConfigurationIngest:
       required:
         - configurationName
@@ -8720,6 +9213,19 @@ components:
           description: line number
           format: int32
       description: ""
+    SpendReportConfiguration:
+      required:
+        - datasetGoogleProject
+        - datasetName
+      type: object
+      properties:
+        datasetGoogleProject:
+          type: string
+          description: the name of the Google Project where the BigQuery dataset resides
+        datasetName:
+          type: string
+          description: the name of the BigQuery dataset containing project spend data
+      description: ""
     StringArray:
       type: array
       example:
@@ -8766,6 +9272,14 @@ components:
           type: boolean
           description: Whether or not to delete intermediate output files when the
             workflow completes. See Cromwell docs for more information.
+        useReferenceDisks:
+          type: boolean
+          description: Whether or not to use pre-built disks for common genome references
+        memoryRetryMultiplier:
+          type: number
+          description: If a task fails due to running out of memory and the task has `maxRetries` in its runtime attributes,
+            then it will be retried with its memory multiplied by this amount.  See [Cromwell docs](https://cromwell.readthedocs.io/en/develop/cromwell_features/RetryWithMoreMemory/#retry-with-more-memory)
+            for more information.
         workflowFailureMode:
           type: string
           description: What happens after a task fails. Choose from ContinueWhilePossible
@@ -8775,6 +9289,9 @@ components:
           enum:
             - NoNewCalls
             - ContinueWhilePossible
+        userComment:
+          type: string
+          description: Comment for the submission
       description: ""
     SubmissionsCountResponse:
       type: object
@@ -8836,6 +9353,11 @@ components:
         useReferenceDisks:
           type: boolean
           description: Whether or not to use pre-built disks for common genome references
+        memoryRetryMultiplier:
+          type: number
+          description: If a task fails due to running out of memory and the task has `maxRetries` in its runtime attributes,
+            then it will be retried with its memory multiplied by this amount.  See [Cromwell docs](https://cromwell.readthedocs.io/en/develop/cromwell_features/RetryWithMoreMemory/#retry-with-more-memory)
+            for more information.
         workflowFailureMode:
           type: string
           description: What happens after a task fails. Choose from ContinueWhilePossible
@@ -8845,6 +9367,9 @@ components:
           enum:
             - NoNewCalls
             - ContinueWhilePossible
+        userComment:
+          type: string
+          description: Freeform user defined description, optional (max length 1000 characters)
       description: If the referenced method configuration takes no root entity, do
         not define `entityType`, `entityName` and `expression`.
     SubmissionStatus:
@@ -9158,6 +9683,14 @@ components:
           description: A friendly name that can be used in addition to the hostname
             to describe a registry
       description: Describes this registry to better allow for mirroring and indexing.
+    UpdateRawlsBillingAccountRequest:
+      required:
+        - billingAccount
+      type: object
+      properties:
+        billingAccount:
+          type: string
+          description: The name of the billing account to use
     UserImportPermission:
       type: object
       properties:
@@ -9244,6 +9777,15 @@ components:
           description: The run cost of this workflow
           format: float
       description: ""
+    UserCommentUpdateOperation:
+      required:
+        - userComment
+      type: object
+      properties:
+        userComment:
+          type: string
+          description: The updated value for user comment (max length 1000 characters)
+      description: Update user comment for submission
     WorkflowCost:
       type: object
       properties:
@@ -9534,11 +10076,13 @@ components:
         - name
         - namespace
         - workspaceId
+        - googleProject
+        - workspaceVersion
       type: object
       properties:
         attributes:
           type: object
-          properties: {}
+          properties: { }
           description: Map[String, Attribute]
         authorizationDomain:
           type: array
@@ -9577,6 +10121,26 @@ components:
         workspaceId:
           type: string
           description: A UUID associated with the workspace
+        googleProject:
+          type: string
+          description: Identifies the google project used by the workspace for compute and storage
+        googleProjectNumber:
+          type: string
+          description: A different google project identifier for the same project identified by the googleProject; required by google for certain actions
+        workspaceVersion:
+          type: string
+          description: internal use
+        billingAccount:
+          type: string
+          description: The current billing account being charged for activity within this workspace. For desired billing account, look to the billing account specified on this workspace's billing project
+        billingAccountErrorMessage:
+          type: string
+          description: Error message received during most recent attempt to update the current billing account on workspace's Google project. Empty if update was successful.
+        completedCloneWorkspaceFileTransfer:
+          type: string
+          description: The date all files were successfully transferred to the workspace bucket if applicable
+            in yyyy-MM-ddTHH:mm:ss.SSSZZ format
+          format: date-time
       description: ""
     WorkspaceListResponse:
       type: object
@@ -9616,6 +10180,10 @@ components:
           type: boolean
           description: Optional, false if not specified. If true, the workspace is created with a Billing Project owner but no workspace owner. Requires being a Billing Project owner.
           default: false
+        bucketLocation:
+          type: string
+          required: false
+          description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceRequestClone:
       required:
@@ -9646,6 +10214,10 @@ components:
           type: boolean
           description: Optional, false if not specified. If true, the workspace is created with a Billing Project owner but no workspace owner. Requires being a Billing Project owner.
           default: false
+        bucketLocation:
+          type: string
+          required: false
+          description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceResponse:
       type: object
@@ -10225,6 +10797,30 @@ components:
           items:
             type: string
           description: the roles the caller has on the project
+        status:
+          deprecated: true
+          type: string
+          enum:
+            - Creating
+            - Ready
+            - Error
+            - AddingToPerimeter
+          description: the status of allocating the billing project's resources.
+        message:
+          deprecated: true
+          type: string
+          description: informational message about the project
+    WorkspaceBillingAccount:
+      required:
+        - workspaceName
+      type: object
+      properties:
+        workspaceName:
+          type: string
+          description: the name of the workspace
+        currentBillingAccountOnGoogleProject:
+          type: string
+          description: the billing project associated with the workspace
   parameters:
     versionParam:
       name: version

@@ -21,7 +21,7 @@ trait StorageApiService extends FireCloudDirectives with StandardUserInfoDirecti
       pathPrefix(ApiPrefix) {
         path(Segment / Remaining) { (bucket, obj) =>
           requireUserInfo() { userInfo =>
-            complete { storageServiceConstructor(userInfo).GetObjectStats(bucket, obj) }
+            complete { storageServiceConstructor(userInfo).getObjectStats(bucket, obj) }
           }
         }
       }

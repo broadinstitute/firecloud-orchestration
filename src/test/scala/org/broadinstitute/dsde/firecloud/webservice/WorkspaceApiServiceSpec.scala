@@ -1,14 +1,15 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import java.util.UUID
-
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+
 import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_TDR}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
@@ -45,7 +46,11 @@ object WorkspaceApiServiceSpec {
     false, //locked
     Some(Set.empty), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount")),
+    None,
+    Option(DateTime.now())
   )
 
 }
@@ -67,7 +72,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false, //locked
     Some(Set.empty), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount")),
+    None,
+    Option(DateTime.now())
   )
 
   val jobId = "testOp"
@@ -92,6 +101,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvImportFlexiblePath = workspacesRoot + "/%s/%s/flexibleImportEntities".format(workspace.namespace, workspace.name)
   private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
   private final val pfbImportPath = workspacesRoot + "/%s/%s/importPFB".format(workspace.namespace, workspace.name)
+  private final val importJobPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
+  private final val importJobStatusPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val usBucketStorageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
   private final val europeWest1storageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("europeWest1BucketWorkspace", workspace.name)
@@ -124,7 +135,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false,
     Some(Set(nihProtectedAuthDomain)), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount")),
+    None,
+    Option(DateTime.now())
   )
 
   val authDomainRawlsWorkspace = WorkspaceDetails(
@@ -140,7 +155,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false,
     Some(Set(ManagedGroupRef(RawlsGroupName("secret_realm")))), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount")),
+    None,
+    Option(DateTime.now())
   )
 
   val nonAuthDomainRawlsWorkspace = WorkspaceDetails(
@@ -156,7 +175,11 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     false,
     Some(Set.empty), //authorizationDomain
     WorkspaceVersions.V2,
-    "googleProject"
+    GoogleProjectId("googleProject"),
+    Some(GoogleProjectNumber("googleProjectNumber")),
+    Some(RawlsBillingAccountName("billingAccount")),
+    None,
+    Option(DateTime.now())
   )
 
   val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
@@ -165,7 +188,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
-   var importServiceServer: ClientAndServer = _
+  var importServiceServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -202,7 +225,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()))
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -224,7 +247,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, "googleProject")
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()))
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -244,34 +267,42 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def bagitService() = {
     val bothBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/testbag.zip"))
     val neitherBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/nothingbag.zip"))
+    val emptyBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/empty.zip"))
+    val notAZipBytes = IOUtils.toByteArray(getClass.getClassLoader.getResourceAsStream("testfiles/bagit/not_a_zip.txt"))
 
+    // url -> byte array for mockserver
+    val mappings = Map(
+      "/both.zip" -> bothBytes,
+      "/neither.zip" -> neitherBytes,
+      "/empty.zip" -> emptyBytes,
+      "/notazip.zip" -> notAZipBytes,
+    )
+
+    // bagit import requires https urls; set up SSL
     HttpsURLConnection.setDefaultSSLSocketFactory(KeyStoreFactory.keyStoreFactory().sslContext().getSocketFactory())
 
-    bagitServer
-      .when(request().withMethod("GET").withPath("/both.zip"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withStatusCode(200)
-          .withBody(org.mockserver.model.BinaryBody.binary(bothBytes)))
-
-    bagitServer
-      .when(request().withMethod("GET").withPath("/neither.zip"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withStatusCode(200)
-          .withBody(org.mockserver.model.BinaryBody.binary(neitherBytes)))
+    // set up mockserver for all paths defined above
+    mappings.foreach { entry =>
+      bagitServer
+        .when(request().withMethod("GET").withPath(entry._1))
+        .respond(
+          org.mockserver.model.HttpResponse.response()
+            .withStatusCode(200)
+            .withBody(org.mockserver.model.BinaryBody.binary(entry._2)))
+    }
   }
 
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
     bagitServer = startClientAndServer(MockUtils.bagitServerPort)
-     importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
+    bagitService()
+    importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
     bagitServer.stop
-     importServiceServer.stop
+    importServiceServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -279,7 +310,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def afterEach(): Unit = {
-     importServiceServer.reset
+    importServiceServer.reset
     this.searchDao.reset
   }
 
@@ -1001,7 +1032,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "WorkspaceService BagIt Tests" - {
       "should unbundle a bagit containing both participants and samples" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1011,7 +1041,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 400 if a bagit doesn't have either participants or samples" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/neither.zip", "format":"TSV" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1021,7 +1050,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 400 if a bagit request has an invalid format" in {
-        bagitService()
         stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
         (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/both.zip", "format":"garbage" }"""))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1029,12 +1057,35 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           status should equal(BadRequest)
         }
       }
+
+      "should 400 if a bagit is empty" in {
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/empty.zip", "format":"TSV" }"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+          val errRpt = responseAs[ErrorReport]
+          errRpt.message shouldBe s"BDBag has no entries."
+        }
+      }
+
+      "should 400 if a bagit is unzippable" in {
+        stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpsert", NoContent)
+        (Post(bagitImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"bagitURL":"https://localhost:$bagitServerPort/notazip.zip", "format":"TSV" }"""))
+          ~> dummyUserIdHeaders(dummyUserId)
+          ~> sealRoute(workspaceRoutes)) ~> check {
+          status should equal(BadRequest)
+          val errRpt = responseAs[ErrorReport]
+          errRpt.message shouldBe s"Problem with BDBag: zip END header not found"
+        }
+      }
     }
 
     "WorkspaceService importPFB Tests" - {
 
       "should 400 if import service indicates a bad request" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
+
+        (Post(pfbImportPath, PFBImportRequest("https://bad.request.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
@@ -1043,7 +1094,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 403 if import service access is forbidden" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
+        (Post(pfbImportPath, PFBImportRequest("https://forbidden.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
@@ -1053,7 +1104,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://its.lawsuit.time.avro"}"""))
+        (Post(pfbImportPath, PFBImportRequest("https://its.lawsuit.time.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(UnavailableForLegalReasons)
@@ -1065,15 +1116,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         val pfbPath = "https://good.avro"
 
-        val orchExpectedPayload = PfbImportResponse(url = pfbPath,
+        val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
                                                    jobId = "MockImportServiceDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
 
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+        (Post(pfbImportPath, PFBImportRequest("https://good.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
-            val jobResponse = responseAs[PfbImportResponse]
+            val jobResponse = responseAs[AsyncImportResponse]
             jobResponse.url should be (orchExpectedPayload.url)
             jobResponse.workspace should be (orchExpectedPayload.workspace)
             jobResponse.jobId  should not be empty
@@ -1084,114 +1135,180 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "WorkspaceService importPFB job-status Tests" - {
 
-      "Successful passthrough should return OK with payload" in {
+      List(importJobStatusPath, pfbImportPath) foreach { pathUnderTest =>
+        s"Successful passthrough should return OK with payload for $pathUnderTest" in {
 
-        val jobId = UUID.randomUUID().toString
+          val jobId = UUID.randomUUID().toString
 
-        val responsePayload = JsObject(
-          ("id", JsString(jobId)),
-          ("status", JsString("Running"))
-        )
+          val responsePayload = JsObject(
+            ("id", JsString(jobId)),
+            ("status", JsString("Running"))
+          )
 
-        importServiceServer
-          .when(request()
-            .withMethod("GET")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(OK.intValue)
-            .withBody(responsePayload.compactPrint)
-            .withHeader("Content-Type", "application/json"))
+          importServiceServer
+            .when(request()
+              .withMethod("GET")
+              .withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
+            .respond(org.mockserver.model.HttpResponse.response()
+              .withStatusCode(OK.intValue)
+              .withBody(responsePayload.compactPrint)
+              .withHeader("Content-Type", "application/json"))
 
-        (Get(s"$pfbImportPath/$jobId")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(OK)
-          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+          (Get(s"$pathUnderTest/$jobId")
+            ~> dummyUserIdHeaders(dummyUserId)
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(OK)
+            responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+          }
         }
-      }
 
-      "Passthrough should not pass unrecognized HTTP verbs" in {
-        (Delete(s"$pfbImportPath/dummyJobId")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(MethodNotAllowed)
+        s"Passthrough should not pass unrecognized HTTP verbs for $pathUnderTest" in {
+          (Delete(s"$pathUnderTest/dummyJobId")
+            ~> dummyUserIdHeaders(dummyUserId)
+            ~> sealRoute(workspaceRoutes)) ~> check {
+            status should equal(MethodNotAllowed)
+          }
         }
       }
     }
 
     "WorkspaceService importPFB list-jobs tests" - {
 
-      "Successful passthrough should return OK with payload" in {
-        val responsePayload = JsArray(
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("Running"))
-          ),
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("Error"))
-          ),
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("ImAUnitTest"))
-          )
-        )
+      List(pfbImportPath, importJobPath) foreach { pathUnderTest =>
 
-        importServiceServer
-          .when(request()
-            .withMethod("GET")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(OK.intValue)
-            .withBody(responsePayload.compactPrint)
-            .withHeader("Content-Type", "application/json"))
+        s"for path $pathUnderTest" - {
 
-        (Get(pfbImportPath)
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(OK)
-          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+          "Successful passthrough should return OK with payload" in {
+            val responsePayload = JsArray(
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("Running"))
+              ),
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("Error"))
+              ),
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("ImAUnitTest"))
+              )
+            )
+
+            importServiceServer
+              .when(request()
+                .withMethod("GET")
+                .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
+              .respond(org.mockserver.model.HttpResponse.response()
+                .withStatusCode(OK.intValue)
+                .withBody(responsePayload.compactPrint)
+                .withHeader("Content-Type", "application/json"))
+
+            (Get(pathUnderTest)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+              responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+            }
+          }
+
+          "Passthrough should pass on querystrings" in {
+            val responsePayload = JsArray(
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("Running"))
+              )
+            )
+
+            val k1 = UUID.randomUUID().toString
+            val v1 = UUID.randomUUID().toString
+            val k2 = UUID.randomUUID().toString
+            val v2 = UUID.randomUUID().toString
+
+            val queryString = s"$k1=$v1&$k2=$v2"
+
+            importServiceServer
+              .when(request()
+                .withMethod("GET")
+                .withPath(s"/${workspace.namespace}/${workspace.name}/imports")
+                .withQueryStringParameters(new Parameter(k1, v1), new Parameter(k2, v2)))
+              .respond(org.mockserver.model.HttpResponse.response()
+                .withStatusCode(OK.intValue)
+                .withBody(responsePayload.compactPrint)
+                .withHeader("Content-Type", "application/json"))
+
+            (Get(s"$pathUnderTest?$queryString")
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+              responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+            }
+          }
+
+          "Passthrough should not pass unrecognized HTTP verbs" in {
+            (Delete(s"$pathUnderTest")
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+          }
         }
       }
 
-      "Passthrough should pass on querystrings" in {
-        val responsePayload = JsArray(
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("Running"))
-          )
-        )
+    }
 
-        val k1 = UUID.randomUUID().toString
-        val v1 = UUID.randomUUID().toString
-        val k2 = UUID.randomUUID().toString
-        val v2 = UUID.randomUUID().toString
+    "WorkspaceService POST importJob Tests" - {
 
-        val queryString = s"$k1=$v1&$k2=$v2"
+      List(FILETYPE_PFB, FILETYPE_TDR) foreach { filetype =>
 
-        importServiceServer
-          .when(request()
-            .withMethod("GET")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports")
-            .withQueryStringParameters(new Parameter(k1, v1), new Parameter(k2, v2)))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(OK.intValue)
-            .withBody(responsePayload.compactPrint)
-            .withHeader("Content-Type", "application/json"))
+        s"for filetype $filetype" - {
 
-        (Get(s"$pfbImportPath?$queryString")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(OK)
-          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
-        }
-      }
+          "should 400 if import service indicates a bad request" in {
 
-      "Passthrough should not pass unrecognized HTTP verbs" in {
-        (Delete(s"$pfbImportPath")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(MethodNotAllowed)
+            (Post(importJobPath, AsyncImportRequest("https://bad.request.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(BadRequest)
+              responseAs[String] should include ("Bad request as reported by import service")
+            }
+          }
+
+          "should 403 if import service access is forbidden" in {
+            (Post(importJobPath, AsyncImportRequest("https://forbidden.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(Forbidden)
+              responseAs[String] should include ("Missing Authorization: Bearer token in header")
+            }
+          }
+
+          "should propagate any other errors from import service" in {
+            // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
+            (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(UnavailableForLegalReasons)
+              responseAs[String] should include ("import service message")
+            }
+          }
+
+          "should 202 (Accepted) if everything validated and import request was accepted" in {
+
+            val pfbPath = "https://good.avro"
+
+            val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
+              jobId = "MockImportServiceDAO will generate a random UUID",
+              workspace = WorkspaceName(workspace.namespace, workspace.name))
+
+            (Post(importJobPath, AsyncImportRequest("https://good.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(Accepted)
+              val jobResponse = responseAs[AsyncImportResponse]
+              jobResponse.url should be (orchExpectedPayload.url)
+              jobResponse.workspace should be (orchExpectedPayload.workspace)
+              jobResponse.jobId  should not be empty
+            }
+          }
         }
       }
 
@@ -1230,7 +1347,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
+            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
         }
 
@@ -1247,7 +1364,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+            assert(this.searchDao.indexDocumentInvoked.get(), "Should have republished this published WS when changing attributes")
           }
         }
 
@@ -1283,7 +1400,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked, "Should not be indexing an unpublished WS")
+            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
         }
 
@@ -1296,7 +1413,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked, "Should have republished this published WS when changing attributes")
+            assert(this.searchDao.indexDocumentInvoked.get(), "Should have republished this published WS when changing attributes")
           }
         }
 
