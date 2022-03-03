@@ -67,7 +67,7 @@ object Dependencies {
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "org.webjars.npm"                % "swagger-ui-dist"     % "3.45.0",
+    "org.webjars.npm"                % "swagger-ui-dist"     % "4.6.1",
     "org.webjars"                    % "webjars-locator"     % "0.40",
     "com.github.jwt-scala"          %% "jwt-core"            % "7.1.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
