@@ -6031,7 +6031,7 @@ paths:
       x-passthrough-target: rawls
     patch:
       tags:
-        - submissions
+        - Submissions
       summary: Update user comment for a submission
       description: Update user comment for a submission
       operationId: updateSubmissionUserComment
