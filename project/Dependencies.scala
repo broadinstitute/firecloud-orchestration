@@ -25,7 +25,7 @@ object Dependencies {
 
     "org.apache.logging.log4j"       % "log4j-api"           % "2.14.1", // elasticsearch requires log4j ...
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.14.1", // ... but we redirect log4j to logback.
-    "ch.qos.logback"                 % "logback-classic"     % "1.2.3",
+    "ch.qos.logback"                 % "logback-classic"     % "1.2.11",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
 
