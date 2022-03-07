@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
-import spray.json.{DefaultJsonProtocol}
+import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success

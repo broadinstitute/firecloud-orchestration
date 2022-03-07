@@ -28,10 +28,12 @@ case class EntityId(entityType: String, entityName: String)
 
 case class BagitImportRequest(bagitURL: String, format: String)
 
-// the request payload sent by users to Orchestration for async PFB imports
-case class AsyncImportRequest(url: Option[String])
+// legacy class specific to PFB import; prefer AsyncImportRequest instead
+case class PFBImportRequest(url: String)
+// the request payload sent by users to Orchestration for async PFB and TDR snapshot imports
+case class AsyncImportRequest(url: String, filetype: String)
 
-// the response payload received by users from Orchestration for async PFB/TSV imports
+// the response payload received by users from Orchestration for async PFB/TSV/TDR snapshot imports
 case class AsyncImportResponse(url: String,
                                jobId: String,
                                workspace: WorkspaceName)

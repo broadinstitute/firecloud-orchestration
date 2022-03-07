@@ -73,7 +73,7 @@ crashlytics-build.properties
 *.pid
 .DS_Store
 
-
+automation/test-reports/
 automation/src/test/resources/**
 !automation/src/test/resources/PFBImportSpec-expected-entities.json
 !automation/src/test/resources/ADD_PARTICIPANTS.tsv

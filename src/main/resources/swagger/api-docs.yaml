@@ -32,6 +32,7 @@ tags:
   - name: Status
   - name: Storage
   - name: Submissions
+  - name: Terms of Service
   - name: Version
   - name: Womtool
   - name: Workspaces
@@ -4806,6 +4807,7 @@ paths:
       x-passthrough: false
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importPFB:
     get:
+      deprecated: true
       tags:
         - Entities
       summary: List PFB import jobs in this workspace
@@ -4839,7 +4841,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PFBStatusResponse'
+                  $ref: '#/components/schemas/ImportJobStatusResponse'
         400:
           description: Bad Request
           content: {}
@@ -4943,6 +4945,103 @@ paths:
           description: Internal Error
           content: {}
       x-passthrough: false
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob:
+    get:
+      tags:
+        - Entities
+      summary: List asynchronous import jobs in this workspace
+      description: |
+        Lists all imports for this workspace, optionally filtered to only those imports currently in progress
+      operationId: listImportJobs
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+        - name: running_only
+          in: query
+          description: When true, filters to only those imports currently in progress
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ImportJobStatusResponse'
+        400:
+          description: Bad Request
+          content: {}
+        404:
+          description: Workspace not found
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+      x-passthrough: false
+    post:
+      tags:
+        - Entities
+      summary: Import data from a PFB file or TDR snapshot
+      description: |
+        This API will return a jobID representing the import operation. The import itself will continue asynchronously in the background.
+      operationId: createImportJob
+      parameters:
+        - name: workspaceNamespace
+          in: path
+          description: Workspace Namespace
+          required: true
+          schema:
+            type: string
+        - name: workspaceName
+          in: path
+          description: Workspace Name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: JSON object containing URL to import
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/ImportRequest'
+        required: true
+      responses:
+        202:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+        400:
+          description: Bad Request
+          content: {}
+        401:
+          description: Unauthorized access to Workspace
+          content: {}
+        403:
+          description: Forbidden access to Workspace
+          content: {}
+        404:
+          description: Workspace not found
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+      x-passthrough: false
+      x-codegen-request-body-name: importRequest
   /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob/{jobId}:
     get:
       tags:
@@ -5932,7 +6031,7 @@ paths:
       x-passthrough-target: rawls
     patch:
       tags:
-        - submissions
+        - Submissions
       summary: Update user comment for a submission
       description: Update user comment for a submission
       operationId: updateSubmissionUserComment
@@ -7071,6 +7170,58 @@ paths:
           description: OK
           content: {}
       x-passthrough: false
+  /tos/text:
+    get:
+      tags:
+        - Terms of Service
+      summary: gets terms of service text
+      operationId: getTermsOfServiceText
+      responses:
+        200:
+          description: success
+          content:
+            text/plain:
+              schema:
+                type: string
+  /register/user/v1/termsofservice:
+    post:
+      tags:
+        - Terms of Service
+      summary: Passes through to Sam API and accepts Terra Terms of Service
+      operationId: acceptTermsOfService
+      requestBody:
+        description: url
+        content:
+          'application/json':
+            schema:
+              type: string
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawlsMe'
+        404:
+          description: User Not Found.
+          content: { }
+  /register/user/v1/termsofservice/status:
+    get:
+      tags:
+        - Terms of Service
+      summary: Check whether user has accepted the current version of the Terms of Service
+      operationId: getTermsOfServiceStatus
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        404:
+          description: User Not Found.
+          content: { }
   /ga4gh/v1/tools/{id}:
     get:
       tags:
@@ -8770,6 +8921,18 @@ components:
         url:
           type: string
           description: link to publically accessible PFB/Avro
+    ImportRequest:
+      required:
+        - filetype
+        - url
+      type: object
+      properties:
+        filetype:
+          type: string
+          description: "'pfb' or 'tdrexport'; the type of import to perform"
+        url:
+          type: string
+          description: link to publically accessible file to import
     ImportResponse:
       required:
         - jobId
@@ -8800,6 +8963,9 @@ components:
         jobId:
           type: string
           description: unique id for the import job.
+        filetype:
+          type: string
+          description: type of the import job.
         status:
           type: string
           description: short status for the import job.

@@ -1,14 +1,15 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import java.util.UUID
-
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+
 import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_TDR}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
@@ -100,6 +101,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   private final val tsvImportFlexiblePath = workspacesRoot + "/%s/%s/flexibleImportEntities".format(workspace.namespace, workspace.name)
   private final val bagitImportPath = workspacesRoot + "/%s/%s/importBagit".format(workspace.namespace, workspace.name)
   private final val pfbImportPath = workspacesRoot + "/%s/%s/importPFB".format(workspace.namespace, workspace.name)
+  private final val importJobPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
   private final val importJobStatusPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
   private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
   private final val usBucketStorageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
@@ -1082,7 +1084,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "WorkspaceService importPFB Tests" - {
 
       "should 400 if import service indicates a bad request" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://bad.request.avro"}"""))
+
+        (Post(pfbImportPath, PFBImportRequest("https://bad.request.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
@@ -1091,7 +1094,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
 
       "should 403 if import service access is forbidden" in {
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://forbidden.avro"}"""))
+        (Post(pfbImportPath, PFBImportRequest("https://forbidden.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Forbidden)
@@ -1101,7 +1104,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, """{"url":"https://its.lawsuit.time.avro"}"""))
+        (Post(pfbImportPath, PFBImportRequest("https://its.lawsuit.time.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(UnavailableForLegalReasons)
@@ -1117,7 +1120,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
                                                    jobId = "MockImportServiceDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
 
-        (Post(pfbImportPath, HttpEntity(MediaTypes.`application/json`, s"""{"url":"https://good.avro"}"""))
+        (Post(pfbImportPath, PFBImportRequest("https://good.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(Accepted)
@@ -1171,77 +1174,141 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "WorkspaceService importPFB list-jobs tests" - {
 
-      "Successful passthrough should return OK with payload" in {
-        val responsePayload = JsArray(
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("Running"))
-          ),
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("Error"))
-          ),
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("ImAUnitTest"))
-          )
-        )
+      List(pfbImportPath, importJobPath) foreach { pathUnderTest =>
 
-        importServiceServer
-          .when(request()
-            .withMethod("GET")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(OK.intValue)
-            .withBody(responsePayload.compactPrint)
-            .withHeader("Content-Type", "application/json"))
+        s"for path $pathUnderTest" - {
 
-        (Get(pfbImportPath)
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(OK)
-          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+          "Successful passthrough should return OK with payload" in {
+            val responsePayload = JsArray(
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("Running"))
+              ),
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("Error"))
+              ),
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("ImAUnitTest"))
+              )
+            )
+
+            importServiceServer
+              .when(request()
+                .withMethod("GET")
+                .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
+              .respond(org.mockserver.model.HttpResponse.response()
+                .withStatusCode(OK.intValue)
+                .withBody(responsePayload.compactPrint)
+                .withHeader("Content-Type", "application/json"))
+
+            (Get(pathUnderTest)
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+              responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+            }
+          }
+
+          "Passthrough should pass on querystrings" in {
+            val responsePayload = JsArray(
+              JsObject(
+                ("id", JsString(UUID.randomUUID().toString)),
+                ("status", JsString("Running"))
+              )
+            )
+
+            val k1 = UUID.randomUUID().toString
+            val v1 = UUID.randomUUID().toString
+            val k2 = UUID.randomUUID().toString
+            val v2 = UUID.randomUUID().toString
+
+            val queryString = s"$k1=$v1&$k2=$v2"
+
+            importServiceServer
+              .when(request()
+                .withMethod("GET")
+                .withPath(s"/${workspace.namespace}/${workspace.name}/imports")
+                .withQueryStringParameters(new Parameter(k1, v1), new Parameter(k2, v2)))
+              .respond(org.mockserver.model.HttpResponse.response()
+                .withStatusCode(OK.intValue)
+                .withBody(responsePayload.compactPrint)
+                .withHeader("Content-Type", "application/json"))
+
+            (Get(s"$pathUnderTest?$queryString")
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(OK)
+              responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
+            }
+          }
+
+          "Passthrough should not pass unrecognized HTTP verbs" in {
+            (Delete(s"$pathUnderTest")
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(MethodNotAllowed)
+            }
+          }
         }
       }
 
-      "Passthrough should pass on querystrings" in {
-        val responsePayload = JsArray(
-          JsObject(
-            ("id", JsString(UUID.randomUUID().toString)),
-            ("status", JsString("Running"))
-          )
-        )
+    }
 
-        val k1 = UUID.randomUUID().toString
-        val v1 = UUID.randomUUID().toString
-        val k2 = UUID.randomUUID().toString
-        val v2 = UUID.randomUUID().toString
+    "WorkspaceService POST importJob Tests" - {
 
-        val queryString = s"$k1=$v1&$k2=$v2"
+      List(FILETYPE_PFB, FILETYPE_TDR) foreach { filetype =>
 
-        importServiceServer
-          .when(request()
-            .withMethod("GET")
-            .withPath(s"/${workspace.namespace}/${workspace.name}/imports")
-            .withQueryStringParameters(new Parameter(k1, v1), new Parameter(k2, v2)))
-          .respond(org.mockserver.model.HttpResponse.response()
-            .withStatusCode(OK.intValue)
-            .withBody(responsePayload.compactPrint)
-            .withHeader("Content-Type", "application/json"))
+        s"for filetype $filetype" - {
 
-        (Get(s"$pfbImportPath?$queryString")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(OK)
-          responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
-        }
-      }
+          "should 400 if import service indicates a bad request" in {
 
-      "Passthrough should not pass unrecognized HTTP verbs" in {
-        (Delete(s"$pfbImportPath")
-          ~> dummyUserIdHeaders(dummyUserId)
-          ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(MethodNotAllowed)
+            (Post(importJobPath, AsyncImportRequest("https://bad.request.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(BadRequest)
+              responseAs[String] should include ("Bad request as reported by import service")
+            }
+          }
+
+          "should 403 if import service access is forbidden" in {
+            (Post(importJobPath, AsyncImportRequest("https://forbidden.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(Forbidden)
+              responseAs[String] should include ("Missing Authorization: Bearer token in header")
+            }
+          }
+
+          "should propagate any other errors from import service" in {
+            // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
+            (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(UnavailableForLegalReasons)
+              responseAs[String] should include ("import service message")
+            }
+          }
+
+          "should 202 (Accepted) if everything validated and import request was accepted" in {
+
+            val pfbPath = "https://good.avro"
+
+            val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
+              jobId = "MockImportServiceDAO will generate a random UUID",
+              workspace = WorkspaceName(workspace.namespace, workspace.name))
+
+            (Post(importJobPath, AsyncImportRequest("https://good.avro", filetype))
+              ~> dummyUserIdHeaders(dummyUserId)
+              ~> sealRoute(workspaceRoutes)) ~> check {
+              status should equal(Accepted)
+              val jobResponse = responseAs[AsyncImportResponse]
+              jobResponse.url should be (orchExpectedPayload.url)
+              jobResponse.workspace should be (orchExpectedPayload.workspace)
+              jobResponse.jobId  should not be empty
+            }
+          }
         }
       }
 

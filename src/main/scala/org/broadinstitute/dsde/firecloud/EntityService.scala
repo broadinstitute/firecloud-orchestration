@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_RAWLS}
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
@@ -226,8 +227,8 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
     val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
-    val importRequest = AsyncImportRequest(Option(gcsPath))
-    importServiceDAO.importRawlsJson(workspaceNamespace, workspaceName, isUpsert, importRequest)(userInfo)
+    val importRequest = AsyncImportRequest(gcsPath, FILETYPE_RAWLS)
+    importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert)(userInfo)
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
@@ -365,8 +366,11 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     }
   }
 
-  def importPFB(workspaceNamespace: String, workspaceName: String, pfbRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
-    importServiceDAO.importPFB(workspaceNamespace, workspaceName, pfbRequest)(userInfo)
+  def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
+    // validate that filetype exists in the importRequest
+    if (importRequest.filetype.isEmpty)
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype must be specified"))
+    importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
   }
 
   def getEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {

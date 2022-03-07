@@ -1,11 +1,11 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import java.text.SimpleDateFormat
-
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_PFB
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
@@ -142,23 +142,38 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     }
                   }
                 } ~
+                // POST importPFB will likely be deprecated in the future; use POST importJob instead
                 path("importPFB") {
                   post {
                     requireUserInfo() { userInfo =>
-                      entity(as[AsyncImportRequest]) { pfbRequest =>
-                        complete { entityServiceConstructor(FlexibleModelSchema).importPFB(workspaceNamespace, workspaceName, pfbRequest, userInfo) }
+                      // this endpoint does not accept a filetype. We hardcode the filetype to "pfb".
+                      entity(as[PFBImportRequest]) { pfbRequest =>
+                        val importRequest = AsyncImportRequest(pfbRequest.url, FILETYPE_PFB)
+                        complete { entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace, workspaceName, importRequest, userInfo) }
                       }
                     }
-                  } ~
-                    get {
-                      requireUserInfo() { _ =>
-                        extract(_.request.uri.query()) { query =>
-                          passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")).withQuery(query), HttpMethods.GET)
-                        }
-                      }
-                    }
+                  }
                 } ~
-                // importPFB/jobId is deprecated; use importJob/jobId instead
+                path("importJob") {
+                  post {
+                    requireUserInfo() { userInfo =>
+                      entity(as[AsyncImportRequest]) { importRequest =>
+                        complete { entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace, workspaceName, importRequest, userInfo) }
+                      }
+                    }
+                  }
+                } ~
+                // GET importPFB is deprecated; use GET importJob instead
+                path(("importPFB" | "importJob")) {
+                  get {
+                    requireUserInfo() { _ =>
+                      extract(_.request.uri.query()) { query =>
+                        passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")).withQuery(query), HttpMethods.GET)
+                      }
+                    }
+                  }
+                } ~
+                // GET importPFB/jobId is deprecated; use GET importJob/jobId instead
                 path(("importPFB" | "importJob") / Segment) { jobId =>
                   get {
                     requireUserInfo() { userInfo =>

@@ -23,8 +23,8 @@ object Dependencies {
     "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
 
-    "org.apache.logging.log4j"       % "log4j-api"           % "2.14.1", // elasticsearch requires log4j ...
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.14.1", // ... but we redirect log4j to logback.
+    // elasticsearch requires log4j, but we redirect log4j to logback
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.1",
     "ch.qos.logback"                 % "logback-classic"     % "1.2.11",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
@@ -58,14 +58,16 @@ object Dependencies {
       exclude("io.netty", "netty-transport")
       exclude("io.netty", "netty-resolver")
       exclude("io.netty", "netty-buffer")
-      exclude("io.netty", "netty-common"),
+      exclude("io.netty", "netty-common")
+      exclude("org.apache.logging.log4j", "log4j-api")
+      exclude("org.apache.logging.log4j", "log4j-core"),
 
     excludeGuava("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "org.webjars.npm"                % "swagger-ui-dist"     % "3.45.0",
+    "org.webjars.npm"                % "swagger-ui-dist"     % "4.6.1",
     "org.webjars"                    % "webjars-locator"     % "0.40",
     "com.github.jwt-scala"          %% "jwt-core"            % "7.1.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
