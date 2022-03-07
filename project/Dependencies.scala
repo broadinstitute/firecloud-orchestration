@@ -18,7 +18,7 @@ object Dependencies {
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
-    "io.netty"                       % "netty-codec"         % "4.1.60.Final",
+    "io.netty"                       % "netty-codec"         % "4.1.74.Final",
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6",
     "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
@@ -37,7 +37,7 @@ object Dependencies {
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.5-4bc7050"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.23-7ddf186",
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.23-11a45ad",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
@@ -53,7 +53,7 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
     "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll(excludeAkkaActor),
 
-    "org.elasticsearch.client"       % "transport"           % "5.6.16"
+    "org.elasticsearch.client"       % "transport"           % "7.17.1"
       exclude("io.netty", "netty-codec")
       exclude("io.netty", "netty-transport")
       exclude("io.netty", "netty-resolver")
