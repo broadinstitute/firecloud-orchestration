@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val akkaV = "2.5.32"
-  val akkaHttpV = "10.2.4"
+  val akkaHttpV = "10.2.9"
   val jacksonV = "2.12.2"
   val jacksonHotfixV = "2.12.2" // for when only some of the Jackson libs have hotfix releases
 
@@ -25,7 +25,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.1",
-    "ch.qos.logback"                 % "logback-classic"     % "1.2.3",
+    "ch.qos.logback"                 % "logback-classic"     % "1.2.11",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
 
