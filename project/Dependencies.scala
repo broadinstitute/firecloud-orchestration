@@ -5,6 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.9"
   val jacksonV = "2.12.2"
   val jacksonHotfixV = "2.12.2" // for when only some of the Jackson libs have hotfix releases
+  val nettyV = "4.1.74.Final"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
@@ -18,7 +19,10 @@ object Dependencies {
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
-    "io.netty"                       % "netty-codec"         % "4.1.74.Final",
+    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonV,
+    "io.netty"                       % "netty-codec"         % nettyV,
+    "io.netty"                       % "netty-codec-http"    % nettyV,
+    "io.netty"                       % "netty-handler"       % nettyV,
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6",
     "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
@@ -59,6 +63,9 @@ object Dependencies {
       exclude("io.netty", "netty-resolver")
       exclude("io.netty", "netty-buffer")
       exclude("io.netty", "netty-common")
+      exclude("io.netty", "netty-codec-http")
+      exclude("io.netty", "netty-handler")
+      exclude("com.fasterxml.jackson.dataformat", "jackson-dataformat-cbor")
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
