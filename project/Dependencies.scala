@@ -57,7 +57,7 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
     "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll(excludeAkkaActor),
 
-    "org.elasticsearch.client"       % "transport"           % "6.8.23"
+    "org.elasticsearch.client"       % "transport"           % "7.17.1"
       exclude("io.netty", "netty-codec")
       exclude("io.netty", "netty-transport")
       exclude("io.netty", "netty-resolver")
