@@ -5109,6 +5109,13 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: processBlanksAsNull
+          in: query
+          description: Replace blank values with null values? todo- better description
+          required: false
+          schema:
+            type: boolean
+            default: false
       requestBody:
         content:
           multipart/form-data:

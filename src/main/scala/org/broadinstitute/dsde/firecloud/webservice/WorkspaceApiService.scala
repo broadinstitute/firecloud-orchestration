@@ -114,10 +114,14 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   post {
                     requireUserInfo() { userInfo =>
                       parameter("async" ? "false") { asyncStr =>
-                        formFields('entities) { entitiesTSV =>
-                          complete {
-                            val isAsync = java.lang.Boolean.valueOf(asyncStr) // for lenient parsing
-                            entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo, isAsync)
+                        parameter("processBlanksAsNull" ? "false") { processBlanksStr =>
+                          formFields('entities) { entitiesTSV =>
+                            complete {
+                              val isAsync = java.lang.Boolean.valueOf(asyncStr) // for lenient parsing
+                              val processBlanksAsNull = java.lang.Boolean.valueOf(processBlanksStr) // for lenient parsing
+                              println(processBlanksAsNull)
+                              entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo, isAsync, processBlanksAsNull)
+                            }
                           }
                         }
                       }
