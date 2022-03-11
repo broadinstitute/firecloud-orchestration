@@ -146,9 +146,7 @@ trait TSVFileSupport {
     * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
     * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample */
   def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])], modelSchema: ModelSchema, processBlanksAsNullOpt: Option[Boolean] = Some(false)): EntityUpdateDefinition = {
-    println(processBlanksAsNullOpt)
     val processBlanksAsNull = processBlanksAsNullOpt.getOrElse(false)
-    println(processBlanksAsNull)
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?

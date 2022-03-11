@@ -179,8 +179,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
    * Updates existing entities from TSV. All entities must already exist. */
   private def importUpdateTSV(
     workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, entityType: String, userInfo: UserInfo, isAsync: Boolean, processBlanksAsNull: Boolean ): Future[PerRequestMessage] = {
-    println("x")
-    println(processBlanksAsNull)
     //we're setting attributes on a bunch of entities
     checkFirstColumnDistinct(tsv) {
       withMemberCollectionType(entityType, modelSchema) { memberTypeOpt =>
@@ -250,7 +248,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
   }
 
   private def importEntitiesFromTSVLoadFile(workspaceNamespace: String, workspaceName: String, tsv: TSVLoadFile, tsvType: TsvType, entityType: String, userInfo: UserInfo, isAsync: Boolean, processBlanksAsNull: Boolean): Future[PerRequestMessage] = {
-    println(processBlanksAsNull)
     tsvType match {
       case TsvTypes.MEMBERSHIP => importMembershipTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync)
       case TsvTypes.ENTITY => importEntityTSV(workspaceNamespace, workspaceName, tsv, entityType, userInfo, isAsync, processBlanksAsNull)
@@ -263,7 +260,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
    * Determines the TSV type from the first column header and routes it to the correct import function. */
   def importEntitiesFromTSV(workspaceNamespace: String, workspaceName: String, tsvString: String, userInfo: UserInfo, isAsync: Boolean = false, processBlanksAsNull: Boolean = false): Future[PerRequestMessage] = {
 
-    println(processBlanksAsNull)
     def stripEntityType(entityTypeString: String): String = {
       val entityType = entityTypeString.stripSuffix("_id")
       if (entityType == entityTypeString)
