@@ -577,6 +577,7 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   // END methods borrowed from rawls
   // ====================================================================================
 
+  // this status method is no longer called as part of Orch's health checks.
   def status: Future[SubsystemStatus] = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
     val bucketResponseTry = Try(storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead())
