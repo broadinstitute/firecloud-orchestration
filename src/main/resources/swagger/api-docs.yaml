@@ -5111,7 +5111,7 @@ paths:
             default: false
         - name: processBlanksAsNull
           in: query
-          description: Replace blank values with null values? todo- better description
+          description: Replace blank values with null values? Column values left blank will be deleted if true (default is false)
           required: false
           schema:
             type: boolean
