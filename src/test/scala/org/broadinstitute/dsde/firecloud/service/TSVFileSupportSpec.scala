@@ -160,7 +160,7 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
 
       resultingOps.operations.size shouldBe 1
 
-      //TSV is 1 entity with 2 attributes, one of which is blank. deleteEmptyValues is set to true
+      //TSV is 1 entity with 2 attributes, one of which is blank. deleteEmptyValues is set to false
       //We should only see an AddUpdateAttribute op for the non-null value
       val firstOp = resultingOps.operations.head
       firstOp.keySet should contain theSameElementsAs List("op", "attributeName", "addUpdateAttribute")
