@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.model.StatusCodes.BadRequest
+import org.broadinstitute.dsde.firecloud.EntityService.colNamesToAttributeNames
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
 import org.broadinstitute.dsde.firecloud.model.FlexibleModelSchema
@@ -135,21 +136,37 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     }
 
     "remove attribute values when deleteEmptyValues is set to true" in {
-      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithEmptyAttributeArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
+      val colInfo = colNamesToAttributeNames( MockTSVLoadFiles.validWithBlanks.headers, Map.empty)
+      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.validWithBlanks.tsvData.head, colInfo, FlexibleModelSchema, true)
 
-      resultingOps.operations.size shouldBe 2 //1 to remove any existing attribute with this name, 1 to create the empty attr value list
+      resultingOps.operations.size shouldBe 2
 
-      // firstOp should be the RemoveAttribute
+      //TSV is 1 entity with 2 attributes, one of which is blank. deleteEmptyValues is set to true
+      //We should see a RemoveAttribute op for the blank and an AddUpdateAttribute op for the non-null value
       val firstOp = resultingOps.operations.head
       firstOp.keySet should contain theSameElementsAs List("op", "attributeName")
       firstOp("op") shouldBe AttributeString("RemoveAttribute")
-      firstOp("attributeName") shouldBe AttributeString("arrays")
+      firstOp("attributeName") shouldBe AttributeString("bar")
 
-      // second and final op should be the CreateAttributeValueList
       val lastOp = resultingOps.operations.last
-      lastOp.keySet should contain theSameElementsAs List("op", "attributeName")
-      lastOp("op") shouldBe AttributeString("CreateAttributeValueList")
-      lastOp("attributeName") shouldBe AttributeString("arrays")
+      lastOp.keySet should contain theSameElementsAs List("op", "attributeName", "addUpdateAttribute")
+      lastOp("op") shouldBe AttributeString("AddUpdateAttribute")
+      lastOp("attributeName") shouldBe AttributeString("baz")
+    }
+
+    "not remove attribute values when deleteEmptyValues is set to false" in {
+      val colInfo = colNamesToAttributeNames( MockTSVLoadFiles.validWithBlanks.headers, Map.empty)
+      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.validWithBlanks.tsvData.head, colInfo, FlexibleModelSchema, false)
+
+      resultingOps.operations.size shouldBe 1
+
+      //TSV is 1 entity with 2 attributes, one of which is blank. deleteEmptyValues is set to true
+      //We should only see an AddUpdateAttribute op for the non-null value
+      val firstOp = resultingOps.operations.head
+      firstOp.keySet should contain theSameElementsAs List("op", "attributeName", "addUpdateAttribute")
+      firstOp("op") shouldBe AttributeString("AddUpdateAttribute")
+      firstOp("attributeName") shouldBe AttributeString("baz")
+
     }
   }
 
