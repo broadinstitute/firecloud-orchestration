@@ -5109,9 +5109,9 @@ paths:
           schema:
             type: boolean
             default: false
-        - name: processBlanksAsNull
+        - name: deleteEmptyValues
           in: query
-          description: Replace blank values with null values? Column values left blank will be deleted if true (default is false)
+          description: Delete empty values? Values left blank will be deleted if true (default is false)
           required: false
           schema:
             type: boolean

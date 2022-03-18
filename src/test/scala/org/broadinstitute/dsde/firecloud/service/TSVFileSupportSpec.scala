@@ -133,6 +133,24 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       lastOp("op") shouldBe AttributeString("CreateAttributeValueList")
       lastOp("attributeName") shouldBe AttributeString("arrays")
     }
+
+    "remove attribute values when deleteEmptyValues is set to true" in {
+      val resultingOps = setAttributesOnEntity("some_type", None, MockTSVLoadFiles.entityWithEmptyAttributeArray.tsvData.head, Seq(("arrays", None)), FlexibleModelSchema)
+
+      resultingOps.operations.size shouldBe 2 //1 to remove any existing attribute with this name, 1 to create the empty attr value list
+
+      // firstOp should be the RemoveAttribute
+      val firstOp = resultingOps.operations.head
+      firstOp.keySet should contain theSameElementsAs List("op", "attributeName")
+      firstOp("op") shouldBe AttributeString("RemoveAttribute")
+      firstOp("attributeName") shouldBe AttributeString("arrays")
+
+      // second and final op should be the CreateAttributeValueList
+      val lastOp = resultingOps.operations.last
+      lastOp.keySet should contain theSameElementsAs List("op", "attributeName")
+      lastOp("op") shouldBe AttributeString("CreateAttributeValueList")
+      lastOp("attributeName") shouldBe AttributeString("arrays")
+    }
   }
 
 }
