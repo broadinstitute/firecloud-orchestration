@@ -148,8 +148,8 @@ trait TSVFileSupport {
     *
     * deleteEmptyValues is a boolean value representing the users intention when uploading a TSV that contains blank values.
     * Historically, these values have been ignored by the TSV parser as a no-op. Users have expressed that they'd like to be able
-    * to tell the TSV uploader to honor the blanks and delete any values. To preserve backwards compatibility, we will now allow
-    * the user to optionally set deleteEmptyValues to true.
+    * to tell the TSV uploader to honor the blanks and delete those values. To preserve backwards compatibility, we will now allow
+    * the user to optionally set deleteEmptyValues to true. The default is the original behavior.
     * */
   def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])], modelSchema: ModelSchema, deleteEmptyValues: Boolean = false): EntityUpdateDefinition = {
     //Iterate over the attribute names and their values
