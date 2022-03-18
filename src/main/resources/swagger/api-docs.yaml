@@ -5111,7 +5111,7 @@ paths:
             default: false
         - name: deleteEmptyValues
           in: query
-          description: Delete empty values? Values left blank will be deleted if true (default is false)
+          description: Delete empty values? Values left blank in the TSV will be deleted if set to true (default is false)
           required: false
           schema:
             type: boolean
