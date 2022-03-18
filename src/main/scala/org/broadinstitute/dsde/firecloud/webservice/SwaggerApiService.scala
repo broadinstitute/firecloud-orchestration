@@ -56,6 +56,7 @@ trait SwaggerApiService extends LazyLogging {
                                         |        clientSecret: "${FireCloudConfig.Auth.swaggerRealm}",
                                         |        realm: "${FireCloudConfig.Auth.swaggerRealm}",
                                         |        appName: "firecloud",
+                                        |        scopes: ["openid", "email", "profile"],
                                         |        scopeSeparator: " ",
                                         |        additionalQueryStringParams: {}
                                         |      })
