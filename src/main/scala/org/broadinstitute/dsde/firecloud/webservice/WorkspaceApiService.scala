@@ -130,8 +130,13 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path("importEntities") {
                   post {
                     requireUserInfo() { userInfo =>
-                      formFields('entities) { entitiesTSV =>
-                        complete { entityServiceConstructor(FirecloudModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo) }
+                      parameter("deleteEmptyValues" ? "false") { deleteEmptyValuesStr =>
+                        formFields('entities) { entitiesTSV =>
+                          complete {
+                            val deleteEmptyValues = java.lang.Boolean.valueOf(deleteEmptyValuesStr) // for lenient parsing
+                            entityServiceConstructor(FirecloudModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo, deleteEmptyValues = deleteEmptyValues)
+                          }
+                        }
                       }
                     }
                   }

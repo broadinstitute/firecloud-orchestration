@@ -4778,6 +4778,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: deleteEmptyValues
+          in: query
+          description: Delete empty values? Values left blank in the TSV will be deleted if set to true (default is false)
+          required: false
+          schema:
+            type: boolean
+            default: false
       requestBody:
         content:
           multipart/form-data:
