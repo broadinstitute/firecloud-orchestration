@@ -165,9 +165,9 @@ trait TSVFileSupport {
             case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
             case _ =>
               val betterAttribute = attributeValue match {
-                case value if "^(?i)(?:true|false$)".r => AttributeBoolean(value.toBoolean)
-                case value if "^-?\\d+$".r => AttributeNumber(value.toInt)
-                case value if "^-?(\\d*\\.\\d+|\\d+\\.\\d*)$".r => AttributeNumber(value.toFloat)
+                case value if value.matches("^(?i)(?:true|false$)") => AttributeBoolean(value.toBoolean)
+                case value if value.matches("^-?\\d+$") => AttributeNumber(value.toInt)
+                case value if value.matches("^-?(\\d*\\.\\d+|\\d+\\.\\d*)$") => AttributeNumber(value.toFloat)
                 case _ => AttributeString(attributeValue)
               }
               Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(betterAttribute)))
