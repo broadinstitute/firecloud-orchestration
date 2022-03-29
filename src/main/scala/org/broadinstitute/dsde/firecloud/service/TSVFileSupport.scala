@@ -180,7 +180,7 @@ trait TSVFileSupport {
             case "__DELETE__" => Seq(Map(removeAttrOperation, nameEntry(attributeName)))
             case value if deleteEmptyValues && value.trim.isEmpty => Seq(Map(removeAttrOperation, nameEntry(attributeName)))
             case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
-            case _ => Seq(Map(upsertAttrOperation, nameEntry(attributeName), valEntry(stringToTypedAttribute(attributeValue))));
+            case _ => Seq(Map(upsertAttrOperation, nameEntry(attributeName), valEntry(stringToTypedAttribute(attributeValue))))
           }
       }
     }
