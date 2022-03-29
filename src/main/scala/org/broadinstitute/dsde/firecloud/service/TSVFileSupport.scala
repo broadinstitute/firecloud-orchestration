@@ -151,7 +151,7 @@ trait TSVFileSupport {
       case Success(intValue) => AttributeNumber(intValue)
       case Failure(_) => Try (java.lang.Double.parseDouble(value)) match {
         case Success(doubleValue) => AttributeNumber(doubleValue)
-        case Failure(_) => Try(BooleanUtils.toBoolean(value.trim.toLowerCase, "true", "false")) match {
+        case Failure(_) => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
           case Success(booleanValue) => AttributeBoolean(booleanValue)
           case Failure(_) => AttributeString(value)
         }
