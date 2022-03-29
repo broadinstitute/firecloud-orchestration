@@ -148,6 +148,12 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
+  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
+  implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
+  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
+  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
+  implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
+
   implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
     val CLASS_NAME = "className"
     val METHOD_NAME = "methodName"
@@ -201,7 +207,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
   implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
   implicit val impModelSchema = jsonFormat1(EntityModel)
-  implicit val impSubmissionRequest = jsonFormat11(SubmissionRequest)
+  implicit val impOrchSubmissionRequest = jsonFormat11(OrchSubmissionRequest)
 
   implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
 
@@ -260,11 +266,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
   implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
-  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
-  implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
-  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
-  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
-  implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
   implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)

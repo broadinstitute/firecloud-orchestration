@@ -1,11 +1,10 @@
 package org.broadinstitute.dsde.firecloud.mock
 
-import akka.http.scaladsl.model.{HttpResponse, StatusCode}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.rawls.model.{GoogleProjectId, GoogleProjectNumber, RawlsBillingAccountName, WorkspaceDetails, WorkspaceVersions}
+import org.broadinstitute.dsde.rawls.model.{GoogleProjectId, GoogleProjectNumber, RawlsBillingAccountName, SubmissionRequest, WorkspaceDetails, WorkspaceVersions}
 import org.joda.time.DateTime
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
@@ -20,6 +19,7 @@ import spray.json._
  */
 //noinspection TypeAnnotation,NameBooleanParameters
 object MockWorkspaceServer {
+
   val mockValidWorkspace = WorkspaceDetails(
     "namespace",
     "name",

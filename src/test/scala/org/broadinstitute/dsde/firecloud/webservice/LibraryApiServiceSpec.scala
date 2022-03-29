@@ -127,11 +127,11 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
   }
 
   override def beforeEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   override def afterEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   "LibraryService" - {
@@ -390,7 +390,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
         val request = ResearchPurposeRequest.empty.copy(DS = Some(Seq(s"${doidPrefix}1234", s"${doidPrefix}5678")))
         new RequestBuilder(HttpMethods.POST)(duosResearchPurposeQuery, request) ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
-          val diseaseIds = responseAs[JsObject].extract[Int]('bool / 'should / * / 'term / "structuredUseRestriction.DS" / 'value)
+          val diseaseIds = responseAs[JsObject].extract[Int](Symbol("bool") / Symbol("should") / * / Symbol("term") / "structuredUseRestriction.DS" / Symbol("value"))
           diseaseIds should equal(Seq(1234, 5678))
         }
       }

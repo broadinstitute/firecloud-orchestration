@@ -90,7 +90,7 @@ case class PublishConfigurationIngest(
   sourceNamespace: Option[String],
   sourceName: Option[String])
 
-case class SubmissionRequest(
+case class OrchSubmissionRequest(
   methodConfigurationNamespace: Option[String],
   methodConfigurationName: Option[String],
   entityType: Option[String],

@@ -23,11 +23,11 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   lazy val ws: WorkspaceService = workspaceServiceConstructor(AccessToken(OAuth2BearerToken("")))
 
   override def beforeEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   override def afterEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   "export workspace attributes as TSV " - {
