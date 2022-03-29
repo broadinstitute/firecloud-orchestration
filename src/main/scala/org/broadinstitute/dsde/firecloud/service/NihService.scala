@@ -108,7 +108,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
 
       //Sam APIs don't consume subject IDs. Now we must look up the emails in Thurloe...
       members <- thurloeDao.getAllUserValuesForKey("email").map { keyValues =>
-        keyValues.filterKeys(subjectId => subjectIds.contains(subjectId)).values.map(WorkbenchEmail).toList
+        keyValues.view.filterKeys(subjectId => subjectIds.contains(subjectId)).values.map(WorkbenchEmail).toList
       }
 
       _ <- ensureWhitelistGroupsExists()

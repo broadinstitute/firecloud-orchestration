@@ -79,7 +79,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     case None => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.FIRECLOUD)
   }
 
-  def ExportEntities = streamEntities
+  def ExportEntities = streamEntities()
 
   /**
     * Two basic code paths
@@ -152,7 +152,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
           import GraphDSL.Implicits._
 
           // Sources
-          val querySource: Outlet[EntityQuery] = builder.add(AkkaSource(entityQueries.toStream)).out
+          val querySource: Outlet[EntityQuery] = builder.add(AkkaSource(entityQueries.to(LazyList))).out
           val entityHeaderSource: Outlet[ByteString] = builder.add(AkkaSource.single(ByteString(entityHeaders.mkString("\t") + "\n"))).out
 
           // Flows
@@ -208,7 +208,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
           import GraphDSL.Implicits._
 
           // Sources
-          val querySource: Outlet[EntityQuery] = builder.add(AkkaSource(entityQueries.toStream)).out
+          val querySource: Outlet[EntityQuery] = builder.add(AkkaSource(entityQueries.to(LazyList))).out
           val entityHeaderSource: Outlet[ByteString] = builder.add(AkkaSource.single(ByteString(entityHeaders.mkString("\t") + "\n"))).out
           val membershipHeaderSource: Outlet[ByteString] = builder.add(AkkaSource.single(ByteString(membershipHeaders.mkString("\t") + "\n"))).out
 

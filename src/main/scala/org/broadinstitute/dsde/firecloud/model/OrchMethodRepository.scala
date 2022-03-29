@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.rawls.model.{AgoraMethod, DockstoreMethod, Method
 
 import scala.util.Try
 
-object MethodRepository {
+object OrchMethodRepository {
 
   object AgoraEntityType extends Enumeration {
     type EntityType = Value
@@ -87,7 +87,7 @@ object MethodRepository {
 
   case class MethodAclPair(method: AgoraMethod, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
-  case class EntityAccessControl(method:Option[Method], referencedBy: MethodConfigurationName, acls: Seq[FireCloudPermission], message: Option[String] = None)
+  case class EntityAccessControl(method:Option[Method], referencedBy: OrchMethodConfigurationName, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
   object ACLNames {
     val NoAccess = "NO ACCESS"

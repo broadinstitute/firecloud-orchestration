@@ -19,7 +19,7 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResourc
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.joda.time.DateTime
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Try

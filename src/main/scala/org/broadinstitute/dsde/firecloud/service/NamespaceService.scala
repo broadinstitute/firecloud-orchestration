@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.dataaccess.AgoraDAO
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.{AgoraPermission, FireCloudPermission}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}

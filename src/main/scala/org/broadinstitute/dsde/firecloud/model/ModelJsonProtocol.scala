@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHan
 import org.broadinstitute.dsde.firecloud.model.DUOS._
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.MethodRepository._
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
 import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project._
@@ -169,9 +169,9 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   }
 
   // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
-  implicit val impMethod = jsonFormat11(MethodRepository.Method.apply)
-  implicit val impConfiguration = jsonFormat10(MethodRepository.Configuration)
-  implicit val impAgoraConfigurationShort = jsonFormat4(MethodRepository.AgoraConfigurationShort)
+  implicit val impMethod = jsonFormat11(OrchMethodRepository.Method.apply)
+  implicit val impConfiguration = jsonFormat10(OrchMethodRepository.Configuration)
+  implicit val impAgoraConfigurationShort = jsonFormat4(OrchMethodRepository.AgoraConfigurationShort)
 
   implicit val impWorkspaceDeleteResponse = jsonFormat1(WorkspaceDeleteResponse)
 
@@ -187,7 +187,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
   implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
   implicit val impPublishConfigurationIngest = jsonFormat4(PublishConfigurationIngest)
-  implicit val impMethodConfigurationName = jsonFormat2(MethodConfigurationName.apply)
+  implicit val impMethodConfigurationName = jsonFormat2(OrchMethodConfigurationName.apply)
 
   implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
   implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
@@ -286,7 +286,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
           case _ => f.getName -> JsNull
         }
       }) match {
-        case Success(props) => props.filterNot(_._2 == JsNull)
+        case Success(props) => props.toIndexedSeq.filterNot(_._2 == JsNull)
         case Failure(ex) => serializationError(ex.getMessage)
       }
       JsObject(existingProps.toMap)

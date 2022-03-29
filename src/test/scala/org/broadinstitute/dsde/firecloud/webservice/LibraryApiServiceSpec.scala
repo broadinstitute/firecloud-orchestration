@@ -24,7 +24,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.json.lenses.JsonLenses._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 

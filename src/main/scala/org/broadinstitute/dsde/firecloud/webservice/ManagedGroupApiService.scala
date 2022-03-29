@@ -23,7 +23,7 @@ trait ManagedGroupApiService extends Directives with RequestBuilding with Standa
       pathPrefix("groups") {
         pathEnd {
           get {
-            complete { managedGroupServiceConstructor(userInfo).listGroups }
+            complete { managedGroupServiceConstructor(userInfo).listGroups() }
           }
         } ~
           pathPrefix(Segment) { groupName =>

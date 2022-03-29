@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.ACLNames._
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraPermission, EntityAccessControlAgora, FireCloudPermission, Method}
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.ACLNames._
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.{AgoraPermission, EntityAccessControlAgora, FireCloudPermission, Method}
 
 /**
  * Created by davidan on 10/29/15.
