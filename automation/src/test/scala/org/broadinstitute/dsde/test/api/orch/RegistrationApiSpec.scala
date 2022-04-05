@@ -7,18 +7,24 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.testkit.TestKitBase
 import org.broadinstitute.dsde.test.OrchConfig.Users
 import org.broadinstitute.dsde.workbench.auth.AuthToken
-import org.broadinstitute.dsde.workbench.service.Orchestration
 import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
-import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
 import org.broadinstitute.dsde.workbench.service.Sam.sendRequest
-import org.broadinstitute.dsde.workbench.service.{Sam, Thurloe}
+import org.broadinstitute.dsde.workbench.service.util.ExceptionHandling
+import org.broadinstitute.dsde.workbench.service.{Orchestration, Sam, Thurloe}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.tagobjects.Retryable
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
-class RegistrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
-  with BillingFixtures with BeforeAndAfterAll with TestKitBase {
+class RegistrationApiSpec
+  extends FreeSpec
+    with Matchers
+    with ScalaFutures
+    with Eventually
+    with BeforeAndAfterAll
+    with TestKitBase
+    with ExceptionHandling {
+
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
   implicit lazy val system = ActorSystem()
 

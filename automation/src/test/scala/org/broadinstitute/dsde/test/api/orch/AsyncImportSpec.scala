@@ -1,13 +1,14 @@
 package org.broadinstitute.dsde.test.api.orch
 
-import java.util.UUID
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.rawls.model.EntityTypeMetadata
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.EntityTypeMetadataFormat
 import org.broadinstitute.dsde.workbench.auth.AuthToken
+import org.broadinstitute.dsde.workbench.auth.AuthTokenScopes.billingScopes
 import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig, UserPool}
-import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
+import org.broadinstitute.dsde.workbench.fixture.BillingFixtures.withTemporaryBillingProject
+import org.broadinstitute.dsde.workbench.fixture.WorkspaceFixtures
 import org.broadinstitute.dsde.workbench.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
@@ -19,15 +20,22 @@ import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
-  with BillingFixtures with WorkspaceFixtures with Orchestration {
+class AsyncImportSpec
+  extends FreeSpec
+    with Matchers
+    with Eventually
+    with ScalaFutures
+    with WorkspaceFixtures
+    with Orchestration {
 
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
+  val billingAccountName: String = ServiceTestConfig.Projects.billingAccountId
 
   final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
@@ -43,7 +51,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       "for the owner of a workspace" in {
         implicit val token: AuthToken = ownerAuthToken
 
-        withCleanBillingProject(owner) { projectName =>
+        withTemporaryBillingProject(billingAccountName) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
@@ -70,14 +78,14 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             }
 
           }
-        }
+        }(owner.makeAuthToken(billingScopes))
       }
 
       "for writers of a workspace" in {
         val writer = UserPool.chooseStudent
         val writerToken = writer.makeAuthToken()
 
-        withCleanBillingProject(owner) { projectName =>
+        withTemporaryBillingProject(billingAccountName) { projectName =>
           withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
             // call importPFB as writer
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
@@ -102,7 +110,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             }
 
           } (ownerAuthToken)
-        }
+        }(owner.makeAuthToken(billingScopes))
       }
     }
 
@@ -110,7 +118,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       "if the file to be imported is invalid" in {
         implicit val token: AuthToken = ownerAuthToken
 
-        withCleanBillingProject(owner) { projectName =>
+        withTemporaryBillingProject(billingAccountName) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
@@ -131,7 +139,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
               blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Error")
             }
           }
-        }
+        }(owner.makeAuthToken(billingScopes))
       }
     }
 
@@ -140,7 +148,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
       "for readers of a workspace" in {
         val reader = UserPool.chooseStudent
 
-        withCleanBillingProject(owner) { projectName =>
+        withTemporaryBillingProject(billingAccountName) { projectName =>
           withWorkspace(projectName, prependUUID("reader-pfb-import"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
 
             // call importPFB as reader
@@ -154,12 +162,12 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
 
           } (ownerAuthToken)
-        }
+        }(owner.makeAuthToken(billingScopes))
       }
 
       "with an invalid POST payload" in {
         implicit val token: AuthToken = ownerAuthToken
-        withCleanBillingProject(owner) { projectName =>
+        withTemporaryBillingProject(billingAccountName) { projectName =>
           withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
 
             // call importPFB with a payload of the wrong shape
@@ -173,14 +181,14 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
             errorReport.message should include (s"Object expected in field 'url'")
 
           } (ownerAuthToken)
-        }
+        }(owner.makeAuthToken(billingScopes))
       }
 
     }
 
     "should import a TSV asynchronously for entities and entity membership" in {
       implicit val token: AuthToken = ownerAuthToken
-      withCleanBillingProject(owner) { projectName =>
+      withTemporaryBillingProject(billingAccountName) { projectName =>
         withWorkspace(projectName, prependUUID("tsv-entities")) { workspaceName =>
           val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
           val participantAndSetEntityMetadata = participantEntityMetadata + ("participant_set" -> EntityTypeMetadata(2, "participant_set_id", Seq("participants")))
@@ -188,12 +196,12 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
           importAsync(projectName, workspaceName, "MEMBERSHIP_PARTICIPANT_SET.tsv", participantAndSetEntityMetadata)
         }
-      }
+      }(owner.makeAuthToken(billingScopes))
     }
 
     "should import a TSV asynchronously for updates" in {
       implicit val token: AuthToken = ownerAuthToken
-      withCleanBillingProject(owner) { projectName =>
+      withTemporaryBillingProject(billingAccountName) { projectName =>
         withWorkspace(projectName, prependUUID("tsv-updates")) { workspaceName =>
           val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
           val updatedParticipantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq("age")))
@@ -201,7 +209,7 @@ class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaF
           importAsync(projectName, workspaceName, "ADD_PARTICIPANTS.tsv", participantEntityMetadata)
           importAsync(projectName, workspaceName, "UPDATE_PARTICIPANTS.tsv", updatedParticipantEntityMetadata)
         }
-      }
+      }(owner.makeAuthToken(billingScopes))
 
     }
   }
