@@ -7220,6 +7220,21 @@ paths:
         404:
           description: User Not Found.
           content: { }
+    delete:
+      tags:
+        - Terms of Service
+      summary: Passes through to Sam API and rejects Terra Terms of Service
+      operationId: rejectTermsOfService
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawlsMe'
+        404:
+          description: User Not Found.
+          content: { }
   /register/user/v1/termsofservice/status:
     get:
       tags:
