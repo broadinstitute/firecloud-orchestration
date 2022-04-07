@@ -88,7 +88,9 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
     googleProject = GoogleProjectId("googleProject"),
     googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
     billingAccount = Some(RawlsBillingAccountName("billingAccount")),
-    completedCloneWorkspaceFileTransfer = Some(DateTime.now()))
+    completedCloneWorkspaceFileTransfer = Some(DateTime.now()),
+    workspaceType = None
+  )
 
 
   val DULAdditionalJsObject =
@@ -289,12 +291,12 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         }
       }
       "should be the different for attribute operations" in {
-        val empty = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq.empty)))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+        val empty = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq.empty)))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
         assert(isDiscoverableDifferent(empty, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))))
-        val one = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+        val one = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))))
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq.empty))))
-        val two = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+        val two = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
         assert(isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"))))))
         assert(!isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"),AttributeString("group1"))))))
       }
@@ -830,7 +832,8 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           Some(GoogleProjectNumber("googleProjectNumber")),
           Some(RawlsBillingAccountName("billingAccount")),
           None,
-          Option(DateTime.now())
+          Option(DateTime.now()),
+          None
         )
 
         attrMaps map { attrMap =>

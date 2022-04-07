@@ -235,7 +235,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impImportServiceRequest = jsonFormat3(ImportServiceRequest)
   implicit val impImportServiceResponse = jsonFormat3(ImportServiceResponse)
 
-  implicit val impWorkspaceStorageCostEstimate = jsonFormat1(WorkspaceStorageCostEstimate)
+  implicit val impWorkspaceStorageCostEstimate = jsonFormat2(WorkspaceStorageCostEstimate)
 
   implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 

@@ -320,7 +320,8 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
   private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(
@@ -331,7 +332,8 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     ws,
     Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
     Some(WorkspaceBucketOptions(false)),
-    Some(Set.empty)
+    Some(Set.empty),
+    None
   )
 
 
