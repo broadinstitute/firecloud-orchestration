@@ -35,7 +35,7 @@ class AsyncImportSpec
 
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
-  val billingAccountName: String = ServiceTestConfig.Projects.billingAccountId
+  val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
@@ -51,7 +51,7 @@ class AsyncImportSpec
       "for the owner of a workspace" in {
         implicit val token: AuthToken = ownerAuthToken
 
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)
@@ -85,7 +85,7 @@ class AsyncImportSpec
         val writer = UserPool.chooseStudent
         val writerToken = writer.makeAuthToken()
 
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("writer-pfb-import"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
             // call importPFB as writer
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB", testPayload)(writerToken)
@@ -118,7 +118,7 @@ class AsyncImportSpec
       "if the file to be imported is invalid" in {
         implicit val token: AuthToken = ownerAuthToken
 
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("owner-pfb-import")) { workspaceName =>
             // call importPFB as owner
             val postResponse: String = Orchestration.postRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB",
@@ -148,7 +148,7 @@ class AsyncImportSpec
       "for readers of a workspace" in {
         val reader = UserPool.chooseStudent
 
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("reader-pfb-import"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
 
             // call importPFB as reader
@@ -167,7 +167,7 @@ class AsyncImportSpec
 
       "with an invalid POST payload" in {
         implicit val token: AuthToken = ownerAuthToken
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
 
             // call importPFB with a payload of the wrong shape
@@ -188,7 +188,7 @@ class AsyncImportSpec
 
     "should import a TSV asynchronously for entities and entity membership" in {
       implicit val token: AuthToken = ownerAuthToken
-      withTemporaryBillingProject(billingAccountName) { projectName =>
+      withTemporaryBillingProject(billingAccountId) { projectName =>
         withWorkspace(projectName, prependUUID("tsv-entities")) { workspaceName =>
           val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
           val participantAndSetEntityMetadata = participantEntityMetadata + ("participant_set" -> EntityTypeMetadata(2, "participant_set_id", Seq("participants")))
@@ -201,7 +201,7 @@ class AsyncImportSpec
 
     "should import a TSV asynchronously for updates" in {
       implicit val token: AuthToken = ownerAuthToken
-      withTemporaryBillingProject(billingAccountName) { projectName =>
+      withTemporaryBillingProject(billingAccountId) { projectName =>
         withWorkspace(projectName, prependUUID("tsv-updates")) { workspaceName =>
           val participantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq()))
           val updatedParticipantEntityMetadata = Map("participant" -> EntityTypeMetadata(8, "participant_id", Seq("age")))

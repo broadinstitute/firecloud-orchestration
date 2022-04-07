@@ -23,7 +23,7 @@ class OrchestrationApiSpec
     with Eventually {
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
-  val billingAccountName: String = ServiceTestConfig.Projects.billingAccountId
+  val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   def nowPrint(text: String): Unit = {
     println(s"${Instant.now} : $text")
@@ -73,7 +73,7 @@ class OrchestrationApiSpec
     "should get the user's billing projects" in {
       val ownerUser: Credentials = UserPool.chooseProjectOwner
       val ownerToken: AuthToken = ownerUser.makeAuthToken()
-      withTemporaryBillingProject(billingAccountName) { projectName =>
+      withTemporaryBillingProject(billingAccountId) { projectName =>
         nowPrint(s"Querying for (owner) user profile billing projects, with project: $projectName")
         // Returns a list of maps, one map per billing project the user has access to.
         // Each map has a key for the projectName, role, status, and an optional message
@@ -88,7 +88,7 @@ class OrchestrationApiSpec
       "should get the user's billing project" in {
         val ownerUser: Credentials = UserPool.chooseProjectOwner
         val ownerToken: AuthToken = ownerUser.makeAuthToken()
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           nowPrint(s"Querying for (owner) user profile billing project status: $projectName")
           // Returns a map of projectName and creationStatus for the project specified
           implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
@@ -116,7 +116,7 @@ class OrchestrationApiSpec
         val ownerUser: Credentials = UserPool.chooseProjectOwner
         val user: Credentials = UserPool.chooseStudent
         val userToken: AuthToken = user.makeAuthToken()
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           nowPrint(s"Querying for (student) user profile billing project status: $projectName")
           val getException = intercept[RestException] {
             Orchestration.profile.getUserBillingProjectStatus(projectName)(userToken)

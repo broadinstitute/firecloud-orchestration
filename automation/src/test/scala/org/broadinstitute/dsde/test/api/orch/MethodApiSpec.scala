@@ -18,13 +18,13 @@ class MethodApiSpec
     with WorkspaceFixtures
     with MethodFixtures {
 
-  val billingAccountName: String = ServiceTestConfig.Projects.billingAccountId
+  val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   "For a method config that references a redacted method" - {
     "should be able to choose new method snapshot" in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
-      withTemporaryBillingProject(billingAccountName) { billingProject =>
+      withTemporaryBillingProject(billingAccountId) { billingProject =>
         withWorkspace(billingProject, "MethodConfigApiSpec_choose_new_snapshot") { workspaceName =>
           withMethod("MethodRedactedSpec_choose_new_snapshot", MethodData.SimpleMethod, 2) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)
@@ -70,7 +70,7 @@ class MethodApiSpec
     "launching an analysis should not be possible" in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
-      withTemporaryBillingProject(billingAccountName) { billingProject =>
+      withTemporaryBillingProject(billingAccountId) { billingProject =>
         withWorkspace(billingProject, "MethodApiSpec_launch_after_redact") { workspaceName =>
           withMethod("MethodApiSpec_launch_after_redact", MethodData.SimpleMethod, cleanUp = false) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)
@@ -116,7 +116,7 @@ class MethodApiSpec
     "the method config should be deleteable " in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
-      withTemporaryBillingProject(billingAccountName) { billingProject =>
+      withTemporaryBillingProject(billingAccountId) { billingProject =>
         withWorkspace(billingProject, "MethodApiSpec_delete_after_redacted") { workspaceName =>
           withMethod("MethodApiSpec_delete_after_redacted", MethodData.SimpleMethod, cleanUp = false) { methodName =>
             val method = MethodData.SimpleMethod.copy(methodName = methodName)

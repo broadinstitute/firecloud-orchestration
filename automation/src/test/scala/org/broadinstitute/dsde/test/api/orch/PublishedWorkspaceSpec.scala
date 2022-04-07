@@ -23,7 +23,7 @@ class PublishedWorkspaceSpec
     with RandomUtil {
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
-  val billingAccountName: String = ServiceTestConfig.Projects.billingAccountId
+  val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   "a user with publish permissions" - {
     "can publish a workspace" - {
@@ -33,7 +33,7 @@ class PublishedWorkspaceSpec
         val curatorUser = UserPool.chooseCurator
         implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-        withTemporaryBillingProject(billingAccountName, users = List(curatorUser.email).some) { billingProject =>
+        withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
@@ -66,7 +66,7 @@ class PublishedWorkspaceSpec
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-          withTemporaryBillingProject(billingAccountName, users = List(curatorUser.email).some) { billingProject =>
+          withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
               val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
               Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
@@ -96,7 +96,7 @@ class PublishedWorkspaceSpec
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-          withTemporaryBillingProject(billingAccountName, users = List(curatorUser.email).some) { billingProject =>
+          withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
               val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
               Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
@@ -127,7 +127,7 @@ class PublishedWorkspaceSpec
         val curatorUser = UserPool.chooseCurator
         implicit val authToken: AuthToken = curatorUser.makeAuthToken()
 
-        withTemporaryBillingProject(billingAccountName, users = List(curatorUser.email).some) { billingProject =>
+        withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_consentcodes") { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName) ++ LibraryData.consentCodes
@@ -150,7 +150,7 @@ class PublishedWorkspaceSpec
         val curatorUser = UserPool.chooseCurator
         implicit val authToken: AuthToken = curatorUser.makeAuthToken()
 
-        withTemporaryBillingProject(billingAccountName, users = List(curatorUser.email).some) { billingProject =>
+        withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_tags", attributes = Some(tags)) { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)

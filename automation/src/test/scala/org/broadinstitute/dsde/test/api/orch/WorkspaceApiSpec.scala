@@ -22,7 +22,7 @@ class WorkspaceApiSpec
 
   val owner: Credentials = UserPool.chooseProjectOwner
   val ownerAuthToken: AuthToken = owner.makeAuthToken()
-  val billingAccountName: String = ServiceTestConfig.Projects.billingAccountId
+  val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   "Orchestration" - {
 
@@ -30,7 +30,7 @@ class WorkspaceApiSpec
       "for the owner of a workspace" in {
         implicit val token: AuthToken = ownerAuthToken
 
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("owner-storage-cost")) { workspaceName =>
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
 
@@ -43,7 +43,7 @@ class WorkspaceApiSpec
       "for writers of a workspace" in {
         val writer = UserPool.chooseStudent
 
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("writer-storage-cost"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
             implicit val writerAuthToken: AuthToken = writer.makeAuthToken
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
@@ -59,7 +59,7 @@ class WorkspaceApiSpec
       "for readers of a workspace" in {
         val reader = UserPool.chooseStudent
 
-        withTemporaryBillingProject(billingAccountName) { projectName =>
+        withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("reader-storage-cost"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
             implicit val readerAuthToken: AuthToken = reader.makeAuthToken
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
