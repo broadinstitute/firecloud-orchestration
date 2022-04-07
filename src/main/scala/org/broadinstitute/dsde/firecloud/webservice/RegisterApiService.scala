@@ -1,14 +1,14 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.HttpMethods.{GET, POST}
+import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, RegisterService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.service.RegisterService.{samAcceptTosUrl, samTosStatusUrl, samTosTextUrl}
+import org.broadinstitute.dsde.firecloud.service.RegisterService.{samTosBaseUrl, samTosStatusUrl, samTosTextUrl}
 
 import scala.concurrent.ExecutionContext
 
@@ -55,7 +55,12 @@ trait RegisterApiService extends FireCloudDirectives with RequestBuilding with S
         pathEndOrSingleSlash {
           post {
             requireUserInfo() { _ =>
-              passthrough(samAcceptTosUrl, POST)
+              passthrough(samTosBaseUrl, POST)
+            }
+          } ~
+          delete {
+            requireUserInfo() { _ =>
+              passthrough(samTosBaseUrl, DELETE)
             }
           }
         } ~
