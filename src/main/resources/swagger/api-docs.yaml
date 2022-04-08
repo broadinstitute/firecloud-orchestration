@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
-  title: FireCloud
+  title: Terra
   description: |
-    FireCloud API
+    Terra API
   termsOfService: https://github.com/broadinstitute/firecloud-orchestration
   license:
     name: BSD
