@@ -3,7 +3,7 @@ info:
   title: Terra
   description: |
     Terra API
-  termsOfService: https://github.com/broadinstitute/firecloud-orchestration
+  termsOfService: https://app.terra.bio/#terms-of-service
   license:
     name: BSD
     url: http://opensource.org/licenses/BSD-3-Clause
