@@ -6632,7 +6632,7 @@ paths:
       tags:
         - Workspaces
       summary: |
-        Get all tags used in Terra (for autocomplete)
+        Get all workspace tags (for autocomplete)
       description: Get all tags for workspaces that a user has access to (for autocomplete)
       operationId: getTags
       parameters:
