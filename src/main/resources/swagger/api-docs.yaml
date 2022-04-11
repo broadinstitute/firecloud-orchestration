@@ -7381,7 +7381,7 @@ paths:
           description: |
             An identifier of the tool version for this particular tool registry, for example `v1`.
 
-              *In Terra, this must be an integer representing the Terra snapshot id.*
+              *In Terra, this must be an integer representing the method snapshot id.*
           required: true
           schema:
             type: string
