@@ -60,7 +60,7 @@ trait FireCloudApiService extends CookieAuthedApiService
   with LibraryApiService
   with NamespaceApiService
   with NihApiService
-  with OauthApiService
+  with Oauth2ApiService
   with RegisterApiService
   with StorageApiService
   with WorkspaceApiService
@@ -191,7 +191,7 @@ trait FireCloudApiService extends CookieAuthedApiService
       healthServiceRoutes ~
       libraryRoutes ~
       namespaceRoutes ~
-      oauthRoutes ~
+      oauth2Routes ~
       profileRoutes ~
       registerRoutes ~
       storageRoutes ~

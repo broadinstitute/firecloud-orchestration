@@ -207,4 +207,10 @@ object FireCloudConfig {
     lazy val bucket: String = config.getString("importService.bucketName")
   }
 
+  object OAuth2 {
+    val authorizationEndpoint: String = config.getString("oauth2.authorizationEndpoint")
+    val tokenEndpoint: String = config.getString("oauth2.tokenEndpoint")
+    val clientSecret: Option[String] = if (config.hasPath("oauth2.clientSecret")) Some(config.getString("oauth2.clientSecret")) else None
+  }
+
 }
