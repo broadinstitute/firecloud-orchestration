@@ -16,15 +16,17 @@ trait OauthApiService extends FireCloudDirectives with StandardUserInfoDirective
   val googleOauth = "https://accounts.google.com/o/oauth2/v2/auth"
 
   val oauthRoutes: Route = {
-    path("authorize") {
-      get {
-        redirect(Uri(googleOauth), StatusCodes.Found)
-      }
-    } ~
-      path("token") {
-        post {
-          complete(StatusCodes.NoContent)
+    pathPrefix("oauth2") {
+      path("authorize") {
+        get {
+          redirect(Uri(googleOauth), StatusCodes.Found)
         }
-      }
+      } ~
+        path("token") {
+          post {
+            complete(StatusCodes.NoContent)
+          }
+        }
+    }
   }
 }
