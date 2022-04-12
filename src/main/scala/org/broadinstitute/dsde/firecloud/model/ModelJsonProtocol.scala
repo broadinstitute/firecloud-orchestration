@@ -129,6 +129,11 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
+  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
+  implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
+  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
+  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
+
   implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
     override def write(input: ESPropertyFields): JsValue = input match {
       case estype: ESType => estype.toJson
@@ -148,10 +153,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
-  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
-  implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
-  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
-  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
   implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
