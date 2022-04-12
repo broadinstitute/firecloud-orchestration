@@ -29,9 +29,9 @@ trait Oauth2ApiService extends FireCloudDirectives {
       // The /authorize endpoint simply redirects to the underlying oauth2 endpoint
       // with the same querystring parameters.
       path("authorize") {
-        extractRequest { request =>
-          get {
-            val newUri = authorizationUri.withQuery(request.uri.query())
+        get {
+          parameterMap { params =>
+            val newUri = authorizationUri.withQuery(Uri.Query(params))
             redirect(newUri, StatusCodes.Found)
           }
         }

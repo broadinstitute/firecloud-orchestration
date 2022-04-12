@@ -7438,6 +7438,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
+  /oauth2/authorize:
+    get:
+      tags:
+        - OAuth2
+      summary: Redirect to the system-configured OAuth2 authorization endpoint.
+      description: |
+        Redirect to the system-configured OAuth2 authorization endpoint. This endpoint is
+        designed to be used by UIs in their oauth flow. It facilitates supporting multiple
+        authorization endpoints for Google plus each B2C environment.
+      operationId: oauth2Authorize
+      responses:
+        302:
+          description: Redirect
+      x-passthrough: false
+  /oauth2/token:
+    post:
+      tags:
+        - OAuth2
+      summary: Proxy to the system-configured OAuth2 token endpoint.
+      description: |
+        Proxy the request to the system-configured OAuth2 tokenpont. This endpoint is
+        designed to be used by UIs in their oauth flow. It facilitates supporting multiple
+        authorization endpoints for Google plus each B2C environment.
+      operationId: oauth2Token
+      responses:
+        200:
+          description: Success
+        401:
+          description: Unauthorized
+        500:
+          description: Internal Server Error
+      x-passthrough: false
 components:
   schemas:
     AttributeEntityReference:
