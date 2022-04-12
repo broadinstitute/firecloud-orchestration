@@ -75,6 +75,6 @@ trait Oauth2ApiService extends FireCloudDirectives {
   }
 
   private val headersToFilter = Set(
-    "Timeout-Access",
+    "Timeout-Access"
   ).map(_.toLowerCase)
 }

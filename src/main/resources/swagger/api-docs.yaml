@@ -7462,6 +7462,13 @@ paths:
         designed to be used by UIs in their oauth flow. It facilitates supporting multiple
         authorization endpoints for Google plus each B2C environment.
       operationId: oauth2Token
+      requestBody:
+        description: token request data
+        content:
+          'application/x-www-form-urlencoded':
+            schema:
+              type: string
+        required: true
       responses:
         200:
           description: Success
