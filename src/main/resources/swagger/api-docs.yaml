@@ -24,7 +24,7 @@ tags:
   - name: Method Repository
   - name: NIH
   - name: Notifications
-  - name: OAuth
+  - name: OAuth2
   - name: Profile
   - name: Service Perimeters
   - name: ShareLog
@@ -3360,24 +3360,6 @@ paths:
         500:
           description: Internal Server Error
           content: {}
-      x-passthrough: false
-  /api/refresh-token-status:
-    get:
-      tags:
-        - OAuth
-      summary: deprecated
-      description: |
-        This API is a deprecated noop. Previously, it returned the status of the current user's refresh token.
-        Since refresh tokens are no longer used in the back end, this API is now hardcoded to respond as if the
-        user's refresh token is valid. This API may be removed in a future release.
-      operationId: getRefreshTokenStatus
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
       x-passthrough: false
   /api/sharelog/sharees:
     get:
@@ -6999,37 +6981,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemStatus'
       x-passthrough: false
-  /handle-oauth-code:
-    post:
-      tags:
-        - OAuth
-      summary: deprecated
-      description: |
-        This API is a deprecated noop. Previously, it allowed the server to acquire a refresh token.
-        Since refresh tokens are no longer used in the back end, this API is now hardcoded to respond as if
-        it successfully acquired a refresh token, without doing any actual work.
-        This API may be removed in a future release.
-      operationId: handleOauthCode
-      requestBody:
-        content:
-          'application/json':
-            schema:
-              required:
-                - code
-                - redirectUri
-              type: object
-              properties:
-                code:
-                  type: string
-                redirectUri:
-                  type: string
-        required: false
-      responses:
-        204:
-          description: All set
-          content: {}
-      x-passthrough: false
-      x-codegen-request-body-name: body
   /me:
     get:
       tags:
