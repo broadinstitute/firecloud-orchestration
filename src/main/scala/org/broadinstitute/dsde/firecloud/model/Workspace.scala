@@ -5,6 +5,7 @@ import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurati
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
+import org.joda.time.DateTime
 
 case class WorkspaceDeleteResponse(message: Option[String] = None)
 
@@ -108,4 +109,4 @@ case class RawlsGroupMemberList(
   userSubjectIds: Option[Seq[String]] = None,
   subGroupNames: Option[Seq[String]] = None)
 
-case class WorkspaceStorageCostEstimate(estimate: String)
+case class WorkspaceStorageCostEstimate(estimate: String, lastUpdated: Option[DateTime])

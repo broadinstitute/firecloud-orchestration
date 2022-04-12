@@ -110,10 +110,10 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     ns match {
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
-      case "projectowner" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.ProjectOwner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
-      case "unpublishsuccess" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishsuccess, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
-      case "unpublishfailure" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishfailure, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
-      case _ => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty)))
+      case "projectowner" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.ProjectOwner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None))
+      case "unpublishsuccess" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishsuccess, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None))
+      case "unpublishfailure" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishfailure, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None))
+      case _ => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None))
     }
   }
 
