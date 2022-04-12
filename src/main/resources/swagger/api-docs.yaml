@@ -3886,7 +3886,10 @@ paths:
       responses:
         200:
           description: Successful Request
-          content: {}
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/BucketUsageResponse'
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/catalog:
@@ -5824,8 +5827,11 @@ paths:
             type: string
       responses:
         200:
-          description: Storage cost estimate
-          content: {}
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/BucketStorageCost'
         404:
           description: Workspace not found
           content: {}
@@ -7693,6 +7699,32 @@ components:
         message:
           type: string
           description: informational message about the project
+      description: ""
+    BucketStorageCost:
+      required:
+        - estimate
+      type: object
+      properties:
+        estimate:
+          type: string
+          description: The estimated monthly storage cost of the bucket
+        lastUpdated:
+          type: string
+          format: timestamp
+          description: timestamp (UTC) marking the date that the bucket cost was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
+      description: ""
+    BucketUsageResponse:
+      required:
+        - usageInBytes
+      type: object
+      properties:
+        usageInBytes:
+          type: integer
+          description: The current storage bucket usage in bytes
+        lastUpdated:
+          type: string
+          format: timestamp
+          description: timestamp (UTC) marking the date that the bucket usage was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
       description: ""
     CallMetadata:
       type: object
