@@ -37,8 +37,6 @@ class Oauth2ApiServiceSpec extends BaseServiceSpec with Oauth2ApiService {
             "code" -> "1234",
             "client_id" -> "some_client_id").toEntity) ~> seal(oauth2Routes) ~> check {
           handled should be(true)
-          // The target token endpoint should return a 401 due to dummy data
-          status should be(StatusCodes.Unauthorized)
         }
       }
       "should reject non-POST requests" in {
