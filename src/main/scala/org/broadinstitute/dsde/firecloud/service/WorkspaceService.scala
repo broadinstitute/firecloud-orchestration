@@ -44,7 +44,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
                 val rate = priceList.prices.cpBigstoreStorage.getOrElse(bucket.getLocation.toLowerCase(), priceList.prices.cpBigstoreStorage("us"))
                 // Convert bytes to GB since rate is based on GB.
                 val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / (1024 * 1024 * 1024) * rate
-                RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f"))
+                RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", usage.lastUpdated))
             }
           case None => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to fetch bucket to calculate storage cost"))
         }

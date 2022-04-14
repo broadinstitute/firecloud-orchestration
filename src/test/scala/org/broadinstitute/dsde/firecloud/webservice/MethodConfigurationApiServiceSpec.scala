@@ -38,7 +38,8 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
   override def beforeAll(): Unit = {
