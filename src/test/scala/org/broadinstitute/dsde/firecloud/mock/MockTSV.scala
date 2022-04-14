@@ -305,6 +305,10 @@ object MockTSVLoadFiles {
       Seq("woop", "de", "doo"),
       Seq("hip", "hip", "hooray")))
 
+  val validWithBlanks = TSVLoadFile("foo",
+    Seq("foo", "bar", "baz"),
+    Seq(Seq("woop", "", "doo")))
+
   val validWorkspaceAttributes = TSVLoadFile("workspace", Seq("a1", "a2", "a3"), Seq(Seq("v1", "2", "[1,2,3]")))
   val validOneWorkspaceAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("v1")))
   val validEmptyStrWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("")))

@@ -37,7 +37,8 @@ object MockWorkspaceServer {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
   val mockSpacedWorkspace = WorkspaceDetails(
@@ -57,7 +58,8 @@ object MockWorkspaceServer {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
   val mockValidId = randomPositiveInt()

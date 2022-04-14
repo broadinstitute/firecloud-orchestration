@@ -129,7 +129,8 @@ object DataUseRestrictionTestFixtures {
       googleProject = GoogleProjectId("googleProject"),
       googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
       billingAccount = Some(RawlsBillingAccountName("billingAccount")),
-      completedCloneWorkspaceFileTransfer = Option(DateTime.now())
+      completedCloneWorkspaceFileTransfer = Option(DateTime.now()),
+      workspaceType = None
     )
   }
 

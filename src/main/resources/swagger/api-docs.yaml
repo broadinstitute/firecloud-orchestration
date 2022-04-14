@@ -1,9 +1,9 @@
 openapi: 3.0.1
 info:
-  title: FireCloud
+  title: Terra
   description: |
-    FireCloud API
-  termsOfService: https://github.com/broadinstitute/firecloud-orchestration
+    Terra API
+  termsOfService: https://app.terra.bio/#terms-of-service
   license:
     name: BSD
     url: http://opensource.org/licenses/BSD-3-Clause
@@ -32,6 +32,7 @@ tags:
   - name: Status
   - name: Storage
   - name: Submissions
+  - name: Terms of Service
   - name: Version
   - name: Womtool
   - name: Workspaces
@@ -45,7 +46,7 @@ paths:
     post:
       tags:
         - Billing
-      summary: create billing project in FireCloud and google
+      summary: create billing project in Terra and google
       operationId: createBillingProjectFull
       requestBody:
         description: create project request
@@ -56,10 +57,10 @@ paths:
         required: true
       responses:
         204:
-          description: Successfully Created Billing Project in FireCloud and Google
+          description: Successfully Created Billing Project in Terra and Google
           content: {}
         400:
-          description: FireCloud billing user must be an admin of the billing account
+          description: Terra billing user must be an admin of the billing account
           content:
             application/json:
               schema:
@@ -71,7 +72,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
         409:
-          description: project already exists in FireCloud or google
+          description: project already exists in Terra or google
           content: {}
         500:
           description: FireCloud Internal Error
@@ -379,9 +380,9 @@ paths:
         required: true
       responses:
         201:
-          description: Successfully Created Billing Project in FireCloud
+          description: Successfully Created Billing Project in Terra
         400:
-          description: both you and firecloud billing user must be a user of the billing account
+          description: both you and Terra billing user must be a user of the billing account
           content:
             'application/json':
               schema:
@@ -3528,7 +3529,7 @@ paths:
     get:
       tags:
         - Version
-      summary: Returns the currently deployed version of FireCloud's execution engine
+      summary: Returns the currently deployed version of Terra's execution engine
       operationId: executionEngineVersion
       responses:
         200:
@@ -3885,7 +3886,10 @@ paths:
       responses:
         200:
           description: Successful Request
-          content: {}
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/BucketUsageResponse'
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/catalog:
@@ -4777,6 +4781,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: deleteEmptyValues
+          in: query
+          description: Delete empty values? Values left blank in the TSV will be deleted if set to true (default is false)
+          required: false
+          schema:
+            type: boolean
+            default: false
       requestBody:
         content:
           multipart/form-data:
@@ -5104,6 +5115,13 @@ paths:
         - name: async
           in: query
           description: Import asynchronously?
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: deleteEmptyValues
+          in: query
+          description: Delete empty values? Values left blank in the TSV will be deleted if set to true (default is false)
           required: false
           schema:
             type: boolean
@@ -5809,8 +5827,11 @@ paths:
             type: string
       responses:
         200:
-          description: Storage cost estimate
-          content: {}
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/BucketStorageCost'
         404:
           description: Workspace not found
           content: {}
@@ -6030,7 +6051,7 @@ paths:
       x-passthrough-target: rawls
     patch:
       tags:
-        - submissions
+        - Submissions
       summary: Update user comment for a submission
       description: Update user comment for a submission
       operationId: updateSubmissionUserComment
@@ -6617,8 +6638,8 @@ paths:
       tags:
         - Workspaces
       summary: |
-        Get all tags used in FireCloud (for autocomplete)
-      description: list of all tags used in FireCloud and their associated frequencies
+        Get all workspace tags (for autocomplete)
+      description: Get all tags for workspaces that a user has access to (for autocomplete)
       operationId: getTags
       parameters:
         - name: q
@@ -6628,7 +6649,8 @@ paths:
             type: string
       responses:
         200:
-          description: list of all tags used in FireCloud
+          description: list of all tags used by workspaces that the user
+            has access to and their associated frequencies
           content:
             application/json:
               schema:
@@ -6927,7 +6949,7 @@ paths:
             approved.
           content: {}
         401:
-          description: Invalid authorization, must be a FireCloud user.
+          description: Invalid authorization, must be a Terra user.
           content: {}
         404:
           description: The consent associated with the provided name could not be
@@ -7037,14 +7059,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
         401:
-          description: Unauthorized. User is not allowed in FireCloud or has not signed
+          description: Unauthorized. User is not allowed in Terra or has not signed
             in.
           content: {}
         403:
-          description: Forbidden. User is registered in FireCloud, but not activated.
+          description: Forbidden. User is registered in Terra, but not activated.
           content: {}
         404:
-          description: Not Found. User is authenticated to Google but not a FireCloud
+          description: Not Found. User is authenticated to Google but not a Terra
             member.
           content: {}
         500:
@@ -7182,6 +7204,60 @@ paths:
             text/plain:
               schema:
                 type: string
+  /register/user/v1/termsofservice:
+    post:
+      tags:
+        - Terms of Service
+      summary: Passes through to Sam API and accepts Terra Terms of Service
+      operationId: acceptTermsOfService
+      requestBody:
+        description: Must equal the (double-quoted) url of the Terra Terms of Service
+        content:
+          'application/json':
+            schema:
+              type: string
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawlsMe'
+        404:
+          description: User Not Found.
+          content: { }
+    delete:
+      tags:
+        - Terms of Service
+      summary: Passes through to Sam API and rejects Terra Terms of Service
+      operationId: rejectTermsOfService
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RawlsMe'
+        404:
+          description: User Not Found.
+          content: { }
+  /register/user/v1/termsofservice/status:
+    get:
+      tags:
+        - Terms of Service
+      summary: Check whether user has accepted the current version of the Terms of Service
+      operationId: getTermsOfServiceStatus
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        404:
+          description: User Not Found.
+          content: { }
   /ga4gh/v1/tools/{id}:
     get:
       tags:
@@ -7301,7 +7377,7 @@ paths:
           description: |
             A unique identifier of the tool, scoped to this registry, for example `123456`.
 
-              *In FireCloud, this must be a namespace + ":" + name. For instance, if your namespace
+              *In Terra, this must be a namespace + ":" + name. For instance, if your namespace
               is 'foo' and name is 'bar', this must be 'foo:bar'.*
           required: true
           schema:
@@ -7311,7 +7387,7 @@ paths:
           description: |
             An identifier of the tool version for this particular tool registry, for example `v1`.
 
-              *In FireCloud, this must be an integer representing the FireCloud snapshot id.*
+              *In Terra, this must be an integer representing the method snapshot id.*
           required: true
           schema:
             type: string
@@ -7624,6 +7700,32 @@ components:
         message:
           type: string
           description: informational message about the project
+      description: ""
+    BucketStorageCost:
+      required:
+        - estimate
+      type: object
+      properties:
+        estimate:
+          type: string
+          description: The estimated monthly storage cost of the bucket
+        lastUpdated:
+          type: string
+          format: timestamp
+          description: timestamp (UTC) marking the date that the bucket cost was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
+      description: ""
+    BucketUsageResponse:
+      required:
+        - usageInBytes
+      type: object
+      properties:
+        usageInBytes:
+          type: integer
+          description: The current storage bucket usage in bytes
+        lastUpdated:
+          type: string
+          format: timestamp
+          description: timestamp (UTC) marking the date that the bucket usage was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
       description: ""
     CallMetadata:
       type: object
@@ -8098,6 +8200,12 @@ components:
         allUsersGroup:
           type: boolean
           description: User is a member of the "All Users" group?
+        adminEnabled:
+          type: boolean
+          description: User is enabled in the system?
+        tosAccepted:
+          type: boolean
+          description: User has accepted the latest Terms of Service?
     Entity:
       required:
         - attributes
@@ -10232,7 +10340,7 @@ components:
           example: a tag
         count:
           type: integer
-          description: number of usages of the tag across Firecloud
+          description: number of usages of the tag
           format: int32
           example: 5
     ConfigurationPayload:

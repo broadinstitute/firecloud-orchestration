@@ -144,19 +144,27 @@ trait TSVFileSupport {
 
   /**
     * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
-    * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample */
-  def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])], modelSchema: ModelSchema): EntityUpdateDefinition = {
+    * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample
+    *
+    * deleteEmptyValues is a boolean value representing the users intention when uploading a TSV that contains blank values.
+    * Historically, these values have been ignored by the TSV parser as a no-op. Users have expressed that they'd like to be able
+    * to tell the TSV uploader to honor the blanks and delete those values. To preserve backwards compatibility, we will now allow
+    * the user to optionally set deleteEmptyValues to true. The default is the original behavior.
+    * */
+  def setAttributesOnEntity(entityType: String, memberTypeOpt: Option[String], row: Seq[String], colInfo: Seq[(String,Option[String])], modelSchema: ModelSchema, deleteEmptyValues: Boolean = false): EntityUpdateDefinition = {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
-    val ops = for { (attributeValue,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || !attributeValue.isEmpty } yield {
+    val ops = for { (attributeValue,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || (attributeValue.nonEmpty || deleteEmptyValues)} yield {
       refTypeOpt match {
         case Some(refType) => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeEntityReference(refType,attributeValue))))
-        case None => attributeValue match {
-          case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry(attributeName)))
-          case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
-          case _ => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeString(attributeValue))))
-        }
+        case None =>
+          attributeValue match {
+            case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry(attributeName)))
+            case value if deleteEmptyValues && value.trim.isEmpty => Seq(Map(removeAttrOperation,nameEntry(attributeName)))
+            case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
+            case _ => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeString(attributeValue))))
+          }
       }
     }
 
