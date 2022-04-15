@@ -1,11 +1,11 @@
 import sbt._
 
 object Dependencies {
-  val scalaV = "2.12"
+  val scalaV = "2.13"
 
   val jacksonV = "2.12.1"
   val akkaV = "2.6.15"
-  val akkaHttpV = "10.1.0"
+  val akkaHttpV = "10.2.0"
 
   val workbenchModelV  = "0.15-808590d"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
@@ -15,7 +15,7 @@ object Dependencies {
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google" + scalaV)
 
-  val workbenchServiceTestV = "0.21-8ce5b9b"
+  val workbenchServiceTestV = "1.1-73b77c5"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
   val rootDependencies = Seq(
@@ -39,18 +39,15 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-http"           % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
-    "org.specs2"          %%  "specs2-core"   % "3.8.6"  % "test",
-    "org.scalatest"       %%  "scalatest"     % "3.0.5"   % "test",
+    "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
+    "org.scalatest"       %%  "scalatest"     % "3.2.2"   % Test,
     "org.seleniumhq.selenium" % "selenium-java" % "3.11.0" % "test",
-    "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
 
     "net.logstash.logback" % "logstash-logback-encoder" % "6.6", // needed by workbench-google
 
     workbenchServiceTest,
     workbenchModel,
-    workbenchGoogle,
-
-    // required by workbenchGoogle
-    "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.6" % "provided"
+    workbenchGoogle
   )
 }

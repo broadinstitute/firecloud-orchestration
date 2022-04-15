@@ -7,12 +7,13 @@ import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixt
 import org.broadinstitute.dsde.workbench.service.test.RandomUtil
 import org.broadinstitute.dsde.workbench.service.{Orchestration, Rawls}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import spray.json._
 
 
-class PublishedWorkspaceSpec extends FreeSpec with WorkspaceFixtures with BillingFixtures with Matchers with Eventually with RandomUtil {
+class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with BillingFixtures with Matchers with Eventually with RandomUtil {
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
 

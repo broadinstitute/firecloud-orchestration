@@ -15,15 +15,16 @@ import org.parboiled.common.FileUtils
 import org.scalatest.OptionValues._
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minutes, Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
 import java.util.concurrent.TimeUnit
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-class AsyncImportSpec extends FreeSpec with Matchers with Eventually with ScalaFutures
+class AsyncImportSpec extends AnyFreeSpec with Matchers with Eventually with ScalaFutures
   with BillingFixtures with WorkspaceFixtures with Orchestration {
 
   val owner: Credentials = UserPool.chooseProjectOwner
