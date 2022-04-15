@@ -66,7 +66,7 @@ object MockWorkspaceServer {
   val mockInvalidId = randomPositiveInt()
   val alternativeMockValidId = randomPositiveInt()
 
-  val mockValidSubmission = SubmissionRequest(
+  val mockValidSubmission = OrchSubmissionRequest(
     methodConfigurationNamespace = Option(randomAlpha()),
     methodConfigurationName = Option(randomAlpha()),
     entityType = Option(randomAlpha()),
@@ -80,7 +80,7 @@ object MockWorkspaceServer {
     workflowFailureMode = Option(randomElement(List("ContinueWhilePossible", "NoNewCalls")))
   )
 
-  val mockInvalidSubmission = SubmissionRequest(
+  val mockInvalidSubmission = OrchSubmissionRequest(
     methodConfigurationNamespace = Option.empty,
     methodConfigurationName = Option.empty,
     entityType = Option.empty,
