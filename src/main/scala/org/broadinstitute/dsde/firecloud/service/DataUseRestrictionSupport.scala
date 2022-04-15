@@ -107,7 +107,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
   }
 
   def generateUseRestrictionDSStructuredMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
-    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseRequired.map(DiseaseOntologyNodeId(_).numericId).toIndexedSeq.map(AttributeNumber(_))))
+    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseRequired.toIndexedSeq.map(DiseaseOntologyNodeId(_).numericId).map(AttributeNumber(_))))
   }
 
   def generateUseRestrictionDSDisplayMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
