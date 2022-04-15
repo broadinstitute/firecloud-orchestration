@@ -458,7 +458,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
@@ -481,7 +481,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
@@ -505,7 +505,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
