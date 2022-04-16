@@ -40,10 +40,6 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         status
       }
 
-      val tsvReturnStringOld = List(
-        List("workspace:f", "d", "b", "a", "e", "c").mkString("\t"),
-        List("[\"v6\",999,true]", "escape quo\\\"te", 1.23, "true", "v1", "").mkString("\t")).mkString("\n")
-
       val tsvReturnString = List(
         List("workspace:e", "d", "b", "c", "a", "f").mkString("\t"),
         List("v1", "escape quo\\\"te", 1.23, "", "true", "[\"v6\",999,true]").mkString("\t")).mkString("\n")
