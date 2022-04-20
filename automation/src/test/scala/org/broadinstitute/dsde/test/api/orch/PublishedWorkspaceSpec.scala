@@ -10,13 +10,14 @@ import org.broadinstitute.dsde.workbench.fixture.WorkspaceFixtures
 import org.broadinstitute.dsde.workbench.service.test.RandomUtil
 import org.broadinstitute.dsde.workbench.service.{Orchestration, Rawls}
 import org.scalatest.concurrent.Eventually
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 
 
 class PublishedWorkspaceSpec
-  extends FreeSpec
+  extends AnyFreeSpec
     with WorkspaceFixtures
     with Matchers
     with Eventually

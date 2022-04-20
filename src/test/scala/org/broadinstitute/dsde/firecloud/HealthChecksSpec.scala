@@ -133,7 +133,7 @@ class StartupChecksMockSamDAO(unregisteredTokens:Seq[String] = Seq.empty[String]
                               cantRegister:Seq[String] = Seq.empty[String]) extends MockSamDAO {
 
   val system = ActorSystem("StartupChecksSpec")
-  val registerUserStateActor: ActorRef = system.actorOf(Props[RegisterTokenActor], name = "RegisterTokenActor")
+  val registerUserStateActor: ActorRef = system.actorOf(Props[RegisterTokenActor](), name = "RegisterTokenActor")
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
     if (notFounds.contains(userInfo.accessToken.token)) {
@@ -175,7 +175,7 @@ class RegisterTokenActor extends Actor {
 
   override def receive: Receive = {
     case RegisterUserToken(entity) => entitySet += entity
-    case ListUserTokens => sender ! entitySet.toSeq
+    case ListUserTokens => sender() ! entitySet.toSeq
   }
 
 }

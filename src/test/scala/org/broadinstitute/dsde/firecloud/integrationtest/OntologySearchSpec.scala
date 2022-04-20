@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 
 class OntologySearchSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging with SearchResultValidation {
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -19,7 +19,7 @@ class OntologySearchSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAl
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 

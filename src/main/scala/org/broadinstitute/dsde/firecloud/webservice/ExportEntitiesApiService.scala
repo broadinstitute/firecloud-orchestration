@@ -19,7 +19,7 @@ trait ExportEntitiesApiService extends Directives with RequestBuilding with Stan
 
     // Note that this endpoint works in the same way as CookieAuthedApiService tsv download.
     path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
-      parameters('attributeNames.?, 'model.?) { (attributeNamesString, modelString) =>
+      parameters(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
         requireUserInfo() { userInfo =>
           get {
             val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)

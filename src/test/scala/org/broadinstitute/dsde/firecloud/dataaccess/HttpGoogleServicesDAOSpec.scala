@@ -194,7 +194,7 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
     implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
     import cats.effect.unsafe.implicits.global
 
-    val semaphore = Semaphore[IO](1).unsafeRunSync
+    val semaphore = Semaphore[IO](1).unsafeRunSync()
     Resource.pure[IO, GoogleStorageService[IO]](GoogleStorageInterpreter[IO](backingStore, Some(semaphore)))
   }
 

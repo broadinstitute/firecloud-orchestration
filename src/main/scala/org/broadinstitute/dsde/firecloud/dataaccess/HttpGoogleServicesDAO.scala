@@ -40,12 +40,13 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import spray.json.{DefaultJsonProtocol, _}
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import cats.effect.Temporal
 import cats.effect.std.Semaphore
 import cats.effect.unsafe.IORuntime
+import com.google.api.client.json.gson.GsonFactory
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -114,7 +115,7 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   private final val appName = "firecloud:orchestration"
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
-  val jsonFactory = JacksonFactory.getDefaultInstance
+  val jsonFactory = GsonFactory.getDefaultInstance
 
   // credentials for the rawls service account, used for signing GCS urls
   lazy private val rawlsSACreds = ServiceAccountCredentials

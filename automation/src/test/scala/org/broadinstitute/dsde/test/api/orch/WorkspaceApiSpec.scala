@@ -8,14 +8,15 @@ import org.broadinstitute.dsde.workbench.fixture.WorkspaceFixtures
 import org.broadinstitute.dsde.workbench.service.OrchestrationModel._
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import java.util.UUID
 
 class WorkspaceApiSpec
-  extends FreeSpec
+  extends AnyFreeSpec
     with Matchers
     with Eventually
     with WorkspaceFixtures {
@@ -45,7 +46,7 @@ class WorkspaceApiSpec
 
         withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("writer-storage-cost"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-            implicit val writerAuthToken: AuthToken = writer.makeAuthToken
+            implicit val writerAuthToken: AuthToken = writer.makeAuthToken()
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
             Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)
               .parseJson.convertTo[StorageCostEstimate]
@@ -61,7 +62,7 @@ class WorkspaceApiSpec
 
         withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("reader-storage-cost"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
-            implicit val readerAuthToken: AuthToken = reader.makeAuthToken
+            implicit val readerAuthToken: AuthToken = reader.makeAuthToken()
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
 
             val exception = intercept[RestException] {

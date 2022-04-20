@@ -11,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 import scala.util.Try
 
 class ElasticSearchShareLogDAOSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with LazyLogging {
-  override def beforeAll = {
+  override def beforeAll() = {
     // using the recreate from search dao because we don't have recreate in sharelog dao
     searchDAO.recreateIndex()
     ElasticSearchShareLogDAOSpecFixtures.fixtureShares map { share =>
@@ -19,7 +19,7 @@ class ElasticSearchShareLogDAOSpec extends AnyFreeSpec with Matchers with Before
     }
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     // using the delete from search dao because we don't have recreate in sharelog dao
     searchDAO.deleteIndex()
   }

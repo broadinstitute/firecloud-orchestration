@@ -1,18 +1,19 @@
 package org.broadinstitute.dsde.test.api.orch
 
 import org.broadinstitute.dsde.workbench.auth.AuthToken
-import org.broadinstitute.dsde.workbench.config.{ServiceTestConfig, UserPool}
-import org.broadinstitute.dsde.workbench.fixture._
-import org.broadinstitute.dsde.workbench.fixture.BillingFixtures.withTemporaryBillingProject
-import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
-import org.scalatest.{FreeSpec, Matchers}
-import spray.json._
-import DefaultJsonProtocol._
 import org.broadinstitute.dsde.workbench.auth.AuthTokenScopes.billingScopes
+import org.broadinstitute.dsde.workbench.config.{ServiceTestConfig, UserPool}
+import org.broadinstitute.dsde.workbench.fixture.BillingFixtures.withTemporaryBillingProject
+import org.broadinstitute.dsde.workbench.fixture._
 import org.broadinstitute.dsde.workbench.service.test.RandomUtil
+import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 class MethodApiSpec
-  extends FreeSpec
+  extends AnyFreeSpec
     with Matchers
     with RandomUtil
     with WorkspaceFixtures

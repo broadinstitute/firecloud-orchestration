@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.test.api.orch
 
+
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.test.OrchConfig
 import org.broadinstitute.dsde.workbench.auth.AuthToken
@@ -10,14 +11,16 @@ import org.broadinstitute.dsde.workbench.service.BillingProject.BillingProjectSt
 import org.broadinstitute.dsde.workbench.service.Orchestration.NIH.NihDatasetPermission
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minutes, Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
 
 import java.time.Instant
 import java.util.UUID
 
+
 class OrchestrationApiSpec
-  extends FreeSpec
+  extends AnyFreeSpec
     with Matchers
     with ScalaFutures
     with Eventually {
@@ -53,7 +56,6 @@ class OrchestrationApiSpec
     implicit val userToken: AuthToken = user.makeAuthToken()
 
     Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
-
     try verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
     finally resetNihLinkToInactive
   }
@@ -132,7 +134,7 @@ class OrchestrationApiSpec
   private def resetNihLinkToInactive()(implicit authToken: AuthToken) = {
     Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
-    Orchestration.NIH.syncWhitelistFull
+    Orchestration.NIH.syncWhitelistFull()
 
     verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
   }
@@ -141,7 +143,7 @@ class OrchestrationApiSpec
     // Sam caches group membership for a minute (but not in fiab) so may need to wait
     implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
     eventually {
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf expectedPermissions
+      Orchestration.NIH.getUserNihStatus().datasetPermissions should contain allElementsOf expectedPermissions
     }
   }
 }

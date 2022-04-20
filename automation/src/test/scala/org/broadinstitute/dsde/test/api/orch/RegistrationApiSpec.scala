@@ -11,13 +11,16 @@ import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig,
 import org.broadinstitute.dsde.workbench.service.Sam.sendRequest
 import org.broadinstitute.dsde.workbench.service.util.ExceptionHandling
 import org.broadinstitute.dsde.workbench.service.{Orchestration, Sam, Thurloe}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.tagobjects.Retryable
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+
 
 class RegistrationApiSpec
-  extends FreeSpec
+  extends AnyFreeSpec
     with Matchers
     with ScalaFutures
     with Eventually

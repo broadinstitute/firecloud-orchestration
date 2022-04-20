@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.{AgoraEntityType, AgoraPermission, EntityAccessControlAgora, Method}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient

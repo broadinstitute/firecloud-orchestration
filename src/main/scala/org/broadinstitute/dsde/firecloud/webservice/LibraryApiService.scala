@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, LibrarySe
 import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
 import spray.json.DefaultJsonProtocol._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 
 trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient {
@@ -140,7 +140,7 @@ trait LibraryApiService extends FireCloudDirectives with StandardUserInfoDirecti
                 } ~
                 pathPrefix("populate" / "suggest" / Segment ) { (field) =>
                   get {
-                    parameter('q) { text =>
+                    parameter(Symbol("q")) { text =>
                       complete { libraryServiceConstructor(userInfo).populateSuggest(field, text) }
                     }
                   }

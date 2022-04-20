@@ -79,7 +79,7 @@ trait DataUseRestrictionSupport extends LazyLogging {
 
 
   def generateStructuredUseRestrictionAttribute(request: StructuredDataRequest, ontologyDAO: OntologyDAO): Map[String, JsValue] = {
-    generateStructuredDataResponse(request, ontologyDAO).formatWithPrefix
+    generateStructuredDataResponse(request, ontologyDAO).formatWithPrefix()
   }
 
   def generateStructuredDataResponse(request: StructuredDataRequest, ontologyDAO: OntologyDAO): StructuredDataResponse = {
@@ -107,11 +107,11 @@ trait DataUseRestrictionSupport extends LazyLogging {
   }
 
   def generateUseRestrictionDSStructuredMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
-    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseRequired.map(DiseaseOntologyNodeId(_).numericId).map(AttributeNumber(_))))
+    Map(AttributeName.withDefaultNS(ConsentCodes.DS) -> AttributeValueList(request.diseaseUseRequired.toIndexedSeq.map(DiseaseOntologyNodeId(_).numericId).map(AttributeNumber(_))))
   }
 
   def generateUseRestrictionDSDisplayMap(request: StructuredDataRequest): Map[AttributeName, Attribute] = {
-    Map(AttributeName.withDefaultNS(ConsentCodes.DSURL) -> AttributeValueList(request.diseaseUseRequired.map(AttributeString(_))))
+    Map(AttributeName.withDefaultNS(ConsentCodes.DSURL) -> AttributeValueList(request.diseaseUseRequired.toIndexedSeq.map(AttributeString(_))))
   }
 
 

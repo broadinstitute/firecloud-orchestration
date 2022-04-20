@@ -19,7 +19,7 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResourc
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.joda.time.DateTime
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Try
@@ -458,7 +458,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
@@ -481,7 +481,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
@@ -505,7 +505,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
