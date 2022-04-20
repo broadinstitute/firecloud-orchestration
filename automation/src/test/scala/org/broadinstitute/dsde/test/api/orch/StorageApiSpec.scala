@@ -10,7 +10,8 @@ import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
 import org.broadinstitute.dsde.workbench.service.Orchestration.storage.ObjectMetadata
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
@@ -27,7 +28,7 @@ import scala.language.implicitConversions
   these tests are likely to fail.
  */
 
-class StorageApiSpec extends FreeSpec with StorageApiSpecSupport with Matchers with LazyLogging {
+class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matchers with LazyLogging {
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher

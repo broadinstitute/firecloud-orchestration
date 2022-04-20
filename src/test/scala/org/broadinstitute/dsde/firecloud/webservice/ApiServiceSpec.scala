@@ -47,8 +47,8 @@ trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest w
   }
 
   // lifted from rawls. prefer this to using theSameElementsAs directly, because its functionality depends on whitespace
-  def assertSameElements[T](expected: TraversableOnce[T], actual: TraversableOnce[T]): Unit = {
-    expected.toTraversable should contain theSameElementsAs actual.toTraversable
+  def assertSameElements[T](expected: IterableOnce[T], actual: IterableOnce[T]): Unit = {
+    expected.iterator.to(Iterable) should contain theSameElementsAs actual.iterator.to(Iterable)
   }
 
 }

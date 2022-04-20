@@ -38,7 +38,7 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             irbRequired = true,
             prefix = Some("blah"))
 
-          val expected = Map("blahconsentCodes" -> Array("NPU","RS-G","NCU","HMB","RS-FM","NCTRL","RS-PD","IRB","NAGR","GRU","NMDS","DS:Ebola hemorrhagic fever","DS:hematologic cancer").toJson,
+          val expected = Map("blahconsentCodes" -> Array("NAGR","NMDS","NCTRL","RS-G","GRU","RS-PD","NCU","RS-FM","NPU","HMB","IRB","DS:Ebola hemorrhagic fever","DS:hematologic cancer").toJson,
             "blahdulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "blahstructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,
@@ -110,7 +110,7 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             irbRequired = true,
             prefix = Some("library"))
 
-          val expected = Map("libraryconsentCodes" -> Array("NPU","RS-G","RS-M","HMB","NCTRL","IRB","DS:leukemia").toJson,
+          val expected = Map("libraryconsentCodes" -> Array("NCTRL","RS-G","RS-M","NPU","HMB","IRB","DS:leukemia").toJson,
             "librarydulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "librarystructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,

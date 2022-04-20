@@ -4,12 +4,13 @@ import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.UserPool
 import org.broadinstitute.dsde.workbench.fixture._
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
-import org.scalatest.{FreeSpec, Matchers}
 import spray.json._
 import DefaultJsonProtocol._
 import org.broadinstitute.dsde.workbench.service.test.RandomUtil
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class MethodApiSpec extends FreeSpec with Matchers with RandomUtil
+class MethodApiSpec extends AnyFreeSpec with Matchers with RandomUtil
   with BillingFixtures with WorkspaceFixtures with MethodFixtures {
 
   "For a method config that references a redacted method" - {

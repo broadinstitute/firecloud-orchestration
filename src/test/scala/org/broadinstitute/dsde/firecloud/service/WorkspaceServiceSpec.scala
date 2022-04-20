@@ -23,11 +23,11 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   lazy val ws: WorkspaceService = workspaceServiceConstructor(AccessToken(OAuth2BearerToken("")))
 
   override def beforeEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   override def afterEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   "export workspace attributes as TSV " - {
@@ -41,8 +41,8 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       }
 
       val tsvReturnString = List(
-        List("workspace:f", "d", "b", "a", "e", "c").mkString("\t"),
-        List("[\"v6\",999,true]", "escape quo\\\"te", 1.23, "true", "v1", "").mkString("\t")).mkString("\n")
+        List("workspace:e", "d", "b", "c", "a", "f").mkString("\t"),
+        List("v1", "escape quo\\\"te", 1.23, "", "true", "[\"v6\",999,true]").mkString("\t")).mkString("\n")
 
       assertResult(tsvReturnString) {
         tsvString

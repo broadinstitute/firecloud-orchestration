@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData
 import org.broadinstitute.dsde.firecloud.mock.MockAgoraACLData._
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.FireCloudPermission
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.FireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impFireCloudPermission
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseServiceSpec}

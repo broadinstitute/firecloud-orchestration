@@ -100,7 +100,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
     Future.successful(GooglePriceList(GooglePrices(Map("us" -> 0.01, "europe-west1" -> 0.02), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
 
-  override def deleteGoogleGroup(groupEmail: String): Unit = Unit
+  override def deleteGoogleGroup(groupEmail: String): Unit = ()
   override def createGoogleGroup(groupName: String): Option[String] = Option("new-google-group@support.something.firecloud.org")
   override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("user-email@something.com")
   override def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
@@ -113,7 +113,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 
   override def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit] = {
-    import collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     pubsubMessages.addAll(messages.asJava)
     Future.successful(())
   }

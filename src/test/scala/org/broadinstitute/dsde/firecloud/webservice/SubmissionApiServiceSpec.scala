@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.mock.MockWorkspaceServer
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.SubmissionRequest
+import org.broadinstitute.dsde.firecloud.model.OrchSubmissionRequest
 import org.broadinstitute.dsde.firecloud.service.BaseServiceSpec
 
 import scala.concurrent.ExecutionContext
@@ -105,7 +105,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
         (Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(OK)
-            val submission = responseAs[SubmissionRequest]
+            val submission = responseAs[OrchSubmissionRequest]
             submission shouldNot be (None)
         }
       }
@@ -137,7 +137,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
         (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockValidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(OK)
-            val submission = responseAs[SubmissionRequest]
+            val submission = responseAs[OrchSubmissionRequest]
             submission shouldNot be (None)
         }
       }

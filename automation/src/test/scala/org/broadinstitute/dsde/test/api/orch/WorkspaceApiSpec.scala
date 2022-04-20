@@ -6,13 +6,14 @@ import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
 import org.broadinstitute.dsde.workbench.service.OrchestrationModel._
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
 import spray.json._
 import DefaultJsonProtocol._
 import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.concurrent.Eventually
+import org.scalatest.matchers.should.Matchers
 
-class WorkspaceApiSpec extends FreeSpec with Matchers with Eventually
+class WorkspaceApiSpec extends AnyFreeSpec with Matchers with Eventually
   with BillingFixtures with WorkspaceFixtures {
 
   val owner: Credentials = UserPool.chooseProjectOwner
@@ -39,7 +40,7 @@ class WorkspaceApiSpec extends FreeSpec with Matchers with Eventually
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("writer-storage-cost"), aclEntries = List(AclEntry(writer.email, WorkspaceAccessLevel.Writer))) { workspaceName =>
-            implicit val writerAuthToken: AuthToken = writer.makeAuthToken
+            implicit val writerAuthToken: AuthToken = writer.makeAuthToken()
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
             Orchestration.workspaces.getStorageCostEstimate(projectName, workspaceName)
               .parseJson.convertTo[StorageCostEstimate]
@@ -55,7 +56,7 @@ class WorkspaceApiSpec extends FreeSpec with Matchers with Eventually
 
         withCleanBillingProject(owner) { projectName =>
           withWorkspace(projectName, prependUUID("reader-storage-cost"), aclEntries = List(AclEntry(reader.email, WorkspaceAccessLevel.Reader))) { workspaceName =>
-            implicit val readerAuthToken: AuthToken = reader.makeAuthToken
+            implicit val readerAuthToken: AuthToken = reader.makeAuthToken()
             Orchestration.workspaces.waitForBucketReadAccess(projectName, workspaceName)
 
             val exception = intercept[RestException] {

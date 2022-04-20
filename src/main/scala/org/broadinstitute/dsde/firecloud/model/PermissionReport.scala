@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.EntityAccessControl
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.EntityAccessControl
 import org.broadinstitute.dsde.rawls.model.AccessEntry
 
 /**
@@ -13,5 +13,5 @@ case class PermissionReport (
 
 case class PermissionReportRequest (
   users: Option[Seq[String]],
-  configs: Option[Seq[MethodConfigurationName]]
+  configs: Option[Seq[OrchMethodConfigurationName]]
 )

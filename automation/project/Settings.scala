@@ -21,9 +21,8 @@ object Settings {
     "-unchecked",
     "-deprecation",
     "-feature",
-    "-encoding", "utf8",
     "-target:jvm-1.8",
-    "-Xmax-classfile-name", "100"
+    "-encoding", "utf8", "100"
   )
 
   // test parameters explanation:
@@ -40,7 +39,7 @@ object Settings {
   val commonSettings =
     commonBuildSettings ++ testSettings ++ List(
     organization  := "org.broadinstitute.dsde.firecloud",
-    scalaVersion  := "2.12.12",
+    scalaVersion  := "2.13.8",
     resolvers ++= commonResolvers,
     scalacOptions ++= commonCompilerSettings
   )

@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.test.api.orch
 
 import java.time.Instant
 import java.util.UUID
-
 import akka.http.scaladsl.model.StatusCodes
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.services.bigquery.BigqueryScopes
@@ -15,12 +14,13 @@ import org.broadinstitute.dsde.workbench.fixture.BillingFixtures
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Seconds, Span}
-import org.scalatest.{FreeSpec, Matchers}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.service.BillingProject.BillingProjectStatus
 import org.broadinstitute.dsde.workbench.service.Orchestration.NIH.NihDatasetPermission
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with Eventually
+class OrchestrationApiSpec extends AnyFreeSpec with Matchers with ScalaFutures with Eventually
   with BillingFixtures {
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
 
@@ -34,7 +34,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         val user = UserPool.chooseAuthDomainUser
         implicit val userToken: AuthToken = user.makeAuthToken()
 
-        register cleanUp resetNihLinkToInactive
+        register cleanUp resetNihLinkToInactive()
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetJsonWebTokenKey)
 
@@ -47,7 +47,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         val user = UserPool.chooseAuthDomainUser
         implicit val userToken: AuthToken = user.makeAuthToken()
 
-        register cleanUp resetNihLinkToInactive
+        register cleanUp resetNihLinkToInactive()
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.tcgaJsonWebTokenKey)
 
@@ -60,7 +60,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         val user = UserPool.chooseAuthDomainUser
         implicit val userToken: AuthToken = user.makeAuthToken()
 
-        register cleanUp resetNihLinkToInactive
+        register cleanUp resetNihLinkToInactive()
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
@@ -73,7 +73,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
         val user = UserPool.chooseAuthDomainUser
         implicit val userToken: AuthToken = user.makeAuthToken()
 
-        register cleanUp resetNihLinkToInactive
+        register cleanUp resetNihLinkToInactive()
 
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetAndTcgaJsonWebTokenKey)
 
@@ -148,7 +148,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
   private def resetNihLinkToInactive()(implicit authToken: AuthToken) = {
     Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
-    Orchestration.NIH.syncWhitelistFull
+    Orchestration.NIH.syncWhitelistFull()
 
     verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
   }
@@ -157,7 +157,7 @@ class OrchestrationApiSpec extends FreeSpec with Matchers with ScalaFutures with
     // Sam caches group membership for a minute (but not in fiab) so may need to wait
     implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
     eventually {
-      Orchestration.NIH.getUserNihStatus.datasetPermissions should contain allElementsOf expectedPermissions
+      Orchestration.NIH.getUserNihStatus().datasetPermissions should contain allElementsOf expectedPermissions
     }
   }
 }

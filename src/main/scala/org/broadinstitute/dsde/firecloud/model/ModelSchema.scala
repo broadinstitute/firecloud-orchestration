@@ -23,7 +23,7 @@ trait ModelSchema {
   def getPlural (entityType: String): Try[String]
   def getRequiredAttributes(entityType: String): Try[Map[String, String]]
   def getTypeSchema(entityType: String): Try[EntityMetadata]
-  def supportsBackwardsCompatibleIds: Boolean
+  def supportsBackwardsCompatibleIds(): Boolean
 
   def isAttributeArray(value: String): Boolean = {
     Try(value.parseJson.convertTo[JsArray]).isSuccess
