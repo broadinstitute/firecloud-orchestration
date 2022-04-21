@@ -70,7 +70,7 @@ object Boot extends App with LazyLogging {
         FireCloudConfig.Auth.authorityEndpoint,
         ClientId(FireCloudConfig.Auth.oidcClientId),
         oidcClientSecret = FireCloudConfig.Auth.oidcClientSecret.map(ClientSecret),
-        extraGoogleClientId = FireCloudConfig.Auth.extraGoogleClientId.map(ClientId)
+        extraGoogleClientId = FireCloudConfig.Auth.legacyGoogleClientId.map(ClientId)
       ).unsafeToFuture()(IORuntime.global)
 
       service = new FireCloudApiServiceImpl(

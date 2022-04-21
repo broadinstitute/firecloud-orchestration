@@ -214,4 +214,24 @@ trait FireCloudApiService extends CookieAuthedApiService
 
 }
 
-class FireCloudApiServiceImpl(val agoraPermissionService: (UserInfo) => AgoraPermissionService, val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor, val entityServiceConstructor: (ModelSchema) => EntityService, val libraryServiceConstructor: (UserInfo) => LibraryService, val ontologyServiceConstructor: () => OntologyService, val namespaceServiceConstructor: (UserInfo) => NamespaceService, val nihServiceConstructor: () => NihService, val registerServiceConstructor: () => RegisterService, val storageServiceConstructor: (UserInfo) => StorageService, val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService, val statusServiceConstructor: () => StatusService, val permissionReportServiceConstructor: (UserInfo) => PermissionReportService, val userServiceConstructor: (UserInfo) => UserService, val shareLogServiceConstructor: () => ShareLogService, val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService, val oidcConfig: OpenIDConnectConfiguration)(implicit val actorRefFactory: ActorRefFactory, implicit val executionContext: ExecutionContext, val materializer: Materializer, val system: ActorSystem) extends FireCloudApiService with StandardUserInfoDirectives
+class FireCloudApiServiceImpl(val agoraPermissionService: (UserInfo) => AgoraPermissionService,
+                              val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor,
+                              val entityServiceConstructor: (ModelSchema) => EntityService,
+                              val libraryServiceConstructor: (UserInfo) => LibraryService,
+                              val ontologyServiceConstructor: () => OntologyService,
+                              val namespaceServiceConstructor: (UserInfo) => NamespaceService,
+                              val nihServiceConstructor: () => NihService,
+                              val registerServiceConstructor: () => RegisterService,
+                              val storageServiceConstructor: (UserInfo) => StorageService,
+                              val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService,
+                              val statusServiceConstructor: () => StatusService,
+                              val permissionReportServiceConstructor: (UserInfo) => PermissionReportService,
+                              val userServiceConstructor: (UserInfo) => UserService,
+                              val shareLogServiceConstructor: () => ShareLogService,
+                              val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService,
+                              val oidcConfig: OpenIDConnectConfiguration)
+                             (implicit val actorRefFactory: ActorRefFactory,
+                              val executionContext: ExecutionContext,
+                              val materializer: Materializer,
+                              val system: ActorSystem
+                             ) extends FireCloudApiService with StandardUserInfoDirectives
