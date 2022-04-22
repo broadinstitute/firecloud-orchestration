@@ -41,6 +41,10 @@ security:
       - openid
       - email
       - profile
+  - oidc:
+      - openid
+      - email
+      - profile
 paths:
   /api/billing:
     post:
@@ -11017,3 +11021,13 @@ components:
             email: email authorization
             profile: profile authorization
             https://www.googleapis.com/auth/cloud-billing: GCS billing
+    oidc:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: open id authorization
+            email: email authorization
+            profile: profile authorization

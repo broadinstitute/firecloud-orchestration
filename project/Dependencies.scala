@@ -42,6 +42,7 @@ object Dependencies {
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.23-11a45ad",
+    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % "0.1-2c48b00",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
@@ -74,8 +75,6 @@ object Dependencies {
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "org.webjars.npm"                % "swagger-ui-dist"     % "4.6.1",
-    "org.webjars"                    % "webjars-locator"     % "0.40",
     "com.github.jwt-scala"          %% "jwt-core"            % "7.1.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.

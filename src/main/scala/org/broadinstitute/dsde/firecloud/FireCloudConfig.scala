@@ -1,14 +1,13 @@
 package org.broadinstitute.dsde.firecloud
 
-import scala.jdk.CollectionConverters._
-import com.typesafe.config.{ConfigFactory, ConfigObject}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
-import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Authority, Host, Query}
+import com.typesafe.config.{Config, ConfigFactory, ConfigObject}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
+import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 object FireCloudConfig {
@@ -16,16 +15,17 @@ object FireCloudConfig {
 
   object Auth {
     private val auth = config.getConfig("auth")
-    val googleClientId = auth.getString("googleClientId")
-    val googleSecretJson = auth.getString("googleSecretsJson")
-
+    // OIDC configuration using PKCE flow
+    val authorityEndpoint = auth.getString("authorityEndpoint")
+    val oidcClientId = auth.getString("oidcClientId")
+    val oidcClientSecret = auth.optionalString("oidcClientSecret")
+    // legacyGoogleClientId is displayed as a separate option in Swagger UI using
+    // implicit flow. Remove once we fully migrate to B2C.
+    val legacyGoogleClientId = auth.optionalString("legacyGoogleClientId")
     // credentials for orchestration's "firecloud" service account, used for admin duties
     val firecloudAdminSAJsonFile = auth.getString("firecloudAdminSA")
-
     // credentials for the rawls service account, used for signing GCS urls
     val rawlsSAJsonFile = auth.getString("rawlsSA")
-
-    val swaggerRealm = auth.getString("swaggerRealm")
   }
 
   object Agora {
@@ -205,6 +205,20 @@ object FireCloudConfig {
   object ImportService {
     lazy val server: String = config.getString("importService.server")
     lazy val bucket: String = config.getString("importService.bucketName")
+  }
+
+  implicit class RichConfig(val config: Config) {
+    private def getOptional[T](path: String, get: String => T): Option[T] = {
+      if (config.hasPath(path)) {
+        Some(get(path))
+      } else {
+        None
+      }
+    }
+    def optionalString(path: String): Option[String] = getOptional(path, config.getString)
+    def optionalInt(path: String): Option[Int] = getOptional(path, config.getInt)
+    def optionalDouble(path: String): Option[Double] = getOptional(path, config.getDouble)
+    def optionalBoolean(path: String): Option[Boolean] = getOptional(path, config.getBoolean)
   }
 
 }
