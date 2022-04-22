@@ -1,9 +1,12 @@
 package org.broadinstitute.dsde.test.api.orch
 
+import cats.implicits.catsSyntaxOptionId
 import org.broadinstitute.dsde.test.LibraryData
 import org.broadinstitute.dsde.workbench.auth.AuthToken
-import org.broadinstitute.dsde.workbench.config.UserPool
-import org.broadinstitute.dsde.workbench.fixture.{BillingFixtures, WorkspaceFixtures}
+import org.broadinstitute.dsde.workbench.auth.AuthTokenScopes.billingScopes
+import org.broadinstitute.dsde.workbench.config.{ServiceTestConfig, UserPool}
+import org.broadinstitute.dsde.workbench.fixture.BillingFixtures.withTemporaryBillingProject
+import org.broadinstitute.dsde.workbench.fixture.WorkspaceFixtures
 import org.broadinstitute.dsde.workbench.service.test.RandomUtil
 import org.broadinstitute.dsde.workbench.service.{Orchestration, Rawls}
 import org.scalatest.concurrent.Eventually
@@ -13,9 +16,15 @@ import org.scalatest.time.{Seconds, Span}
 import spray.json._
 
 
-class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with BillingFixtures with Matchers with Eventually with RandomUtil {
+class PublishedWorkspaceSpec
+  extends AnyFreeSpec
+    with WorkspaceFixtures
+    with Matchers
+    with Eventually
+    with RandomUtil {
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
+  val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   "a user with publish permissions" - {
     "can publish a workspace" - {
@@ -25,7 +34,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
         val curatorUser = UserPool.chooseCurator
         implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-        withCleanBillingProject(curatorUser) { billingProject =>
+        withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
@@ -49,7 +58,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
               }
             }
           }
-        }
+        }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
       }
 
       "can clone a published workspace" - {
@@ -58,18 +67,15 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-          withCleanBillingProject(curatorUser) { billingProject =>
+          withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
-              withCleanUp {
+              val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
+              Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
+              Orchestration.library.publishWorkspace(billingProject, workspaceName)
 
-                val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
-                Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
-                Orchestration.library.publishWorkspace(billingProject, workspaceName)
-
-                val clonedWorkspaceName = uuidWithPrefix("cloneWorkspace")
-
-                register cleanUp Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
-                Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
+              val clonedWorkspaceName = uuidWithPrefix("cloneWorkspace")
+              Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
+              try {
                 // check cloned workspace does not have published status in workspace detail: "library:published": false
                 val response = Rawls.workspaces.getWorkspaceDetails(billingProject, clonedWorkspaceName)
                 response should include(""""library:published":false""")
@@ -81,8 +87,9 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
                   }
                 }
               }
+              finally Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
             }
-          }
+          }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
         }
 
         "cloned workspace should default to visible to 'all users'" in {
@@ -90,19 +97,16 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
 
-          withCleanBillingProject(curatorUser) { billingProject =>
+          withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
             withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
-              withCleanUp {
+              val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
+              Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
+              Orchestration.library.setDiscoverableGroups(billingProject, workspaceName, List("all_broad_users"))
+              Orchestration.library.publishWorkspace(billingProject, workspaceName)
 
-                val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
-                Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
-                Orchestration.library.setDiscoverableGroups(billingProject, workspaceName, List("all_broad_users"))
-                Orchestration.library.publishWorkspace(billingProject, workspaceName)
-
-                val clonedWorkspaceName = workspaceName + "_clone"
-                register cleanUp Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
-                Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
-
+              val clonedWorkspaceName = workspaceName + "_clone"
+              Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
+              try {
                 //Verify default group "All users"
                 //In swagger you make sure that getDiscoverableGroup endpoint shows []
                 withClue(s"Get api/library/${billingProject}/${clonedWorkspaceName}/discoverableGroups endpoint shows []") {
@@ -112,8 +116,9 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
                   }
                 }
               }
+              finally Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
             }
-          }
+          }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
         }
 
       }
@@ -123,7 +128,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
         val curatorUser = UserPool.chooseCurator
         implicit val authToken: AuthToken = curatorUser.makeAuthToken()
 
-        withCleanBillingProject(curatorUser) { billingProject =>
+        withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_consentcodes") { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName) ++ LibraryData.consentCodes
@@ -137,7 +142,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
               }
             }
           }
-        }
+        }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
       }
 
       "publish a dataset with tags" in {
@@ -146,7 +151,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
         val curatorUser = UserPool.chooseCurator
         implicit val authToken: AuthToken = curatorUser.makeAuthToken()
 
-        withCleanBillingProject(curatorUser) { billingProject =>
+        withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_tags", attributes = Some(tags)) { workspaceName =>
 
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
@@ -160,7 +165,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Bil
               }
             }
           }
-        }
+        }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
       }
     }
   }
