@@ -39,7 +39,7 @@ class OrchestrationApiSpec
 
       Orchestration.NIH.addUserInNIH(OrchConfig.Users.targetJsonWebTokenKey)
       try verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", true)))
-      finally resetNihLinkToInactive
+      finally resetNihLinkToInactive()
     }
 
     "should link an eRA Commons account with access to the TCGA closed-access dataset" in {
@@ -48,7 +48,7 @@ class OrchestrationApiSpec
 
       Orchestration.NIH.addUserInNIH(OrchConfig.Users.tcgaJsonWebTokenKey)
       try verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", false)))
-      finally resetNihLinkToInactive
+      finally resetNihLinkToInactive()
     }
 
   "should link an eRA Commons account with access to none of the supported closed-access datasets" in {
@@ -57,7 +57,7 @@ class OrchestrationApiSpec
 
     Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
     try verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
-    finally resetNihLinkToInactive
+    finally resetNihLinkToInactive()
   }
 
     "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
@@ -69,7 +69,7 @@ class OrchestrationApiSpec
         verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", true), NihDatasetPermission("TARGET", true)))
         Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
         verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
-      } finally resetNihLinkToInactive
+      } finally resetNihLinkToInactive()
     }
 
     "should get the user's billing projects" in {

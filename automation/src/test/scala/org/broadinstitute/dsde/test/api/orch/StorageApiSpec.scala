@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.test.api.orch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers._
-import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
@@ -30,7 +29,6 @@ import scala.language.implicitConversions
 
 class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matchers with LazyLogging {
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   val student: Credentials = UserPool.chooseStudent
