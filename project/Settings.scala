@@ -19,7 +19,7 @@ object Settings {
   //coreDefaultSettings + defaultConfigs = the now deprecated defaultSettings
   val commonBuildSettings = Defaults.coreDefaultSettings ++ Defaults.defaultConfigs ++ Seq(
     javaOptions += "-Xmx2G",
-    javacOptions ++= Seq("--release", "11")
+    javacOptions ++= Seq("--release", "17")
   )
 
   val commonCompilerSettings = Seq(
@@ -32,8 +32,8 @@ object Settings {
 
   //sbt assembly settings
   val commonAssemblySettings = Seq(
-    assemblyMergeStrategy in assembly := customMergeStrategy((assemblyMergeStrategy in assembly).value),
-    test in assembly := {}
+    assembly / assemblyMergeStrategy := customMergeStrategy((assembly / assemblyMergeStrategy).value),
+    assembly / test := {}
   )
 
   //common settings for all sbt subprojects
