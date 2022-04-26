@@ -297,7 +297,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
                   val actualWorkspaces = t.fields("workspaceId.keyword")
                   assertResult(Set(JsString(wksp))) {actualWorkspaces.asInstanceOf[JsArray].elements.toSet}
                 }
-              case _ => Unit
+              case _ => ()
             }
             // assertResult(expectedNoDiscoverableGroups, "group criteria should be just the must-not-exists") {groupbool}
           case x => throw new Exception(s"unmatched case for  ${x.getClass.getName}: ${x.toString()}")

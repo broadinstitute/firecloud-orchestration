@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
 import org.broadinstitute.dsde.firecloud.model._

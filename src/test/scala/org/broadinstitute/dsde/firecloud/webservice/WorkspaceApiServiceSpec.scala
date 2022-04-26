@@ -50,7 +50,8 @@ object WorkspaceApiServiceSpec {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
 }
@@ -76,7 +77,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
   val jobId = "testOp"
@@ -139,7 +141,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
   val authDomainRawlsWorkspace = WorkspaceDetails(
@@ -159,7 +162,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
   val nonAuthDomainRawlsWorkspace = WorkspaceDetails(
@@ -179,12 +183,13 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
-    Option(DateTime.now())
+    Option(DateTime.now()),
+    None
   )
 
-  val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
-  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), authDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
-  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+  val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
+  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), authDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
+  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
 
   var rawlsServer: ClientAndServer = _
   var bagitServer: ClientAndServer = _
@@ -225,7 +230,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()))
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None)
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -247,7 +252,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()))
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None)
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -306,12 +311,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def beforeEach(): Unit = {
-    this.searchDao.reset
+    this.searchDao.reset()
   }
 
   override def afterEach(): Unit = {
     importServiceServer.reset
-    this.searchDao.reset
+    this.searchDao.reset()
   }
 
   //there are many values in the response that in reality cannot be predicted

@@ -3,14 +3,14 @@ package org.broadinstitute.dsde.test.api.orch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers._
-import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.workbench.auth.AuthToken
 import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
 import org.broadinstitute.dsde.workbench.service.Orchestration.storage.ObjectMetadata
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
@@ -27,9 +27,8 @@ import scala.language.implicitConversions
   these tests are likely to fail.
  */
 
-class StorageApiSpec extends FreeSpec with StorageApiSpecSupport with Matchers with LazyLogging {
+class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matchers with LazyLogging {
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   val student: Credentials = UserPool.chooseStudent

@@ -10,6 +10,7 @@ object Merging {
     case x if x.endsWith("module-info.class") => MergeStrategy.discard
 
     case x if x.contains("javax/activation") => MergeStrategy.first
+    case x if x.contains("javax/annotation") => MergeStrategy.first
     case x => oldStrategy(x)
   }
 }

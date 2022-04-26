@@ -27,7 +27,7 @@ trait StatusApiService extends Directives with RequestBuilding with SprayJsonSup
   val statusRoutes: Route = {
     path("status") {
       get {
-        complete { statusServiceConstructor().collectStatusInfo }
+        complete { statusServiceConstructor().collectStatusInfo() }
       }
     } ~
       path( "version") {

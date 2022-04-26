@@ -8,10 +8,10 @@ object Dependencies {
   val nettyV = "4.1.74.Final"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
-  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.12")
-  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.12")
-  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.12")
-  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.12")
+  val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
+  val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
+  val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
+  val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.13")
 
   val rootDependencies = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
@@ -34,14 +34,15 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
 
     "org.parboiled" % "parboiled-core" % "1.3.2",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-384ab501b")
-      exclude("com.typesafe.scala-logging", "scala-logging_2.12")
-      exclude("com.typesafe.akka", "akka-stream_2.12")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-e0584dbdc")
+      exclude("com.typesafe.scala-logging", "scala-logging_2.13")
+      exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.5-4bc7050"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % "0.23-11a45ad",
+    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % "0.1-2c48b00",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
@@ -74,8 +75,6 @@ object Dependencies {
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "org.webjars.npm"                % "swagger-ui-dist"     % "4.6.1",
-    "org.webjars"                    % "webjars-locator"     % "0.40",
     "com.github.jwt-scala"          %% "jwt-core"            % "7.1.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.

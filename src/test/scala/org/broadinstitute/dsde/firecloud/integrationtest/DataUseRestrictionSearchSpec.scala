@@ -22,7 +22,7 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
 
   implicit val userToken: WithAccessToken = AccessToken("DataUseRestrictionSearchSpec")
 
-  override def beforeAll: Unit = {
+  override def beforeAll(): Unit = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -33,7 +33,7 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     searchDAO.deleteIndex()
   }
 

@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import spray.json.DefaultJsonProtocol._
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class EchoCallback extends ExpectationCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {

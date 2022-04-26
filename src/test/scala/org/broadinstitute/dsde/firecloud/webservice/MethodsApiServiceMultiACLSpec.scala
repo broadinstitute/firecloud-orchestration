@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
-import org.broadinstitute.dsde.firecloud.model.MethodRepository._
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impMethodAclPair
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseServiceSpec, ServiceSpec}

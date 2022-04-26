@@ -19,7 +19,7 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResourc
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.joda.time.DateTime
 
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Try
@@ -88,7 +88,9 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
     googleProject = GoogleProjectId("googleProject"),
     googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
     billingAccount = Some(RawlsBillingAccountName("billingAccount")),
-    completedCloneWorkspaceFileTransfer = Some(DateTime.now()))
+    completedCloneWorkspaceFileTransfer = Some(DateTime.now()),
+    workspaceType = None
+  )
 
 
   val DULAdditionalJsObject =
@@ -289,12 +291,12 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         }
       }
       "should be the different for attribute operations" in {
-        val empty = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq.empty)))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+        val empty = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq.empty)))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
         assert(isDiscoverableDifferent(empty, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"))))))
-        val one = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+        val one = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2"))))))
         assert(isDiscoverableDifferent(one, Map(discoverableWSAttribute->AttributeValueList(Seq.empty))))
-        val two = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty))
+        val two = WorkspaceResponse(Some(WorkspaceAccessLevels.NoAccess), Some(false), Some(true), Some(false), testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group1"),AttributeString("group2")))))), Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
         assert(isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"))))))
         assert(!isDiscoverableDifferent(two, Map(discoverableWSAttribute->AttributeValueList(Seq(AttributeString("group2"),AttributeString("group1"))))))
       }
@@ -456,7 +458,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
@@ -479,7 +481,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
@@ -503,7 +505,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         )))
         val expected = Document(testUUID.toString, Map(
           orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCU"), AttributeString("NCTRL"))),
+          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
           structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
             defaultDataUseFields ++ Map(
               "NCU" -> JsBoolean(true),
@@ -830,7 +832,8 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           Some(GoogleProjectNumber("googleProjectNumber")),
           Some(RawlsBillingAccountName("billingAccount")),
           None,
-          Option(DateTime.now())
+          Option(DateTime.now()),
+          None
         )
 
         attrMaps map { attrMap =>

@@ -14,11 +14,11 @@ import scala.concurrent.Future
   */
 class MockSearchDAO extends SearchDAO {
 
-  override def initIndex = Unit
-  override def recreateIndex = Unit
-  override def indexExists = false
-  override def createIndex = Unit
-  override def deleteIndex = Unit
+  override def initIndex() = ()
+  override def recreateIndex() = ()
+  override def indexExists() = false
+  override def createIndex() = ()
+  override def deleteIndex() = ()
 
   var indexDocumentInvoked = new AtomicBoolean(false)
   var deleteDocumentInvoked = new AtomicBoolean(false)
@@ -51,7 +51,7 @@ class MockSearchDAO extends SearchDAO {
     Future(Seq(field, text))
   }
 
-  def reset = {
+  def reset() = {
     indexDocumentInvoked.set(false)
     deleteDocumentInvoked.set(false)
     findDocumentsInvoked.set(false)

@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 
 class ResearchPurposeSearchSpec extends AnyFreeSpec with SearchResultValidation with Matchers with BeforeAndAfterAll with LazyLogging {
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -20,7 +20,7 @@ class ResearchPurposeSearchSpec extends AnyFreeSpec with SearchResultValidation 
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 

@@ -1,10 +1,11 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
+import org.joda.time.DateTime
 
 case class WorkspaceDeleteResponse(message: Option[String] = None)
 
@@ -54,15 +55,15 @@ case class MethodConfigurationId(
   namespace: Option[String] = None,
   workspaceName: Option[WorkspaceName] = None)
 
-case class MethodConfigurationName(
+case class OrchMethodConfigurationName(
   namespace: String,
   name: String)
 
-object MethodConfigurationName {
+object OrchMethodConfigurationName {
   def apply(mcs:MethodConfigurationShort) =
-    new MethodConfigurationName(mcs.namespace, mcs.name)
+    new OrchMethodConfigurationName(mcs.namespace, mcs.name)
   def apply(mcs: AgoraConfigurationShort) =
-    new MethodConfigurationName(mcs.namespace, mcs.name)
+    new OrchMethodConfigurationName(mcs.namespace, mcs.name)
 }
 
 case class MethodConfigurationCopy(
@@ -89,7 +90,7 @@ case class PublishConfigurationIngest(
   sourceNamespace: Option[String],
   sourceName: Option[String])
 
-case class SubmissionRequest(
+case class OrchSubmissionRequest(
   methodConfigurationNamespace: Option[String],
   methodConfigurationName: Option[String],
   entityType: Option[String],
@@ -108,4 +109,4 @@ case class RawlsGroupMemberList(
   userSubjectIds: Option[Seq[String]] = None,
   subGroupNames: Option[Seq[String]] = None)
 
-case class WorkspaceStorageCostEstimate(estimate: String)
+case class WorkspaceStorageCostEstimate(estimate: String, lastUpdated: Option[DateTime])

@@ -126,7 +126,7 @@ trait TSVFileSupport {
       if (value.equals("__DELETE__"))
         RemoveAttribute(AttributeName.fromDelimitedName(name))
       else {
-        AddUpdateAttribute(AttributeName.fromDelimitedName(name), AttributeString(StringContext.treatEscapes(value)))
+        AddUpdateAttribute(AttributeName.fromDelimitedName(name), AttributeString(StringContext.processEscapes(value)))
       }
     }
   }

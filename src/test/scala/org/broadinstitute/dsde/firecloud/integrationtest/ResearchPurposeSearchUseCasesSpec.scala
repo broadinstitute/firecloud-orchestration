@@ -14,7 +14,7 @@ class ResearchPurposeSearchUseCasesSpec extends AnyFreeSpec with SearchResultVal
   // cases as defined in the doc at
   // https://docs.google.com/a/broadinstitute.org/spreadsheets/d/16XzKpOFCyqRTNy9XHFFPx-Vf4PWFydsWAS7exzx26WM/edit?usp=sharing
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // use re-create here, since instantiating the DAO will create it in the first place
     searchDAO.recreateIndex()
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
@@ -24,7 +24,7 @@ class ResearchPurposeSearchUseCasesSpec extends AnyFreeSpec with SearchResultVal
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll = {
+  override def afterAll() = {
     searchDAO.deleteIndex()
   }
 
