@@ -64,7 +64,6 @@ class RegistrationApiSpec
       )
 
       Orchestration.profile.registerUser(basicUser)
-      Orchestration.termsOfService.accept("app.terra.bio/#terms-of-service")
 
       val userInfo = Sam.user.getUserStatusInfo()(authToken).get
       userInfo.userEmail should include (user.email)
