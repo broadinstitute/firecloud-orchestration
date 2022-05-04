@@ -33,7 +33,7 @@ object Dependencies {
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
 
-    "org.parboiled" % "parboiled-core" % "1.3.2",
+    "org.parboiled" % "parboiled-core" % "1.4.1",
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-e0584dbdc")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
