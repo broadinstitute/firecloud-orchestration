@@ -9,7 +9,6 @@ import org.broadinstitute.dsde.firecloud.utils.{TSVLoadFile, TSVParser}
 import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 import DefaultJsonProtocol._
-import org.apache.commons.lang3.BooleanUtils
 import org.broadinstitute.dsde.rawls.model.WDLJsonSupport.AttributeReferenceFormat
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -143,22 +142,6 @@ trait TSVFileSupport {
   def listNameEntry(attributeName: String) = "attributeListName" -> AttributeString(attributeName)
   def listValEntry(attr: Attribute) = "newMember" -> attr
 
-  /*
-  Creates an AttributeValue whose implementation is more closely tied to the value of the input.
-   */
-  def stringToTypedAttribute(value: String): AttributeValue = {
-    Try (java.lang.Integer.parseInt(value)) match {
-      case Success(intValue) => AttributeNumber(intValue)
-      case Failure(_) => Try (java.lang.Double.parseDouble(value)) match {
-        case Success(doubleValue) => AttributeNumber(doubleValue)
-        case Failure(_) => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
-          case Success(booleanValue) => AttributeBoolean(booleanValue)
-          case Failure(_) => AttributeString(value)
-        }
-      }
-    }
-  }
-
   /**
     * colInfo is a list of (headerName, refType), where refType is the type of the entity if the headerName is an AttributeRef
     * e.g. on TCGA Pairs, there's a header called case_sample_id where the refType would be Sample
@@ -172,15 +155,15 @@ trait TSVFileSupport {
     //Iterate over the attribute names and their values
     //I (hussein) think the refTypeOpt.isDefined is to ensure that if required attributes are left empty, the empty
     //string gets passed to Rawls, which should error as they're required?
-    val ops = for { (attributeValue, (attributeName, refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || (attributeValue.nonEmpty || deleteEmptyValues)} yield {
+    val ops = for { (attributeValue,(attributeName,refTypeOpt)) <- row.tail zip colInfo if refTypeOpt.isDefined || (attributeValue.nonEmpty || deleteEmptyValues)} yield {
       refTypeOpt match {
-        case Some(refType) => Seq(Map(upsertAttrOperation, nameEntry(attributeName), valEntry(AttributeEntityReference(refType, attributeValue))))
+        case Some(refType) => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeEntityReference(refType,attributeValue))))
         case None =>
           attributeValue match {
-            case "__DELETE__" => Seq(Map(removeAttrOperation, nameEntry(attributeName)))
-            case value if deleteEmptyValues && value.trim.isEmpty => Seq(Map(removeAttrOperation, nameEntry(attributeName)))
+            case "__DELETE__" => Seq(Map(removeAttrOperation,nameEntry(attributeName)))
+            case value if deleteEmptyValues && value.trim.isEmpty => Seq(Map(removeAttrOperation,nameEntry(attributeName)))
             case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
-            case _ => Seq(Map(upsertAttrOperation, nameEntry(attributeName), valEntry(stringToTypedAttribute(attributeValue))))
+            case _ => Seq(Map(upsertAttrOperation,nameEntry(attributeName),valEntry(AttributeString(attributeValue))))
           }
       }
     }
