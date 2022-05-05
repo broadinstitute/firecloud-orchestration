@@ -23,9 +23,10 @@ class HealthChecksSpec extends BaseServiceSpec with ScalaFutures {
     .asInstanceOf[ch.qos.logback.classic.Logger]
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
-  private def doChecks(healthChecks: HealthChecks) = {
-    Future.sequence(Seq(healthChecks.maybeRegisterAdminSA)).map(_.exists(_.isDefined))
-  }
+
+//  private def doChecks(healthChecks: HealthChecks) = {
+//    Future.sequence(Seq(healthChecks.maybeRegisterAdminSA)).map(_.exists(_.isDefined))
+//  }
 
 
   "Startup checks" - {
@@ -33,96 +34,96 @@ class HealthChecksSpec extends BaseServiceSpec with ScalaFutures {
       "admin SA" -> app.googleServicesDAO.getAdminUserAccessToken
     )
 
-    "When automatic registration of SAs is disabled" - {
-
-      "should pass if all SAs are registered" in {
-        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO)
-        val healthChecks = new HealthChecks(testApp, registerSAs = false)
-        assert(!doChecks(healthChecks).futureValue)
-      }
-
-      tokens.foreach { case (name, token) =>
-        s"should fail if $name is not ldap-enabled" in {
-          val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
-            unregisteredTokens = Seq(token)))
-          val healthChecks = new HealthChecks(testApp, registerSAs = false)
-          assert(doChecks(healthChecks).futureValue)
-        }
-      }
-      "should fail if all SAs are not ldap-enabled" in {
-        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
-          unregisteredTokens = tokens.values.toSeq))
-        val healthChecks = new HealthChecks(testApp, registerSAs = false)
-        assert(doChecks(healthChecks).futureValue)
-      }
-
-      tokens.foreach { case (name, token) =>
-        s"should fail if $name is not registered at all (404)" in {
-          val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
-            notFounds = Seq(token)))
-          val healthChecks = new HealthChecks(testApp, registerSAs = false)
-          assert(doChecks(healthChecks).futureValue)
-        }
-      }
-      "should fail if all SAs are not registered at all (404)" in {
-        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
-          notFounds = tokens.values.toSeq))
-        val healthChecks = new HealthChecks(testApp, registerSAs = false)
-        assert(doChecks(healthChecks).futureValue)
-      }
-
-      tokens.foreach { case (name, token) =>
-        s"should fail if $name returns unexpected error)" in {
-          val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
-            unexpectedErrors = Seq(token)))
-          val healthChecks = new HealthChecks(testApp, registerSAs = false)
-          assert(doChecks(healthChecks).futureValue)
-        }
-      }
-      "should fail if all SAs return unexpected error" in {
-        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
-          unexpectedErrors = tokens.values.toSeq))
-        val healthChecks = new HealthChecks(testApp, registerSAs = false)
-        assert(doChecks(healthChecks).futureValue)
-      }
-    }
-
-    "When automatic registration of SAs is enabled" - {
-      "should pass when all SAs need to be registered, and succeed" in {
-        val mockDAO = new StartupChecksMockSamDAO(
-            unregisteredTokens = tokens.values.toSeq)
-        val testApp = app.copy(samDAO = mockDAO)
-        val healthChecks = new HealthChecks(testApp, registerSAs = true)
-        assert(!doChecks(healthChecks).futureValue)
-        assertResult(tokens.values.toSet) {mockDAO.listRegisteredUsers().toSet}
-      }
-      "should pass when only one SA needs to be registered, and succeeds" in {
-        val mockDAO = new StartupChecksMockSamDAO(
-          notFounds = Seq(tokens.head._2))
-        val testApp = app.copy(samDAO = mockDAO)
-        val healthChecks = new HealthChecks(testApp, registerSAs = true)
-        assert(!doChecks(healthChecks).futureValue)
-        assertResult(Set(tokens.head._2)) {mockDAO.listRegisteredUsers().toSet}
-      }
-      "should fail if automatic registration fails for the single unregistered SA" in {
-        val mockDAO = new StartupChecksMockSamDAO(
-          notFounds = Seq(tokens.head._2),
-          cantRegister = Seq(tokens.head._2))
-        val testApp = app.copy(samDAO = mockDAO)
-        val healthChecks = new HealthChecks(testApp, registerSAs = true)
-        assert(doChecks(healthChecks).futureValue)
-        assert(mockDAO.listRegisteredUsers().isEmpty)
-      }
-      "should fail if automatic registration fails for any of the unregistered SAs" in {
-        val mockDAO = new StartupChecksMockSamDAO(
-          notFounds = tokens.values.toSeq,
-          cantRegister = Seq(tokens.head._2))
-        val testApp = app.copy(samDAO = mockDAO)
-        val healthChecks = new HealthChecks(testApp, registerSAs = true)
-        assert(doChecks(healthChecks).futureValue)
-        assertResult(tokens.tail.values.toSet) {mockDAO.listRegisteredUsers().toSet}
-      }
-    }
+//    "When automatic registration of SAs is disabled" - {
+//
+//      "should pass if all SAs are registered" in {
+//        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO)
+//        val healthChecks = new HealthChecks(testApp, registerSAs = false)
+//        assert(!doChecks(healthChecks).futureValue)
+//      }
+//
+//      tokens.foreach { case (name, token) =>
+//        s"should fail if $name is not ldap-enabled" in {
+//          val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
+//            unregisteredTokens = Seq(token)))
+//          val healthChecks = new HealthChecks(testApp, registerSAs = false)
+//          assert(doChecks(healthChecks).futureValue)
+//        }
+//      }
+//      "should fail if all SAs are not ldap-enabled" in {
+//        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
+//          unregisteredTokens = tokens.values.toSeq))
+//        val healthChecks = new HealthChecks(testApp, registerSAs = false)
+//        assert(doChecks(healthChecks).futureValue)
+//      }
+//
+//      tokens.foreach { case (name, token) =>
+//        s"should fail if $name is not registered at all (404)" in {
+//          val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
+//            notFounds = Seq(token)))
+//          val healthChecks = new HealthChecks(testApp, registerSAs = false)
+//          assert(doChecks(healthChecks).futureValue)
+//        }
+//      }
+//      "should fail if all SAs are not registered at all (404)" in {
+//        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
+//          notFounds = tokens.values.toSeq))
+//        val healthChecks = new HealthChecks(testApp, registerSAs = false)
+//        assert(doChecks(healthChecks).futureValue)
+//      }
+//
+//      tokens.foreach { case (name, token) =>
+//        s"should fail if $name returns unexpected error)" in {
+//          val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
+//            unexpectedErrors = Seq(token)))
+//          val healthChecks = new HealthChecks(testApp, registerSAs = false)
+//          assert(doChecks(healthChecks).futureValue)
+//        }
+//      }
+//      "should fail if all SAs return unexpected error" in {
+//        val testApp = app.copy(samDAO = new StartupChecksMockSamDAO(
+//          unexpectedErrors = tokens.values.toSeq))
+//        val healthChecks = new HealthChecks(testApp, registerSAs = false)
+//        assert(doChecks(healthChecks).futureValue)
+//      }
+//    }
+//
+//    "When automatic registration of SAs is enabled" - {
+//      "should pass when all SAs need to be registered, and succeed" in {
+//        val mockDAO = new StartupChecksMockSamDAO(
+//            unregisteredTokens = tokens.values.toSeq)
+//        val testApp = app.copy(samDAO = mockDAO)
+//        val healthChecks = new HealthChecks(testApp, registerSAs = true)
+//        assert(!doChecks(healthChecks).futureValue)
+//        assertResult(tokens.values.toSet) {mockDAO.listRegisteredUsers().toSet}
+//      }
+//      "should pass when only one SA needs to be registered, and succeeds" in {
+//        val mockDAO = new StartupChecksMockSamDAO(
+//          notFounds = Seq(tokens.head._2))
+//        val testApp = app.copy(samDAO = mockDAO)
+//        val healthChecks = new HealthChecks(testApp, registerSAs = true)
+//        assert(!doChecks(healthChecks).futureValue)
+//        assertResult(Set(tokens.head._2)) {mockDAO.listRegisteredUsers().toSet}
+//      }
+//      "should fail if automatic registration fails for the single unregistered SA" in {
+//        val mockDAO = new StartupChecksMockSamDAO(
+//          notFounds = Seq(tokens.head._2),
+//          cantRegister = Seq(tokens.head._2))
+//        val testApp = app.copy(samDAO = mockDAO)
+//        val healthChecks = new HealthChecks(testApp, registerSAs = true)
+//        assert(doChecks(healthChecks).futureValue)
+//        assert(mockDAO.listRegisteredUsers().isEmpty)
+//      }
+//      "should fail if automatic registration fails for any of the unregistered SAs" in {
+//        val mockDAO = new StartupChecksMockSamDAO(
+//          notFounds = tokens.values.toSeq,
+//          cantRegister = Seq(tokens.head._2))
+//        val testApp = app.copy(samDAO = mockDAO)
+//        val healthChecks = new HealthChecks(testApp, registerSAs = true)
+//        assert(doChecks(healthChecks).futureValue)
+//        assertResult(tokens.tail.values.toSet) {mockDAO.listRegisteredUsers().toSet}
+//      }
+//    }
 
   }
 }
