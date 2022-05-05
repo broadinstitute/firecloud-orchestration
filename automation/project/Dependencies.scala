@@ -7,14 +7,14 @@ object Dependencies {
   val akkaV = "2.6.15"
   val akkaHttpV = "10.2.0"
 
-  val excludeReadyTalk = ExclusionRule(organization = "com.readytalk")
+  val excludeWorkbenchMetrics = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-metrics_" + scalaV)
 
   val workbenchModelV  = "0.15-808590d"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
   val excludeWorkbenchModel = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-model_" + scalaV)
 
   val workbenchGoogleV = "0.21-808590d"
-  val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll (excludeWorkbenchModel, excludeReadyTalk)
+  val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll (excludeWorkbenchModel, excludeWorkbenchMetrics)
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google_" + scalaV)
 
   val workbenchServiceTestV = "2.0-89b188f"
