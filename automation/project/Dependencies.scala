@@ -43,7 +43,6 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
     "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
     "org.scalatest"       %%  "scalatest"     % "3.2.12"   % Test,
-    "org.seleniumhq.selenium" % "selenium-java" % "3.11.0" % "test",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
 
     "net.logstash.logback" % "logstash-logback-encoder" % "6.6", // needed by workbench-google
