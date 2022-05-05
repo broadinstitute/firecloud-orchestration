@@ -29,13 +29,7 @@ object Dependencies {
     "com.fasterxml.jackson.module" % ("jackson-module-scala_" + scalaV) % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
     "ch.qos.logback" % "logback-classic" % "1.2.11",
-    "com.google.apis" % "google-api-services-oauth2" % "v1-rev127-1.22.0" excludeAll (
-      ExclusionRule("com.google.guava", "guava-jdk5"),
-      ExclusionRule("org.apache.httpcomponents", "httpclient")
-    ),
-    "com.google.api-client" % "google-api-client" % "1.22.0" excludeAll (
-      ExclusionRule("com.google.guava", "guava-jdk5"),
-      ExclusionRule("org.apache.httpcomponents", "httpclient")),
+
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-stream-testkit" % akkaV,
     "com.typesafe.akka"   %%  "akka-http"           % akkaHttpV,
