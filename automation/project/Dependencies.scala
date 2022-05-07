@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val scalaV = "2.13"
 
-  val jacksonV = "2.13.2"
-  val akkaV = "2.6.19"
+  val jacksonV = "2.12.1"
+  val akkaV = "2.6.15"
   val akkaHttpV = "10.2.0"
 
   val excludeReadyTalk = ExclusionRule(organization = "com.readytalk")
@@ -28,16 +28,25 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "com.fasterxml.jackson.module" % ("jackson-module-scala_" + scalaV) % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
-    "ch.qos.logback" % "logback-classic" % "1.2.11",
-
+    "ch.qos.logback" % "logback-classic" % "1.2.3",
+    "com.google.apis" % "google-api-services-oauth2" % "v1-rev127-1.22.0" excludeAll (
+      ExclusionRule("com.google.guava", "guava-jdk5"),
+      ExclusionRule("org.apache.httpcomponents", "httpclient")
+    ),
+    "com.google.api-client" % "google-api-client" % "1.22.0" excludeAll (
+      ExclusionRule("com.google.guava", "guava-jdk5"),
+      ExclusionRule("org.apache.httpcomponents", "httpclient")),
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-stream-testkit" % akkaV,
     "com.typesafe.akka"   %%  "akka-http"           % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
     "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
-    "org.scalatest"       %%  "scalatest"     % "3.2.12"   % Test,
+    "org.scalatest"       %%  "scalatest"     % "3.2.2"   % Test,
+    "org.seleniumhq.selenium" % "selenium-java" % "3.11.0" % "test",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
+
+    "net.logstash.logback" % "logstash-logback-encoder" % "6.6", // needed by workbench-google
 
     workbenchServiceTest,
     workbenchModel,
