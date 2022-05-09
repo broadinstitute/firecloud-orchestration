@@ -26,7 +26,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "com.fasterxml.jackson.module" % ("jackson-module-scala_" + scalaV) % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
-    "ch.qos.logback" % "logback-classic" % "1.2.3",
+    "ch.qos.logback" % "logback-classic" % "1.2.11",
     "com.google.apis" % "google-api-services-oauth2" % "v1-rev127-1.22.0" excludeAll (
       ExclusionRule("com.google.guava", "guava-jdk5"),
       ExclusionRule("org.apache.httpcomponents", "httpclient")
@@ -40,10 +40,10 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
     "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
-    "org.scalatest"       %%  "scalatest"     % "3.2.2"   % Test,
+    "org.scalatest"       %%  "scalatest"     % "3.2.12"   % Test,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
 
-    "net.logstash.logback" % "logstash-logback-encoder" % "6.6", // needed by workbench-google
+    "net.logstash.logback" % "logstash-logback-encoder" % "7.1.1", // needed by workbench-google
 
     workbenchServiceTest,
     workbenchModel,
