@@ -32,7 +32,7 @@ object Settings {
   //     (removed on April 22, 2018) `G` - show reminder of failed and canceled tests with full stack traces at the end of log file
   // `-fWD` - causes test results to be written to the summary.log with test duration but without colored text
   val testSettings = List(
-    testOptions in Test += Tests.Argument("-oFD", "-u", "test-reports", "-fWD", "test-reports/TEST-summary.log")
+    Test / testOptions += Tests.Argument("-oFD", "-u", "test-reports", "-fWD", "test-reports/TEST-summary.log")
   )
 
   //common settings for all sbt subprojects
