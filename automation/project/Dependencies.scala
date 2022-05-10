@@ -26,7 +26,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "com.fasterxml.jackson.module" % ("jackson-module-scala_" + scalaV) % jacksonV,
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
     "ch.qos.logback" % "logback-classic" % "1.2.11",
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
