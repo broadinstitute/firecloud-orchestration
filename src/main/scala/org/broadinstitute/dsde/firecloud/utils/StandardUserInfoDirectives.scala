@@ -2,16 +2,13 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.Directives.{headerValueByName, onSuccess, optionalHeaderValueByName}
+import akka.http.scaladsl.server.Directives.{headerValueByName, optionalHeaderValueByName}
 import org.broadinstitute.dsde.firecloud.model.UserInfo
-
-import scala.concurrent.Future
 
 trait StandardUserInfoDirectives extends UserInfoDirectives {
 
-  // Note the OAUTH2_CLAIM_google_id header is populated when a user logs in to Google
-  // via B2C. We use that for the user id if present to map B2C logins to existing
-  // Google users in the system.
+  // The OAUTH2_CLAIM_google_id header is populated when a user signs in to Google via B2C.
+  // If present, use that value instead of the B2C id for backwards compatibility.
   def requireUserInfo(): Directive1[UserInfo] = (
     headerValueByName("OIDC_access_token") &
       headerValueByName("OIDC_CLAIM_user_id") &
