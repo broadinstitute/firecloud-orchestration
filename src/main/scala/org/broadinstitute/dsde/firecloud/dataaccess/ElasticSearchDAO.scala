@@ -3,79 +3,77 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
-import org.elasticsearch.action.admin.indices.delete.{DeleteIndexRequest, DeleteIndexRequestBuilder, DeleteIndexResponse}
-import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
-import org.elasticsearch.action.bulk.{BulkRequest, BulkRequestBuilder, BulkResponse}
-import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, DeleteResponse}
-import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
-import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.delete.DeleteRequest
+import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.common.xcontent.XContentType
-import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
-import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.search.aggregations.metrics.sum.Sum
 import org.parboiled.common.FileUtils
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 
 class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchPurposeSupport: ResearchPurposeSupport) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
-  private final val datatype = "dataset"
   lazy private final val OPTS = RequestOptions.DEFAULT
 
   initIndex()
 
   // if the index does not exist, create it.
-  override def initIndex() = {
-    conditionalRecreateIndex(false)
+  override def initIndex(): Unit = {
+    conditionalRecreateIndex() // deleteFirst = false
   }
 
   // delete an existing index, then re-create it.
-  override def recreateIndex() = {
+  override def recreateIndex(): Unit = {
     conditionalRecreateIndex(true)
   }
 
-  private def indexExists: Boolean = {
+  override def indexExists(): Boolean = {
     val getIndexRequest = new GetIndexRequest(indexName)
     elasticSearchRequest() {
       client.indices().exists(getIndexRequest, OPTS)
     }
   }
 
-  override def createIndex() = {
+  override def createIndex(): Unit = {
     val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
-    executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
-      client.admin.indices.prepareCreate(indexName)
-        .setSettings(analysisSettings, XContentType.JSON)
-        .addMapping(datatype, mapping, XContentType.JSON)
-      // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
-    )
+    val createIndexRequest = new CreateIndexRequest(indexName)
+    createIndexRequest.settings(analysisSettings, XContentType.JSON)
+    createIndexRequest.mapping(mapping, XContentType.JSON)
+    // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
+
+    elasticSearchRequest() {
+      client.indices().create(createIndexRequest, OPTS)
+    }
   }
 
   // will throw an error if index does not exist
-  override def deleteIndex() = {
-    executeESRequest[DeleteIndexRequest, DeleteIndexResponse, DeleteIndexRequestBuilder](
-      client.admin.indices.prepareDelete(indexName)
-    )
+  override def deleteIndex(): Unit = {
+    val deleteIndexRequest = new DeleteIndexRequest(indexName)
+    elasticSearchRequest() {
+      client.indices().delete(deleteIndexRequest, OPTS)
+    }
   }
 
   override def bulkIndex(docs: Seq[Document], refresh: Boolean = false): LibraryBulkIndexResponse = {
-    val bulkRequest = client.prepareBulk
+    val bulkRequest = new BulkRequest(indexName)
     // only specify immediate refresh if caller specified true
     // this way, the ES client library can change its default for setRefreshPolicy, and we'll inherit the default.
     if (refresh)
       bulkRequest.setRefreshPolicy(RefreshPolicy.IMMEDIATE)
-    docs map {
-      case (doc:Document) => bulkRequest.add(client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint, XContentType.JSON))
+    docs map { doc: Document =>
+        bulkRequest.add(
+          new IndexRequest(indexName).id(doc.id).source(doc.content.compactPrint, XContentType.JSON))
     }
-    val bulkResponse = executeESRequest[BulkRequest, BulkResponse, BulkRequestBuilder](bulkRequest)
+    val bulkResponse = elasticSearchRequest() {
+      client.bulk(bulkRequest, OPTS)
+    }
 
     val msgs:Map[String,String] = if (bulkResponse.hasFailures) {
       bulkResponse.getItems.filter(_.isFailed).map(f => f.getId -> f.getFailureMessage).toMap
@@ -85,19 +83,23 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
     LibraryBulkIndexResponse(bulkResponse.getItems.length, bulkResponse.hasFailures, msgs)
   }
 
-  override def indexDocument(doc: Document) = {
-    executeESRequest[IndexRequest, IndexResponse, IndexRequestBuilder] (
-      client.prepareIndex(indexName, datatype, doc.id).setSource(doc.content.compactPrint, XContentType.JSON)
-    )
+  override def indexDocument(doc: Document): Unit = {
+    val indexRequest = new IndexRequest(indexName)
+    indexRequest.id(doc.id)
+    indexRequest.source(doc.content.compactPrint, XContentType.JSON)
+    elasticSearchRequest() {
+      client.index(indexRequest, OPTS)
+    }
   }
 
-  override def deleteDocument(id: String) = {
-    executeESRequest[DeleteRequest, DeleteResponse, DeleteRequestBuilder] (
-      client.prepareDelete(indexName, datatype, id)
-    )
+  override def deleteDocument(id: String): Unit = {
+    val deleteRequest = new DeleteRequest(indexName, id)
+    elasticSearchRequest() {
+      client.delete(deleteRequest, OPTS)
+    }
   }
 
-  private def conditionalRecreateIndex(deleteFirst: Boolean = false) = {
+  private def conditionalRecreateIndex(deleteFirst: Boolean = false): Unit = {
     try {
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
       val exists = indexExists()
@@ -140,7 +142,7 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
    */
   private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
 
-  override def status(): Future[SubsystemStatus] = {
+  override def status: Future[SubsystemStatus] = {
     Future(SubsystemStatus(this.indexExists(), None))
   }
 }
