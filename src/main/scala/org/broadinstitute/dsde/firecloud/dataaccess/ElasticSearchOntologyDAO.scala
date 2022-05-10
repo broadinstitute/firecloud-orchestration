@@ -6,14 +6,14 @@ import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
-import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.index.query.QueryBuilders._
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ElasticSearchOntologyDAO(client: TransportClient, indexName: String) extends OntologyDAO with ElasticSearchDAOSupport {
+class ElasticSearchOntologyDAO(client: RestHighLevelClient, indexName: String) extends OntologyDAO with ElasticSearchDAOSupport {
 
   private final val datatype = "ontology_term"
 

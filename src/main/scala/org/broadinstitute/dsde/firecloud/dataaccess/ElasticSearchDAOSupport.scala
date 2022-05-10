@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import java.net.InetAddress
 import java.time.Instant
-
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model._
@@ -10,28 +9,42 @@ import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.PerformanceLogging
 import org.elasticsearch.action.{ActionRequest, ActionRequestBuilder, ActionResponse}
+import org.elasticsearch.client.RestHighLevelClient
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
 
 trait ElasticSearchDAOSupport extends LazyLogging with PerformanceLogging {
 
-
-
-  def executeESRequest[T <: ActionRequest, U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
+  def elasticSearchRequest[T <: ActionResponse](extraLogging: String = "")(req: => T): T = {
     val tick = Instant.now()
-    val responseTry = Try(req.get())
+    val responseTry = Try(req)
     val tock = Instant.now()
     responseTry match {
       case Success(s) =>
-        perfLogger.info(perfmsg(req.getClass.getSimpleName, "success", tick, tock))
+        perfLogger.info(perfmsg(req.getClass.getSimpleName, s"success $extraLogging", tick, tock))
         s
       case Failure(f) =>
-        perfLogger.info(perfmsg(req.getClass.getSimpleName, "failure", tick, tock))
-        logger.warn(s"ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, tock.toEpochMilli-tick.toEpochMilli, f.getMessage))
+        perfLogger.info(perfmsg(req.getClass.getSimpleName, s"failure $extraLogging", tick, tock))
+        logger.warn(s"ElasticSearch ${req.getClass.getName} request failed in ${tock.toEpochMilli-tick.toEpochMilli} ms: ${f.getMessage} $extraLogging")
         throw new FireCloudException("ElasticSearch request failed", f)
     }
   }
+
+//  def executeESRequest[T <: ActionRequest, U <: ActionResponse, V <: ActionRequestBuilder[T, U, V]](req: V): U = {
+//    val tick = Instant.now()
+//    val responseTry = Try(req.get())
+//    val tock = Instant.now()
+//    responseTry match {
+//      case Success(s) =>
+//        perfLogger.info(perfmsg(req.getClass.getSimpleName, "success", tick, tock))
+//        s
+//      case Failure(f) =>
+//        perfLogger.info(perfmsg(req.getClass.getSimpleName, "failure", tick, tock))
+//        logger.warn(s"ElasticSearch %s request failed in %s ms: %s".format(req.getClass.getName, tock.toEpochMilli-tick.toEpochMilli, f.getMessage))
+//        throw new FireCloudException("ElasticSearch request failed", f)
+//    }
+//  }
 
   def makeMapping(attributeJson: String): String = {
     // generate mappings from the Library schema file

@@ -1,21 +1,16 @@
 package org.broadinstitute.dsde.firecloud.elastic
 
-import java.net.InetAddress
-
-import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.settings.Settings
-import org.elasticsearch.common.transport.InetSocketTransportAddress
-import org.elasticsearch.transport.client.PreBuiltTransportClient
 import akka.http.scaladsl.model.Uri.Authority
+import org.apache.http.HttpHost
+import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 
 object ElasticUtils {
-  def buildClient(servers:Seq[Authority], clusterName: String): TransportClient = {
-    val settings = Settings.builder
-      .put("cluster.name", clusterName)
-      .build
+  // TODO: AJ-249 is clusterName unused?
+  def buildClient(servers:Seq[Authority], clusterName: String): RestHighLevelClient = {
     val addresses = servers map { server =>
-      new InetSocketTransportAddress(InetAddress.getByName(server.host.address), server.port)
+      new HttpHost(server.host.address(), server.port, "http")
     }
-    new PreBuiltTransportClient(settings).addTransportAddresses(addresses: _*)
+
+    new RestHighLevelClient(RestClient.builder(addresses:_*).)
   }
 }

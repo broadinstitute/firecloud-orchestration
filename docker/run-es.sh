@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# We are running 5.4.0 on the live cluster
-ELASTICSEARCH_VERSION=5.4.0
+# We are running 7.10.2 in the test cluster
+ELASTICSEARCH_VERSION=7.10.2
 start() {
 
 
