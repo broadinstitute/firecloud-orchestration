@@ -5,15 +5,16 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.model.ElasticSearch._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, UserPolicy}
+import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.rawls.model.{AttributeName, WorkspaceAccessLevels}
 import org.elasticsearch.search.aggregations.{AggregationBuilders, Aggregations}
-import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
+import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
+import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.aggregations.bucket.terms.{StringTerms, Terms}
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
 import spray.json._
@@ -30,10 +31,13 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
   final val HL_START = "<strong class='es-highlight'>"
   final val HL_END = "</strong>"
+  //noinspection RegExpUnexpectedAnchor
   final val HL_REGEX:Regex = s"$HL_START(.+?)$HL_END".r.unanchored
 
   final val AGG_MAX_SIZE = FireCloudConfig.ElasticSearch.maxAggregations
   final val AGG_DEFAULT_SIZE = 5
+
+  lazy private final val OPTS = RequestOptions.DEFAULT
 
   /** ES queries - below is similar to what will be created by the query builders
     * {"query":{"match_all":{}}}"
@@ -112,7 +116,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     query
   }
 
-  def addAggregationsToQuery(searchReq: SearchRequestBuilder, aggFields: Map[String, Int]): SearchRequestBuilder = {
+  def addAggregationsToQuery(searchReq: SearchSourceBuilder, aggFields: Map[String, Int]): SearchSourceBuilder = {
     // The UI sends 0 to indicate unbounded size for an aggregate. However, we don't actually
     // want unbounded/infinite; we impose a server-side limit here, instead of asking the UI to
     // know what the limit should be.
@@ -121,43 +125,43 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     aggregates.keys foreach { property: String =>
       // property here is specifying which attribute to collect aggregation info for
       // we use field.keyword here because we want it to use the unanalyzed form of the data for the aggregations
-      searchReq.addAggregation(AggregationBuilders.terms(property).field(property + ".keyword").size(aggregates.getOrElse(property, AGG_DEFAULT_SIZE)))
+      searchReq.aggregation(AggregationBuilders.terms(property).field(property + ".keyword").size(aggregates.getOrElse(property, AGG_DEFAULT_SIZE)))
     }
     searchReq
   }
 
-  def createESSearchRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
-    createESSearchRequest(client, indexname, qmseq, from, size, None, None)
+  def createESSearchRequest(qmseq: QueryBuilder, from: Int, size: Int): SearchSourceBuilder = {
+    createESSearchRequest(qmseq, from, size, None, None)
   }
 
-  def createESSearchRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int, sortField: Option[String], sortDirection: Option[String]): SearchRequestBuilder = {
-    val search = client.prepareSearch(indexname)
-      .setQuery(qmseq)
-      .setFrom(from)
-      .setSize(size)
+  def createESSearchRequest(qmseq: QueryBuilder, from: Int, size: Int, sortField: Option[String], sortDirection: Option[String]): SearchSourceBuilder = {
+    val searchSourceBuilder = new SearchSourceBuilder()
+    searchSourceBuilder.query(qmseq)
+    searchSourceBuilder.from(from)
+    searchSourceBuilder.size(size)
 
     if (sortField.isDefined && sortField.get.trim.nonEmpty) {
       val direction = sortDirection match {
         case Some("desc") => SortOrder.DESC
         case _ => SortOrder.ASC
       }
-      search.addSort(sortField.get + ".sort", direction)
+      searchSourceBuilder.sort(sortField.get + ".sort", direction)
     }
 
-    search
+    searchSourceBuilder
   }
 
-  def createESAutocompleteRequest(client: TransportClient, indexname: String, qmseq: QueryBuilder, from: Int, size: Int): SearchRequestBuilder = {
+  def createESAutocompleteRequest(qmseq: QueryBuilder, from: Int, size: Int): SearchSourceBuilder = {
     val hb = new HighlightBuilder()
       .field(fieldSuggest).fragmentSize(50)
       .preTags(HL_START).postTags(HL_END)
 
-    createESSearchRequest(client, indexname, qmseq, from, size)
-      .setFetchSource(false).highlighter(hb)
+    createESSearchRequest(qmseq, from, size)
+      .fetchSource(false).highlighter(hb)
   }
 
-  def buildSearchQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
-    val searchQuery = createESSearchRequest(client, indexname, createQuery(criteria, groups, workspaceIds, researchPurposeSupport), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
+  def buildSearchQuery(indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequest = {
+    val searchQuery = createESSearchRequest(createQuery(criteria, groups, workspaceIds, researchPurposeSupport), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
     // separate queries for each of them. so we can skip adding them in the main search query
@@ -169,23 +173,29 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
         addAggregationsToQuery(searchQuery, fieldDiffs)
       }
     }
-    searchQuery
+
+    val searchRequest = new SearchRequest(indexname)
+    searchRequest.source(searchQuery)
+    searchRequest
   }
 
-  def buildAutocompleteQuery(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequestBuilder = {
-    createESAutocompleteRequest(client, indexname, createQuery(criteria, groups, workspaceIds, researchPurposeSupport, searchField=fieldSuggest, phrase=true), 0, criteria.size)
+  def buildAutocompleteQuery(indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequest = {
+    val searchSourceBuilder = createESAutocompleteRequest(createQuery(criteria, groups, workspaceIds, researchPurposeSupport, searchField=fieldSuggest, phrase=true), 0, criteria.size)
+    val searchRequest = new SearchRequest(indexname)
+    searchRequest.source(searchSourceBuilder)
+    searchRequest
   }
 
-  def buildAggregateQueries(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Seq[SearchRequestBuilder] = {
+  def buildAggregateQueries(criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): Seq[SearchSourceBuilder] = {
     // for aggregations fields that are part of the current search criteria, we need to do a separate
     // aggregate request *without* that term in the search criteria
     (criteria.fieldAggregations.keySet.toSeq intersect criteria.filters.keySet.toSeq) map { field: String =>
       val query = createQuery(criteria.copy(filters = criteria.filters - field), groups, workspaceIds, researchPurposeSupport)
       // setting size to 0, we will ignore the actual search results
       addAggregationsToQuery(
-        createESSearchRequest(client, indexname, query, 0, 0),
+        createESSearchRequest(query, 0, 0),
         // using filter instead of filterKeys which is not reliable
-        criteria.fieldAggregations.filter({case (key, value) => key == field}))
+        criteria.fieldAggregations.filter({case (key, _) => key == field}))
     }
   }
 
@@ -206,18 +216,20 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
   // TODO: we might want to keep a cache of workspaceIds that have been published so we can intersect with the workspaces
   // the user has access to before adding them to the filter criteria
-  def findDocumentsWithAggregateInfo(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+  def findDocumentsWithAggregateInfo(client: RestHighLevelClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
     val workspaceIds = workspacePolicyMap.keys.toSeq
-    val searchQuery = buildSearchQuery(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
-    val aggregateQueries = buildAggregateQueries(client, indexname, criteria, groups, workspaceIds, researchPurposeSupport)
+    val searchQuery = buildSearchQuery(indexname, criteria, groups, workspaceIds, researchPurposeSupport)
+    val aggregateQueries = buildAggregateQueries(criteria, groups, workspaceIds, researchPurposeSupport)
 
     logger.debug(s"main search query: $searchQuery.toJson")
     // search future will request aggregate data for aggregatable attributes that are not being searched on
-    val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
+    val searchFuture = Future[SearchResponse](elasticSearchRequest(){ client.search(searchQuery, OPTS) })
 
     logger.debug(s"additional queries for aggregations: $aggregateQueries.toJson")
-    val aggFutures:Seq[Future[SearchResponse]] = aggregateQueries map {query: SearchRequestBuilder =>
-      Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](query))
+    val aggFutures:Seq[Future[SearchResponse]] = aggregateQueries map {query: SearchSourceBuilder =>
+      val searchRequest = new SearchRequest(indexname)
+      searchRequest.source(query)
+      Future[SearchResponse](elasticSearchRequest() { client.search(searchRequest, OPTS) })
     }
 
     val allFutures = Future.sequence(aggFutures :+ searchFuture)
@@ -225,7 +237,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       allResults <- allFutures
     ) yield LibrarySearchResponse(
       criteria,
-      allResults.last.getHits.getTotalHits().toInt,
+      allResults.last.getHits.getTotalHits.value.toInt,
       allResults.last.getHits.getHits.toList map { hit: SearchHit =>
         addAccessLevel(hit.getSourceAsString.parseJson.asJsObject, workspacePolicyMap)
       },
@@ -244,7 +256,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     JsObject(doc.fields +  ("workspaceAccess" -> JsString(accessStr)))
   }
 
-  def populateSuggestions(client: TransportClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
+  def populateSuggestions(client: RestHighLevelClient, indexName: String, field: String, text: String) : Future[Seq[String]] = {
     /*
       goal:
         generate suggestions for populating a single field in the catalog wizard,
@@ -265,13 +277,16 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     val aggregationName = "suggTerms"
     val termsAgg = AggregationBuilders.terms(aggregationName).field(keywordField).size(10)
 
-    val suggestQuery = client.prepareSearch(indexName)
-                                .setQuery(prefixFilter)
-                                .addAggregation(termsAgg)
-                                .setFetchSource(false)
-                                .setSize(0)
+    val suggestBuilder = new SearchSourceBuilder()
+    suggestBuilder.query(prefixFilter)
+    suggestBuilder.aggregation(termsAgg)
+    suggestBuilder.fetchSource(false)
+    suggestBuilder.size(0)
 
-    val suggestTry = Try(executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](suggestQuery))
+    val suggestQuery = new SearchRequest(indexName)
+    suggestQuery.source(suggestBuilder)
+
+    val suggestTry = Try(elasticSearchRequest() { client.search(suggestQuery, OPTS) } )
 
     suggestTry match {
       case Success(suggestResult) =>
@@ -292,12 +307,13 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
     }
   }
 
-  def autocompleteSuggestions(client: TransportClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, UserPolicy], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
+  def autocompleteSuggestions(client: RestHighLevelClient, indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIdAccessMap: Map[String, UserPolicy], researchPurposeSupport: ResearchPurposeSupport): Future[LibrarySearchResponse] = {
 
-    val searchQuery = buildAutocompleteQuery(client, indexname, criteria, groups, workspaceIdAccessMap.keys.toSeq, researchPurposeSupport)
+    val searchQuery = buildAutocompleteQuery(indexname, criteria, groups, workspaceIdAccessMap.keys.toSeq, researchPurposeSupport)
 
     logger.debug(s"autocomplete search query: $searchQuery.toJson")
-    val searchFuture = Future[SearchResponse](executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchQuery))
+
+    val searchFuture = Future[SearchResponse](elasticSearchRequest(){ client.search(searchQuery, OPTS) })
 
     searchFuture map {searchResult =>
       // autocomplete query can return duplicate suggestions. De-dupe them here.

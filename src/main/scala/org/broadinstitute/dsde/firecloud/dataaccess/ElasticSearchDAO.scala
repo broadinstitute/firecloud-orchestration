@@ -13,7 +13,8 @@ import org.elasticsearch.action.delete.{DeleteRequest, DeleteRequestBuilder, Del
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
-import org.elasticsearch.client.RestHighLevelClient
+import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
+import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.QueryBuilders.{boolQuery, termQuery}
 import org.elasticsearch.search.aggregations.AggregationBuilders
@@ -27,6 +28,7 @@ import scala.util.{Failure, Success, Try}
 class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchPurposeSupport: ResearchPurposeSupport) extends SearchDAO with ElasticSearchDAOSupport with ElasticSearchDAOQuerySupport {
 
   private final val datatype = "dataset"
+  lazy private final val OPTS = RequestOptions.DEFAULT
 
   initIndex()
 
@@ -40,10 +42,11 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
     conditionalRecreateIndex(true)
   }
 
-  override def indexExists(): Boolean = {
-    executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
-      client.admin.indices.prepareExists(indexName)
-    ).isExists
+  private def indexExists: Boolean = {
+    val getIndexRequest = new GetIndexRequest(indexName)
+    elasticSearchRequest() {
+      client.indices().exists(getIndexRequest, OPTS)
+    }
   }
 
   override def createIndex() = {
@@ -137,7 +140,7 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
    */
   private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
 
-  override def status: Future[SubsystemStatus] = {
+  override def status(): Future[SubsystemStatus] = {
     Future(SubsystemStatus(this.indexExists(), None))
   }
 }
