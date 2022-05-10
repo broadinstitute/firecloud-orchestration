@@ -72,7 +72,7 @@ class ElasticSearchOntologyDAO(client: RestHighLevelClient, indexName: String) e
     }
   }
 
-  override def status(): Future[SubsystemStatus] = {
+  override def status: Future[SubsystemStatus] = {
     Future(SubsystemStatus(indexExists(), None))
   }
 }

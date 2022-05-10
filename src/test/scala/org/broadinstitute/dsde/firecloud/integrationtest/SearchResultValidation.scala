@@ -5,7 +5,8 @@ import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurpose
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchResponse
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
-import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
+import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
+import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.index.query.BoolQueryBuilder
 import org.scalatest.Assertions._
 import spray.json._
@@ -17,6 +18,7 @@ import scala.concurrent.duration.{Duration, MINUTES}
 trait SearchResultValidation {
 
   val dur = Duration(2, MINUTES)
+  val OPTS = RequestOptions.DEFAULT
 
   def searchFor(txt:String) = {
     val criteria = emptyCriteria.copy(searchString = Some(txt))
@@ -61,8 +63,12 @@ trait SearchResultValidation {
 
     // Use a MockResearchPurposeSupport here to prove that it's using the query created above
     val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)
-    val searchRequest = elasticSearchDAO.createESSearchRequest(client, itTestIndexName, boolQuery, 0, 10)
-    elasticSearchDAO.executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
+    val searchSourceBuilder = elasticSearchDAO.createESSearchRequest(boolQuery, 0, 10)
+    val searchRequest = new SearchRequest(itTestIndexName)
+    searchRequest.source(searchSourceBuilder)
+    elasticSearchDAO.elasticSearchRequest() {
+      client.search(searchRequest, OPTS)
+    }
   }
 
   def searchWithFilter(workspacePolicyMap: Map[String, UserPolicy]) = {

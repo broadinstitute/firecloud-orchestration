@@ -160,7 +160,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       .fetchSource(false).highlighter(hb)
   }
 
-  def buildSearchQuery(indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequest = {
+  def buildSearchQuery(indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchSourceBuilder = {
     val searchQuery = createESSearchRequest(createQuery(criteria, groups, workspaceIds, researchPurposeSupport), criteria.from, criteria.size, criteria.sortField, criteria.sortDirection)
     // if we are not collecting aggregation data (in the case of pagination), we can skip adding aggregations
     // if the search criteria contains elements from all of the aggregatable attributes, then we will be making
@@ -174,9 +174,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
       }
     }
 
-    val searchRequest = new SearchRequest(indexname)
-    searchRequest.source(searchQuery)
-    searchRequest
+    searchQuery
   }
 
   def buildAutocompleteQuery(indexname: String, criteria: LibrarySearchParams, groups: Seq[String], workspaceIds: Seq[String], researchPurposeSupport: ResearchPurposeSupport): SearchRequest = {
@@ -223,7 +221,9 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
 
     logger.debug(s"main search query: $searchQuery.toJson")
     // search future will request aggregate data for aggregatable attributes that are not being searched on
-    val searchFuture = Future[SearchResponse](elasticSearchRequest(){ client.search(searchQuery, OPTS) })
+    val searchRequest = new SearchRequest(indexname)
+    searchRequest.source(searchQuery)
+    val searchFuture = Future[SearchResponse](elasticSearchRequest(){ client.search(searchRequest, OPTS) })
 
     logger.debug(s"additional queries for aggregations: $aggregateQueries.toJson")
     val aggFutures:Seq[Future[SearchResponse]] = aggregateQueries map {query: SearchSourceBuilder =>

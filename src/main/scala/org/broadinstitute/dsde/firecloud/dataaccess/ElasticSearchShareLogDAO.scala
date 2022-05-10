@@ -149,7 +149,7 @@ class ElasticSearchShareLogDAO(client: RestHighLevelClient, indexName: String, r
     }
   }
 
-  override def status(): Future[SubsystemStatus] = Future(SubsystemStatus(indexExists(), None))
+  override def status: Future[SubsystemStatus] = Future(SubsystemStatus(indexExists(), None))
 
   private def init(): Unit = {
     if (!indexExists()) {

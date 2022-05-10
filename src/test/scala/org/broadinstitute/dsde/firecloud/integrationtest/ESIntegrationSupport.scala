@@ -2,13 +2,12 @@ package org.broadinstitute.dsde.firecloud.integrationtest
 
 import java.text.SimpleDateFormat
 import java.util.Calendar
-
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.LibrarySearchParams
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
-import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.client.RestHighLevelClient
 
 import scala.util.{Failure, Success, Try}
 
@@ -35,7 +34,7 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   }
 
   // construct a client, using IntegrationTestConfig's server names (which should be the runtime server names)
-  lazy val client: TransportClient = ElasticUtils.buildClient(ITElasticSearch.servers, ITElasticSearch.clusterName)
+  lazy val client: RestHighLevelClient = ElasticUtils.buildClient(ITElasticSearch.servers, ITElasticSearch.clusterName)
 
   lazy val mockOntologyDAO:OntologyDAO = new MockOntologyDAO
   lazy val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(mockOntologyDAO)

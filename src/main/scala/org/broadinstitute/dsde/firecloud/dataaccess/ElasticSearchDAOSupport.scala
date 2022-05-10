@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 trait ElasticSearchDAOSupport extends LazyLogging with PerformanceLogging {
 
-  def elasticSearchRequest[T <: ActionResponse](extraLogging: String = "")(req: => T): T = {
+  def elasticSearchRequest[T](extraLogging: String = "")(req: => T): T = {
     val tick = Instant.now()
     val responseTry = Try(req)
     val tock = Instant.now()
