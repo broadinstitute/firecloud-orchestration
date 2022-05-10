@@ -39,7 +39,9 @@ object Dependencies {
     "org.scalatest"       %%  "scalatest"     % "3.2.12"   % Test,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
 
-    "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1", // needed by workbench-google
+    // required but not provided by workbench-google.
+    // workbench-google specifies 7.0.1
+    "net.logstash.logback" % "logstash-logback-encoder" % "7.1.1",
 
     workbenchServiceTest,
     workbenchModel,
