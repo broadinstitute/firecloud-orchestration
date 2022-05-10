@@ -142,23 +142,23 @@ class ElasticSearchShareLogDAO(client: RestHighLevelClient, indexName: String, r
 //
 //  override def autocomplete(userId: String, term: String): List[String] = ???
 
-  private def indexExists: Boolean = {
+  private def indexExists(): Boolean = {
     val getIndexRequest = new GetIndexRequest(indexName)
     elasticSearchRequest() {
       client.indices().exists(getIndexRequest, OPTS)
     }
   }
 
-  override def status: Future[SubsystemStatus] = Future(SubsystemStatus(indexExists, None))
+  override def status(): Future[SubsystemStatus] = Future(SubsystemStatus(indexExists(), None))
 
   private def init(): Unit = {
-    if (!indexExists) {
+    if (!indexExists()) {
       val createIndexRequest = new CreateIndexRequest(indexName)
       elasticSearchRequest() {
         client.indices().create(createIndexRequest, OPTS)
       }
       // Try one more time and fail if index creation fails
-      if (!indexExists)
+      if (!indexExists())
       throw new FireCloudException(s"index $indexName does not exist!")
     }
   }
