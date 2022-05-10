@@ -39,6 +39,7 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-stream-testkit" % akkaV,
     "com.typesafe.akka"   %%  "akka-http"           % akkaHttpV,
+    "com.typesafe.akka"   %%  "akka-http-spray-json" % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
     "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
