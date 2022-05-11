@@ -71,9 +71,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-    excludeGuava("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
-    excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "9.0.5",
