@@ -17,6 +17,7 @@ object Dependencies {
   val rootDependencies: Seq[ModuleID] = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
+    // TODO: can these move to sbt's dependencyOverrides?
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
@@ -80,7 +81,7 @@ object Dependencies {
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.12"   % "test",
-    "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test",
+    "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
