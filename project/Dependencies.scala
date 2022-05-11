@@ -31,7 +31,7 @@ object Dependencies {
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.2",
     "ch.qos.logback"                 % "logback-classic"     % "1.2.11",
-    "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: should this be io.sentry / sentry-logback instead?
+    "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.4",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -41,7 +41,7 @@ object Dependencies {
       exclude("com.google.code.findbugs", "jsr305")
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"), // upgrading to latest workbench-libs hash causes failures
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"), // TODO: upgrading to latest workbench-libs hash causes failures
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.24-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.1-$workbenchLibsHash",
 
@@ -80,7 +80,7 @@ object Dependencies {
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.12"   % "test",
-    "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // upgrading higher causes failures, need to investigate
+    "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
