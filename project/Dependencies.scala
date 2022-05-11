@@ -28,10 +28,10 @@ object Dependencies {
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.1",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.2",
     "ch.qos.logback"                 % "logback-classic"     % "1.2.11",
     "com.getsentry.raven"            % "raven-logback"       % "7.8.6",
-    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.2",
+    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.4",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-e0584dbdc")
