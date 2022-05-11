@@ -1,430 +1,430 @@
 {
    "properties": {
       "_discoverableByGroups": {
-         "type": "keyword",
-         "include_in_all": false
+         "include_in_all": false,
+         "type": "keyword"
       },
       "_suggest": {
-         "type": "text",
-         "store": true,
          "analyzer": "autocomplete",
+         "include_in_all": false,
          "search_analyzer": "standard",
-         "include_in_all": false
+         "store": true,
+         "type": "text"
       },
       "authorizationDomain": {
-         "type": "text",
+         "analyzer": "default",
          "fields": {
             "keyword": {
-               "type": "keyword",
-               "ignore_above": 256
+               "ignore_above": 256,
+               "type": "keyword"
             }
          },
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:DS_URL": {
-         "type": "text",
-         "fields": {
-            "sort": {
-               "type": "text",
-               "analyzer": "sort_analyzer",
-               "fielddata": true
-            }
-         },
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:GRU": {
-         "type": "boolean",
          "fields": {
             "sort": {
                "type": "boolean"
             }
-         }
+         },
+         "type": "boolean"
       },
       "library:HMB": {
-         "type": "boolean",
          "fields": {
             "sort": {
                "type": "boolean"
             }
-         }
+         },
+         "type": "boolean"
       },
       "library:IRB": {
-         "type": "boolean",
          "fields": {
             "sort": {
                "type": "boolean"
             }
-         }
+         },
+         "type": "boolean"
       },
       "library:cellType": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:cohortCountry": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:consentCodes": {
-         "type": "text",
-         "fields": {
-            "sort": {
-               "type": "text",
-               "analyzer": "sort_analyzer",
-               "fielddata": true
-            }
-         },
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:contactEmail": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:coverage": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:dataAccessInstructions": {
-         "type": "text",
+         "analyzer": "default",
          "fields": {
             "keyword": {
-               "type": "keyword",
-               "ignore_above": 256
+               "ignore_above": 256,
+               "type": "keyword"
             }
          },
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:dataCategory": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:dataFileFormats": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:dataUseRestriction": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "keyword": {
                "type": "keyword"
             },
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:datasetCustodian": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:datasetDepositor": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:datasetDescription": {
-         "type": "text",
-         "fields": {
-            "sort": {
-               "type": "text",
-               "analyzer": "sort_analyzer",
-               "fielddata": true
-            }
-         },
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:datasetName": {
-         "type": "text",
-         "fields": {
-            "sort": {
-               "type": "text",
-               "analyzer": "sort_analyzer",
-               "fielddata": true
-            }
-         },
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:datasetOwner": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:datasetVersion": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
+         "search_analyzer": "default_search",
+         "type": "text"
+      },
+      "library:datatype": {
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
-      },
-      "library:datatype": {
-         "type": "text",
          "fields": {
             "keyword": {
                "type": "keyword"
             },
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:diseaseOntologyID": {
-         "type": "text",
-         "fields": {
-            "sort": {
-               "type": "text",
-               "analyzer": "sort_analyzer",
-               "fielddata": true
-            }
-         },
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:diseaseOntologyLabel": {
-         "type": "text",
-         "fields": {
-            "sort": {
-               "type": "text",
-               "analyzer": "sort_analyzer",
-               "fielddata": true
-            }
-         },
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:dulvn": {
          "type": "long"
       },
       "library:ethnicity": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
+         "search_analyzer": "default_search",
+         "type": "text"
+      },
+      "library:indication": {
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
-      },
-      "library:indication": {
-         "type": "text",
          "fields": {
             "keyword": {
                "type": "keyword"
             },
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             }
          },
+         "search_analyzer": "default_search",
+         "type": "text"
+      },
+      "library:institute": {
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
-      },
-      "library:institute": {
-         "type": "text",
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:invalidDataset": {
          "type": "boolean"
@@ -433,116 +433,116 @@
          "type": "long"
       },
       "library:numSubjects": {
-         "type": "integer",
          "fields": {
             "sort": {
                "type": "integer"
             }
-         }
+         },
+         "type": "integer"
       },
       "library:orsp": {
-         "type": "text",
-         "fields": {
-            "sort": {
-               "type": "text",
-               "analyzer": "sort_analyzer",
-               "fielddata": true
-            }
-         },
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:primaryDiseaseSite": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "keyword": {
                "type": "keyword"
             },
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:profilingProtocol": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
+         "search_analyzer": "default_search",
+         "type": "text"
+      },
+      "library:projectName": {
+         "analyzer": "default",
          "copy_to": [
             "_suggest"
          ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
-      },
-      "library:projectName": {
-         "type": "text",
          "fields": {
             "keyword": {
                "type": "keyword"
             },
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:published": {
          "type": "boolean"
       },
       "library:reference": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:requiresExternalApproval": {
-         "type": "boolean",
          "fields": {
             "sort": {
                "type": "boolean"
             }
-         }
+         },
+         "type": "boolean"
       },
       "library:structuredUseRestriction": {
          "properties": {
@@ -588,120 +588,120 @@
          }
       },
       "library:studyDesign": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:technology": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             },
             "suggestKeyword": {
                "type": "keyword"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "library:useLimitationOption": {
-         "type": "text",
+         "analyzer": "default",
          "fields": {
             "keyword": {
-               "type": "keyword",
-               "ignore_above": 256
+               "ignore_above": 256,
+               "type": "keyword"
             }
          },
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "name": {
-         "type": "text",
+         "analyzer": "default",
          "fields": {
             "keyword": {
-               "type": "keyword",
-               "ignore_above": 256
+               "ignore_above": 256,
+               "type": "keyword"
             }
          },
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "namespace": {
-         "type": "text",
+         "analyzer": "default",
          "fields": {
             "keyword": {
-               "type": "keyword",
-               "ignore_above": 256
+               "ignore_above": 256,
+               "type": "keyword"
             }
          },
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "parents": {
-         "type": "nested",
          "properties": {
             "label": {
-               "type": "text",
+               "analyzer": "default",
                "copy_to": [
                   "_suggest"
                ],
-               "analyzer": "default",
+               "include_in_all": false,
                "search_analyzer": "default_search",
-               "include_in_all": false
+               "type": "text"
             },
             "order": {
-               "type": "integer",
-               "include_in_all": false
+               "include_in_all": false,
+               "type": "integer"
             }
-         }
+         },
+         "type": "nested"
       },
       "tag:tags": {
-         "type": "text",
+         "analyzer": "default",
+         "copy_to": [
+            "_suggest"
+         ],
          "fields": {
             "keyword": {
                "type": "keyword"
             },
             "sort": {
-               "type": "text",
                "analyzer": "sort_analyzer",
-               "fielddata": true
+               "fielddata": true,
+               "type": "text"
             }
          },
-         "copy_to": [
-            "_suggest"
-         ],
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       },
       "workspaceId": {
-         "type": "text",
+         "analyzer": "default",
          "fields": {
             "keyword": {
-               "type": "keyword",
-               "ignore_above": 256
+               "ignore_above": 256,
+               "type": "keyword"
             }
          },
-         "analyzer": "default",
-         "search_analyzer": "default_search"
+         "search_analyzer": "default_search",
+         "type": "text"
       }
    }
 }
