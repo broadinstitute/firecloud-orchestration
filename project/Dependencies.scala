@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.5.32"
   val akkaHttpV = "10.2.9"
-  val jacksonV = "2.12.2"
-  val jacksonHotfixV = "2.12.2" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.13.2"
+  val jacksonHotfixV = "2.13.2.2" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.74.Final"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -13,7 +13,7 @@ object Dependencies {
   val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
   val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.13")
 
-  val rootDependencies = Seq(
+  val rootDependencies: Seq[ModuleID] = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
@@ -47,7 +47,7 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
     "com.typesafe.akka"   %%  "akka-http-core"       % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
-    "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV               excludeAll(excludeAkkaActor),
+    "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV               excludeAll excludeAkkaActor,
     "com.typesafe.akka"   %%  "akka-http"            % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
     "com.typesafe.akka"   %%  "akka-http-spray-json" % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-testkit"         % akkaV     % "test",
@@ -56,7 +56,7 @@ object Dependencies {
     "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
     "com.typesafe.akka"             %% "akka-testkit"              % akkaV    % "test",
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
-    "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll(excludeAkkaActor),
+    "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll excludeAkkaActor,
 
     "org.elasticsearch.client"       % "transport"           % "5.6.16"
       exclude("io.netty", "netty-codec")
