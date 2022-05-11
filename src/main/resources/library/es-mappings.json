@@ -1,0 +1,712 @@
+{
+   "properties": {
+      "_all": {
+         "type": "text"
+      },
+      "_discoverableByGroups": {
+         "type": "keyword"
+      },
+      "_suggest": {
+         "analyzer": "autocomplete",
+         "search_analyzer": "standard",
+         "store": true,
+         "type": "text"
+      },
+      "authorizationDomain": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      },
+      "library:DS_URL": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:GRU": {
+         "fields": {
+            "sort": {
+               "type": "boolean"
+            }
+         },
+         "type": "boolean"
+      },
+      "library:HMB": {
+         "fields": {
+            "sort": {
+               "type": "boolean"
+            }
+         },
+         "type": "boolean"
+      },
+      "library:IRB": {
+         "fields": {
+            "sort": {
+               "type": "boolean"
+            }
+         },
+         "type": "boolean"
+      },
+      "library:cellType": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:cohortCountry": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:consentCodes": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:contactEmail": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:coverage": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:dataAccessInstructions": {
+         "copy_to": [
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      },
+      "library:dataCategory": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:dataFileFormats": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:dataUseRestriction": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            },
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:datasetCustodian": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:datasetDepositor": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:datasetDescription": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:datasetName": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:datasetOwner": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:datasetVersion": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:datatype": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            },
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:description": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:diseaseOntologyID": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:diseaseOntologyLabel": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:ethnicity": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:indication": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            },
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:institute": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:invalidDataset": {
+         "type": "boolean"
+      },
+      "library:lmsvn": {
+         "type": "long"
+      },
+      "library:numSubjects": {
+         "fields": {
+            "sort": {
+               "type": "integer"
+            }
+         },
+         "type": "integer"
+      },
+      "library:orsp": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:primaryDiseaseSite": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            },
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:profilingProtocol": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:projectName": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            },
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:published": {
+         "type": "boolean"
+      },
+      "library:reference": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:requiresExternalApproval": {
+         "fields": {
+            "sort": {
+               "type": "boolean"
+            }
+         },
+         "type": "boolean"
+      },
+      "library:structuredUseRestriction": {
+         "properties": {
+            "DS": {
+               "type": "long"
+            },
+            "GRU": {
+               "type": "boolean"
+            },
+            "HMB": {
+               "type": "boolean"
+            },
+            "IRB": {
+               "type": "boolean"
+            },
+            "NAGR": {
+               "type": "boolean"
+            },
+            "NCTRL": {
+               "type": "boolean"
+            },
+            "NCU": {
+               "type": "boolean"
+            },
+            "NMDS": {
+               "type": "boolean"
+            },
+            "NPU": {
+               "type": "boolean"
+            },
+            "RS-FM": {
+               "type": "boolean"
+            },
+            "RS-G": {
+               "type": "boolean"
+            },
+            "RS-M": {
+               "type": "boolean"
+            },
+            "RS-PD": {
+               "type": "boolean"
+            }
+         }
+      },
+      "library:studyDesign": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:technology": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            },
+            "suggestKeyword": {
+               "analyzer": "keyword",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:useLimitationOption": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      },
+      "name": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      },
+      "namespace": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      },
+      "parents": {
+         "properties": {
+            "label": {
+               "copy_to": "_suggest",
+               "type": "text"
+            },
+            "order": {
+               "type": "integer"
+            }
+         },
+         "type": "nested"
+      },
+      "tag:tags": {
+         "copy_to": [
+            "_suggest",
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            },
+            "sort": {
+               "analyzer": "sort_analyzer",
+               "fielddata": true,
+               "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "workspaceId": {
+         "copy_to": [
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      }
+   }
+}

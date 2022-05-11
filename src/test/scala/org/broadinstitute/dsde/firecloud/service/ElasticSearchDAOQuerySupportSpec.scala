@@ -7,8 +7,9 @@ import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels
-import org.elasticsearch.action.search.SearchRequestBuilder
-import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.client.RestHighLevelClient
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.Assertions._
 import spray.json._
@@ -27,7 +28,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
 
   // create an ElasticSearch client. Client requires legal urls for its servers argument, but those
   // urls don't have to point to an actual ES instance.
-  val client: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
+  val client: RestHighLevelClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
   // create a mock research purpose support
   val researchPurposeSupport: ResearchPurposeSupport = new MockResearchPurposeSupport
@@ -37,21 +38,21 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
     "discoverability" - {
       "when createQuery is given a group for the current user" - {
         "should include group in the filter" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq("whitelistedgroup"), Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, criteria, Seq("whitelistedgroup"), Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateGroupTerms(jsonRequest, Some("whitelistedgroup"), None)
         }
       }
       "when createQuery is given no groups for the current user" - {
         "should not have groups in the filter" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateGroupTerms(jsonRequest, None, None)
         }
       }
       "when createQuery is given a workspace for the current user" - {
         "should have workspaceId in the filter" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq("workspaceId"), researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, criteria, Seq.empty[String], Seq("workspaceId"), researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateGroupTerms(jsonRequest, None, Some("workspaceId"))
         }
@@ -65,7 +66,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
           val sortDirection = Some("asc")
 
           val sortCriteria = criteria.copy(sortField=sortField,sortDirection=sortDirection)
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, sortField)
           validateSortDirection(jsonRequest, sortDirection)
@@ -76,7 +77,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
           val sortField = Some("library:datasetName")
 
           val sortCriteria = criteria.copy(sortField=sortField,sortDirection=None)
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, sortField)
           validateSortDirection(jsonRequest, Some("asc"))
@@ -87,7 +88,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
           val sortField = Some("library:datasetName")
 
           val sortCriteria = criteria.copy(sortField=sortField,sortDirection=Some("unknown"))
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, sortField)
           validateSortDirection(jsonRequest, Some("asc"))
@@ -96,7 +97,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
       "when specifying a sort order but no sort key" - {
         "neither sort order nor sort key is present in query" in {
           val sortCriteria = criteria.copy(sortField=None,sortDirection=Some("asc"))
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, None)
           validateSortDirection(jsonRequest, None)
@@ -105,7 +106,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
       "when specifying neither sort order nor sort key" - {
         "neither sort order nor sort key is present in query" in {
           val sortCriteria = criteria.copy(sortField=None,sortDirection=None)
-          val baseRequest = buildSearchQuery(client, indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, sortCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSortField(jsonRequest, None)
           validateSortDirection(jsonRequest, None)
@@ -118,7 +119,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
         "page offset is present in query" in {
           val offset = 23
           val searchCriteria = criteria.copy(from=offset)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(offset)) {getFromValue(jsonRequest)}
           assertResult(Some(10)) {getSizeValue(jsonRequest)}
@@ -126,7 +127,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
       }
       "when omitting a page offset" - {
         "page offset defaults to 0" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(0)) {getFromValue(jsonRequest)}
           assertResult(Some(10)) {getSizeValue(jsonRequest)}
@@ -136,7 +137,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
         "page size is present in query" in {
           val pageSize = 46
           val searchCriteria = criteria.copy(size=pageSize)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(0)) {getFromValue(jsonRequest)}
           assertResult(Some(pageSize)) {getSizeValue(jsonRequest)}
@@ -144,7 +145,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
       }
       "when omitting a page size" - {
         "page size defaults to 10" in {
-          val baseRequest = buildSearchQuery(client, indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, criteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(0)) {getFromValue(jsonRequest)}
           assertResult(Some(10)) {getSizeValue(jsonRequest)}
@@ -155,7 +156,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
           val offset = 23
           val pageSize = 46
           val searchCriteria = criteria.copy(from=offset,size=pageSize)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           assertResult(Some(offset)) {getFromValue(jsonRequest)}
           assertResult(Some(pageSize)) {getSizeValue(jsonRequest)}
@@ -168,7 +169,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
         "user criteria is present, searching against _all" in {
           val searchTerm = "normcore kitsch mustache bespoke semiotics"
           val searchCriteria = criteria.copy(searchString=Some(searchTerm))
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           validateSearchTermAll(jsonRequest, searchTerm)
         }
@@ -176,7 +177,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
       "when omitting text search" - {
         "no search is present in query" in {
           val searchCriteria = criteria.copy(searchString=None)
-          val baseRequest = buildSearchQuery(client, indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
+          val baseRequest = buildSearchQuery(indexname, searchCriteria, Seq.empty[String], Seq.empty, researchPurposeSupport)
           val jsonRequest = getSearchRequestAsJson(baseRequest)
           // when omitting search term, we have an empty "match_all" and the "bool" for discover mode
           val arr = getQueryArray(jsonRequest)
@@ -214,7 +215,7 @@ class ElasticSearchDAOQuerySupportSpec extends AnyFreeSpec with ElasticSearchDAO
   // TODO: do facet requests properly become aggregations?
   // TODO: does an expanded facet properly expand?
 
-  def getSearchRequestAsJson(baseQuery:SearchRequestBuilder): JsObject = {
+  def getSearchRequestAsJson(baseQuery:SearchSourceBuilder): JsObject = {
     baseQuery.toString.parseJson.asJsObject
   }
   def getFromValue(json:JsObject): Option[Int] = {

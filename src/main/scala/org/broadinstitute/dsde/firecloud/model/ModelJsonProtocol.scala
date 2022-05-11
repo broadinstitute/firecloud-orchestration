@@ -129,31 +129,31 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
-  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
-  implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
-  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
-  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
-
-  implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
-    override def write(input: ESPropertyFields): JsValue = input match {
-      case estype: ESType => estype.toJson
-      case esinternaltype: ESInternalType => esinternaltype.toJson
-      case esinnerfield: ESInnerField => esinnerfield.toJson
-      case esnestedtype: ESNestedType => esnestedtype.toJson
-      case _ => throw new SerializationException("unexpected ESProperty type")
-    }
-
-    override def read(json: JsValue): ESPropertyFields = {
-      val data = json.asJsObject.fields
-      data match {
-        case x if x.contains("properties") => ESNestedTypeFormat.read(json)
-        case x if x.contains("fields") => ESTypeFormat.read(json)
-        case _ => ESInternalTypeFormat.read(json)
-      }
-    }
-  }
-
-  implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
+//  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
+//  implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
+//  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
+//  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
+//
+//  implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
+//    override def write(input: ESPropertyFields): JsValue = input match {
+//      case estype: ESType => estype.toJson
+//      case esinternaltype: ESInternalType => esinternaltype.toJson
+//      case esinnerfield: ESInnerField => esinnerfield.toJson
+//      case esnestedtype: ESNestedType => esnestedtype.toJson
+//      case _ => throw new SerializationException("unexpected ESProperty type")
+//    }
+//
+//    override def read(json: JsValue): ESPropertyFields = {
+//      val data = json.asJsObject.fields
+//      data match {
+//        case x if x.contains("properties") => ESNestedTypeFormat.read(json)
+//        case x if x.contains("fields") => ESTypeFormat.read(json)
+//        case _ => ESInternalTypeFormat.read(json)
+//      }
+//    }
+//  }
+//
+//  implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
 
   implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
     val CLASS_NAME = "className"
@@ -264,8 +264,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
 
 
-  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
-  implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
+//  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
+//  implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
 
 
   implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)

@@ -5,7 +5,6 @@ object Dependencies {
   val akkaHttpV = "10.2.9"
   val jacksonV = "2.12.2"
   val jacksonHotfixV = "2.12.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.74.Final"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -20,10 +19,6 @@ object Dependencies {
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
     "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonV,
-    "io.netty"                       % "netty-codec"         % nettyV,
-    "io.netty"                       % "netty-codec-http"    % nettyV,
-    "io.netty"                       % "netty-handler"       % nettyV,
-    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6",
     "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
 
@@ -58,17 +53,10 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
     "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll(excludeAkkaActor),
 
-    "org.elasticsearch.client"       % "transport"           % "5.6.16"
-      exclude("io.netty", "netty-codec")
-      exclude("io.netty", "netty-transport")
-      exclude("io.netty", "netty-resolver")
-      exclude("io.netty", "netty-buffer")
-      exclude("io.netty", "netty-common")
-      exclude("io.netty", "netty-codec-http")
-      exclude("io.netty", "netty-handler")
-      exclude("com.fasterxml.jackson.dataformat", "jackson-dataformat-cbor")
-      exclude("org.apache.logging.log4j", "log4j-api")
-      exclude("org.apache.logging.log4j", "log4j-core"),
+    // We are running 7.10.2 in the test cluster, so start with that version of the client.
+    // But, we might be able to upgrade higher and count on the client's backwards compatibility.
+    "org.elasticsearch.client"       % "elasticsearch-rest-client"                      % "7.10.2",
+    "org.elasticsearch.client"       % "elasticsearch-rest-high-level-client"           % "7.10.2",
 
     excludeGuava("com.google.apis"     % "google-api-services-storage"      % "v1-rev20190910-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),

@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAcces
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.workbench.oauth2.{ClientId, ClientSecret, OpenIDConnectConfiguration}
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
-import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.client.RestHighLevelClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -25,7 +25,7 @@ object Boot extends App with LazyLogging {
     implicit val system = ActorSystem("FireCloud-Orchestration-API")
     implicit val materializer = ActorMaterializer()
 
-    val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
+    val elasticSearchClient: RestHighLevelClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
     val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
     val rawlsDAO:RawlsDAO = new HttpRawlsDAO
