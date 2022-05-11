@@ -110,7 +110,10 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "store":true,
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
