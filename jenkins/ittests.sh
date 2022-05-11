@@ -14,7 +14,7 @@ docker run --rm \
   -v coursier-cache:/root/.cache/coursier \
   -v $PWD:/working \
   -w /working \
-  $SBT_IMAGE sbt it:test -Delasticsearch.urls=elasticsearch-ittest:9300
+  $SBT_IMAGE sbt it:test -Delasticsearch.urls=elasticsearch-ittest:9200
 
 # stop elasticsearch
 ./docker/run-es.sh stop
