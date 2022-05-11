@@ -104,7 +104,7 @@ class ElasticSearchSpec  extends AnyFreeSpec with Assertions {
 
   "ESInternalType model" - {
     val modelObject = ESInternalType("string",index=false,include_in_all=Some(false))
-    val modelJsonStr = """{"include_in_all":false,"index":"not_analyzed","type":"string"}"""
+    val modelJsonStr = """{"include_in_all":false,"index":false,"type":"string"}"""
 
     "when unmarshalling from json" - {
       "using parseJson" in {
