@@ -46,18 +46,14 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.1-$workbenchLibsHash",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
-    "com.typesafe.akka"   %%  "akka-contrib"         % akkaV               excludeAll(excludeAkkaActor, excludeAkkaStream),
-    "com.typesafe.akka"   %%  "akka-http-core"       % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
-    "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV               excludeAll excludeAkkaActor,
+    "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
     "com.typesafe.akka"   %%  "akka-http"            % akkaHttpV           excludeAll(excludeAkkaActor, excludeAkkaStream),
     "com.typesafe.akka"   %%  "akka-http-spray-json" % akkaHttpV,
+    "com.typesafe.akka"   %%  "akka-stream"          % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"         % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-http-testkit"    % akkaHttpV % "test",
 
     "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
-    "com.typesafe.akka"             %% "akka-testkit"              % akkaV    % "test",
-    "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
-    "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll excludeAkkaActor,
 
     "org.elasticsearch.client"       % "transport"           % "5.6.16" // pin to this version; it's the latest compatible with our elasticsearch server
       exclude("io.netty", "netty-codec")
