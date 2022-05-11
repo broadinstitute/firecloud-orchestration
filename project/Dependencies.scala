@@ -84,12 +84,12 @@ object Dependencies {
     "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.2",
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.9"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.12"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.10.8"  % "test",
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
     "com.google.cloud"               % "google-cloud-nio"    % "0.123.16" % "test",
-    "org.scalatestplus"             %% "mockito-3-4"         % "3.2.9.0" % "test"
+    "org.scalatestplus"             %% "mockito-3-4"         % "3.2.10.0" % "test"
   )
 }
