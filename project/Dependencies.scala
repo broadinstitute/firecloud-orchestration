@@ -80,7 +80,7 @@ object Dependencies {
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
-    "com.github.everit-org.json-schema" % "org.everit.json.schema" % "1.12.2",
+    "com.github.erosb"               % "everit-json-schema"  % "1.14.1",
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.12"   % "test",
