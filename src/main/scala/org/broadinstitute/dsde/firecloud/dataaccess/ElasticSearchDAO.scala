@@ -42,10 +42,6 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
   }
 
   override def createIndex(): Unit = {
-
-    // TODO: AJ-249: delete this entirely once we're done with it
-    val UNUSED_FOR_NOW = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
-
     val createIndexRequest = new CreateIndexRequest(indexName)
     createIndexRequest.settings(analysisSettings, XContentType.JSON)
     createIndexRequest.mapping("document", mappings, XContentType.JSON)

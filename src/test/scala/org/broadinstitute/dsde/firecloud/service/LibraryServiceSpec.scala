@@ -745,73 +745,73 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
         validateJsonSchema(sampleData, testSchema)
       }
     }
-    "when creating schema mappings" - {
-      "works for string type" in {
-        val label = "library:attr"
-        val `type` = "string"
-        val expected = label -> ESType(`type`, false, true, false)
-        assertResult(expected) {
-          createType(label, AttributeDetail(`type`))
-        }
-      }
-      "works for aggregatable string type" in {
-        val label = "library:attr"
-        val `type` = "string"
-        val aggregateObject = JsObject("renderHint"->JsString("text"))
-        val expected = label -> ESType(`type`, false, true, true)
-        assertResult(expected) {
-          createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
-        }
-        val result = createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
-      }
-      "works for array type" in {
-        val label = "library:attr"
-        val `type` = "array"
-        val subtype = "string"
-        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
-        val expected = label -> ESType(subtype, false, true, false)
-        assertResult(expected) {
-          createType(label, detail)
-        }
-      }
-      "works for aggregatable array type" in {
-        val label = "library:attr"
-        val `type` = "array"
-        val subtype = "string"
-        val aggregateObject = JsObject("renderHint"->JsString("text"))
-        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(aggregateObject))
-        val expected = label -> ESType(subtype, false, true, true)
-        assertResult(expected) {
-          createType(label, detail)
-        }
-      }
-      "works for populate suggest array type" in {
-        val label = "library:datatype"
-        val `type` = "string"
-        val detail = AttributeDetail(`type`, None, None, None, Option("populate"))
-        val expected = label -> ESType(`type`, true, true, false)
-        assertResult(expected) {
-          createType(label, detail)
-        }
-      }
-      "mapping has valid json" in {
-        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val testJson = makeMapping(attrJson)
-        val jsonVal: Try[JsValue] = Try(testJson.parseJson)
-        assert(jsonVal.isSuccess, "Mapping should be valid json")
-      }
-      "non-indexable type is not in mapping" in {
-        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val testJson = makeMapping(attrJson)
-        val label = "library:lmsvn"
-        assert(!testJson.contains(label))
-      }
-      "discoverableByGroups is in mapping" in {
-        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
-        val testJson = makeMapping(attrJson)
-        assert(testJson.contains(ElasticSearch.fieldDiscoverableByGroups))
-      }
-    }
+//    "when creating schema mappings" - {
+//      "works for string type" in {
+//        val label = "library:attr"
+//        val `type` = "string"
+//        val expected = label -> ESType(`type`, false, true, false)
+//        assertResult(expected) {
+//          createType(label, AttributeDetail(`type`))
+//        }
+//      }
+//      "works for aggregatable string type" in {
+//        val label = "library:attr"
+//        val `type` = "string"
+//        val aggregateObject = JsObject("renderHint"->JsString("text"))
+//        val expected = label -> ESType(`type`, false, true, true)
+//        assertResult(expected) {
+//          createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
+//        }
+//        val result = createType(label, AttributeDetail(`type`, None, Some(aggregateObject)))
+//      }
+//      "works for array type" in {
+//        val label = "library:attr"
+//        val `type` = "array"
+//        val subtype = "string"
+//        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)))
+//        val expected = label -> ESType(subtype, false, true, false)
+//        assertResult(expected) {
+//          createType(label, detail)
+//        }
+//      }
+//      "works for aggregatable array type" in {
+//        val label = "library:attr"
+//        val `type` = "array"
+//        val subtype = "string"
+//        val aggregateObject = JsObject("renderHint"->JsString("text"))
+//        val detail = AttributeDetail(`type`, Some(AttributeDetail(subtype)), Some(aggregateObject))
+//        val expected = label -> ESType(subtype, false, true, true)
+//        assertResult(expected) {
+//          createType(label, detail)
+//        }
+//      }
+//      "works for populate suggest array type" in {
+//        val label = "library:datatype"
+//        val `type` = "string"
+//        val detail = AttributeDetail(`type`, None, None, None, Option("populate"))
+//        val expected = label -> ESType(`type`, true, true, false)
+//        assertResult(expected) {
+//          createType(label, detail)
+//        }
+//      }
+//      "mapping has valid json" in {
+//        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+//        val testJson = makeMapping(attrJson)
+//        val jsonVal: Try[JsValue] = Try(testJson.parseJson)
+//        assert(jsonVal.isSuccess, "Mapping should be valid json")
+//      }
+//      "non-indexable type is not in mapping" in {
+//        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+//        val testJson = makeMapping(attrJson)
+//        val label = "library:lmsvn"
+//        assert(!testJson.contains(label))
+//      }
+//      "discoverableByGroups is in mapping" in {
+//        val attrJson = FileUtils.readAllTextFromResource("library/attribute-definitions.json")
+//        val testJson = makeMapping(attrJson)
+//        assert(testJson.contains(ElasticSearch.fieldDiscoverableByGroups))
+//      }
+//    }
     "when finding unique string attributes in a Seq of Workspaces" - {
 
       def makeWorkspacesWithAttributes(attrMaps: Seq[AttributeMap]): Seq[WorkspaceDetails] = {

@@ -102,74 +102,74 @@ class ElasticSearchSpec  extends AnyFreeSpec with Assertions {
     }
   }
 
-  "ESInternalType model" - {
-    val modelObject = ESInternalType("string",index=false,include_in_all=Some(false))
-    val modelJsonStr = """{"include_in_all":false,"index":false,"type":"string"}"""
-
-    "when unmarshalling from json" - {
-      "using parseJson" in {
-        val item = modelJsonStr.parseJson.convertTo[ESPropertyFields]
-        assert(item.isInstanceOf[ESInternalType])
-        assertResult(modelObject) {item.asInstanceOf[ESInternalType]}
-      }
-      "using impESPropertyFields" in {
-        val item = impESPropertyFields.read(modelJsonStr.parseJson)
-        assert(item.isInstanceOf[ESInternalType])
-        assertResult(modelObject) {
-          item.asInstanceOf[ESInternalType]
-        }
-      }
-
-    }
-    "when marshalling to json" - {
-      "using toJson" in {
-        assertResult(modelJsonStr) {
-          modelObject.toJson.toString
-        }
-      }
-      "using impESPropertyFields" in {
-        assertResult(modelJsonStr) {
-          impESPropertyFields.write(modelObject).toString
-        }
-      }
-    }
-  }
-
-  "ESNestedType model" - {
-    val modelObject = ESNestedType(Map(
-      "foo" -> ESInnerField("string"),
-      "bar" -> ESInnerField("integer", include_in_all=Some(false))
-    ))
-    val modelJsonStr = """{"properties":{"foo":{"type":"string"},"bar":{"include_in_all":false,"type":"integer"}},"type":"nested"}"""
-
-    "when unmarshalling from json" - {
-      "using parseJson" in {
-        val item = modelJsonStr.parseJson.convertTo[ESPropertyFields]
-        assert(item.isInstanceOf[ESNestedType])
-        assertResult(modelObject) {
-          item.asInstanceOf[ESNestedType]
-        }
-      }
-      "using impESPropertyFields" in {
-        val item = impESPropertyFields.read(modelJsonStr.parseJson)
-        assert(item.isInstanceOf[ESNestedType])
-        assertResult(modelObject) {
-          item.asInstanceOf[ESNestedType]
-        }
-      }
-    }
-    "when marshalling to json" - {
-      "using toJson" in {
-        assertResult(modelJsonStr) {
-          modelObject.toJson.toString
-        }
-      }
-      "using impESPropertyFields" in {
-        assertResult(modelJsonStr) {
-          impESPropertyFields.write(modelObject).toString
-        }
-      }
-    }
-  }
+//  "ESInternalType model" - {
+//    val modelObject = ESInternalType("string",index=false,include_in_all=Some(false))
+//    val modelJsonStr = """{"include_in_all":false,"index":false,"type":"string"}"""
+//
+//    "when unmarshalling from json" - {
+//      "using parseJson" in {
+//        val item = modelJsonStr.parseJson.convertTo[ESPropertyFields]
+//        assert(item.isInstanceOf[ESInternalType])
+//        assertResult(modelObject) {item.asInstanceOf[ESInternalType]}
+//      }
+//      "using impESPropertyFields" in {
+//        val item = impESPropertyFields.read(modelJsonStr.parseJson)
+//        assert(item.isInstanceOf[ESInternalType])
+//        assertResult(modelObject) {
+//          item.asInstanceOf[ESInternalType]
+//        }
+//      }
+//
+//    }
+//    "when marshalling to json" - {
+//      "using toJson" in {
+//        assertResult(modelJsonStr) {
+//          modelObject.toJson.toString
+//        }
+//      }
+//      "using impESPropertyFields" in {
+//        assertResult(modelJsonStr) {
+//          impESPropertyFields.write(modelObject).toString
+//        }
+//      }
+//    }
+//  }
+//
+//  "ESNestedType model" - {
+//    val modelObject = ESNestedType(Map(
+//      "foo" -> ESInnerField("string"),
+//      "bar" -> ESInnerField("integer", include_in_all=Some(false))
+//    ))
+//    val modelJsonStr = """{"properties":{"foo":{"type":"string"},"bar":{"include_in_all":false,"type":"integer"}},"type":"nested"}"""
+//
+//    "when unmarshalling from json" - {
+//      "using parseJson" in {
+//        val item = modelJsonStr.parseJson.convertTo[ESPropertyFields]
+//        assert(item.isInstanceOf[ESNestedType])
+//        assertResult(modelObject) {
+//          item.asInstanceOf[ESNestedType]
+//        }
+//      }
+//      "using impESPropertyFields" in {
+//        val item = impESPropertyFields.read(modelJsonStr.parseJson)
+//        assert(item.isInstanceOf[ESNestedType])
+//        assertResult(modelObject) {
+//          item.asInstanceOf[ESNestedType]
+//        }
+//      }
+//    }
+//    "when marshalling to json" - {
+//      "using toJson" in {
+//        assertResult(modelJsonStr) {
+//          modelObject.toJson.toString
+//        }
+//      }
+//      "using impESPropertyFields" in {
+//        assertResult(modelJsonStr) {
+//          impESPropertyFields.write(modelObject).toString
+//        }
+//      }
+//    }
+//  }
 
 }

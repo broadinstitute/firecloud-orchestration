@@ -28,40 +28,40 @@ trait ElasticSearchDAOSupport extends LazyLogging with PerformanceLogging {
     }
   }
 
-  def makeMapping(attributeJson: String): String = {
-    // generate mappings from the Library schema file
-    val definition = attributeJson.parseJson.convertTo[AttributeDefinition]
-    val attributeDetailMap = definition.properties filter(_._2.indexable.getOrElse(true)) map {
-      case (label: String, detail: AttributeDetail) => createType(label, detail)
-    }
-    /* add the additional mappings that aren't tracked in the schema file:
-     *   - _suggest property for autocomplete
-     *   - _discoverableByGroups property to hold discover-mode permissions
-     *   - parents.order and parents.label for ontology-aware search
-     */
-    val addlMappings:Map[String, ESPropertyFields] = Map(
-      fieldSuggest -> ESType.suggestField("text"),
-      fieldDiscoverableByGroups -> ESInternalType("text"),
-      fieldOntologyParents -> ESNestedType(Map(
-        fieldOntologyParentsLabel -> ESInnerField("text", include_in_all=Some(false), copy_to=Some(ElasticSearch.fieldSuggest)),
-        fieldOntologyParentsOrder -> ESInnerField("integer", include_in_all=Some(false))
-      ))
-    )
-    val props = attributeDetailMap ++ addlMappings
-    ESDatasetProperty(props).toJson.prettyPrint
-  }
-
-  def createType(label: String, detail: AttributeDetail): (String, ESPropertyFields) = {
-    val itemType = detail match {
-      case x if x.`type` == "array" && x.items.isDefined => x.items.get.`type`
-      case _ => detail.`type`
-    }
-    val searchSuggest = itemType == "text"
-    val createSuggest = detail.typeahead.contains("populate")
-    val isAggregate = detail match {
-      case x if x.aggregate.isDefined => true
-      case _ => false
-    }
-    label -> ESType(itemType, createSuggest, searchSuggest, isAggregate)
-  }
+//  def makeMapping(attributeJson: String): String = {
+//    // generate mappings from the Library schema file
+//    val definition = attributeJson.parseJson.convertTo[AttributeDefinition]
+//    val attributeDetailMap = definition.properties filter(_._2.indexable.getOrElse(true)) map {
+//      case (label: String, detail: AttributeDetail) => createType(label, detail)
+//    }
+//    /* add the additional mappings that aren't tracked in the schema file:
+//     *   - _suggest property for autocomplete
+//     *   - _discoverableByGroups property to hold discover-mode permissions
+//     *   - parents.order and parents.label for ontology-aware search
+//     */
+//    val addlMappings:Map[String, ESPropertyFields] = Map(
+//      fieldSuggest -> ESType.suggestField("text"),
+//      fieldDiscoverableByGroups -> ESInternalType("text"),
+//      fieldOntologyParents -> ESNestedType(Map(
+//        fieldOntologyParentsLabel -> ESInnerField("text", include_in_all=Some(false), copy_to=Some(ElasticSearch.fieldSuggest)),
+//        fieldOntologyParentsOrder -> ESInnerField("integer", include_in_all=Some(false))
+//      ))
+//    )
+//    val props = attributeDetailMap ++ addlMappings
+//    ESDatasetProperty(props).toJson.prettyPrint
+//  }
+//
+//  def createType(label: String, detail: AttributeDetail): (String, ESPropertyFields) = {
+//    val itemType = detail match {
+//      case x if x.`type` == "array" && x.items.isDefined => x.items.get.`type`
+//      case _ => detail.`type`
+//    }
+//    val searchSuggest = itemType == "text"
+//    val createSuggest = detail.typeahead.contains("populate")
+//    val isAggregate = detail match {
+//      case x if x.aggregate.isDefined => true
+//      case _ => false
+//    }
+//    label -> ESType(itemType, createSuggest, searchSuggest, isAggregate)
+//  }
 }

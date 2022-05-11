@@ -9,7 +9,6 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}
 
 object ElasticSearch {
-  // TODO: AJ-249: _all field no longer exists; must recreate it
   final val fieldAll = "_all"
   final val fieldSuggest = "_suggest"
   final val fieldDiscoverableByGroups = "_discoverableByGroups"
@@ -19,83 +18,83 @@ object ElasticSearch {
   final val fieldOntologyParentsLabel = "label"
 }
 
-case class AttributeDefinition(properties: Map[String, AttributeDetail])
+//case class AttributeDefinition(properties: Map[String, AttributeDetail])
+//
+//case class AttributeDetail(
+//  `type`: String,
+//  items: Option[AttributeDetail] = None,
+//  aggregate: Option[JsObject] = None,
+//  indexable: Option[Boolean] = None,
+//  typeahead: Option[String] = None
+//)
 
-case class AttributeDetail(
-  `type`: String,
-  items: Option[AttributeDetail] = None,
-  aggregate: Option[JsObject] = None,
-  indexable: Option[Boolean] = None,
-  typeahead: Option[String] = None
-)
 
-
-case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
+// case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
 
 // trait def, with util factories
-trait ESPropertyFields {
-  def suggestField(`type`:String) = ESInnerField(`type`,
-    analyzer = Some("autocomplete"),
-    search_analyzer = Some("standard"),
-    include_in_all = Some(false),
-    store = Some(true)
-  )
-  // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
-  def completionField = ESInnerField(
-    "completion",
-    analyzer = Option("simple"),
-    search_analyzer = Option("simple")
-  )
-  def keywordField(`type`:String) = ESInnerField("keyword")
-  def sortField(`type`:String) = ESInnerField(`type`,
-    analyzer = Some("sort_analyzer"),
-    include_in_all = Some(false),
-    fielddata = Some(true)
-  )
-}
+//trait ESPropertyFields {
+//  def suggestField(`type`:String) = ESInnerField(`type`,
+//    analyzer = Some("autocomplete"),
+//    search_analyzer = Some("standard"),
+//    include_in_all = Some(false),
+//    store = Some(true)
+//  )
+//  // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
+//  def completionField = ESInnerField(
+//    "completion",
+//    analyzer = Option("simple"),
+//    search_analyzer = Option("simple")
+//  )
+//  def keywordField(`type`:String) = ESInnerField("keyword")
+//  def sortField(`type`:String) = ESInnerField(`type`,
+//    analyzer = Some("sort_analyzer"),
+//    include_in_all = Some(false),
+//    fielddata = Some(true)
+//  )
+//}
 
 // top-level field defs, for facet and non-facet types
-case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
-object ESType extends ESPropertyFields {
-  def apply(originalType: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
-    val `type` = if (originalType == "string") {
-      "keyword"
-    } else {
-      originalType
-    }
-
-    val innerFields = Map.empty[String,ESInnerField] ++
-      (if (`type`.equals("keyword"))
-        Map("sort" -> sortField("text"))
-      else
-        Map("sort" -> ESInnerField(`type`))) ++
-      (if (isAggregatable) Map("keyword" -> keywordField(`type`)) else Nil) ++
-      (if (hasPopulateSuggest) Map("suggestKeyword" -> keywordField(`type`)) else Nil)
-    if (hasSearchSuggest)
-      new ESType(`type`, Option(innerFields), Option(ElasticSearch.fieldSuggest))
-    else
-      new ESType(`type`, Option(innerFields))
-  }
-
-}
-
-case class ESNestedType(properties:Map[String,ESInnerField], `type`:String="nested") extends ESPropertyFields
-
-case class ESInternalType(
-  `type`: String,
-  index: Boolean = false,
-  include_in_all: Option[Boolean] = Some(false)) extends ESPropertyFields
-
-// def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html
-// technically, the top-level fields and inner fields are the same thing, and we *could* use the same class.
-// we keep them different here for ease of development and clarity of code-reading.
-case class ESInnerField(`type`: String,
-                        analyzer: Option[String] = None,
-                        search_analyzer: Option[String] = None,
-                        include_in_all: Option[Boolean] = None,
-                        store: Option[Boolean] = None,
-                        copy_to: Option[String] = None,
-                        fielddata: Option[Boolean] = None) extends ESPropertyFields
+//case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
+//object ESType extends ESPropertyFields {
+//  def apply(originalType: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
+//    val `type` = if (originalType == "string") {
+//      "keyword"
+//    } else {
+//      originalType
+//    }
+//
+//    val innerFields = Map.empty[String,ESInnerField] ++
+//      (if (`type`.equals("keyword"))
+//        Map("sort" -> sortField("text"))
+//      else
+//        Map("sort" -> ESInnerField(`type`))) ++
+//      (if (isAggregatable) Map("keyword" -> keywordField(`type`)) else Nil) ++
+//      (if (hasPopulateSuggest) Map("suggestKeyword" -> keywordField(`type`)) else Nil)
+//    if (hasSearchSuggest)
+//      new ESType(`type`, Option(innerFields), Option(ElasticSearch.fieldSuggest))
+//    else
+//      new ESType(`type`, Option(innerFields))
+//  }
+//
+//}
+//
+//case class ESNestedType(properties:Map[String,ESInnerField], `type`:String="nested") extends ESPropertyFields
+//
+//case class ESInternalType(
+//  `type`: String,
+//  index: Boolean = false,
+//  include_in_all: Option[Boolean] = Some(false)) extends ESPropertyFields
+//
+//// def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html
+//// technically, the top-level fields and inner fields are the same thing, and we *could* use the same class.
+//// we keep them different here for ease of development and clarity of code-reading.
+//case class ESInnerField(`type`: String,
+//                        analyzer: Option[String] = None,
+//                        search_analyzer: Option[String] = None,
+//                        include_in_all: Option[Boolean] = None,
+//                        store: Option[Boolean] = None,
+//                        copy_to: Option[String] = None,
+//                        fielddata: Option[Boolean] = None) extends ESPropertyFields
 
 // classes for sending documents to ES to be indexed
 trait Indexable {
