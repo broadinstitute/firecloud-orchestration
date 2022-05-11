@@ -21,7 +21,6 @@ object Dependencies {
     "com.fasterxml.jackson.core"     % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core"     % "jackson-databind"    % jacksonHotfixV,
     "com.fasterxml.jackson.core"     % "jackson-core"        % jacksonV,
-    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonV,
     "io.netty"                       % "netty-codec"         % nettyV,
     "io.netty"                       % "netty-codec-http"    % nettyV,
     "io.netty"                       % "netty-handler"       % nettyV,
