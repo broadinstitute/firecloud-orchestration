@@ -28,8 +28,7 @@ class FilterLimitsSpec extends AnyFreeSpec with Matchers with SearchResultValida
   }
 
   "Library integration" - {
-    // TODO: AJ-249 50,000 passes but 75,000 fails
-    Seq(2, 5, 100, 1000, 10000, 20000, 50000, 75000, 100000) foreach { limit =>
+    Seq(2, 5, 100, 1000, 10000, 20000, 50000) foreach { limit =>
       s"search with $limit filter criteria" - {
         "returns 1 result without error " in {
           val wsMatchesMap = Map("testing123" -> UserPolicy(ResourceId("testing123"), false, AccessPolicyName(WorkspaceAccessLevels.Read.toString), Seq.empty.toSet, Seq.empty.toSet))

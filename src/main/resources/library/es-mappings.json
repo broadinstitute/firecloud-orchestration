@@ -1,6 +1,31 @@
 {
    "properties":{
       "_all":{
+         "type":"text",
+         "analyzer": "default",
+         "search_analyzer": "default_search"
+      },
+      "_discoverableByGroups":{
+         "type":"keyword"
+      },
+      "_suggest":{
+         "analyzer":"autocomplete",
+         "search_analyzer":"standard",
+         "store":true,
+         "type":"text"
+      },
+      "workspaceId": {
+         "copy_to":["_all"],
+         "fields":{
+            "sort":{
+               "analyzer":"sort_analyzer",
+               "fielddata":true,
+               "type":"text"
+            },
+            "keyword":{
+               "type":"keyword"
+            }
+         },
          "type":"text"
       },
       "library:HMB":{
@@ -28,7 +53,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -42,7 +69,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -56,7 +85,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -95,12 +126,6 @@
          },
          "type":"text"
       },
-      "_suggest":{
-         "analyzer":"autocomplete",
-         "search_analyzer":"standard",
-         "store":true,
-         "type":"text"
-      },
       "library:datasetOwner":{
          "copy_to":["_suggest", "_all"],
          "fields":{
@@ -111,7 +136,6 @@
             },
             "suggestKeyword":{
                "analyzer":"keyword",
-               "store":true,
                "type":"text",
                "fielddata": true
             }
@@ -127,7 +151,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -141,7 +167,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -210,13 +238,11 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
-         "type":"text"
-      },
-      "_discoverableByGroups":{
-         "index":false,
          "type":"text"
       },
       "library:indication":{
@@ -242,7 +268,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -267,7 +295,9 @@
                "type":"keyword"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -284,7 +314,9 @@
                "type":"keyword"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -301,7 +333,9 @@
                "type":"keyword"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -315,7 +349,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -348,7 +384,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -376,7 +414,9 @@
                "type":"keyword"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -390,7 +430,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -404,7 +446,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -418,7 +462,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -443,7 +489,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -457,7 +505,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
@@ -471,7 +521,9 @@
                "type":"text"
             },
             "suggestKeyword":{
-               "type":"keyword"
+               "analyzer":"keyword",
+               "type":"text",
+               "fielddata": true
             }
          },
          "type":"text"
