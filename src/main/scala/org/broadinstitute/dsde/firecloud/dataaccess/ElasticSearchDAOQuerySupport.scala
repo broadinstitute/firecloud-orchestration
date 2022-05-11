@@ -13,7 +13,7 @@ import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.SearchHit
-import org.elasticsearch.search.aggregations.bucket.terms.{StringTerms, Terms}
+import org.elasticsearch.search.aggregations.bucket.terms.{ParsedStringTerms, Terms}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
@@ -293,7 +293,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
         val allAggs = suggestResult.getAggregations.asMap().asScala
         val termsAgg = allAggs.get(aggregationName)
         val buckets = termsAgg match {
-          case Some(st:StringTerms) =>
+          case Some(st:ParsedStringTerms) =>
             st.getBuckets.asScala.map(_.getKey.toString)
           case _ =>
             logger.warn(s"failed to get populate suggestions for field [$field] and term [$text]")
