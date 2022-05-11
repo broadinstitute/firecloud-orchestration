@@ -45,7 +45,7 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
     val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
     val createIndexRequest = new CreateIndexRequest(indexName)
     createIndexRequest.settings(analysisSettings, XContentType.JSON)
-    createIndexRequest.mapping(mapping, XContentType.JSON)
+    createIndexRequest.mapping("document", mapping, XContentType.JSON)
     // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
 
     elasticSearchRequest() {

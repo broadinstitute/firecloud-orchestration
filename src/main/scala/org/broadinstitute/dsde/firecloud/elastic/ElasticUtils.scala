@@ -8,10 +8,7 @@ object ElasticUtils {
   // TODO: AJ-249 is clusterName unused?
   def buildClient(servers:Seq[Authority], clusterName: String): RestHighLevelClient = {
 
-    val hardcodedForNow: Seq[Authority] = Seq(Authority(host = Host("34.134.204.3"), port = 9200))
-
-    // TODO: use servers from argument instead of hardcoded values
-    val addresses = hardcodedForNow map { server =>
+    val addresses = servers map { server =>
       new HttpHost(server.host.address(), server.port, "http")
     }
 

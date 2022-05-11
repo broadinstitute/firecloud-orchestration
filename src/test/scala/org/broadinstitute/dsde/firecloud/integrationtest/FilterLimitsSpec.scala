@@ -28,15 +28,18 @@ class FilterLimitsSpec extends AnyFreeSpec with Matchers with SearchResultValida
   }
 
   "Library integration" - {
-    "search with 100000 filter criteria" - {
-      "returns 1 result without error " in {
-        val wsMatchesMap = Map("testing123" -> UserPolicy(ResourceId("testing123"), false, AccessPolicyName(WorkspaceAccessLevels.Read.toString), Seq.empty.toSet, Seq.empty.toSet))
-        val wsMap = 0.to(100000).map { num =>
-          (num.toString -> UserPolicy(ResourceId(num.toString), false, AccessPolicyName(WorkspaceAccessLevels.Read.toString), Seq.empty.toSet, Seq.empty.toSet))
-        }.toMap
-        val searchResponse = searchWithFilter(wsMap ++ wsMatchesMap)
-        assertResult(wsMatchesMap.size) {
-          searchResponse.total
+    // TODO: AJ-249 50,000 passes but 75,000 fails
+    Seq(2, 5, 100, 1000, 10000, 20000, 50000, 75000, 100000) foreach { limit =>
+      s"search with $limit filter criteria" - {
+        "returns 1 result without error " in {
+          val wsMatchesMap = Map("testing123" -> UserPolicy(ResourceId("testing123"), false, AccessPolicyName(WorkspaceAccessLevels.Read.toString), Seq.empty.toSet, Seq.empty.toSet))
+          val wsMap = 0.to(limit).map { num =>
+            (num.toString -> UserPolicy(ResourceId(num.toString), false, AccessPolicyName(WorkspaceAccessLevels.Read.toString), Seq.empty.toSet, Seq.empty.toSet))
+          }.toMap
+          val searchResponse = searchWithFilter(wsMap ++ wsMatchesMap)
+          assertResult(wsMatchesMap.size) {
+            searchResponse.total
+          }
         }
       }
     }

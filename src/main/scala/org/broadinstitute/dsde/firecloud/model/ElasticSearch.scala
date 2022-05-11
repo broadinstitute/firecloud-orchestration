@@ -9,6 +9,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue}
 
 object ElasticSearch {
+  // TODO: AJ-249: _all field no longer exists; must recreate it
   final val fieldAll = "_all"
   final val fieldSuggest = "_suggest"
   final val fieldDiscoverableByGroups = "_discoverableByGroups"
@@ -56,10 +57,16 @@ trait ESPropertyFields {
 // top-level field defs, for facet and non-facet types
 case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
 object ESType extends ESPropertyFields {
-  def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
+  def apply(originalType: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
+    val `type` = if (originalType == "string") {
+      "keyword"
+    } else {
+      originalType
+    }
+
     val innerFields = Map.empty[String,ESInnerField] ++
-      (if (`type`.equals("string"))
-        Map("sort" -> sortField(`type`))
+      (if (`type`.equals("keyword"))
+        Map("sort" -> sortField("text"))
       else
         Map("sort" -> ESInnerField(`type`))) ++
       (if (isAggregatable) Map("keyword" -> keywordField(`type`)) else Nil) ++
@@ -76,8 +83,8 @@ case class ESNestedType(properties:Map[String,ESInnerField], `type`:String="nest
 
 case class ESInternalType(
   `type`: String,
-  index: String = "not_analyzed",
-  include_in_all: Boolean = false) extends ESPropertyFields
+  index: Boolean = false,
+  include_in_all: Option[Boolean] = Some(false)) extends ESPropertyFields
 
 // def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html
 // technically, the top-level fields and inner fields are the same thing, and we *could* use the same class.
