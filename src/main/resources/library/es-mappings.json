@@ -1,8 +1,6 @@
 {
    "properties": {
       "_all": {
-         "analyzer": "default",
-         "search_analyzer": "default_search",
          "type": "text"
       },
       "_discoverableByGroups": {
@@ -12,6 +10,14 @@
          "analyzer": "autocomplete",
          "search_analyzer": "standard",
          "store": true,
+         "type": "text"
+      },
+      "authorizationDomain": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
          "type": "text"
       },
       "library:DS_URL": {
@@ -138,6 +144,17 @@
                "analyzer": "keyword",
                "fielddata": true,
                "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:dataAccessInstructions": {
+         "copy_to": [
+            "_all"
+         ],
+         "fields": {
+            "keyword": {
+               "type": "keyword"
             }
          },
          "type": "text"
@@ -425,6 +442,12 @@
          },
          "type": "text"
       },
+      "library:invalidDataset": {
+         "type": "boolean"
+      },
+      "library:lmsvn": {
+         "type": "long"
+      },
       "library:numSubjects": {
          "fields": {
             "sort": {
@@ -510,6 +533,9 @@
          },
          "type": "text"
       },
+      "library:published": {
+         "type": "boolean"
+      },
       "library:reference": {
          "copy_to": [
             "_suggest",
@@ -536,6 +562,49 @@
             }
          },
          "type": "boolean"
+      },
+      "library:structuredUseRestriction": {
+         "properties": {
+            "DS": {
+               "type": "long"
+            },
+            "GRU": {
+               "type": "boolean"
+            },
+            "HMB": {
+               "type": "boolean"
+            },
+            "IRB": {
+               "type": "boolean"
+            },
+            "NAGR": {
+               "type": "boolean"
+            },
+            "NCTRL": {
+               "type": "boolean"
+            },
+            "NCU": {
+               "type": "boolean"
+            },
+            "NMDS": {
+               "type": "boolean"
+            },
+            "NPU": {
+               "type": "boolean"
+            },
+            "RS-FM": {
+               "type": "boolean"
+            },
+            "RS-G": {
+               "type": "boolean"
+            },
+            "RS-M": {
+               "type": "boolean"
+            },
+            "RS-PD": {
+               "type": "boolean"
+            }
+         }
       },
       "library:studyDesign": {
          "copy_to": [
@@ -571,6 +640,30 @@
                "analyzer": "keyword",
                "fielddata": true,
                "type": "text"
+            }
+         },
+         "type": "text"
+      },
+      "library:useLimitationOption": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      },
+      "name": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
+            }
+         },
+         "type": "text"
+      },
+      "namespace": {
+         "fields": {
+            "keyword": {
+               "type": "keyword"
             }
          },
          "type": "text"
@@ -611,11 +704,6 @@
          "fields": {
             "keyword": {
                "type": "keyword"
-            },
-            "sort": {
-               "analyzer": "sort_analyzer",
-               "fielddata": true,
-               "type": "text"
             }
          },
          "type": "text"
