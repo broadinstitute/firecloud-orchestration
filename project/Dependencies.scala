@@ -23,14 +23,14 @@ object Dependencies {
     "io.netty"                       % "netty-codec"         % nettyV,
     "io.netty"                       % "netty-codec-http"    % nettyV,
     "io.netty"                       % "netty-handler"       % nettyV,
-    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6",
+    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
     "com.google.guava"               % "guava"               % "30.1-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.2",
     "ch.qos.logback"                 % "logback-classic"     % "1.2.11",
-    "com.getsentry.raven"            % "raven-logback"       % "8.0.3",
+    "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: should this be io.sentry / sentry-logback instead?
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.4",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -58,7 +58,7 @@ object Dependencies {
     "com.typesafe.akka"             %% "akka-slf4j"                % akkaV,
     "com.typesafe.akka"             %% "akka-stream"               % akkaV      excludeAll excludeAkkaActor,
 
-    "org.elasticsearch.client"       % "transport"           % "5.6.16"
+    "org.elasticsearch.client"       % "transport"           % "5.6.16" // pin to this version; it's the latest compatible with our elasticsearch server
       exclude("io.netty", "netty-codec")
       exclude("io.netty", "netty-transport")
       exclude("io.netty", "netty-resolver")
@@ -75,7 +75,7 @@ object Dependencies {
     excludeGuava("com.google.auth"     % "google-auth-library-oauth2-http"  % "0.24.1"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "7.1.1",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.0.5",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
