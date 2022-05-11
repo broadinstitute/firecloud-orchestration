@@ -42,10 +42,13 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
   }
 
   override def createIndex(): Unit = {
-    val mapping = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
+
+    // TODO: AJ-249: delete this entirely once we're done with it
+    val UNUSED_FOR_NOW = makeMapping(FileUtils.readAllTextFromResource(LibraryService.schemaLocation))
+
     val createIndexRequest = new CreateIndexRequest(indexName)
     createIndexRequest.settings(analysisSettings, XContentType.JSON)
-    createIndexRequest.mapping("document", mapping, XContentType.JSON)
+    createIndexRequest.mapping("document", mappings, XContentType.JSON)
     // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
 
     elasticSearchRequest() {
@@ -141,6 +144,8 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
    * lazy is necessary here because we use it above
    */
   private final lazy val analysisSettings = FileUtils.readAllTextFromResource("library/es-settings.json")
+
+  private final lazy val mappings = FileUtils.readAllTextFromResource("library/es-mappings.json")
 
   override def status: Future[SubsystemStatus] = {
     Future(SubsystemStatus(this.indexExists(), None))

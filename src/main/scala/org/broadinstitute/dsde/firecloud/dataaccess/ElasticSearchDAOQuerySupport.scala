@@ -302,7 +302,7 @@ trait ElasticSearchDAOQuerySupport extends ElasticSearchDAOSupport {
         Future(buckets.toList)
 
       case Failure(ex) =>
-        logger.warn(s"failed to get populate suggestions for field [$field] and term [$text]: ${ex.getMessage}")
+        logger.warn(s"failed to get populate suggestions for field [$field] and term [$text]: ${ex.getMessage}", ex)
         Future(Seq.empty[String])
     }
   }
