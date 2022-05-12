@@ -153,9 +153,10 @@ class ElasticSearchShareLogDAO(client: RestHighLevelClient, indexName: String, r
   private def init(): Unit = {
     if (!indexExists()) {
       val createIndexRequest = new CreateIndexRequest(indexName)
-      elasticSearchRequest() {
-        client.indices().create(createIndexRequest, OPTS)
-      }
+      client.indices().create(createIndexRequest, OPTS)
+//      elasticSearchRequest() {
+//        client.indices().create(createIndexRequest, OPTS)
+//      }
       // Try one more time and fail if index creation fails
       if (!indexExists())
       throw new FireCloudException(s"index $indexName does not exist!")

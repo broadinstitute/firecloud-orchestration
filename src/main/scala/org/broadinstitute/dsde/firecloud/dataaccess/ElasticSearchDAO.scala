@@ -49,11 +49,12 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
     // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
 
     logger.error(s"********** inside createIndex() for $indexName ... ")
+    client.indices().create(createIndexRequest, OPTS)
 
-    elasticSearchRequest() {
-      logger.error(s"********** inside createIndex.elasticSearchRequest() for $indexName ... ")
-      client.indices().create(createIndexRequest, OPTS)
-    }
+//    elasticSearchRequest() {
+//      logger.error(s"********** inside createIndex.elasticSearchRequest() for $indexName ... ")
+//      client.indices().create(createIndexRequest, OPTS)
+//    }
   }
 
   // will throw an error if index does not exist
