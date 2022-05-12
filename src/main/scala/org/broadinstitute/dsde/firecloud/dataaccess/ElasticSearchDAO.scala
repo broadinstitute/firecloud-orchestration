@@ -26,11 +26,13 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
 
   // if the index does not exist, create it.
   override def initIndex(): Unit = {
+    logger.error(s"********** inside initIndex() for $indexName ... ")
     conditionalRecreateIndex() // deleteFirst = false
   }
 
   // delete an existing index, then re-create it.
   override def recreateIndex(): Unit = {
+    logger.error(s"********** inside recreateIndex() for $indexName ... ")
     conditionalRecreateIndex(true)
   }
 
@@ -47,7 +49,10 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
     createIndexRequest.mapping("document", mappings, XContentType.JSON)
     // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
 
+    logger.error(s"********** inside createIndex() for $indexName ... ")
+
     elasticSearchRequest() {
+      logger.error(s"********** inside createIndex.elasticSearchRequest() for $indexName ... ")
       client.indices().create(createIndexRequest, OPTS)
     }
   }
@@ -99,6 +104,7 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
   }
 
   private def conditionalRecreateIndex(deleteFirst: Boolean = false): Unit = {
+    logger.error(s"********** inside conditionalRecreateIndex() for $indexName ... ")
     try {
       logger.info(s"Checking to see if ElasticSearch index '%s' exists ... ".format(indexName))
       val exists = indexExists()
