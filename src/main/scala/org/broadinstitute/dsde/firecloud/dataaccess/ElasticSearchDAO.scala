@@ -5,13 +5,12 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
-import org.elasticsearch.client.indices.CreateIndexRequest
 import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.delete.DeleteRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
-import org.elasticsearch.client.indices.GetIndexRequest
+import org.elasticsearch.client.indices.{CreateIndexRequest, GetIndexRequest}
 import org.elasticsearch.common.xcontent.XContentType
 import org.parboiled.common.FileUtils
 
