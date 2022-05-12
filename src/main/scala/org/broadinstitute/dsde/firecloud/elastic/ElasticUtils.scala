@@ -8,7 +8,7 @@ object ElasticUtils {
   // TODO: AJ-249 is clusterName unused?
   def buildClient(servers:Seq[Authority], clusterName: String): RestHighLevelClient = {
 
-    val addresses = servers map { server =>
+    val addresses = servers.take(1) map { server =>
       new HttpHost(server.host.address(), server.port, "http")
     }
 
