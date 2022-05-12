@@ -4,8 +4,8 @@ import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.client.indices.CreateIndexRequest
 import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.delete.DeleteRequest
 import org.elasticsearch.action.index.IndexRequest
@@ -46,7 +46,7 @@ class ElasticSearchDAO(client: RestHighLevelClient, indexName: String, researchP
   override def createIndex(): Unit = {
     val createIndexRequest = new CreateIndexRequest(indexName)
     createIndexRequest.settings(analysisSettings, XContentType.JSON)
-    createIndexRequest.mapping("document", mappings, XContentType.JSON)
+    createIndexRequest.mapping(mappings, XContentType.JSON)
     // TODO: set to one shard? https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-is-broken.html
 
     logger.error(s"********** inside createIndex() for $indexName ... ")
