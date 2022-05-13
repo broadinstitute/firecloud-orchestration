@@ -8,8 +8,7 @@ object ElasticUtils {
   // TODO: AJ-249 is clusterName unused?
   def buildClient(servers:Seq[Authority], clusterName: String): RestHighLevelClient = {
 
-    // TODO: AJ-249 do we get repeated requests when specifying more than one server?
-    val addresses = servers.take(1) map { server =>
+    val addresses = servers map { server =>
       new HttpHost(server.host.address(), server.port, "http")
     }
 
