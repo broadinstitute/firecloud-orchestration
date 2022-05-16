@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.13.2"
   val jacksonHotfixV = "2.13.2.2" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.77.Final"
-  val workbenchLibsHash = "0c0401b4-SNAP"
+  val workbenchLibsHash = "5bc9c03"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
