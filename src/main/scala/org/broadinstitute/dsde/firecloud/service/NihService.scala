@@ -19,7 +19,8 @@ import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.Try
+import scala.reflect.runtime.universe.{MethodSymbol, typeOf}
+import scala.util.{Failure, Try}
 
 
 case class NihStatus(
@@ -127,6 +128,27 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
   }
 
+  private def unlinkNihAccount(userInfo: UserInfo): Future[Boolean] = {
+//    val nihKeys = NihLink(null, null).productElementNames.toSet
+    val nihKeys = Set("linkedNihUsername", "linkExpireTime")
+
+    Future.traverse(nihKeys) { nihKey =>
+      thurloeDao.deleteKeyValue(userInfo.id, nihKey, userInfo)
+    } map { results =>
+      results.forall(_.isSuccess)
+    }
+  }
+
+  def unlinkNihAccountAndSyncSelf(userInfo: UserInfo): Future[Unit] = {
+    for {
+      linkResult <- unlinkNihAccount(userInfo)
+      _ <- ensureWhitelistGroupsExists()
+      whitelistSyncResults <- Future.traverse(nihWhitelists) {
+        whitelist => removeUserFromNihWhitelistGroup(WorkbenchEmail(userInfo.userEmail), whitelist)
+      }
+    } yield {}
+  }
+
   def updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper): Future[PerRequestMessage] = {
     val res = for {
       shibbolethPublicKey <- shibbolethDao.getPublicKey()
@@ -172,6 +194,10 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
         _ <- samDao.removeGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
       } yield false
     }
+  }
+
+  private def removeUserFromNihWhitelistGroup(userEmail: WorkbenchEmail, nihWhitelist: NihWhitelist): Future[Unit] = {
+    samDao.removeGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
   }
 
   private def ensureWhitelistGroupsExists(): Future[Unit] = {
