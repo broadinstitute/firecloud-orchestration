@@ -3143,10 +3143,10 @@ paths:
         204:
           description: Successfully unlinked NIH account
         404:
-          description: linkedNihUsername key missing from status
+          description: NIH account link not found
           content: {}
         500:
-          description: Internal server error retrieving NIH status
+          description: Internal server error unlinking NIH account
           content: {}
       x-passthrough: false
   /api/notifications/general:

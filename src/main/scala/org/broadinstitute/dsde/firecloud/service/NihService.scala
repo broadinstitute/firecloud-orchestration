@@ -128,14 +128,14 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
   }
 
-  private def unlinkNihAccount(userInfo: UserInfo): Future[Boolean] = {
+  private def unlinkNihAccount(userInfo: UserInfo): Future[Unit] = {
     val nihKeys = Set("linkedNihUsername", "linkExpireTime")
 
     Future.traverse(nihKeys) { nihKey =>
       thurloeDao.deleteKeyValue(userInfo.id, nihKey, userInfo)
     } map { results =>
-      if(results.forall(_.isSuccess)) true
-      else throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to unlink NIH account"))
+      if(!results.forall(_.isSuccess))
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to unlink NIH account"))
     }
   }
 
@@ -143,7 +143,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     for {
       _ <- unlinkNihAccount(userInfo)
       _ <- ensureWhitelistGroupsExists()
-      groupRemovalResults <- Future.traverse(nihWhitelists) {
+      _ <- Future.traverse(nihWhitelists) {
         whitelist => removeUserFromNihWhitelistGroup(WorkbenchEmail(userInfo.userEmail), whitelist).recoverWith {
           case _: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to unlink NIH account"))
         }
