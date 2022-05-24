@@ -150,6 +150,47 @@ class NihApiServiceSpec extends ApiServiceSpec {
     }
   }
 
+  it should "unlink an NIH account for a user that is already linked" in withDefaultApiServices { services =>
+    val toLink = WorkbenchEmail(services.thurloeDao.TCGA_AND_TARGET_LINKED)
+
+    //Assert that the keys are present in Thurloe
+    assert(services.thurloeDao.mockKeyValues(toLink.value).map(_.key).contains(Some("linkedNihUsername")))
+    assert(services.thurloeDao.mockKeyValues(toLink.value).map(_.key).contains(Some("linkExpireTime")))
+
+    //Assert that the user is a member of the TCGA and TARGET NIH groups
+    assert(services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    assert(services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+
+    Delete("/nih/unlink")  ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
+      status should equal(NoContent)
+    }
+
+    //Assert that the keys were removed from Thurloe
+    assert(!services.thurloeDao.mockKeyValues(toLink.value).map(_.key).contains(Some("linkedNihUsername")))
+    assert(!services.thurloeDao.mockKeyValues(toLink.value).map(_.key).contains(Some("linkExpireTime")))
+
+    //Assert that the user has been removed from the relevant NIH groups
+    assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+  }
+
+  it should "tolerate unlinking an NIH account that is not linked" in withDefaultApiServices { services =>
+    val toLink = WorkbenchEmail(services.thurloeDao.TCGA_UNLINKED)
+
+    Delete("/nih/unlink")  ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
+      status should equal(NoContent)
+    }
+
+    //Assert that the link has been removed entirely
+    Get("/nih/status") ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
+      status should equal(NotFound)
+    }
+
+    //Assert that the user has been removed from the relevant NIH groups
+    assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
+    assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
+  }
+
   /* Test scenario:
      1 user that is linked but their TCGA access has expired. they should be removed from the TCGA group
      1 user that is linked but their TARGET access has expired. they should be removed from the TARGET group
