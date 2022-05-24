@@ -181,12 +181,12 @@ class NihApiServiceSpec extends ApiServiceSpec {
       status should equal(NoContent)
     }
 
-    //Assert that the link has been removed entirely
+    //Assert that there is no NIH account link
     Get("/nih/status") ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(NotFound)
     }
 
-    //Assert that the user has been removed from the relevant NIH groups
+    //Assert the user is not in any of the NIH groups
     assert(!services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     assert(!services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
   }
