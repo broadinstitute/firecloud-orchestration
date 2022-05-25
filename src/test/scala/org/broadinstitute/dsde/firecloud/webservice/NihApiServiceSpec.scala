@@ -161,7 +161,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
     assert(services.samDao.groups(tcgaDbGaPAuthorized).contains(toLink))
     assert(services.samDao.groups(targetDbGaPAuthorized).contains(toLink))
 
-    Delete("/nih/unlink")  ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
+    Delete("/nih/account")  ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(NoContent)
     }
 
@@ -177,7 +177,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
   it should "tolerate unlinking an NIH account that is not linked" in withDefaultApiServices { services =>
     val toLink = WorkbenchEmail(services.thurloeDao.TCGA_UNLINKED)
 
-    Delete("/nih/unlink")  ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
+    Delete("/nih/account")  ~> dummyUserIdHeaders(toLink.value, "access_token", toLink.value) ~> sealRoute(services.nihRoutes) ~> check {
       status should equal(NoContent)
     }
 

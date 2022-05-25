@@ -43,7 +43,7 @@ trait NihApiService extends Directives with RequestBuilding with StandardUserInf
         path ("status") {
           complete { nihServiceConstructor().getNihStatus(userInfo) }
         } ~
-        path ("unlink") {
+        path ("account") {
           delete {
             complete { nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent) }
           }

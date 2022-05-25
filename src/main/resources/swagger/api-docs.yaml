@@ -3133,7 +3133,7 @@ paths:
           description: Internal server error retrieving NIH status
           content: {}
       x-passthrough: false
-  /api/nih/unlink:
+  /api/nih/account:
     delete:
       tags:
         - NIH
