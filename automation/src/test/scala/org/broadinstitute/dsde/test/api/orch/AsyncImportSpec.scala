@@ -13,9 +13,11 @@ import org.broadinstitute.dsde.workbench.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.ErrorReportJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestException, WorkspaceAccessLevel}
 import org.parboiled.common.FileUtils
+import org.scalatest.Assertion
 import org.scalatest.OptionValues._
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minutes, Seconds, Span}
@@ -23,6 +25,7 @@ import spray.json._
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.xml.parsers.FactoryConfigurationError
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -46,6 +49,46 @@ class AsyncImportSpec
 
   lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("AsyncImportSpec-pfb-expected-entities.json").getLines().mkString
     .parseJson.convertTo[Map[String, EntityTypeMetadata]]
+
+
+
+  //TODO: These two methods and exception can be put in a utility class for other tests to use
+  class TestEscapedException(
+                              message: String,
+                              failedCodeStackDepth: Int,
+                            ) extends TestFailedException(message, failedCodeStackDepth){
+    def this(message: String) = this(message, 0)
+  }
+
+  /**
+    * Functions as an assertion unless some fail-immediately condition is met,
+    * in which case it throws a test-failing error
+    * @param assertion Scalatest assertion to be checked for success or failure
+    * @param failCondition Condition that, if met, will end an asynchronous test with failure immediately
+    * @param failMessage Message to report in test failure
+    * @return test assertion
+    */
+  def assertWithFailure(assertion: => Assertion, failCondition: Boolean, failMessage: String): Assertion =
+    if (failCondition) throw new FactoryConfigurationError(failMessage)
+    else assertion
+
+  /**
+    * Wraps a function in an eventually wrapped in a try-catch;
+    * Functions as an eventually but will fail test without retrying if test-ending errors thrown in the test function
+    * @param timeout
+    * @param interval
+    * @param testFunction Test to run; should include an assertWithFailure statement
+    * @tparam T the result of the testFunction
+    * @return The result of the testFunction (an assertion) if an error is not thrown
+    */
+  def eventuallyWithFail[T](timeout: Timeout, interval: Interval, testFunction: => T): T =
+    try {
+      eventually(timeout, interval){
+        testFunction
+      }
+    } catch {
+      case ex:FactoryConfigurationError => throw new TestEscapedException(ex.getMessage)
+    }
 
   "Orchestration" - {
 
@@ -235,7 +278,7 @@ class AsyncImportSpec
 
     // poll for completion as owner
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
-      eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
+      eventuallyWithFail(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds))), {
         val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
         logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
@@ -244,8 +287,8 @@ class AsyncImportSpec
         respStatus shouldBe StatusCodes.OK
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
         logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
-        importStatus shouldBe JsString ("Done")
-      }
+        assertWithFailure(importStatus shouldBe JsString ("Done"), importStatus.equals(JsString ("Error")), "Import error occurred, failing test")
+      })
     }
 
     logger.info(s"$projectName/$workspaceName import job $importJobId completed for file $importFilePath in " +
