@@ -7,6 +7,10 @@ import org.scalatest.exceptions.TestFailedException
 
 import javax.xml.parsers.FactoryConfigurationError
 
+/**
+  * Some helper functions to get asynchronous tests failing quickly
+  * Should some day be made available to a wider codebase
+  */
 trait AsyncTestUtils extends Eventually {
 
   /**
@@ -14,11 +18,11 @@ trait AsyncTestUtils extends Eventually {
     * Functions as an eventually but will fail test without retrying if test-ending errors thrown in the test function
     * @param timeout
     * @param interval
-    * @param testFunction Test to run; should include a failWithEscape (could be within assertWithFailure)
+    * @param testFunction Test to run; should include a failAndEscape (could be within assertWithEscape)
     * @tparam T the result of the testFunction
     * @return The result of the testFunction (an assertion) if an error is not thrown
     */
-  def eventuallyWithFail[T](timeout: Timeout, interval: Interval, testFunction: => T): T =
+  def eventuallyWithEscape[T](timeout: Timeout, interval: Interval, testFunction: => T): T =
     try {
       eventually(timeout, interval){
         testFunction
@@ -28,12 +32,12 @@ trait AsyncTestUtils extends Eventually {
     }
 
   /**
-    * eventuallyWithFail but the eventually uses implicit timeout and interval
-    * @param testFunction Test to run; should include a failWithEscape (could be within assertWithFailure)
+    * eventuallyWithEscape but the eventually uses implicit timeout and interval
+    * @param testFunction Test to run; should include a failAndEscape (could be within assertWithEscape)
     * @tparam T the result of the testFunction
     * @return The result of the testFunction (an assertion) if an error is not thrown
     */
-  def eventuallyWithFail[T](testFunction: => T): T =
+  def eventuallyWithEscape[T](testFunction: => T): T =
     try {
       eventually{
         testFunction
@@ -57,7 +61,7 @@ trait AsyncTestUtils extends Eventually {
     * @param failMessage Message to report in test failure
     * @return test assertion
     */
-  def assertWithFailure(assertion: => Assertion, failCondition: Boolean, failMessage: String): Assertion =
+  def assertWithEscape(assertion: => Assertion, failCondition: Boolean, failMessage: String): Assertion =
     if (failCondition) failAndEscape(failMessage)
     else assertion
 }

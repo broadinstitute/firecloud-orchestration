@@ -68,11 +68,11 @@ class AsyncImportSpec
             }
 
             // poll for completion as owner
-            eventuallyWithFail{
+            eventuallyWithEscape{
             val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
             resp.status shouldBe StatusCodes.OK
             val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
-            assertWithFailure(
+            assertWithEscape(
                importStatus shouldBe JsString("Done"),
               importStatus.equals(JsString("Error")),
               "Error encountered during import, failing test early"
@@ -106,10 +106,10 @@ class AsyncImportSpec
             }
 
             // poll for completion as writer
-            eventuallyWithFail {
+            eventuallyWithEscape {
               val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")(writerToken)
               val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
-              assertWithFailure(
+              assertWithEscape(
                 importStatus shouldBe JsString("Done"),
                 importStatus.equals(JsString("Error")),
                 "Error encountered during import, failing test early"
@@ -246,7 +246,7 @@ class AsyncImportSpec
 
     // poll for completion as owner
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
-      eventuallyWithFail(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds))), {
+      eventuallyWithEscape(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds))), {
         val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
         logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
@@ -255,7 +255,7 @@ class AsyncImportSpec
         respStatus shouldBe StatusCodes.OK
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
         logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
-        assertWithFailure(importStatus shouldBe JsString ("Done"), importStatus.equals(JsString ("Error")), "Import error occurred, failing test")
+        assertWithEscape(importStatus shouldBe JsString ("Done"), importStatus.equals(JsString ("Error")), "Import error occurred, failing test")
       })
     }
 
