@@ -245,7 +245,7 @@ class AsyncImportSpec
 
     // poll for completion as owner
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
-      eventuallyWithEscape(Timeout(scaled(Span(10, Minutes))), Interval(scaled(Span(5, Seconds))), {
+      eventuallyWithEscape(Timeout(scaled(Span(10, Minutes))), Interval(scaled(Span(5, Seconds)))) {
         val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
         logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis() - startTime)}")
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
@@ -255,7 +255,7 @@ class AsyncImportSpec
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
         logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
         assertWithEscape(importStatus shouldBe JsString("Done"), importStatus should not equal JsString("Error"), "Import error occurred, failing test")
-      })
+      }
     }
 
     logger.info(s"$projectName/$workspaceName import job $importJobId completed for file $importFilePath in " +

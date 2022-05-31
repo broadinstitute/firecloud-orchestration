@@ -73,7 +73,7 @@ trait AsyncTestUtils extends Eventually {
     try {
       failCondition
     } catch {
-      case ex: Exception => failAndEscape(failMessage)
+      case ex: Exception => failAndEscape(s"$failMessage - failure due to: ${ex.getMessage}")
     }
     assertion
   }
