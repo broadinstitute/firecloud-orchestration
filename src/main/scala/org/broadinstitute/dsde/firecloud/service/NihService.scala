@@ -134,8 +134,13 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     Future.traverse(nihKeys) { nihKey =>
       thurloeDao.deleteKeyValue(userInfo.id, nihKey, userInfo)
     } map { results =>
-      if(!results.forall(_.isSuccess))
-        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to unlink NIH account"))
+      val failedKeys = results.collect {
+        case Failure(exception) => exception.getMessage
+      }
+
+      if(failedKeys.nonEmpty) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, s"Unable to unlink NIH account: ${failedKeys.mkString(",")}"))
+      }
     }
   }
 
