@@ -15,7 +15,7 @@ import org.broadinstitute.dsde.workbench.service.{AclEntry, Orchestration, RestE
 import org.parboiled.common.FileUtils
 import org.scalatest.OptionValues._
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minutes, Seconds, Span}
@@ -30,7 +30,7 @@ import scala.util.{Failure, Success, Try}
 class AsyncImportSpec
   extends AnyFreeSpec
     with Matchers
-    with Eventually
+    with AsyncTestUtils
     with ScalaFutures
     with WorkspaceFixtures
     with Orchestration {
@@ -62,20 +62,25 @@ class AsyncImportSpec
             importJobIdValues should have size 1
 
             val importJobId: String = importJobIdValues.head match {
-              case js:JsString => js.value
+              case js: JsString => js.value
               case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
-            eventually {
-              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
+            eventuallyWithEscape {
+              val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
               resp.status shouldBe StatusCodes.OK
-              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
+              val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
+              assertWithEscape(
+                importStatus shouldBe JsString("Done"),
+                importStatus should not equal JsString("Error"),
+                "Error encountered during import, failing test early"
+              )
             }
 
             // inspect data entities and confirm correct import as owner
             eventually {
-              val resp = Orchestration.getRequest( s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
+              val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
               compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
             }
 
@@ -95,23 +100,28 @@ class AsyncImportSpec
             val importJobIdValues: Seq[JsValue] = postResponse.parseJson.asJsObject.getFields("jobId")
             importJobIdValues should have size 1
             val importJobId: String = importJobIdValues.head match {
-              case js:JsString => js.value
+              case js: JsString => js.value
               case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as writer
-            eventually {
-              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")(writerToken)
-              blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Done")
+            eventuallyWithEscape {
+              val resp = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")(writerToken)
+              val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
+              assertWithEscape(
+                importStatus shouldBe JsString("Done"),
+                importStatus should not equal JsString("Error"),
+                "Error encountered during import, failing test early"
+              )
             }
 
             // inspect data entities and confirm correct import as writer
             eventually {
-              val resp = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/entities")(writerToken)
+              val resp = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/entities")(writerToken)
               compareMetadata(blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]], expectedEntities)
             }
 
-          } (ownerAuthToken)
+          }(ownerAuthToken)
         }(owner.makeAuthToken(billingScopes))
       }
     }
@@ -130,13 +140,13 @@ class AsyncImportSpec
             importJobIdValues should have size 1
 
             val importJobId: String = importJobIdValues.head match {
-              case js:JsString => js.value
+              case js: JsString => js.value
               case x => fail("got an invalid jobId: " + x.toString())
             }
 
             // poll for completion as owner
             eventually {
-              val resp: HttpResponse = Orchestration.getRequest( s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
+              val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importPFB/$importJobId")
               resp.status shouldBe StatusCodes.OK
               blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value shouldBe JsString("Error")
             }
@@ -161,9 +171,9 @@ class AsyncImportSpec
             val errorReport = exception.message.parseJson.convertTo[ErrorReport]
 
             errorReport.statusCode.value shouldBe StatusCodes.Forbidden
-            errorReport.message should include (s"Cannot perform the action write on $projectName/$workspaceName")
+            errorReport.message should include(s"Cannot perform the action write on $projectName/$workspaceName")
 
-          } (ownerAuthToken)
+          }(ownerAuthToken)
         }(owner.makeAuthToken(billingScopes))
       }
 
@@ -180,9 +190,9 @@ class AsyncImportSpec
             val errorReport = exception.message.parseJson.convertTo[ErrorReport]
 
             errorReport.statusCode.value shouldBe StatusCodes.BadRequest
-            errorReport.message should include (s"Object expected in field 'url'")
+            errorReport.message should include(s"Object expected in field 'url'")
 
-          } (ownerAuthToken)
+          }(ownerAuthToken)
         }(owner.makeAuthToken(billingScopes))
       }
 
@@ -228,42 +238,42 @@ class AsyncImportSpec
 
     val importJobId: String = importJobIdValues.head match {
       case js: JsString => js.value
-      case x => fail("got an invalid jobId: " + x.toString ())
+      case x => fail("got an invalid jobId: " + x.toString())
     }
 
     logger.info(s"$projectName/$workspaceName has import job $importJobId for file $importFilePath")
 
     // poll for completion as owner
     withClue(s"import job $importJobId failed its eventually assertions on job status: ") {
-      eventually(timeout = Timeout(scaled(Span(10, Minutes))), interval = Interval(scaled(Span(5, Seconds)))) {
+      eventuallyWithEscape(Timeout(scaled(Span(10, Minutes))), Interval(scaled(Span(5, Seconds)))) {
         val requestId = scala.util.Random.alphanumeric.take(8).mkString // just to assist with logging
-        logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        logger.info(s"[$requestId] About to check status for import job $importJobId. Elapsed: ${humanReadableMillis(System.currentTimeMillis() - startTime)}")
         val resp: HttpResponse = Orchestration.getRequest(s"${workspaceUrl(projectName, workspaceName)}/importJob/$importJobId")
         val respStatus = resp.status
-        logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+        logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis() - startTime)}")
         respStatus shouldBe StatusCodes.OK
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
         logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
-        importStatus shouldBe JsString ("Done")
+        assertWithEscape(importStatus shouldBe JsString("Done"), importStatus should not equal JsString("Error"), "Import error occurred, failing test")
       }
     }
 
     logger.info(s"$projectName/$workspaceName import job $importJobId completed for file $importFilePath in " +
-      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. Now checking metadata ... ")
+      s"${humanReadableMillis(System.currentTimeMillis() - startTime)}. Now checking metadata ... ")
 
     // inspect data entities and confirm correct import as owner. With the import complete, the metadata should already
     // be correct, so we don't need to use eventually here.
     withClue(s"import job $importJobId failed its eventually assertion on entity metadata: ") {
       val resp = Orchestration.getRequest(s"${ServiceTestConfig.FireCloud.orchApiUrl}api/workspaces/$projectName/$workspaceName/entities")
       val respStatus = resp.status
-      logger.info(s"HTTP response status for import job $importJobId metadata request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis()-startTime)}")
+      logger.info(s"HTTP response status for import job $importJobId metadata request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis() - startTime)}")
       respStatus shouldBe StatusCodes.OK
       val result = blockForStringBody(resp).parseJson.convertTo[Map[String, EntityTypeMetadata]]
       compareMetadata(result, expectedResult)
     }
 
     logger.info(s"$projectName/$workspaceName import job $importJobId metadata check for file $importFilePath passed in " +
-      s"${humanReadableMillis(System.currentTimeMillis()-startTime)}. importAsync() complete.")
+      s"${humanReadableMillis(System.currentTimeMillis() - startTime)}. importAsync() complete.")
 
   }
 
