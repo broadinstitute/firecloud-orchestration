@@ -42,5 +42,7 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]]
 
+  def deleteKeyValue(forUserId: String, keyName: String, callerToken: WithAccessToken): Future[Try[Unit]]
+
   override def serviceName:String = ThurloeDAO.serviceName
 }

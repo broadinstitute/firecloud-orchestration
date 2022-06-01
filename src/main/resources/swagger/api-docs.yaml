@@ -3133,6 +3133,22 @@ paths:
           description: Internal server error retrieving NIH status
           content: {}
       x-passthrough: false
+  /api/nih/account:
+    delete:
+      tags:
+        - NIH
+      summary: Unlinks a user's NIH account from their Terra account
+      operationId: NIHUnlink
+      responses:
+        204:
+          description: Successfully unlinked NIH account
+        404:
+          description: NIH account link not found
+          content: {}
+        500:
+          description: Internal server error unlinking NIH account
+          content: {}
+      x-passthrough: false
   /api/notifications/general:
     get:
       tags:

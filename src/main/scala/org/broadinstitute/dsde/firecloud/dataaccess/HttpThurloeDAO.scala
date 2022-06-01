@@ -80,6 +80,15 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     saveKeyValues(userInfo, profilePropertyMap).map(_ => ())
   }
 
+  override def deleteKeyValue(forUserId: String, keyName: String, callerToken: WithAccessToken): Future[Try[Unit]] = {
+    wrapExceptions {
+      userAuthedRequest(Delete(UserApiService.remoteDeleteKeyURL.format(forUserId, keyName)), useFireCloudHeader = true, label = Some("HttpThurloeDAO.deleteKeyValue"))(callerToken) map { response =>
+        if(response.status.isSuccess) Try(())
+        else Try(throw new FireCloudException(s"Unable to delete key ${keyName} from user profile"))
+      }
+    }
+  }
+
   private def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {
     codeBlock.recover {
       case t: Throwable => {

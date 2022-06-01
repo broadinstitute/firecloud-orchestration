@@ -19,7 +19,8 @@ import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.Try
+import scala.reflect.runtime.universe.{MethodSymbol, typeOf}
+import scala.util.{Failure, Try}
 
 
 case class NihStatus(
@@ -127,6 +128,34 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
   }
 
+  private def unlinkNihAccount(userInfo: UserInfo): Future[Unit] = {
+    val nihKeys = Set("linkedNihUsername", "linkExpireTime")
+
+    Future.traverse(nihKeys) { nihKey =>
+      thurloeDao.deleteKeyValue(userInfo.id, nihKey, userInfo)
+    } map { results =>
+      val failedKeys = results.collect {
+        case Failure(exception) => exception.getMessage
+      }
+
+      if(failedKeys.nonEmpty) {
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, s"Unable to unlink NIH account: ${failedKeys.mkString(",")}"))
+      }
+    }
+  }
+
+  def unlinkNihAccountAndSyncSelf(userInfo: UserInfo): Future[Unit] = {
+    for {
+      _ <- unlinkNihAccount(userInfo)
+      _ <- ensureWhitelistGroupsExists()
+      _ <- Future.traverse(nihWhitelists) {
+        whitelist => removeUserFromNihWhitelistGroup(WorkbenchEmail(userInfo.userEmail), whitelist).recoverWith {
+          case _: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to unlink NIH account"))
+        }
+      }
+    } yield {}
+  }
+
   def updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper): Future[PerRequestMessage] = {
     val res = for {
       shibbolethPublicKey <- shibbolethDao.getPublicKey()
@@ -172,6 +201,10 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
         _ <- samDao.removeGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
       } yield false
     }
+  }
+
+  private def removeUserFromNihWhitelistGroup(userEmail: WorkbenchEmail, nihWhitelist: NihWhitelist): Future[Unit] = {
+    samDao.removeGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
   }
 
   private def ensureWhitelistGroupsExists(): Future[Unit] = {
