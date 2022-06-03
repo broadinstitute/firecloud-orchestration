@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockSamDAO, UsTieredPriceItem}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
@@ -43,12 +44,22 @@ class StorageServiceSpec extends BaseServiceSpec with StorageServiceSupport with
       }
     }
 
-    "should convert object size to cost and should " in {
+    "should convert object size to positive cost" in {
       val result = Await.result(storageService.getObjectStats("foo", "bar"), Duration.Inf)
       val objectMetadata = result.response._2
       val cost = objectMetadata.estimatedCostUSD.get
       withClue("Cost should greater than zero since mocked size is greater than 0") {
         assert(cost > 0)
+      }
+    }
+
+    "should still return 200 status even if the size is not a number" in {
+      val result = Await.result(storageService.getObjectStats("foo2", "bar"), Duration.Inf)
+      val status = result.response._1
+      assert(status == StatusCodes.OK)
+      val objectMetadata = result.response._2
+      assertResult(None){
+        objectMetadata.estimatedCostUSD
       }
     }
   }
@@ -62,6 +73,9 @@ class SamMockWithUserToken extends MockSamDAO {
 
 class GoogleMock extends MockGoogleServicesDAO {
   override def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)(implicit executionContext: ExecutionContext): Future[ObjectMetadata] = {
-    Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", None, Some("blahh"), "blahh", "10000000000000", "blahh", Some("blahh"), "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
+    if(bucketName == "foo")
+      Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", None, Some("blahh"), "blahh", "10000000000000", "blahh", Some("blahh"), "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
+    else
+      Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", None, Some("blahh"), "blahh", "", "blahh", Some("blahh"), "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
   }
 }
