@@ -54,43 +54,6 @@ class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matcher
   // check for a 403 when requesting non-existent objects, which may seem wrong at first glance to anyone
   // reading this code.
 
-  "metadata endpoint" - {
-
-    "should return metadata response for a public object" in {
-      implicit val authToken: AuthToken = student.makeAuthToken()
-      val result:ObjectMetadata = Orchestration.storage.getObjectMetadata(publicUrl.bucketName, publicUrl.objectName)
-      assertResult(publicUrl.bucketName.value) { result.bucket }
-      assertResult(publicUrl.objectName.value) { result.name }
-    }
-
-    "should return metadata response for an object I have permissions to" in {
-      implicit val token = student.makeAuthToken()
-      withSmallFile { smallFile =>
-        setStudentAndSA(smallFile, student)
-        val result:ObjectMetadata = Orchestration.storage.getObjectMetadata(smallFile.bucketName, smallFile.objectName)
-        assertResult(smallFile.bucketName.value) { result.bucket }
-        assertResult(smallFile.objectName.value) { result.name }
-      }
-    }
-
-    "should return 403 for a non-existent object" in {
-      implicit val authToken: AuthToken = student.makeAuthToken()
-      val requestEx = intercept[RestException] {
-        Orchestration.storage.getObjectMetadata(nonExistent.bucketName, nonExistent.objectName)
-      }
-      assert(requestEx.getMessage.toLowerCase.contains("forbidden"))
-    }
-
-    "should return 403 for a file I don't have permissions to" in {
-      implicit val authToken: AuthToken = UserPool.chooseStudent.makeAuthToken()
-      val requestEx = intercept[RestException] {
-        Orchestration.storage.getObjectMetadata(noAccess.bucketName, noAccess.objectName)
-      }
-      assert(requestEx.getMessage.toLowerCase.contains("forbidden"))
-    }
-
-  }
-
   "cookie-authed download endpoint" - {
 
     "should return 403 for a non-existent object" in {
