@@ -4,9 +4,9 @@ import akka.http.scaladsl.model.StatusCodes.BadRequest
 import org.broadinstitute.dsde.firecloud.EntityService.colNamesToAttributeNames
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.mock.MockTSVLoadFiles
-import org.broadinstitute.dsde.firecloud.model.FlexibleModelSchema
+import org.broadinstitute.dsde.firecloud.model.{EntityUpdateDefinition, FlexibleModelSchema}
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
-import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeEntityReference, AttributeListElementable, AttributeName, AttributeNumber, AttributeString}
+import org.broadinstitute.dsde.rawls.model.{AttributeBoolean, AttributeEntityReference, AttributeListElementable, AttributeName, AttributeNumber, AttributeString, AttributeValueRawJson}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, RemoveAttribute}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers.contain
@@ -133,6 +133,29 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       lastOp.keySet should contain theSameElementsAs List("op", "attributeName")
       lastOp("op") shouldBe AttributeString("CreateAttributeValueList")
       lastOp("attributeName") shouldBe AttributeString("arrays")
+    }
+
+    "parse an attribute array-of-arrays" in {
+      val resultingOps = setAttributesOnEntity("array", None, MockTSVLoadFiles.entityWithNestedArrays.tsvData.head, Seq(("array", None)), FlexibleModelSchema)
+
+      // 1 to remove any existing attribute with this name, 3 to add the AttributeValueRawJsons
+      resultingOps.operations.size shouldBe 4
+
+      val col = AttributeString("array")
+
+      val expectedOps = Seq(
+        Map("op" -> AttributeString("RemoveAttribute"), "attributeName" -> col),
+        Map("op" -> AttributeString("AddListMember"), "attributeListName" -> col,
+          "newMember" -> AttributeValueRawJson("""["one","two"]""")),
+        Map("op" -> AttributeString("AddListMember"), "attributeListName" -> col,
+          "newMember" -> AttributeValueRawJson("""["three","four"]""")),
+        Map("op" -> AttributeString("AddListMember"), "attributeListName" -> col,
+          "newMember" -> AttributeValueRawJson("""["five","six"]"""))
+      )
+
+      val expected = EntityUpdateDefinition("bla", "array", expectedOps)
+
+      resultingOps shouldBe expected
     }
 
     "remove attribute values when deleteEmptyValues is set to true" in {
