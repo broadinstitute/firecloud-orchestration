@@ -6876,6 +6876,107 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entityTypes/{entityType}:
+    patch:
+      tags:
+        - entities
+      summary: rename entity type in a workspace
+      description: Rename an entity type
+      operationId: renameEntityType
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+      requestBody:
+        description: Old entity type name and the name you'd like to change it to
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/EntityTypeRename'
+        required: true
+      responses:
+        204:
+          description: Successful Request
+          content: { }
+        404:
+          description: Workspace or Entity Type not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        409:
+          description: New name for entity type already exists in workspace
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+      x-codegen-request-body-name: entityTypeRenameJson
+    delete:
+      tags:
+        - entities
+      summary: delete all entities of a type in a workspace
+      description: Delete entities of type
+      operationId: deleteEntitiesOfType
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+      responses:
+        204:
+          description: Successful Request
+          content: { }
+        409:
+          description: Cannot create dangling references when deleting an entity type
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entityTypes/{entityType}/attributes/{attributeName}:
+    patch:
+      tags:
+        - entities
+      summary: Change attribute name for an entity type
+      description: Change the attribute name for an entity type in a workspace.
+        If the old name doesn't exist the update will fail. If the new name already exists,
+        the update will fail, and no records will be updated.
+      operationId: rename_entity_attributes
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+        - $ref: '#/components/parameters/AttributeNamePathParam'
+      requestBody:
+        description: New attribute name
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/AttributeRename'
+        required: true
+      responses:
+        204:
+          description: Attribute name updated
+          content: { }
+        403:
+          description: User does not have permission to update Attribute names
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace, Entity or Attribute not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        409:
+          description: Invalid Attribute name update. New Attribute conflicts with existing Attribute name.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+      x-codegen-request-body-name: renameEntityAttribute
   /duos/autocomplete/{queryTerm}:
     get:
       tags:
@@ -7529,6 +7630,15 @@ components:
           type: string
           description: The name of the entity
       description: ""
+    AttributeRename:
+      required:
+        - newAttributeName
+      type: object
+      properties:
+        newAttributeName:
+          type: string
+          description: The new name for the attribute
+      description: New attribute name
     AttributeUpdateOperationArray:
       type: array
       description: ""
@@ -8390,6 +8500,14 @@ components:
           items:
             $ref: '#/components/schemas/EntitySoftConflict'
       description: ""
+    EntityTypeRename:
+      required:
+        - newName
+      type: object
+      properties:
+        newName:
+          type: string
+          description: the new entity type name
     Error:
       type: object
       properties:
@@ -10910,6 +11028,13 @@ components:
           type: string
           description: the billing project associated with the workspace
   parameters:
+    AttributeNamePathParam:
+      name: attributeName
+      in: path
+      description: Attribute Name
+      required: true
+      schema:
+        type: string
     versionParam:
       name: version
       in: path
@@ -11026,6 +11151,13 @@ components:
             additionalProperties:
               type: string
       required: true
+  responses:
+    RawlsInternalError:
+      description: Rawls Internal Error
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
   securitySchemes:
     googleoauth:
       type: oauth2
