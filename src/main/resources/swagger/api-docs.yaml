@@ -6879,7 +6879,7 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityTypes/{entityType}:
     patch:
       tags:
-        - entities
+        - Entities
       summary: rename entity type in a workspace
       description: Rename an entity type
       operationId: renameEntityType
@@ -6915,7 +6915,7 @@ paths:
       x-codegen-request-body-name: entityTypeRenameJson
     delete:
       tags:
-        - entities
+        - Entities
       summary: delete all entities of a type in a workspace
       description: Delete entities of type
       operationId: deleteEntitiesOfType
@@ -6934,7 +6934,7 @@ paths:
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityTypes/{entityType}/attributes/{attributeName}:
     patch:
       tags:
-        - entities
+        - Entities
       summary: Change attribute name for an entity type
       description: Change the attribute name for an entity type in a workspace.
         If the old name doesn't exist the update will fail. If the new name already exists,
