@@ -101,6 +101,32 @@ trait EntityApiService extends FireCloudDirectives
                 }
               }
             }
+          } ~
+          pathPrefix("entityTypes") {
+            extractRequest { req =>
+              pathPrefix(Segment) { _ => // entityType
+                // all passthroughs under entityTypes use the same path in Orch as they do in Rawls,
+                // so we can just grab the path from the request object
+                val passthroughTarget = encodeUri(FireCloudConfig.Rawls.baseUrl + req.uri.path.toString)
+                pathEnd {
+                  patch {
+                    passthrough(passthroughTarget, HttpMethods.PATCH)
+                  } ~
+                  delete {
+                    passthrough(passthroughTarget, HttpMethods.DELETE)
+                  }
+                } ~
+                pathPrefix("attributes") {
+                  path(Segment) { _ => // attributeName
+                    pathEnd {
+                      patch {
+                        passthrough(passthroughTarget, HttpMethods.PATCH)
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
       }
     }
