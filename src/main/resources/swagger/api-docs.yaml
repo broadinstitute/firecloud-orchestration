@@ -4527,6 +4527,44 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
       x-codegen-request-body-name: expression
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/{entityName}/rename:
+    post:
+      tags:
+        - Entities
+      summary: rename entity in a workspace
+      description: Rename an entity
+      operationId: renameEntity
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+        - $ref: '#/components/parameters/entityNameParam'
+      requestBody:
+        description: New entity name
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/EntityName'
+        required: true
+      responses:
+        204:
+          description: Successful Request
+          content: {}
+        404:
+          description: Workspace or Entity not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        409:
+          description: New name for entity already exists in workspace
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+      x-codegen-request-body-name: newEntityNameJson
   /api/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
     get:
       tags:
@@ -8419,6 +8457,15 @@ components:
         entityName:
           type: string
           description: Entity Name
+    EntityName:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the entity
+      description: ""
     EntityQueryParameters:
       required:
         - page
