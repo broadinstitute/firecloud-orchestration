@@ -84,7 +84,7 @@ trait EntityApiService extends FireCloudDirectives
                     } ~
                     path("rename") {
                       requireUserInfo() { _ =>
-                        passthrough(entityTypeUrl + "/" + entityName + "/rename", HttpMethods.PATCH)
+                        passthrough(entityTypeUrl + "/" + entityName + "/rename", HttpMethods.POST)
                       }
                     }
                   }
