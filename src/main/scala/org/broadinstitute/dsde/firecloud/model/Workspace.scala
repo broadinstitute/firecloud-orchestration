@@ -7,8 +7,6 @@ import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccess
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 
-case class WorkspaceDeleteResponse(message: Option[String] = None)
-
 case class UIWorkspaceResponse(
   accessLevel: Option[String] = None,
   canShare: Option[Boolean] = None,
