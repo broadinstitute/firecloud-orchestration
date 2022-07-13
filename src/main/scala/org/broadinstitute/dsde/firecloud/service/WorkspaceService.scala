@@ -179,17 +179,24 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
   def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String = s" The workspace $workspaceNamespace:$workspaceName has been un-published."
 
   def deleteWorkspace(ns: String, name: String): Future[PerRequestMessage] = {
+    val requestId = java.util.UUID.randomUUID().toString
+    logger.warn(s"******** [$requestId] deleteWorkspace method starting ... ")
     rawlsDAO.getWorkspace(ns, name) flatMap { wsResponse =>
+      logger.warn(s"******** [$requestId] retrieved workspace ${wsResponse.workspace.namespace}/${wsResponse.workspace.name} for unpublish check. Workspace is published? ${isPublished(wsResponse)} ... ")
       val unpublishFuture: Future[WorkspaceDetails] = if (isPublished(wsResponse))
         setWorkspacePublishedStatus(wsResponse.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO, consentDAO)
       else
         Future.successful(wsResponse.workspace)
       unpublishFuture flatMap { ws =>
+        logger.warn(s"******** [$requestId] unpublish action complete: ${ws.namespace}/${ws.name}; rawls delete starting ... ")
         rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+          logger.warn(s"******** [$requestId] rawls delete response: ${wsResponse.message}")
           RequestComplete(wsResponse.copy(message = Some(wsResponse.message.getOrElse("") + unPublishSuccessMessage(ns, name))))
         }
       } recover {
-        case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}; ${e.errorReport.message}"))
+        case e: FireCloudExceptionWithErrorReport =>
+          logger.error(s"******** [$requestId] error deleting workspace: ${e.errorReport.statusCode} ${e.getMessage}: ${e.errorReport.message}: ${e.errorReport.causes}")
+          RequestComplete(e.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}; ${e.errorReport.message}"))
         case e: Throwable => RequestComplete(StatusCodes.InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
       }
     }
