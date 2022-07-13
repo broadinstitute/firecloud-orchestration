@@ -3327,6 +3327,9 @@ paths:
         204:
           description: Success (No Content)
           content: {}
+        400:
+          description: Bad Request
+          content: { }
         500:
           description: Internal Server Error
           content: {}
