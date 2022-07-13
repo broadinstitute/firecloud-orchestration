@@ -116,6 +116,8 @@ object FireCloudConfig {
     val getAll = profile.getString("getAll")
     val getQuery = profile.getString("getQuery")
     val delete = profile.getString("delete")
+    val validPreferenceKeyPrefixes = profile.getStringList("validPreferenceKeyPrefixes").asScala.toSet
+    val validPreferenceKeys = profile.getStringList("validPreferenceKeys").asScala.toSet
   }
 
   object FireCloud {
