@@ -216,8 +216,8 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
     }
   }
 
-  override def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
-    authedRequestToObject[WorkspaceDeleteResponse](Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)))
+  override def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Option[String]] = {
+    authedRequestToObject[Option[String]](Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)))
   }
 
   override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
