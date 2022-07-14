@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.firecloud.model._
@@ -15,7 +15,7 @@ import org.joda.time.DateTime
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import MockRawlsDAO._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiServiceSpec
@@ -468,8 +468,8 @@ class MockRawlsDAO extends RawlsDAO {
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
 
-  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
-    Future.successful(WorkspaceDeleteResponse(Some("Your Google bucket 'bucketId' will be deleted within 24h.")))
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Option[String]] = {
+    Future.successful(Some("Your Google bucket 'bucketId' will be deleted within 24h."))
   }
 
   override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Project.RawlsBillingProjectMembership]] = Future(Seq.empty[Project.RawlsBillingProjectMembership])

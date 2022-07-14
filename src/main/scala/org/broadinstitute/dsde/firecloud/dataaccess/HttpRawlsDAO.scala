@@ -9,7 +9,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions._
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.AgoraConfigurationShort
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.{impRawlsBillingProjectMember, _}
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.{RawlsBillingProjectMember, RawlsBillingProjectMembership}
@@ -216,8 +216,8 @@ class HttpRawlsDAO(implicit val system: ActorSystem, implicit val materializer: 
     }
   }
 
-  override def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
-    authedRequestToObject[WorkspaceDeleteResponse](Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)))
+  override def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Option[String]] = {
+    authedRequestToObject[Option[String]](Delete(getWorkspaceUrl(workspaceNamespace, workspaceName)))
   }
 
   override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {

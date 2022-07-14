@@ -2,12 +2,16 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.workbench.oauth2.{ClientId, ClientSecret, OpenIDConnectConfiguration}
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.elasticsearch.client.transport.TransportClient
 
@@ -61,30 +65,41 @@ object Boot extends App with LazyLogging {
 
     val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
 
-    val service = new FireCloudApiServiceImpl(
-      agoraPermissionServiceConstructor,
-      exportEntitiesByTypeActorConstructor,
-      entityServiceConstructor,
-      libraryServiceConstructor,
-      ontologyServiceConstructor,
-      namespaceServiceConstructor,
-      nihServiceConstructor,
-      registerServiceConstructor,
-      storageServiceConstructor,
-      workspaceServiceConstructor,
-      statusServiceConstructor,
-      permissionReportServiceConstructor,
-      userServiceConstructor,
-      shareLogServiceConstructor,
-      managedGroupServiceConstructor
-    )
-
     for {
-      _ <- Http().newServerAt( "0.0.0.0", 8080).bind(service.route) recover {
+      oauth2Config <- OpenIDConnectConfiguration[IO](
+        FireCloudConfig.Auth.authorityEndpoint,
+        ClientId(FireCloudConfig.Auth.oidcClientId),
+        oidcClientSecret = FireCloudConfig.Auth.oidcClientSecret.map(ClientSecret),
+        extraGoogleClientId = FireCloudConfig.Auth.legacyGoogleClientId.map(ClientId),
+        extraAuthParams = Some("prompt=login")
+      ).unsafeToFuture()(IORuntime.global)
+
+      service = new FireCloudApiServiceImpl(
+        agoraPermissionServiceConstructor,
+        exportEntitiesByTypeActorConstructor,
+        entityServiceConstructor,
+        libraryServiceConstructor,
+        ontologyServiceConstructor,
+        namespaceServiceConstructor,
+        nihServiceConstructor,
+        registerServiceConstructor,
+        storageServiceConstructor,
+        workspaceServiceConstructor,
+        statusServiceConstructor,
+        permissionReportServiceConstructor,
+        userServiceConstructor,
+        shareLogServiceConstructor,
+        managedGroupServiceConstructor,
+        oauth2Config
+      )
+
+      binding <- Http().newServerAt( "0.0.0.0", 8080).bind(service.route) recover {
         case t: Throwable =>
           logger.error("FATAL - failure starting http server", t)
           throw t
       }
+      _ <- binding.whenTerminated
+      _ <- system.terminate()
 
     } yield {
 

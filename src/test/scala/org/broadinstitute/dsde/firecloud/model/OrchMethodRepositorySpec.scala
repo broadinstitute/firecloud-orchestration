@@ -1,10 +1,10 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.model.MethodRepository.{ACLNames, FireCloudPermission}
+import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.{ACLNames, FireCloudPermission}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class MethodRepositorySpec extends AnyFreeSpec with Matchers {
+class OrchMethodRepositorySpec extends AnyFreeSpec with Matchers {
 
   "FireCloudPermission" - {
     "Correctly formed permissions should validate" - {

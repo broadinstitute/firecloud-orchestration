@@ -311,12 +311,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def beforeEach(): Unit = {
-    this.searchDao.reset
+    this.searchDao.reset()
   }
 
   override def afterEach(): Unit = {
     importServiceServer.reset
-    this.searchDao.reset
+    this.searchDao.reset()
   }
 
   //there are many values in the response that in reality cannot be predicted

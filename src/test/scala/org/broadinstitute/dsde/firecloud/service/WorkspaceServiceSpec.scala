@@ -3,7 +3,7 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceDeleteResponse}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
@@ -23,11 +23,11 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   lazy val ws: WorkspaceService = workspaceServiceConstructor(AccessToken(OAuth2BearerToken("")))
 
   override def beforeEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   override def afterEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   "export workspace attributes as TSV " - {
@@ -41,8 +41,8 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       }
 
       val tsvReturnString = List(
-        List("workspace:f", "d", "b", "a", "e", "c").mkString("\t"),
-        List("[\"v6\",999,true]", "escape quo\\\"te", 1.23, "true", "v1", "").mkString("\t")).mkString("\n")
+        List("workspace:e", "d", "b", "c", "a", "f").mkString("\t"),
+        List("v1", "escape quo\\\"te", 1.23, "", "true", "[\"v6\",999,true]").mkString("\t")).mkString("\n")
 
       assertResult(tsvReturnString) {
         tsvString
@@ -59,19 +59,19 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val workspaceNamespace = "projectowner"
       val rqComplete = Await.
         result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
-        asInstanceOf[RequestComplete[WorkspaceDeleteResponse]]
+        asInstanceOf[RequestComplete[Option[String]]]
       val workspaceDeleteResponse = rqComplete.response
-      workspaceDeleteResponse.message.isDefined should be (true)
+      workspaceDeleteResponse.isDefined should be (true)
     }
 
     "should delete a published workspace successfully" in {
       val workspaceNamespace = "unpublishsuccess"
       val rqComplete = Await.
         result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
-        asInstanceOf[RequestComplete[WorkspaceDeleteResponse]]
+        asInstanceOf[RequestComplete[Option[String]]]
       val workspaceDeleteResponse = rqComplete.response
-      workspaceDeleteResponse.message.isDefined should be (true)
-      workspaceDeleteResponse.message.get should include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
+      workspaceDeleteResponse.isDefined should be (true)
+      workspaceDeleteResponse.get should include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
     }
 
     "should not delete a published workspace if un-publish fails" in {
@@ -91,8 +91,8 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
  */
 class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) extends MockRawlsDAO {
 
-  override def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
-    Future.successful(WorkspaceDeleteResponse(Some("Your Google bucket 'bucketId' will be deleted within 24h.")))
+  override def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Option[String]] = {
+    Future.successful(Some("Your Google bucket 'bucketId' will be deleted within 24h."))
   }
 
   private val unpublishsuccess = publishedRawlsWorkspaceWithAttributes.copy(

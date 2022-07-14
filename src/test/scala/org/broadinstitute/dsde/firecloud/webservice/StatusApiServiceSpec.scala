@@ -27,13 +27,13 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
   val monitorSchedule = system.scheduler.schedule(Duration.Zero, 1.second, healthMonitor, HealthMonitor.CheckAll)
 
-  override def beforeAll = {
+  override def beforeAll() = {
     // wait for the healthMonitor to start up ...
     Thread.sleep(3000)
   }
 
-  override def afterAll = {
-    monitorSchedule.cancel
+  override def afterAll() = {
+    monitorSchedule.cancel()
   }
 
   override val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
@@ -61,7 +61,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
     "should contain all the subsystems we care about" in {
       Get(statusPath) ~> statusRoutes ~> check {
         val statusCheckResponse = responseAs[StatusCheckResponse]
-        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe, HealthChecks.adminSaRegistered)
+        val expectedSystems = Set(Agora, Consent, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe)
         assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
       }
     }

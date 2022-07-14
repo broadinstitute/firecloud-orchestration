@@ -25,11 +25,11 @@ import scala.concurrent.Future
 
 class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   override def beforeEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   override def afterEach(): Unit = {
-    searchDao.reset
+    searchDao.reset()
   }
 
   "EntityClient should extract TSV files out of bagit zips" - {

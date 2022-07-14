@@ -61,12 +61,12 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     }
   }
 
-  /*  utility method to determine if a preferences key headed to Thurloe is valid for user input.
-      Add whitelist logic here if you need to allow more keys.
-      If we find we update this logic frequently, I suggest moving the predicates to a config file!
-   */
+  //  utility method to determine if a preferences key headed to Thurloe is valid for user input.
   private def isValidPreferenceKey(key: String): Boolean = {
-    key.startsWith("notifications/")
+    val validKeyPrefixes = FireCloudConfig.Thurloe.validPreferenceKeyPrefixes
+    val validKeys = FireCloudConfig.Thurloe.validPreferenceKeys
+
+    validKeyPrefixes.exists(prefix => key.startsWith(prefix)) || validKeys.contains(key)
   }
 
   def updateProfilePreferences(userInfo: UserInfo, preferences: Map[String, String]): Future[PerRequestMessage] = {

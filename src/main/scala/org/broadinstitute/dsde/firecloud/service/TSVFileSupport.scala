@@ -125,7 +125,7 @@ trait TSVFileSupport {
       if (value.equals("__DELETE__"))
         RemoveAttribute(AttributeName.fromDelimitedName(name))
       else {
-        AddUpdateAttribute(AttributeName.fromDelimitedName(name), AttributeString(StringContext.treatEscapes(value)))
+        AddUpdateAttribute(AttributeName.fromDelimitedName(name), AttributeString(StringContext.processEscapes(value)))
       }
     }
   }
@@ -213,6 +213,7 @@ trait TSVFileSupport {
             case Failure(_) =>
               throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, UNSUPPORTED_ARRAY_TYPE_ERROR_MSG))
           }
+        case jsArray: JsArray => addListEntry(AttributeValueRawJson(jsArray.compactPrint))
         case _ =>
           // if we hit this case, it means we have a homogenous array, but the elements' datatype
           // is not one we support

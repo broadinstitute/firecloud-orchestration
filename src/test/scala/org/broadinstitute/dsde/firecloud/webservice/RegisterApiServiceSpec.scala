@@ -33,11 +33,12 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
         assertPreferencesUpdate(payload, NoContent)
       }
 
-      "should succeed with multiple notifications keys" in {
+      "should succeed with multiple valid preference keys" in {
         val payload = Map(
           "notifications/foo" -> "yes",
           "notifications/bar" -> "no",
-          "notifications/baz" -> "astring"
+          "notifications/baz" -> "astring",
+          "starredWorkspaces" -> "fooId,barId,bazId"
         )
         assertPreferencesUpdate(payload, NoContent)
       }

@@ -24,7 +24,7 @@ import spray.json.DefaultJsonProtocol._
 import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicLong
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.language.postfixOps
@@ -97,7 +97,7 @@ object EntityService {
   private def unzipSingleFile(zis: InputStream, fileTarget: File): Unit = {
     val fout = new FileOutputStream(fileTarget)
     val buffer = new Array[Byte](1024)
-    Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
+    LazyList.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
   }
 
 }
@@ -279,7 +279,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
         case _ => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, "Invalid first column header, should look like tsvType:entity_type_id"))
       }
 
-      val strippedTsv = if (modelSchema.supportsBackwardsCompatibleIds) {
+      val strippedTsv = if (modelSchema.supportsBackwardsCompatibleIds()) {
           backwardsCompatStripIdSuffixes(tsv, entityType, modelSchema)
         } else {
           tsv

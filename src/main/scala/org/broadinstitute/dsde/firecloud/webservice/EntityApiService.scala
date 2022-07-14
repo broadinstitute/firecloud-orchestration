@@ -42,7 +42,7 @@ trait EntityApiService extends FireCloudDirectives
               path("copy") {
                 post {
                   requireUserInfo() { userInfo =>
-                    parameter('linkExistingEntities.?) { linkExistingEntities =>
+                    parameter(Symbol("linkExistingEntities").?) { linkExistingEntities =>
                       entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest =>
                         val linkExistingEntitiesBool = Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
                           val copyMethodConfig = new EntityCopyDefinition(
@@ -81,6 +81,11 @@ trait EntityApiService extends FireCloudDirectives
                       requireUserInfo() { _ =>
                         passthrough(entityTypeUrl + "/" + entityName + "/evaluate", HttpMethods.POST)
                       }
+                    } ~
+                    path("rename") {
+                      requireUserInfo() { _ =>
+                        passthrough(entityTypeUrl + "/" + entityName + "/rename", HttpMethods.POST)
+                      }
                     }
                   }
               }
@@ -97,6 +102,32 @@ trait EntityApiService extends FireCloudDirectives
 
                   userAuthedRequest(extReq)(userInfo).flatMap { resp =>
                     requestContext.complete(resp)
+                  }
+                }
+              }
+            }
+          } ~
+          pathPrefix("entityTypes") {
+            extractRequest { req =>
+              pathPrefix(Segment) { _ => // entityType
+                // all passthroughs under entityTypes use the same path in Orch as they do in Rawls,
+                // so we can just grab the path from the request object
+                val passthroughTarget = encodeUri(FireCloudConfig.Rawls.baseUrl + req.uri.path.toString)
+                pathEnd {
+                  patch {
+                    passthrough(passthroughTarget, HttpMethods.PATCH)
+                  } ~
+                  delete {
+                    passthrough(passthroughTarget, HttpMethods.DELETE)
+                  }
+                } ~
+                pathPrefix("attributes") {
+                  path(Segment) { _ => // attributeName
+                    pathEnd {
+                      patch {
+                        passthrough(passthroughTarget, HttpMethods.PATCH)
+                      }
+                    }
                   }
                 }
               }
