@@ -1,8 +1,6 @@
 import sbt.Keys._
 import sbt._
 
-import com.github.sbt.jacoco.JacocoKeys._
-
 object Testing {
 
   def isIntegrationTest(name: String) = name contains "integrationtest"
@@ -22,13 +20,6 @@ object Testing {
     Test / fork := true,
     Test / parallelExecution := false,
     IntegrationTest / fork := false, // allow easy overriding of conf values via system props
-
-    jacocoReportSettings := JacocoReportSettings(
-      "Jacoco Coverage Report",
-      None,
-      JacocoThresholds(),
-      Seq(JacocoReportFormats.ScalaHTML, JacocoReportFormats.XML), // note XML formatter
-      "utf-8")
 
   )
 
