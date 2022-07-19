@@ -34,6 +34,6 @@ jobs:
         FIRE_CLOUD_ID: 123
       run: sbt jacoco
 
-    - uses: codecov/codecov-action@v1
+    - uses: codecov/codecov-action@v3
       with:
         file: ./target/scala-2.13/jacoco/report/jacoco.xml
