@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -39,9 +40,14 @@ trait NihApiService extends Directives with RequestBuilding with StandardUserInf
             }
           }
         } ~
-          path ("status") {
-            complete { nihServiceConstructor().getNihStatus(userInfo) }
+        path ("status") {
+          complete { nihServiceConstructor().getNihStatus(userInfo) }
+        } ~
+        path ("account") {
+          delete {
+            complete { nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent) }
           }
+        }
       }
     }
 }

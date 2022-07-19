@@ -468,8 +468,8 @@ class MockRawlsDAO extends RawlsDAO {
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(true, None))
 
-  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[WorkspaceDeleteResponse] = {
-    Future.successful(WorkspaceDeleteResponse(Some("Your Google bucket 'bucketId' will be deleted within 24h.")))
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken): Future[Option[String]] = {
+    Future.successful(Some("Your Google bucket 'bucketId' will be deleted within 24h."))
   }
 
   override def getProjects(implicit userToken: WithAccessToken): Future[Seq[Project.RawlsBillingProjectMembership]] = Future(Seq.empty[Project.RawlsBillingProjectMembership])

@@ -5,7 +5,7 @@ set -e
 ORCH_DIR=$1
 cd $ORCH_DIR
 
-sbt -batch compile
+sbt -batch -d clean reload update compile
 sbt -batch test
 sbt -batch assembly
 

@@ -150,6 +150,12 @@ class MockThurloeDAO extends ThurloeDAO {
     Future.successful(Success(()))
   }
 
+  override def deleteKeyValue(forUserId: String, keyName: String, callerToken: WithAccessToken): Future[Try[Unit]] = {
+    val newKVsForUser = forUserId -> mockKeyValues(forUserId).filterNot(_.key.contains(keyName))
+    mockKeyValues = mockKeyValues + newKVsForUser
+    Future.successful(Success(()))
+  }
+
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
     val userValuesForKey = mockKeyValues.map{ case (userId, keyValues) =>
       userId -> keyValues.filter(_.key.equals(Option(key)))

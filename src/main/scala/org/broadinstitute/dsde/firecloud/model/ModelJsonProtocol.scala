@@ -180,8 +180,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impConfiguration = jsonFormat10(OrchMethodRepository.Configuration)
   implicit val impAgoraConfigurationShort = jsonFormat4(OrchMethodRepository.AgoraConfigurationShort)
 
-  implicit val impWorkspaceDeleteResponse = jsonFormat1(WorkspaceDeleteResponse)
-
   implicit val impUIWorkspaceResponse = jsonFormat6(UIWorkspaceResponse)
 
   //implicit val impEntity = jsonFormat5(Entity)

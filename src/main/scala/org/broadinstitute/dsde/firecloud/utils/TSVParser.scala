@@ -19,8 +19,10 @@ object TSVParser {
     // Automatically detect what the line separator is (e.g. \n for Unix, \r\n for Windows).
     settings.setLineSeparatorDetectionEnabled(true)
     settings.setMaxColumns(1024)
-    settings.setMaxCharsPerColumn(16384)
+    //64 mb in bytes/4 (assumes 4 bytes per character)
+    settings.setMaxCharsPerColumn(16777216)
     settings.getFormat.setDelimiter('\t')
+    settings.setErrorContentLength(16384)
     // By default, the CsvParser returns null for missing fields, however the application expects the
     // empty string. These replace all nulls with the empty string.
     settings.setNullValue("")

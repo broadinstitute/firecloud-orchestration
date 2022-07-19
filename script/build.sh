@@ -93,7 +93,7 @@ function make_jar()
 
     docker run --rm -e GIT_MODEL_HASH=${GIT_MODEL_HASH} \
         -v $PWD:/working -w /working -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 \
-        broadinstitute/scala-baseimage:jdk11-2.12.12-1.4.9 /working/src/docker/install.sh /working
+        hseeberger/scala-sbt:eclipse-temurin-17.0.2_1.6.2_2.13.8 /working/src/docker/install.sh /working
 }
 
 function docker_cmd()

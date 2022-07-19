@@ -230,6 +230,7 @@ trait TSVFileSupport {
             case Failure(_) =>
               throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, UNSUPPORTED_ARRAY_TYPE_ERROR_MSG))
           }
+        case jsArray: JsArray => addListEntry(AttributeValueRawJson(jsArray.compactPrint))
         case _ =>
           // if we hit this case, it means we have a homogenous array, but the elements' datatype
           // is not one we support
