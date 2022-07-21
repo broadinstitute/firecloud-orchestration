@@ -58,6 +58,85 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     }
   }
 
+  "stringToTypedAttribute" - {
+    val booleanTestCases = Map(
+      "true" -> AttributeBoolean(true),
+      "True" -> AttributeBoolean(true),
+      "TRUE" -> AttributeBoolean(true),
+      "false" -> AttributeBoolean(false),
+      "False" -> AttributeBoolean(false),
+      "FALSE" -> AttributeBoolean(false),
+      "yes" -> AttributeString("yes"),
+      "no" -> AttributeString("no"),
+      "0" -> AttributeNumber(0),
+      "1" -> AttributeNumber(1)
+    )
+    val integerTestCases = Map(
+      "525600" -> AttributeNumber(525600),
+      "525,600" -> AttributeString("525,600"),
+      "525_600" -> AttributeString("525_600"),
+      "-525600" -> AttributeNumber(-525600),
+      "-525,600" -> AttributeString("-525,600"),
+      "-525_600" -> AttributeString("-525_600"),
+      "0" -> AttributeNumber(0),
+      "00" -> AttributeNumber(0),
+      "-0" -> AttributeNumber(0),
+      "-00" -> AttributeNumber(0),
+      Int.MinValue.toString -> AttributeNumber(Int.MinValue),
+      Int.MaxValue.toString -> AttributeNumber(Int.MaxValue)
+    )
+    val doubleTestCases = Map(
+      "4.2" -> AttributeNumber(4.2),
+      ".42" -> AttributeNumber(0.42),
+      "0.42" -> AttributeNumber(0.42),
+      "42." -> AttributeNumber(42),
+      "42.0" -> AttributeNumber(42),
+      "." -> AttributeString("."),
+      "-4.2" -> AttributeNumber(-4.2),
+      "-.42" -> AttributeNumber(-0.42),
+      "-0.42" -> AttributeNumber(-0.42),
+      "-42." -> AttributeNumber(-42),
+      "-42.0" -> AttributeNumber(-42),
+      "-." -> AttributeString("-."),
+      Double.MinValue.toString -> AttributeNumber(Double.MinValue),
+      Double.MinPositiveValue.toString -> AttributeNumber(Double.MinPositiveValue),
+      Double.MaxValue.toString -> AttributeNumber(Double.MaxValue)
+    )
+    val stringTestCases = List("", "string", "true525600", ",")
+
+    "should detect boolean values when applicable" in {
+      booleanTestCases foreach {
+        case (input, expected) => withClue(s"should handle potential boolean: $input") {
+          stringToTypedAttribute(input) shouldBe expected
+        }
+      }
+    }
+
+    "should detect int values when applicable" in {
+      integerTestCases foreach {
+        case (input, expected) => withClue(s"should handle potential int: $input") {
+          stringToTypedAttribute(input) shouldBe expected
+        }
+      }
+    }
+
+    "should detect double values when applicable" in {
+      doubleTestCases foreach {
+        case (input, expected) => withClue(s"should handle potential double: $input") {
+          stringToTypedAttribute(input) shouldBe expected
+        }
+      }
+    }
+
+    "should detect string values when applicable" in {
+      stringTestCases foreach {
+        str => withClue(s"should handle string: $str") {
+          stringToTypedAttribute(str) shouldBe AttributeString(str)
+        }
+      }
+    }
+  }
+
   "setAttributesOnEntity" - {
 
     case class TsvArrayTestCase(loadFile: TSVLoadFile,
@@ -191,6 +270,17 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       firstOp("attributeName") shouldBe AttributeString("baz")
 
     }
-  }
 
+    "create AttributeBoolean and AttributeNumber when applicable" in {
+      val colInfo = colNamesToAttributeNames(MockTSVLoadFiles.entityWithBooleanAndNumberAttributes.headers, Map.empty)
+      val resultingOpsFirst = setAttributesOnEntity("foo", None, MockTSVLoadFiles.entityWithBooleanAndNumberAttributes.tsvData.head, colInfo, FlexibleModelSchema)
+      val resultingOpsSecond = setAttributesOnEntity("foo", None, MockTSVLoadFiles.entityWithBooleanAndNumberAttributes.tsvData(1), colInfo, FlexibleModelSchema)
+
+      val expectedOpsFirst = List(AttributeBoolean(true), AttributeNumber(0), AttributeString("string"))
+      val expectedOpsSecond = List(AttributeBoolean(false), AttributeNumber(3.14), AttributeString(","))
+
+      resultingOpsFirst.operations.map(_("addUpdateAttribute")) should contain theSameElementsInOrderAs expectedOpsFirst
+      resultingOpsSecond.operations.map(_("addUpdateAttribute")) should contain theSameElementsInOrderAs expectedOpsSecond
+    }
+  }
 }
