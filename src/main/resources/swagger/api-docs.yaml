@@ -7274,7 +7274,7 @@ paths:
     get:
       tags:
         - Profile
-      summary: Passes through to the Rawls userinfo API and returns its response
+      summary: Passes through to the Sam userinfo API and returns its response
       operationId: getUserStatus
       responses:
         200:
