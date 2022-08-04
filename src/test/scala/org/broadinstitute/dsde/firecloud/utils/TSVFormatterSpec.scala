@@ -171,6 +171,68 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
       }
     }
 
+    "Values containing tabs should be quoted" in {
+      val entityType = "sample"
+      val attrs1 = {
+        Map(
+          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("abcdefg"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("this  value has tabs"),
+          AttributeName.withDefaultNS("spaces") -> AttributeString("this value has spaces")
+        )
+      }
+      val attrs2 = {
+        Map(
+          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("hijklm"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("another  value with tabs"),
+          AttributeName.withDefaultNS("spaces") -> AttributeString("another value with spaces")
+        )
+      }
+      val entities = List(
+        Entity("1", entityType, attrs1),
+        Entity("2", entityType, attrs2))
+
+      val tsvHeaders = TSVFormatter.makeEntityHeaders(entityType, List("nowhitespace", "tabs", "spaces"), None)
+      val tsvRows = TSVFormatter.makeEntityRows(entityType, entities, tsvHeaders)
+
+      tsvRows shouldBe Seq(
+        Seq("1", "abcdefg", """"this  value has tabs"""", "this value has spaces"),
+        Seq("2", "hijklm", """"another  value with tabs"""", "another value with spaces"),
+      )
+    }
+
+    "Values containing tabs should round-trip TSV formatting and parsing correctly" in {
+      val entityType = "sample"
+      val attrs1 = {
+        Map(
+          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("abcdefg"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("this  value has tabs"),
+          AttributeName.withDefaultNS("spaces") -> AttributeString("this value has spaces")
+        )
+      }
+      val attrs2 = {
+        Map(
+          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("hijklm"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("another  value with tabs"),
+          AttributeName.withDefaultNS("spaces") -> AttributeString("another value with spaces")
+        )
+      }
+      val entities = List(
+        Entity("1", entityType, attrs1),
+        Entity("2", entityType, attrs2))
+
+      val tsvHeaders = TSVFormatter.makeEntityHeaders(entityType, List("nowhitespace", "tabs", "spaces"), None)
+      val tsvRows = TSVFormatter.makeEntityRows(entityType, entities, tsvHeaders)
+
+      val tsvString = TSVFormatter.exportToString(tsvHeaders, tsvRows)
+
+      val loadFile = TSVParser.parse(tsvString)
+
+      loadFile.headers shouldBe tsvHeaders
+      loadFile.tsvData shouldBe tsvRows
+    }
+
+
+
   }
 
   private def testEntityDataSet(entityType: String, entities: List[Entity], requestedHeaders: Option[IndexedSeq[String]], tsvType: TsvType = TsvTypes.ENTITY) = {
