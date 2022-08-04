@@ -9,6 +9,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
+import spray.json.{JsArray, JsFalse, JsNumber, JsObject, JsString, JsTrue}
 
 import scala.io.Source
 import scala.language.postfixOps
@@ -176,14 +177,14 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
       val attrs1 = {
         Map(
           AttributeName.withDefaultNS("nowhitespace") -> AttributeString("abcdefg"),
-          AttributeName.withDefaultNS("tabs") -> AttributeString("this  value has tabs"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("this\tvalue\thas\ttabs"),
           AttributeName.withDefaultNS("spaces") -> AttributeString("this value has spaces")
         )
       }
       val attrs2 = {
         Map(
           AttributeName.withDefaultNS("nowhitespace") -> AttributeString("hijklm"),
-          AttributeName.withDefaultNS("tabs") -> AttributeString("another  value with tabs"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("another\tvalue\twith\ttabs"),
           AttributeName.withDefaultNS("spaces") -> AttributeString("another value with spaces")
         )
       }
@@ -195,43 +196,28 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
       val tsvRows = TSVFormatter.makeEntityRows(entityType, entities, tsvHeaders)
 
       tsvRows shouldBe Seq(
-        Seq("1", "abcdefg", """"this  value has tabs"""", "this value has spaces"),
-        Seq("2", "hijklm", """"another  value with tabs"""", "another value with spaces"),
+        Seq("1", "abcdefg", "\"this\tvalue\thas\ttabs\"", "this value has spaces"),
+        Seq("2", "hijklm", "\"another\tvalue\twith\ttabs\"", "another value with spaces"),
       )
     }
 
-    "Values containing tabs should round-trip TSV formatting and parsing correctly" in {
-      val entityType = "sample"
-      val attrs1 = {
-        Map(
-          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("abcdefg"),
-          AttributeName.withDefaultNS("tabs") -> AttributeString("this  value has tabs"),
-          AttributeName.withDefaultNS("spaces") -> AttributeString("this value has spaces")
-        )
+    val cleanValueTestData = Map(
+      JsString("foo") -> "foo",
+      JsString(""""quoted string"""") -> """"quoted string"""",
+      JsNumber(123.45) -> "123.45",
+      JsTrue -> "true",
+      JsFalse -> "false",
+      JsArray(JsString("one"), JsString("two"), JsString("three")) -> """["one","two","three"]""",
+      JsObject(Map("foo" -> JsString("bar"), "baz" -> JsNumber(123))) -> """{"foo":"bar","baz":123}"""
+    )
+    "cleanValue() method" - {
+      cleanValueTestData foreach {
+        case (input, expected) =>
+          s"should stringify correctly for input $input" in {
+            TSVFormatter.cleanValue(input) shouldBe expected
+          }
       }
-      val attrs2 = {
-        Map(
-          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("hijklm"),
-          AttributeName.withDefaultNS("tabs") -> AttributeString("another  value with tabs"),
-          AttributeName.withDefaultNS("spaces") -> AttributeString("another value with spaces")
-        )
-      }
-      val entities = List(
-        Entity("1", entityType, attrs1),
-        Entity("2", entityType, attrs2))
-
-      val tsvHeaders = TSVFormatter.makeEntityHeaders(entityType, List("nowhitespace", "tabs", "spaces"), None)
-      val tsvRows = TSVFormatter.makeEntityRows(entityType, entities, tsvHeaders)
-
-      val tsvString = TSVFormatter.exportToString(tsvHeaders, tsvRows)
-
-      val loadFile = TSVParser.parse(tsvString)
-
-      loadFile.headers shouldBe tsvHeaders
-      loadFile.tsvData shouldBe tsvRows
     }
-
-
 
   }
 

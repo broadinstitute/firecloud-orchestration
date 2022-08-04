@@ -5,7 +5,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
 import scala.util.{Failure, Success, Try}
-import spray.json.JsValue
+import spray.json.{JsString, JsValue}
 
 object TSVFormatter {
 
@@ -49,7 +49,16 @@ object TSVFormatter {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
         val columnPosition = headerValues.indexOf(AttributeName.toDelimitedName(attributeName))
-        val cellValue = AttributeStringifier(attribute)
+        val cellValue = {
+          val rawCellValue = AttributeStringifier(attribute)
+          // if the cell contains the TSV delimiter, we must quote the value to prevent the delimiter
+          // from breaking the TSV
+          if (rawCellValue.contains(TSVParser.DELIMITER)) {
+            s""""$rawCellValue""""
+          } else {
+            rawCellValue
+          }
+        }
         columnPosition -> cellValue
     }
     // If there are entities that don't have a value for which there is a known header, that will
@@ -68,14 +77,17 @@ object TSVFormatter {
   }
 
   /**
-    * JsValues are double-quoted. Need to remove them before putting them into a cell position
+    * JsString will double-quote strings via JsValue.toString(),
+    * so handle JsString differently than other JsValues.
     *
-    * @param value The JsValue to remove leading and trailing quotes from.
-    * @return Trimmed string value
+    * @param value The JsValue to stringify
+    * @return Resultant string value
     */
   def cleanValue(value: JsValue): String = {
-    val regex = "^\"|\"$".r
-    regex.replaceAllIn(value.toString(), "")
+    value match {
+      case s:JsString => s.value
+      case x => x.toString()
+    }
   }
 
   /**
