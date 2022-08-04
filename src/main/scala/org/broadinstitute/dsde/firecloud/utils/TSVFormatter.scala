@@ -4,9 +4,6 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
-import scala.util.{Failure, Success, Try}
-import spray.json.{JsString, JsValue}
-
 object TSVFormatter {
 
   /**
@@ -49,16 +46,7 @@ object TSVFormatter {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
         val columnPosition = headerValues.indexOf(AttributeName.toDelimitedName(attributeName))
-        val cellValue = {
-          val rawCellValue = AttributeStringifier(attribute)
-          // if the cell contains the TSV delimiter, we must quote the value to prevent the delimiter
-          // from breaking the TSV
-          if (rawCellValue.contains(TSVParser.DELIMITER)) {
-            s""""$rawCellValue""""
-          } else {
-            rawCellValue
-          }
-        }
+        val cellValue = tsvSafeAttribute(attribute)
         columnPosition -> cellValue
     }
     // If there are entities that don't have a value for which there is a known header, that will
@@ -77,16 +65,26 @@ object TSVFormatter {
   }
 
   /**
-    * JsString will double-quote strings via JsValue.toString(),
-    * so handle JsString differently than other JsValues.
+    * Given an Attribute, creates a string that is safe to output into a TSV as a cell value.
+    * - if the input attribute contains a tab character, then double-quote it
     *
-    * @param value The JsValue to stringify
-    * @return Resultant string value
+    * @param value The input attribute to make safe
+    * @return the safe value
     */
-  def cleanValue(value: JsValue): String = {
-    value match {
-      case s:JsString => s.value
-      case x => x.toString()
+  def tsvSafeAttribute(attribute: Attribute): String = tsvSafeString(AttributeStringifier(attribute))
+
+  /**
+    * Creates a string that is safe to output into a TSV as a cell value.
+    * - if the input string contains a tab character, then double-quote it
+    *
+    * @param value The input value to make safe
+    * @return the safe value
+    */
+  def tsvSafeString(value: String): String = {
+    if (value.contains(TSVParser.DELIMITER)) {
+      s"\"$value\""
+    } else {
+      value
     }
   }
 

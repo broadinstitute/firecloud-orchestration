@@ -201,20 +201,20 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
       )
     }
 
-    val cleanValueTestData = Map(
-      JsString("foo") -> "foo",
-      JsString(""""quoted string"""") -> """"quoted string"""",
-      JsNumber(123.45) -> "123.45",
-      JsTrue -> "true",
-      JsFalse -> "false",
-      JsArray(JsString("one"), JsString("two"), JsString("three")) -> """["one","two","three"]""",
-      JsObject(Map("foo" -> JsString("bar"), "baz" -> JsNumber(123))) -> """{"foo":"bar","baz":123}"""
+    val tsvSafeAttributeTestData = Map(
+      AttributeString("foo") -> "foo",
+      AttributeString(""""quoted string"""") -> """"quoted string"""",
+      AttributeNumber(123.45) -> "123.45",
+      AttributeBoolean(true) -> "true",
+      AttributeBoolean(false) -> "false",
+      AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three"))) -> """["one","two","three"]""",
+      AttributeValueRawJson(JsObject(Map("foo" -> JsString("bar"), "baz" -> JsNumber(123)))) -> """{"foo":"bar","baz":123}"""
     )
-    "cleanValue() method" - {
-      cleanValueTestData foreach {
+    "tsvSafeAttribute() method" - {
+      tsvSafeAttributeTestData foreach {
         case (input, expected) =>
           s"should stringify correctly for input $input" in {
-            TSVFormatter.cleanValue(input) shouldBe expected
+            TSVFormatter.tsvSafeAttribute(input) shouldBe expected
           }
       }
     }
