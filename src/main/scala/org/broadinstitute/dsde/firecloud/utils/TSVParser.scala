@@ -11,6 +11,8 @@ case class TSVLoadFile(
 )
 
 object TSVParser {
+  final val DELIMITER = '\t'
+
   private def makeParser = {
     // Note we're using a CsvParser with a tab delimiter rather a TsvParser.
     // This is because the CSV formatter handles quotations correctly while the TSV formatter doesn't.
@@ -21,7 +23,7 @@ object TSVParser {
     settings.setMaxColumns(1024)
     //64 mb in bytes/4 (assumes 4 bytes per character)
     settings.setMaxCharsPerColumn(16777216)
-    settings.getFormat.setDelimiter('\t')
+    settings.getFormat.setDelimiter(DELIMITER)
     settings.setErrorContentLength(16384)
     // By default, the CsvParser returns null for missing fields, however the application expects the
     // empty string. These replace all nulls with the empty string.
