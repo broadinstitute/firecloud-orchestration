@@ -171,7 +171,7 @@ class MockRawlsDAO extends RawlsDAO {
       AttributeName("default", "b") -> AttributeNumber(1.23),
       AttributeName("default", "c") -> AttributeString(""),
       AttributeName("default", "d") -> AttributeString("escape quo\"te"),
-      AttributeName("default", "e") -> AttributeString("v1"),
+      AttributeName("default", "e") -> AttributeString("this\thas\ttabs\tin\tit"),
       AttributeName("default", "f") -> AttributeValueList(Seq(
         AttributeString("v6"),
         AttributeNumber(999),
