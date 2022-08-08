@@ -21,6 +21,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
+import scala.concurrent.ExecutionContext
+
 class EnabledUserDirectivesSpec
   extends AnyFreeSpec
     with EnabledUserDirectives
@@ -28,6 +30,8 @@ class EnabledUserDirectivesSpec
     with ScalatestRouteTest
     with BeforeAndAfterAll
     with SprayJsonSupport {
+
+  override implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val enabledUser: UserInfo = UserInfo("enabled@nowhere.com", OAuth2BearerToken("enabled"), 123456, "enabled-id")
   val disabledUser: UserInfo = UserInfo("disabled@nowhere.com", OAuth2BearerToken("disabled"), 123456, "disabled-id")
@@ -133,4 +137,5 @@ class EnabledUserDirectivesSpec
       }
     }
   }
+
 }
