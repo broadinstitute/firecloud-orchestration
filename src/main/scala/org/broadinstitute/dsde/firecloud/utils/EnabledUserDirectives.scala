@@ -32,8 +32,8 @@ trait EnabledUserDirectives extends LazyLogging  with SprayJsonSupport {
           innerRoute
         case Success(false) =>
           logger.warn(s"User ${userInfo.userEmail} is disabled: $uri")
-          // TODO: do we want a more helpful message like "user is disabled"?
-          throwErrorReport(StatusCodes.Forbidden, StatusCodes.Forbidden.defaultMessage)
+          // the 401/"User is disabled." response mirrors what Sam returns in this case.
+          throwErrorReport(StatusCodes.Unauthorized, "User is disabled.")
         case Failure(ex) => ex match {
           case apiex:ApiException =>
             logger.error(s"Exception checking enabled status for user ${userInfo.userEmail}: (${apiex.getMessage}) while calling $uri", apiex)
@@ -54,7 +54,11 @@ trait EnabledUserDirectives extends LazyLogging  with SprayJsonSupport {
     val sam = new UsersApi(apiClient)
     val userStatus = sam.getUserStatusInfo
     // TODO: is it enough to check this one `getEnabled` boolean?
-    // TODO: retries?
+    // TODO: should we use retries here?
+    /* TODO: instead of directly calling Sam's userStatusInfo API, should we call a "real" api and, if that api returns
+        401, echo its response? That would allow Orch to always give the same error response that Sam gives, but
+        it is likely to be more expensive in the common case of the user being enabled.
+     */
     userStatus.getEnabled
   }
 

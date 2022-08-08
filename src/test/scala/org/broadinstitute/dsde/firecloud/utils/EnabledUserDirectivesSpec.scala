@@ -120,9 +120,9 @@ class EnabledUserDirectivesSpec
     }
     "should 403 for disabled users" in {
       Get() ~> userEnabledRoute(disabledUser) ~> check {
-        status shouldBe StatusCodes.Forbidden
+        status shouldBe StatusCodes.Unauthorized
         val err = responseAs[ErrorReport]
-        err.message shouldBe StatusCodes.Forbidden.defaultMessage
+        err.message shouldBe "User is disabled."
       }
     }
     "should bubble up exceptions encountered while calling Sam" in {
