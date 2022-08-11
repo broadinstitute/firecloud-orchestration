@@ -51,8 +51,12 @@ trait EnabledUserDirectives extends LazyLogging  with SprayJsonSupport {
         case Failure(apiex:ApiException) =>
           logger.error(s"ApiException exception checking enabled status for user ${userInfo.userEmail}: (${apiex.getMessage}) while calling $uri", apiex)
           val code = StatusCode.int2StatusCode(apiex.getCode)
-          val message = if (Option(apiex.getMessage).isEmpty || apiex.getMessage.isEmpty) code.defaultMessage() else apiex.getMessage
-          throwErrorReport(code, message)
+          if (code == StatusCodes.NotFound) {
+            throwErrorReport(StatusCodes.Unauthorized, "User is not registered.")
+          } else {
+            val message = if (Option(apiex.getMessage).isEmpty || apiex.getMessage.isEmpty) code.defaultMessage() else apiex.getMessage
+            throwErrorReport(code, message)
+          }
         case Failure(ex) =>
           logger.error(s"Unexpected exception checking enabled status for user ${userInfo.userEmail}: (${ex.getMessage}) while calling $uri", ex)
           throwErrorReport(StatusCodes.InternalServerError, ex.getMessage)

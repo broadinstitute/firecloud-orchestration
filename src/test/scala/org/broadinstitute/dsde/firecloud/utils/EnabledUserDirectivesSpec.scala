@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.StatusCodes.{ImATeapot, OK}
+import akka.http.scaladsl.model.StatusCodes.{ImATeapot, NotFound, OK}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route.seal
@@ -35,6 +35,7 @@ class EnabledUserDirectivesSpec
 
   val enabledUser: UserInfo = UserInfo("enabled@nowhere.com", OAuth2BearerToken("enabled"), 123456, "enabled-id")
   val disabledUser: UserInfo = UserInfo("disabled@nowhere.com", OAuth2BearerToken("disabled"), 123456, "disabled-id")
+  val unregisteredUser: UserInfo = UserInfo("unregistered@nowhere.com", OAuth2BearerToken("unregistered"), 123456, "unregistered-id")
   val samApiExceptionUser: UserInfo = UserInfo("samapiexception@nowhere.com", OAuth2BearerToken("samapiexception"), 123456, "samapiexception-id")
 
   val samUserInfoPath = "/register/user/v2/self/info"
@@ -80,6 +81,23 @@ class EnabledUserDirectivesSpec
                                                     |}""".stripMargin).withStatusCode(OK.intValue)
       )
 
+    // unregistered user
+    mockSamServer
+      .when(request
+        .withMethod("GET")
+        .withPath(samUserInfoPath)
+        .withHeader(new Header("Authorization", "Bearer unregistered")))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withBody("""{
+                                                    |  "causes": [],
+                                                    |  "message": "Google Id unregistered-id not found in sam",
+                                                    |  "source": "sam",
+                                                    |  "stackTrace": [],
+                                                    |  "statusCode": 404
+                                                    |}""".stripMargin).withStatusCode(NotFound.intValue)
+      )
+
     // ApiException from the Sam client
     mockSamServer
       .when(request
@@ -122,11 +140,18 @@ class EnabledUserDirectivesSpec
         responseAs[String] shouldBe "route was successful"
       }
     }
-    "should 403 for disabled users" in {
+    "should 401 for disabled users" in {
       Get() ~> userEnabledRoute(disabledUser) ~> check {
         status shouldBe StatusCodes.Unauthorized
         val err = responseAs[ErrorReport]
         err.message shouldBe "User is disabled."
+      }
+    }
+    "should 401 for unregistered users" in {
+      Get() ~> userEnabledRoute(unregisteredUser) ~> check {
+        status shouldBe StatusCodes.Unauthorized
+        val err = responseAs[ErrorReport]
+        err.message shouldBe "User is not registered."
       }
     }
     "should bubble up exceptions encountered while calling Sam" in {
