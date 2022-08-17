@@ -99,6 +99,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
       |}
     """.stripMargin
 
+  // mockserver to return an enabled user from Sam
+  var mockSamServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
     consentServer = startClientAndServer(consentServerPort)
@@ -120,10 +122,29 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     val notFoundGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "missing")
     val notFoundResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(NotFound.intValue).withBody(consentNotFound.toJson.prettyPrint)
     consentServer.when(notFoundGet).respond(notFoundResponse)
+
+    mockSamServer = startClientAndServer(MockUtils.samServerPort)
+
+    // enabled user
+    mockSamServer
+      .when(request
+        .withMethod("GET")
+        .withPath("/register/user/v2/self/info"))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withBody(
+          """{
+            |  "adminEnabled": true,
+            |  "enabled": true,
+            |  "userEmail": "enabled@nowhere.com",
+            |  "userSubjectId": "enabled-id"
+            |}""".stripMargin).withStatusCode(OK.intValue)
+      )
   }
 
   override def afterAll(): Unit = {
     consentServer.stop()
+    mockSamServer.stop()
   }
 
   override def beforeEach(): Unit = {
