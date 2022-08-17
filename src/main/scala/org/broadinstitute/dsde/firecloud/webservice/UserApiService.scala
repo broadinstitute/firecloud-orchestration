@@ -156,7 +156,11 @@ trait UserApiService
         pathEnd {
           get {
             requireUserInfo() { userInfo =>
-              complete { userServiceConstructor(userInfo).getAllUserKeys }
+              requireEnabledUser(userInfo) {
+                complete {
+                  userServiceConstructor(userInfo).getAllUserKeys
+                }
+              }
             }
           }
         }
