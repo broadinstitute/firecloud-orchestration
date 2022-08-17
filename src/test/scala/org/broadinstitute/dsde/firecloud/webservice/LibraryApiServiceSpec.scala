@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
-import org.broadinstitute.dsde.firecloud.mock.MockUtils
+import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurposeRequest
@@ -29,7 +29,8 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
 
-class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
+class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
+  with SamMockserverUtils with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
@@ -124,22 +125,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with 
     consentServer.when(notFoundGet).respond(notFoundResponse)
 
     mockSamServer = startClientAndServer(MockUtils.samServerPort)
-
-    // enabled user
-    mockSamServer
-      .when(request
-        .withMethod("GET")
-        .withPath("/register/user/v2/self/info"))
-      .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(
-          """{
-            |  "adminEnabled": true,
-            |  "enabled": true,
-            |  "userEmail": "enabled@nowhere.com",
-            |  "userSubjectId": "enabled-id"
-            |}""".stripMargin).withStatusCode(OK.intValue)
-      )
+    returnEnabledUser(mockSamServer)
   }
 
   override def afterAll(): Unit = {
