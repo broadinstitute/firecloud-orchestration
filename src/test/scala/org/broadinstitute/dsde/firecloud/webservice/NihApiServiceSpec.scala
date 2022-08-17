@@ -2,18 +2,33 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
+import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils, SamMockserverUtils}
 import org.broadinstitute.dsde.firecloud.model.JWTWrapper
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.NihStatus
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.model.WorkbenchEmail
+import org.mockserver.integration.ClientAndServer
+import org.mockserver.integration.ClientAndServer.startClientAndServer
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.ExecutionContext
 
-class NihApiServiceSpec extends ApiServiceSpec {
+class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll with SamMockserverUtils {
+
+  // mockserver to return an enabled user from Sam
+  var mockSamServer: ClientAndServer = _
+
+  override def afterAll(): Unit = mockSamServer.stop()
+
+  override def beforeAll(): Unit = {
+    mockSamServer = startClientAndServer(MockUtils.samServerPort)
+    returnEnabledUser(mockSamServer)
+  }
+
   val tcgaDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TCGA")).head.groupToSync
   val targetDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TARGET")).head.groupToSync
 
@@ -30,7 +45,7 @@ class NihApiServiceSpec extends ApiServiceSpec {
   //JWT for NIH username "not-on-whitelist" (don't ever add this to the mock whitelists in MockGoogleServicesDAO.scala)
   val validJwtNotOnWhitelist = JWTWrapper("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlcmFDb21tb25zVXNlcm5hbWUiOiJub3Qtb24td2hpdGVsaXN0IiwiaWF0IjoxNjE0ODc3NTc4MDB9.WpDrgtui5mOgDc5WvdWYC-l6vljGVyRI7DbBnpRYm7QOq00VLU6FI5YzVFe1eyjnHIqdz_KkkQD604Bi3G1qdyzhk_KKFCSeT4k5in-zS4Em_I2rcyUFs9DeHyFqVrBMZK8eZM_oKtSs23AtwGJASQ-sMvfXeXLcjTFuLWUdeiQEYedj9oOOA93ne-5Kaw9V7sR1foX-ybLDDHfHuAwTN2Vnvpmz0Qlk5osvvv-NunCo4M6A4fQ2FQWjrCwXk8-1N4Wf06dgDJ7ymsw9HtwHhzctVDzodaVlVU_RaC2gtSOWeD5nPaAJ7h6aNmNeLRmNwzCBm3TyPDY-qznPVM0DRg")
 
-  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, shareLogDao: MockShareLogDAO, importServiceDao: MockImportServiceDAO, shibbolethDao: MockShibbolethDAO)(implicit val executionContext: ExecutionContext) extends ApiServices
+  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, shareLogDao: MockShareLogDAO, importServiceDao: MockImportServiceDAO, shibbolethDao: MockShibbolethDAO)(implicit val executionContext: ExecutionContext, implicit val materializer: Materializer) extends ApiServices
 
   def withDefaultApiServices[T](testCode: TestApiService => T): T = {
     val apiService = TestApiService(new MockAgoraDAO, new MockGoogleServicesDAO, new MockOntologyDAO, new MockConsentDAO, new MockRawlsDAO, new MockSamDAO, new MockSearchDAO, new MockResearchPurposeSupport, new MockThurloeDAO, new MockShareLogDAO, new MockImportServiceDAO, new MockShibbolethDAO)
