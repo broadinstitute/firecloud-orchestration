@@ -5,14 +5,14 @@ import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, RegisterService}
-import org.broadinstitute.dsde.firecloud.utils.{EnabledUserDirectives, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.service.RegisterService.{samTosBaseUrl, samTosStatusUrl, samTosTextUrl}
 
 import scala.concurrent.ExecutionContext
 
-trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives with RequestBuilding with StandardUserInfoDirectives {
+trait RegisterApiService extends FireCloudDirectives with RequestBuilding with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
 
@@ -36,10 +36,8 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
       path("preferences") {
         post {
           requireUserInfo() { userInfo =>
-            requireEnabledUser(userInfo) {
-              entity(as[Map[String, String]]) { preferences =>
-                complete { registerServiceConstructor().updateProfilePreferences(userInfo, preferences) }
-              }
+            entity(as[Map[String, String]]) { preferences =>
+              complete { registerServiceConstructor().updateProfilePreferences(userInfo, preferences) }
             }
           }
         }

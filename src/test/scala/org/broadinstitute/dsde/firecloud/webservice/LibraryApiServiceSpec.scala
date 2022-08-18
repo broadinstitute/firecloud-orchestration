@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurposeRequest
@@ -29,8 +29,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
 
-class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
-  with SamMockserverUtils with BeforeAndAfterEach with SprayJsonSupport {
+class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService with BeforeAndAfterEach with SprayJsonSupport {
 
   def actorRefFactory = system
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
@@ -100,8 +99,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       |}
     """.stripMargin
 
-  // mockserver to return an enabled user from Sam
-  var mockSamServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
     consentServer = startClientAndServer(consentServerPort)
@@ -123,14 +120,10 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
     val notFoundGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "missing")
     val notFoundResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(NotFound.intValue).withBody(consentNotFound.toJson.prettyPrint)
     consentServer.when(notFoundGet).respond(notFoundResponse)
-
-    mockSamServer = startClientAndServer(MockUtils.samServerPort)
-    returnEnabledUser(mockSamServer)
   }
 
   override def afterAll(): Unit = {
     consentServer.stop()
-    mockSamServer.stop()
   }
 
   override def beforeEach(): Unit = {

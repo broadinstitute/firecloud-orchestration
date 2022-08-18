@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.dataaccess.ShareLogApiServiceSpecShareLogDAO
 import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.UserInfo
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
@@ -17,7 +17,7 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
-final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService with SamMockserverUtils with BeforeAndAfterAll {
+final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService with BeforeAndAfterAll {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -28,7 +28,21 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
 
   override def beforeAll(): Unit = {
     mockSamServer = startClientAndServer(MockUtils.samServerPort)
-    returnEnabledUser(mockSamServer)
+
+    // enabled user
+    mockSamServer
+      .when(request
+        .withMethod("GET")
+        .withPath("/register/user/v2/self/info"))
+      .respond(
+        org.mockserver.model.HttpResponse.response()
+          .withHeaders(MockUtils.header).withBody("""{
+                                                    |  "adminEnabled": true,
+                                                    |  "enabled": true,
+                                                    |  "userEmail": "enabled@nowhere.com",
+                                                    |  "userSubjectId": "enabled-id"
+                                                    |}""".stripMargin).withStatusCode(OK.intValue)
+      )
   }
 
   final val sharingUser = UserInfo("fake1@gmail.com", OAuth2BearerToken(dummyToken), 3600L, "fake1")

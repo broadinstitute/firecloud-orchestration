@@ -8,32 +8,17 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NoContent, O
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.integration.ClientAndServer.startClientAndServer
-import org.scalatest.BeforeAndAfterAll
 import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiService
-  with DefaultJsonProtocol with SprayJsonSupport
-  with BeforeAndAfterAll with SamMockserverUtils {
+  with DefaultJsonProtocol with SprayJsonSupport {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-
-  // mockserver to return an enabled user from Sam
-  var mockSamServer: ClientAndServer = _
-
-  override def afterAll(): Unit = mockSamServer.stop()
-
-  override def beforeAll(): Unit = {
-    mockSamServer = startClientAndServer(MockUtils.samServerPort)
-    returnEnabledUser(mockSamServer)
-  }
-
 
   override val registerServiceConstructor:() => RegisterService =
     RegisterService.constructor(app.copy(thurloeDAO = new RegisterApiServiceSpecThurloeDAO))

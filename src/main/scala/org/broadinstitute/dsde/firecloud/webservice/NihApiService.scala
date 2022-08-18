@@ -6,12 +6,12 @@ import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.NihService
-import org.broadinstitute.dsde.firecloud.utils.{EnabledUserDirectives, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext
 
-trait NihApiService extends Directives with RequestBuilding with EnabledUserDirectives with StandardUserInfoDirectives {
+trait NihApiService extends Directives with RequestBuilding with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -31,23 +31,21 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
 
   val nihRoutes: Route =
     requireUserInfo() { userInfo =>
-      requireEnabledUser(userInfo) {
-        pathPrefix("nih") {
-          // api/nih/callback: accept JWT, update linkage + lastlogin
-          path("callback") {
-            post {
-              entity(as[JWTWrapper]) { jwtWrapper =>
-                complete { nihServiceConstructor().updateNihLinkAndSyncSelf(userInfo, jwtWrapper) }
-              }
+      pathPrefix("nih") {
+        // api/nih/callback: accept JWT, update linkage + lastlogin
+        path("callback") {
+          post {
+            entity(as[JWTWrapper]) { jwtWrapper =>
+              complete { nihServiceConstructor().updateNihLinkAndSyncSelf(userInfo, jwtWrapper) }
             }
-          } ~
-          path ("status") {
-            complete { nihServiceConstructor().getNihStatus(userInfo) }
-          } ~
-          path ("account") {
-            delete {
-              complete { nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent) }
-            }
+          }
+        } ~
+        path ("status") {
+          complete { nihServiceConstructor().getNihStatus(userInfo) }
+        } ~
+        path ("account") {
+          delete {
+            complete { nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent) }
           }
         }
       }
