@@ -6,6 +6,9 @@ import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
 object TSVFormatter {
 
+  // for serializing entity references
+  val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
+
   /**
     * Generate file content from headers and rows.
     *
@@ -71,7 +74,14 @@ object TSVFormatter {
     * @param value The input attribute to make safe
     * @return the safe value
     */
-  def tsvSafeAttribute(attribute: Attribute): String = tsvSafeString(AttributeStringifier(attribute))
+  def tsvSafeAttribute(attribute: Attribute): String = {
+    val intermediateString = attribute match {
+      case ref:AttributeEntityReference => attributeFormat.write(ref).compactPrint
+      case refs:AttributeEntityReferenceList => attributeFormat.write(refs).compactPrint
+      case _ => AttributeStringifier(attribute)
+    }
+    tsvSafeString(intermediateString)
+  }
 
   /**
     * Creates a string that is safe to output into a TSV as a cell value.
