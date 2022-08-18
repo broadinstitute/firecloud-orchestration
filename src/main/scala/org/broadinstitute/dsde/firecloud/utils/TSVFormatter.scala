@@ -75,9 +75,10 @@ object TSVFormatter {
     * @return the safe value
     */
   def tsvSafeAttribute(attribute: Attribute): String = {
+    // AttributeStringifier works for everything except single entity references;
+    // it even works for AttributeEntityReferenceList
     val intermediateString = attribute match {
       case ref:AttributeEntityReference => attributeFormat.write(ref).compactPrint
-      case refs:AttributeEntityReferenceList => attributeFormat.write(refs).compactPrint
       case _ => AttributeStringifier(attribute)
     }
     tsvSafeString(intermediateString)
