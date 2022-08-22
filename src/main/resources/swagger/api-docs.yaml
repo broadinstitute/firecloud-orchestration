@@ -483,7 +483,7 @@ paths:
         - BillingV2
       summary: list members of billing project the caller owns
       description: list members of billing project the caller owns
-      operationId: listBillingProjectMembers
+      operationId: listBillingProjectMembersV2
       parameters:
         - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
@@ -513,7 +513,7 @@ paths:
         - BillingV2
       summary: add user or group to billing project the caller owns
       description: add user or group to billing project the caller owns
-      operationId: addUserToBillingProject
+      operationId: addUserToBillingProjectV2
       parameters:
         - $ref: '#/components/parameters/billingProjectPathParam'
         - name: workbenchRole
@@ -557,7 +557,7 @@ paths:
         - BillingV2
       summary: remove user or group from billing project the caller owns
       description: remove user or group from billing project the caller owns
-      operationId: removeUserFromBillingProject
+      operationId: removeUserFromBillingProjectV2
       parameters:
         - $ref: '#/components/parameters/billingProjectPathParam'
         - name: workbenchRole
@@ -602,7 +602,7 @@ paths:
         - Billing
       summary: delete billing project
       description: delete billing project
-      operationId: deleteBillingProject
+      operationId: deleteBillingProjectV2
       parameters:
         - name: projectName
           in: path
@@ -9177,7 +9177,6 @@ components:
           default: false
         bucketLocation:
           type: string
-          required: false
           description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceRequestClone:
@@ -9211,7 +9210,6 @@ components:
           default: false
         bucketLocation:
           type: string
-          required: false
           description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceResponse:
