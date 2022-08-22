@@ -127,11 +127,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/v2/{projectId}/spendReportConfiguration:
@@ -305,11 +300,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
     delete:
@@ -361,11 +351,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/v2:
@@ -401,7 +386,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
       security:
-        - authorization:
+        - googleoauth:
             - openid
             - email
             - profile
@@ -712,11 +697,6 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - authorization:
-            - openid
-            - email
-            - profile
   /api/configurations:
     get:
       tags:
@@ -1090,11 +1070,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/workflows/{version}/{id}/abort:
     post:
@@ -1134,11 +1109,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
@@ -1176,11 +1146,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workflows/{version}/{id}/labels:
@@ -1227,11 +1192,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
       x-codegen-request-body-name: labels
@@ -1427,11 +1387,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
   /api/workflows/{version}/{id}/releaseHold:
@@ -1617,11 +1572,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
     post:
@@ -1659,11 +1609,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
       x-codegen-request-body-name: parameters
@@ -1813,11 +1758,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
     post:
       tags:
@@ -1850,11 +1790,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
     delete:
       tags:
@@ -1896,11 +1831,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/groups/{groupName}/requestAccess:
     post:
@@ -1931,11 +1861,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/groups/{groupName}/{role}/{email}:
     put:
@@ -1987,11 +1912,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
     delete:
       tags:
@@ -2042,11 +1962,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/inputsOutputs:
     post:
@@ -3164,11 +3079,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/NotificationType'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/notifications/workspace/{workspaceNamespace}/{workspaceName}:
@@ -3199,11 +3109,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/NotificationType'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/profile/billing:
@@ -3889,11 +3794,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketUsage:
@@ -5868,11 +5768,6 @@ paths:
         403:
           description: Insufficient permisions to send notification on this workspace
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
@@ -6075,11 +5970,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
     delete:
@@ -6400,11 +6290,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/tags:
@@ -7089,11 +6974,6 @@ paths:
         500:
           description: Internal Server Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
       x-codegen-request-body-name: body
   /api/duos/consent/orsp/{orspId}:
