@@ -1,21 +1,35 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.actor.ActorRefFactory
-import org.broadinstitute.dsde.firecloud.dataaccess.ShareLogApiServiceSpecShareLogDAO
-import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
-import org.broadinstitute.dsde.firecloud.model.UserInfo
-import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
-import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.dataaccess.ShareLogApiServiceSpecShareLogDAO
+import org.broadinstitute.dsde.firecloud.integrationtest.ElasticSearchShareLogDAOSpecFixtures
+import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
+import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
+import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, ShareLogService}
+import org.mockserver.integration.ClientAndServer
+import org.mockserver.integration.ClientAndServer.startClientAndServer
+import org.mockserver.model.HttpRequest.request
+import org.scalatest.BeforeAndAfterAll
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
-final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService {
+final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService with SamMockserverUtils with BeforeAndAfterAll {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
+  // mockserver to return an enabled user from Sam
+  var mockSamServer: ClientAndServer = _
+
+  override def afterAll(): Unit = mockSamServer.stop()
+
+  override def beforeAll(): Unit = {
+    mockSamServer = startClientAndServer(MockUtils.samServerPort)
+    returnEnabledUser(mockSamServer)
+  }
 
   final val sharingUser = UserInfo("fake1@gmail.com", OAuth2BearerToken(dummyToken), 3600L, "fake1")
 

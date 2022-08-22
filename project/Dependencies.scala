@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.5.32"
   val akkaHttpV = "10.2.9"
-  val jacksonV = "2.13.2"
+  val jacksonV = "2.13.3"
   val jacksonHotfixV = "2.13.3" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.77.Final"
   val workbenchLibsHash = "20f9225"
@@ -44,6 +44,7 @@ object Dependencies {
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"), // TODO: upgrading to latest workbench-libs hash causes failures
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.24-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,

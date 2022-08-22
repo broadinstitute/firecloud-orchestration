@@ -146,14 +146,19 @@ trait TSVFileSupport {
   /*
   Creates an AttributeValue whose implementation is more closely tied to the value of the input.
    */
-  def stringToTypedAttribute(value: String): AttributeValue = {
+  def stringToTypedAttribute(value: String): Attribute = {
     Try (java.lang.Integer.parseInt(value)) match {
       case Success(intValue) => AttributeNumber(intValue)
       case Failure(_) => Try (java.lang.Double.parseDouble(value)) match {
         case Success(doubleValue) => AttributeNumber(doubleValue)
         case Failure(_) => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
           case Success(booleanValue) => AttributeBoolean(booleanValue)
-          case Failure(_) => AttributeString(value)
+          case Failure(_) =>
+            Try(value.parseJson.convertTo[AttributeEntityReference]) match {
+              case Success(ref) => ref
+              case Failure(_) => AttributeString(value)
+            }
+
         }
       }
     }

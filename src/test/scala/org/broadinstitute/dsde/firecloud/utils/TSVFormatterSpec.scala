@@ -208,7 +208,11 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
       AttributeBoolean(true) -> "true",
       AttributeBoolean(false) -> "false",
       AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three"))) -> """["one","two","three"]""",
-      AttributeValueRawJson(JsObject(Map("foo" -> JsString("bar"), "baz" -> JsNumber(123)))) -> """{"foo":"bar","baz":123}"""
+      AttributeValueRawJson(JsObject(Map("foo" -> JsString("bar"), "baz" -> JsNumber(123)))) -> """{"foo":"bar","baz":123}""",
+      AttributeEntityReference("targetType", "targetName") -> """{"entityType":"targetType","entityName":"targetName"}""",
+      AttributeEntityReferenceList(Seq(
+        AttributeEntityReference("type1", "name1"),
+        AttributeEntityReference("type2", "name2"))) -> """[{"entityType":"type1","entityName":"name1"},{"entityType":"type2","entityName":"name2"}]"""
     )
     "tsvSafeAttribute() method" - {
       tsvSafeAttributeTestData foreach {
