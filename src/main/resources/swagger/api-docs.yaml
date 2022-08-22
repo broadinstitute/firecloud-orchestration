@@ -3876,12 +3876,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
       responses:
         200:
           description: List of entities in workspace
@@ -3908,12 +3903,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
         - name: entityName
           in: path
           description: Entity Name
@@ -3941,12 +3931,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
         - name: entityName
           in: path
           description: Entity Name
@@ -4003,12 +3988,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
         - name: entityName
           in: path
           description: Entity Name
@@ -4111,12 +4091,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
         - name: attributeNames
           in: query
           description: comma separated list of ordered attribute names to be in downloaded
@@ -4157,12 +4132,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
         - name: page
           in: query
           description: Page number, 1-indexed (default 1)
@@ -5851,12 +5821,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
         - name: attributeNames
           in: query
           description: comma separated list of ordered attribute names to be in downloaded
@@ -5900,12 +5865,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityTypeParam'
       requestBody:
         content:
           application/x-www-form-urlencoded:
