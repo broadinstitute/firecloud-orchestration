@@ -2963,18 +2963,8 @@ paths:
       summary: Gets the notifications available for a workspace
       operationId: workspaceNotifications
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: workspace namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: workspace name
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#'#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -3468,18 +3458,8 @@ paths:
       summary: Delete workspace
       operationId: deleteWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#'#/components/parameters/workspaceNameParam'
       responses:
         202:
           description: Request Accepted
