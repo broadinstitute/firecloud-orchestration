@@ -1012,13 +1012,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Abort a workflow based on workflow id
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1052,13 +1046,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Get backend (e.g. PAPI) metadata for a job
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1090,13 +1078,7 @@ paths:
       summary: Add new labels or update values for existing label keys by workflow
         id.
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1136,13 +1118,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Query for workflow and call-level metadata for a specified workflow
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1333,13 +1309,7 @@ paths:
         for running. For instance this might be necessary in cases where you have
         submitted a workflow with workflowOnHold = true.
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1373,13 +1343,7 @@ paths:
         - CromIAM Workflows (for Admin)
       summary: Return the hash differential between two calls
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: workflowA
           in: query
           description: Workflow Id of the first workflow
@@ -1436,13 +1400,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: start
           in: query
           description: |
@@ -1514,13 +1472,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
-        - name: version
-          in: path
-          description: API version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       requestBody:
         description: |
           Same query parameters as GET /query endpoint, submitted as a json list. Example: [{"status":"Success"},{"status":"Failed"}]
@@ -1554,13 +1506,7 @@ paths:
       summary: Machine-readable description of a workflow, including inputs and outputs
       operationId: describe
       parameters:
-        - name: version
-          in: path
-          description: Cromwell API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       requestBody:
         content:
           multipart/form-data:
@@ -1611,13 +1557,7 @@ paths:
         - CromIAM Engine (for Job Manager)
       summary: Returns the version of the Cromwell Engine
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       responses:
         200:
           description: Successful Request
@@ -1633,13 +1573,7 @@ paths:
         - CromIAM Engine (for Job Manager)
       summary: Returns the current health status of any monitored subsystems
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       responses:
         200:
           description: All subsystems report an "ok" status
