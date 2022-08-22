@@ -19,12 +19,10 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           title = randomString,
           contactEmail = Some("me@abc.com"),
           institute = randomString,
-          institutionalProgram = randomString,
+          researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
           programLocationCountry = randomString,
-          pi = randomString,
-          nonProfitStatus = randomString,
           termsOfService = Some(termsOfServiceUrl)
         )
         basicProfile shouldNot be(null)
@@ -36,12 +34,10 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           title = randomString,
           contactEmail = Some(""),
           institute = randomString,
-          institutionalProgram = randomString,
+          researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString,
-          pi = randomString,
-          nonProfitStatus = randomString
+          programLocationCountry = randomString
         )
         profile shouldNot be(null)
       }
@@ -52,12 +48,10 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           title = randomString,
           contactEmail = Option.empty,
           institute = randomString,
-          institutionalProgram = randomString,
+          researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString,
-          pi = randomString,
-          nonProfitStatus = randomString
+          programLocationCountry = randomString
         )
         profile shouldNot be(null)
       }
@@ -68,12 +62,10 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           title = randomString,
           contactEmail = Some("a-z+a.b-x+y.z@gmail.com"),
           institute = randomString,
-          institutionalProgram = randomString,
+          researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString,
-          pi = randomString,
-          nonProfitStatus = randomString
+          programLocationCountry = randomString
         )
         profile shouldNot be(null)
       }
@@ -88,12 +80,10 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             title = "",
             contactEmail = None,
             institute = "",
-            institutionalProgram = "",
             programLocationCity = "",
             programLocationState = "",
             programLocationCountry = "",
-            pi = "",
-            nonProfitStatus = "",
+            None,
             None
           )
         }
@@ -107,12 +97,10 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             title = randomString,
             contactEmail = Some("invalid contact email address"),
             institute = randomString,
-            institutionalProgram = randomString,
+            researchArea = Some(randomString),
             programLocationCity = randomString,
             programLocationState = randomString,
-            programLocationCountry = randomString,
-            pi = randomString,
-            nonProfitStatus = randomString
+            programLocationCountry = randomString
           )
         }
         ex shouldNot be(null)
