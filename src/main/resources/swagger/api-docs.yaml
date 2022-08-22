@@ -750,24 +750,9 @@ paths:
       summary: Get a Method Repository configuration
       operationId: getMethodRepositoryConfiguration
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
         - name: payloadAsObject
           in: query
           description: Instead of returning a string under key payload, return a JSON
@@ -797,24 +782,9 @@ paths:
       description: |
         Redacts a configuration and all of its associated configurations
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
       responses:
         200:
           description: |
@@ -839,24 +809,9 @@ paths:
       summary: get ACL permissions on a Method Repository configuration
       operationId: getConfigACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
       responses:
         200:
           description: the indicated configuration ACL
@@ -874,24 +829,9 @@ paths:
       summary: set ACL permissions on a Method Repository configuration
       operationId: setConfigACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
       requestBody:
         description: the ACLs to upsert
         content:
@@ -922,12 +862,7 @@ paths:
       summary: get ACL permissions on a Method Repository Configuration Namespace
       operationId: getConfigNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
       responses:
         200:
           description: List of the indicated configuration namespace ACL permissions
@@ -949,12 +884,7 @@ paths:
       summary: set ACL permissions on a Method Repository Configuration Namespace
       operationId: setConfigNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
       requestBody:
         description: the ACLs to upsert
         content:
@@ -2357,18 +2287,8 @@ paths:
         Given the namespace/name of a method, returns all configurations
         in the repository that reference that method
       parameters:
-        - name: namespace
-          in: path
-          description: Namespace of method.
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Name of method.
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
       responses:
         200:
           description: An array of configurations.
@@ -2398,24 +2318,9 @@ paths:
         Returns one method that matches the namespace,
         name, and snapshotId.
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
         - name: onlyPayload
           in: query
           description: Boolean to return only the payload of the method.
@@ -2448,24 +2353,9 @@ paths:
         arguments considered for the new snapshot; everything else is copied
         from the source.
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
         - name: redact
           in: query
           description: Should the source method be redacted?
@@ -2532,24 +2422,9 @@ paths:
       description: |
         Redacts a method and all of its associated configurations
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       responses:
         200:
           description: |
@@ -2577,24 +2452,9 @@ paths:
         arguments as the supplied method snapshot, and 2. reference any snapshot
         of this method.
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       responses:
         200:
           description: An array of configurations.
@@ -2625,24 +2485,9 @@ paths:
       summary: get ACL permissions on a Method Repository method
       operationId: getMethodACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       responses:
         200:
           description: the indicated method ACL
@@ -2660,24 +2505,9 @@ paths:
       summary: set ACL permissions on a Method Repository method
       operationId: setMethodACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       requestBody:
         description: the ACLs to upsert
         content:
@@ -2708,12 +2538,7 @@ paths:
       summary: get ACL permissions on a Method Repository Method Namespace
       operationId: getMethodNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
       responses:
         200:
           description: List of indicated method namespace ACL permissions
@@ -2735,12 +2560,7 @@ paths:
       summary: set ACL permissions on a Method Repository Method Namespace
       operationId: setMethodNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
       requestBody:
         description: the ACLs to upsert
         content:
