@@ -3904,12 +3904,7 @@ paths:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
         - $ref: '#'#/components/parameters/entityTypeParam'
-        - name: entityName
-          in: path
-          description: Entity Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityNameParam'
       responses:
         200:
           description: Success
@@ -3932,12 +3927,7 @@ paths:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
         - $ref: '#'#/components/parameters/entityTypeParam'
-        - name: entityName
-          in: path
-          description: Entity Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityNameParam'
       requestBody:
         description: Update operations for attributes
         content:
@@ -3989,12 +3979,7 @@ paths:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
         - $ref: '#'#/components/parameters/entityTypeParam'
-        - name: entityName
-          in: path
-          description: Entity Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#'#/components/parameters/entityNameParam'
       requestBody:
         description: Expression
         content:
@@ -5204,12 +5189,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/submissionIdParam'
       responses:
         200:
           description: Successful Request
@@ -5240,12 +5220,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/submissionIdParam'
       responses:
         204:
           description: Aborted successfully
@@ -5267,12 +5242,7 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: submissionId
-          in: path
-          description: Submission Id
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/submissionIdParam'
       requestBody:
         description: User comment to be updated
         content:
@@ -5357,18 +5327,8 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
-        - name: workflowId
-          in: path
-          description: Workflow ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/submissionIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
         - name: includeKey
           in: query
           description: |
@@ -5424,18 +5384,8 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
-        - name: workflowId
-          in: path
-          description: Workflow ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/submissionIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
       responses:
         200:
           description: Get workflow outputs
@@ -5458,18 +5408,8 @@ paths:
       parameters:
         - $ref: '#'#/components/parameters/workspaceNamespaceParam'
         - $ref: '#'#/components/parameters/workspaceNameParam'
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
-        - name: workflowId
-          in: path
-          description: Workflow ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/submissionIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
       responses:
         200:
           description: Successful Request
