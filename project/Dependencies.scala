@@ -25,7 +25,7 @@ object Dependencies {
     "io.netty"                       % "netty-codec-http"    % nettyV,
     "io.netty"                       % "netty-handler"       % nettyV,
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "30.1-jre",
+    "com.google.guava"               % "guava"               % "30.1.1-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
@@ -85,7 +85,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.123.28" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.124.14" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
