@@ -6686,7 +6686,7 @@ paths:
                   $ref: '#/components/schemas/ToolClass'
       x-passthrough: true
       x-passthrough-target: agora
-  /servicePerimeters/{servicePerimeterName}/projects/{projectName}:
+  /api/servicePerimeters/{servicePerimeterName}/projects/{projectName}:
     put:
       tags:
         - Service Perimeters
