@@ -4,7 +4,7 @@ object Dependencies {
   val akkaV = "2.5.32"
   val akkaHttpV = "10.2.9"
   val jacksonV = "2.13.3"
-  val jacksonHotfixV = "2.13.2.2" // for when only some of the Jackson libs have hotfix releases
+  val jacksonHotfixV = "2.13.3" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.77.Final"
   val workbenchLibsHash = "20f9225"
 
@@ -85,7 +85,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.123.28" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.124.14" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
