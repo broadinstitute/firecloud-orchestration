@@ -4,12 +4,13 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, ShareLogService}
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{EnabledUserDirectives, StandardUserInfoDirectives}
 
 import scala.concurrent.ExecutionContext
 
 trait ShareLogApiService extends FireCloudDirectives
-  with StandardUserInfoDirectives with SprayJsonSupport {
+  with StandardUserInfoDirectives with EnabledUserDirectives
+  with SprayJsonSupport {
 
   implicit val executionContext: ExecutionContext
   val shareLogServiceConstructor: () => ShareLogService
@@ -20,7 +21,9 @@ trait ShareLogApiService extends FireCloudDirectives
         get {
           parameter("shareType".?) { shareType =>
             requireUserInfo() { userInfo =>
-              complete { shareLogServiceConstructor().getSharees(userInfo.id, shareType.map(ShareType.withName)) }
+               requireEnabledUser(userInfo) {
+                complete { shareLogServiceConstructor().getSharees(userInfo.id, shareType.map(ShareType.withName)) }
+               }
             }
           }
         }

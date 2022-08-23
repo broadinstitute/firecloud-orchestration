@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile}
+import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile, TSVParser}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
@@ -106,8 +106,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) map { workspaceResponse =>
       val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
       val attributes = workspaceResponse.workspace.attributes.getOrElse(Map.empty).view.filterKeys(_ != AttributeName.withDefaultNS("description"))
-      val headerString = "workspace:" + (attributes map { case (attName, attValue) => attName.name }).mkString("\t")
-      val valueString = (attributes map { case (attName, attValue) => TSVFormatter.cleanValue(attributeFormat.write(attValue)) }).mkString("\t")
+      val headerString = "workspace:" + (attributes map { case (attName, _) => attName.name }).mkString(s"${TSVParser.DELIMITER}")
+      val valueString = (attributes map { case (_, attValue) => TSVFormatter.tsvSafeAttribute(attValue) }).mkString(s"${TSVParser.DELIMITER}")
       // TODO: entity TSVs are downloaded as text/tab-separated-value, but workspace attributes are text/plain. Align these?
       RequestCompleteWithHeaders((StatusCodes.OK, headerString + "\n" + valueString),
         `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> filename)),

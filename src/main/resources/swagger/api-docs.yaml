@@ -100,12 +100,7 @@ paths:
       summary: list members of billing project the caller owns
       operationId: listBillingProjectMembers
       parameters:
-        - name: projectId
-          in: path
-          description: Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
         200:
           description: Success
@@ -127,11 +122,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/v2/{projectId}/spendReportConfiguration:
@@ -142,12 +132,7 @@ paths:
       description: get the spend report configuration for the billing project
       operationId: getSpendReportConfiguration
       parameters:
-        - name: projectId
-          in: path
-          description: Billing Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
         200:
           description: Successfully retrieved spend report configuration
@@ -184,12 +169,7 @@ paths:
       description: set the spend configuration for the billing project
       operationId: setSpendReportConfiguration
       parameters:
-        - name: projectId
-          in: path
-          description: Billing Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       requestBody:
         description: billing project spend configuration information
         content:
@@ -232,12 +212,7 @@ paths:
       description: clear the spend configuration for the billing project
       operationId: clearSpendReportConfiguration
       parameters:
-        - name: projectId
-          in: path
-          description: Billing Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
         204:
           description: Successfully cleared spend configuration
@@ -262,12 +237,7 @@ paths:
       summary: add user to billing project the caller owns
       operationId: addUserToBillingProject
       parameters:
-        - name: projectId
-          in: path
-          description: Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
         - name: workbenchRole
           in: path
           description: role of user for project
@@ -305,11 +275,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
     delete:
@@ -318,12 +283,7 @@ paths:
       summary: remove user from billing project the caller owns
       operationId: removeUserFromBillingProject
       parameters:
-        - name: projectId
-          in: path
-          description: Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
         - name: workbenchRole
           in: path
           description: role of user for project
@@ -361,11 +321,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/v2:
@@ -401,7 +356,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
       security:
-        - authorization:
+        - googleoauth:
             - openid
             - email
             - profile
@@ -415,12 +370,7 @@ paths:
       description: get billing project
       operationId: getBillingProject
       parameters:
-        - name: projectId
-          in: path
-          description: Id of the billing project
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
         200:
           description: OK
@@ -447,12 +397,7 @@ paths:
       description: delete billing project
       operationId: deleteBillingProject
       parameters:
-        - name: projectId
-          in: path
-          description: Id of the billing project
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
         204:
           description: OK
@@ -476,12 +421,7 @@ paths:
       description: Update the Billing Account on the Billing Project and on each Workspace in the Billing Project
       operationId: updateBillingProjectBillingAccount
       parameters:
-        - name: projectId
-          in: path
-          description: Id of the billing project
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       requestBody:
         description: update billing account request
         content:
@@ -519,12 +459,7 @@ paths:
       description: Clears the Billing Account on the Billing Project and on each Workspace in the Billing Project
       operationId: deleteBillingProjectBillingAccount
       parameters:
-        - name: projectId
-          in: path
-          description: Id of the billing project
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
         200:
           description: Billing account successfully removed
@@ -548,14 +483,9 @@ paths:
         - BillingV2
       summary: list members of billing project the caller owns
       description: list members of billing project the caller owns
-      operationId: listBillingProjectMembers
+      operationId: listBillingProjectMembersV2
       parameters:
-        - name: projectId
-          in: path
-          description: Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
       responses:
         200:
           description: Success
@@ -583,14 +513,9 @@ paths:
         - BillingV2
       summary: add user or group to billing project the caller owns
       description: add user or group to billing project the caller owns
-      operationId: addUserToBillingProject
+      operationId: addUserToBillingProjectV2
       parameters:
-        - name: projectId
-          in: path
-          description: Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
         - name: workbenchRole
           in: path
           description: role of user for project
@@ -632,14 +557,9 @@ paths:
         - BillingV2
       summary: remove user or group from billing project the caller owns
       description: remove user or group from billing project the caller owns
-      operationId: removeUserFromBillingProject
+      operationId: removeUserFromBillingProjectV2
       parameters:
-        - name: projectId
-          in: path
-          description: Project ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/billingProjectPathParam'
         - name: workbenchRole
           in: path
           description: role of user for project
@@ -682,7 +602,7 @@ paths:
         - Billing
       summary: delete billing project
       description: delete billing project
-      operationId: deleteBillingProject
+      operationId: deleteBillingProjectV2
       parameters:
         - name: projectName
           in: path
@@ -712,11 +632,6 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - authorization:
-            - openid
-            - email
-            - profile
   /api/configurations:
     get:
       tags:
@@ -835,24 +750,9 @@ paths:
       summary: Get a Method Repository configuration
       operationId: getMethodRepositoryConfiguration
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
         - name: payloadAsObject
           in: query
           description: Instead of returning a string under key payload, return a JSON
@@ -882,24 +782,9 @@ paths:
       description: |
         Redacts a configuration and all of its associated configurations
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
       responses:
         200:
           description: |
@@ -924,24 +809,9 @@ paths:
       summary: get ACL permissions on a Method Repository configuration
       operationId: getConfigACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
       responses:
         200:
           description: the indicated configuration ACL
@@ -959,24 +829,9 @@ paths:
       summary: set ACL permissions on a Method Repository configuration
       operationId: setConfigACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Configuration Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method Configuration snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
+        - $ref: '#/components/parameters/configNameParam'
+        - $ref: '#/components/parameters/configSnapshotId'
       requestBody:
         description: the ACLs to upsert
         content:
@@ -1007,12 +862,7 @@ paths:
       summary: get ACL permissions on a Method Repository Configuration Namespace
       operationId: getConfigNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
       responses:
         200:
           description: List of the indicated configuration namespace ACL permissions
@@ -1034,12 +884,7 @@ paths:
       summary: set ACL permissions on a Method Repository Configuration Namespace
       operationId: setConfigNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Configuration Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/configNamespaceParam'
       requestBody:
         description: the ACLs to upsert
         content:
@@ -1090,11 +935,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/workflows/{version}/{id}/abort:
     post:
@@ -1102,13 +942,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Abort a workflow based on workflow id
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1134,11 +968,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
@@ -1147,13 +976,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Get backend (e.g. PAPI) metadata for a job
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1176,11 +999,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workflows/{version}/{id}/labels:
@@ -1190,13 +1008,7 @@ paths:
       summary: Add new labels or update values for existing label keys by workflow
         id.
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1227,11 +1039,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
       x-codegen-request-body-name: labels
@@ -1241,13 +1048,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Query for workflow and call-level metadata for a specified workflow
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1427,11 +1228,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
   /api/workflows/{version}/{id}/releaseHold:
@@ -1443,13 +1239,7 @@ paths:
         for running. For instance this might be necessary in cases where you have
         submitted a workflow with workflowOnHold = true.
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: id
           in: path
           description: Workflow ID
@@ -1483,13 +1273,7 @@ paths:
         - CromIAM Workflows (for Admin)
       summary: Return the hash differential between two calls
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: workflowA
           in: query
           description: Workflow Id of the first workflow
@@ -1546,13 +1330,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
         - name: start
           in: query
           description: |
@@ -1617,11 +1395,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
     post:
@@ -1629,13 +1402,7 @@ paths:
         - CromIAM Workflows (for Job Manager)
       summary: Query workflows by start dates, end dates, names, ids, or statuses.
       parameters:
-        - name: version
-          in: path
-          description: API version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       requestBody:
         description: |
           Same query parameters as GET /query endpoint, submitted as a json list. Example: [{"status":"Success"},{"status":"Failed"}]
@@ -1659,11 +1426,6 @@ paths:
         500:
           description: Internal Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: cromiam
       x-codegen-request-body-name: parameters
@@ -1674,13 +1436,7 @@ paths:
       summary: Machine-readable description of a workflow, including inputs and outputs
       operationId: describe
       parameters:
-        - name: version
-          in: path
-          description: Cromwell API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       requestBody:
         content:
           multipart/form-data:
@@ -1731,13 +1487,7 @@ paths:
         - CromIAM Engine (for Job Manager)
       summary: Returns the version of the Cromwell Engine
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       responses:
         200:
           description: Successful Request
@@ -1753,13 +1503,7 @@ paths:
         - CromIAM Engine (for Job Manager)
       summary: Returns the current health status of any monitored subsystems
       parameters:
-        - name: version
-          in: path
-          description: API Version
-          required: true
-          schema:
-            type: string
-            default: v1
+        - $ref: '#/components/parameters/versionParam'
       responses:
         200:
           description: All subsystems report an "ok" status
@@ -1813,11 +1557,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
     post:
       tags:
@@ -1850,11 +1589,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
     delete:
       tags:
@@ -1896,11 +1630,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/groups/{groupName}/requestAccess:
     post:
@@ -1931,11 +1660,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/groups/{groupName}/{role}/{email}:
     put:
@@ -1987,11 +1711,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
     delete:
       tags:
@@ -2042,11 +1761,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
   /api/inputsOutputs:
     post:
@@ -2221,18 +1935,8 @@ paths:
         get the groups that can discover this library dataset
       operationId: getDiscoverableGroups
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: The groups that can discover the dataset
@@ -2266,18 +1970,8 @@ paths:
         set the groups that can discover this library dataset
       operationId: updateDiscoverableGroups
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Json array of group names, or empty array for no restrictions
         content:
@@ -2328,18 +2022,8 @@ paths:
         get the entire metadata for a library dataset
       operationId: getLibraryMetadata
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -2367,18 +2051,8 @@ paths:
         put the entire metadata for a library dataset
       operationId: putLibraryMetadata
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: validate
           in: query
           description: |
@@ -2421,18 +2095,8 @@ paths:
         publish the workspace in the Library
       operationId: publishLibraryWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -2461,18 +2125,8 @@ paths:
         unpublish the workspace in the Library
       operationId: unpublishLibraryWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -2633,18 +2287,8 @@ paths:
         Given the namespace/name of a method, returns all configurations
         in the repository that reference that method
       parameters:
-        - name: namespace
-          in: path
-          description: Namespace of method.
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Name of method.
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
       responses:
         200:
           description: An array of configurations.
@@ -2674,24 +2318,9 @@ paths:
         Returns one method that matches the namespace,
         name, and snapshotId.
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
         - name: onlyPayload
           in: query
           description: Boolean to return only the payload of the method.
@@ -2724,24 +2353,9 @@ paths:
         arguments considered for the new snapshot; everything else is copied
         from the source.
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
         - name: redact
           in: query
           description: Should the source method be redacted?
@@ -2808,24 +2422,9 @@ paths:
       description: |
         Redacts a method and all of its associated configurations
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       responses:
         200:
           description: |
@@ -2853,24 +2452,9 @@ paths:
         arguments as the supplied method snapshot, and 2. reference any snapshot
         of this method.
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       responses:
         200:
           description: An array of configurations.
@@ -2901,24 +2485,9 @@ paths:
       summary: get ACL permissions on a Method Repository method
       operationId: getMethodACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       responses:
         200:
           description: the indicated method ACL
@@ -2936,24 +2505,9 @@ paths:
       summary: set ACL permissions on a Method Repository method
       operationId: setMethodACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: path
-          description: Method Name
-          required: true
-          schema:
-            type: string
-        - name: snapshotId
-          in: path
-          description: Method snapshot ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
+        - $ref: '#/components/parameters/methodNameParam'
+        - $ref: '#/components/parameters/methodSnapshotId'
       requestBody:
         description: the ACLs to upsert
         content:
@@ -2984,12 +2538,7 @@ paths:
       summary: get ACL permissions on a Method Repository Method Namespace
       operationId: getMethodNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
       responses:
         200:
           description: List of indicated method namespace ACL permissions
@@ -3011,12 +2560,7 @@ paths:
       summary: set ACL permissions on a Method Repository Method Namespace
       operationId: setMethodNamespaceACL
       parameters:
-        - name: namespace
-          in: path
-          description: Method Namespace
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/methodNamespaceParam'
       requestBody:
         description: the ACLs to upsert
         content:
@@ -3164,11 +2708,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/NotificationType'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/notifications/workspace/{workspaceNamespace}/{workspaceName}:
@@ -3178,18 +2717,8 @@ paths:
       summary: Gets the notifications available for a workspace
       operationId: workspaceNotifications
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: workspace namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: workspace name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -3199,11 +2728,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/NotificationType'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/profile/billing:
@@ -3264,6 +2788,15 @@ paths:
         - Profile
       summary: List billing accounts for a user
       operationId: billingAccounts
+      parameters:
+        - name: firecloudHasAccess
+          in: query
+          description: |
+            Whether the Firecloud service has been given access to the billing accounts. Optional.
+          required: false
+          example: true
+          schema:
+            type: boolean
       responses:
         200:
           description: OK
@@ -3643,18 +3176,8 @@ paths:
         Get a single workspace's details, optionally filtered to only the specified fields. See additional GET methods in this section to retrieve additional details about the workspace. For instance, this API only returns the workspace's owners; use the GET .../acl method to retrieve the full list of all users at all permission levels.
       operationId: getWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: fields
           in: query
           description: |
@@ -3689,18 +3212,8 @@ paths:
       summary: Delete workspace
       operationId: deleteWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         202:
           description: Request Accepted
@@ -3723,18 +3236,8 @@ paths:
       summary: Get workspace access instructions (if any)
       operationId: getWorkspaceAccessInstructions
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -3759,18 +3262,8 @@ paths:
       summary: Get workspace ACL
       operationId: getWorkspaceAcl
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -3795,18 +3288,8 @@ paths:
       summary: Update workspace ACL
       operationId: updateWorkspaceACL
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: inviteUsersNotFound
           in: query
           description: true to invite unregistered users, false to ignore
@@ -3849,18 +3332,8 @@ paths:
       description: Returns metadata about the workspace bucket.
       operationId: getWorkspaceBucketOptions
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -3880,11 +3353,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketUsage:
@@ -3894,18 +3362,8 @@ paths:
       summary: Get bucket usage
       operationId: getBucketUsage
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -3923,18 +3381,8 @@ paths:
       description: Get catalog permissions for a workspace
       operationId: getCatalog
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -3964,18 +3412,8 @@ paths:
       description: Set catalog permisisons for a workspace
       operationId: updateCatalog
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Series of Catalog updates for workspace
         content:
@@ -4021,18 +3459,8 @@ paths:
       description: Read a workspace bucket
       operationId: readBucket
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -4057,18 +3485,8 @@ paths:
         Sam. Takes into account if the workspace is locked too.
       operationId: checkIamActionWithLock
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: samActionName
           in: path
           description: Sam action
@@ -4098,18 +3516,8 @@ paths:
       summary: Clone Workspace
       operationId: cloneWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Cloned workspace information
         content:
@@ -4146,18 +3554,8 @@ paths:
         List of entity types in a workspace
       operationId: getEntityTypes
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: List of entity types in workspace
@@ -4178,18 +3576,8 @@ paths:
         List of entities in a workspace with type and attribute information
       operationId: getEntitiesWithType
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: List of entities
@@ -4209,18 +3597,8 @@ paths:
         Copy entities from one workspace to another
       operationId: copyEntities
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Destination Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Destination Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: linkExistingEntities
           in: query
           description: true to link new entities to existing entities, false to fail
@@ -4269,18 +3647,8 @@ paths:
       summary: Bulk delete entities from a workspace
       operationId: deleteEntities
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Entities to delete
         content:
@@ -4326,24 +3694,9 @@ paths:
         List of entities in a workspace
       operationId: getEntities
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
       responses:
         200:
           description: List of entities in workspace
@@ -4368,30 +3721,10 @@ paths:
       summary: Get entity in a workspace
       operationId: getEntity
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
-        - name: entityName
-          in: path
-          description: Entity Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+        - $ref: '#/components/parameters/entityNameParam'
       responses:
         200:
           description: Success
@@ -4411,30 +3744,10 @@ paths:
       description: Update an entity
       operationId: update_entity
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
-        - name: entityName
-          in: path
-          description: Entity Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+        - $ref: '#/components/parameters/entityNameParam'
       requestBody:
         description: Update operations for attributes
         content:
@@ -4483,30 +3796,10 @@ paths:
       summary: Evaluate entity expression
       operationId: evaluateEntityExpression
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
-        - name: entityName
-          in: path
-          description: Entity Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+        - $ref: '#/components/parameters/entityNameParam'
       requestBody:
         description: Expression
         content:
@@ -4576,18 +3869,8 @@ paths:
         TSV file containing workspace attributes
       operationId: exportAttributesTSV
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Workspace attributes in TSV format
@@ -4611,24 +3894,9 @@ paths:
         TSV file containing workspace entities of the specified type
       operationId: downloadEntitiesTSV
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
         - name: attributeNames
           in: query
           description: comma separated list of ordered attribute names to be in downloaded
@@ -4667,24 +3935,9 @@ paths:
       summary: Paginated query for entities in a workspace
       operationId: entityQuery
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
         - name: page
           in: query
           description: Page number, 1-indexed (default 1)
@@ -4742,18 +3995,8 @@ paths:
       summary: Import workspace attributes from a tsv file
       operationId: importAttributesTSV
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         content:
           multipart/form-data:
@@ -4789,18 +4032,8 @@ paths:
         directory, whose payload contains two files - participants.tsv and samples.tsv
       operationId: importBagit
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: JSON object containing bagit URL
         content:
@@ -4830,18 +4063,8 @@ paths:
       summary: Import entities from a tsv file
       operationId: importEntities
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Destination Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Destination Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: deleteEmptyValues
           in: query
           description: Delete empty values? Values left blank in the TSV will be deleted if set to true (default is false)
@@ -4886,18 +4109,8 @@ paths:
         Lists all imports for this workspace, optionally filtered to only those imports currently in progress
       operationId: listImportPFBJobs
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: running_only
           in: query
           description: When true, filters to only those imports currently in progress
@@ -4931,18 +4144,8 @@ paths:
         This API will return a jobID representing the import operation. The import itself will continue asynchronously in the background.
       operationId: importPFB
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: JSON object containing PFB URL
         content:
@@ -4984,18 +4187,8 @@ paths:
         Use /api/workspaces/{workspaceNamespace}/{workspaceName}/importJob/{jobId} instead.
       operationId: importPFBStatus
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: jobId
           in: path
           description: job ID of the import to check
@@ -5025,18 +4218,8 @@ paths:
         Lists all imports for this workspace, optionally filtered to only those imports currently in progress
       operationId: listImportJobs
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: running_only
           in: query
           description: When true, filters to only those imports currently in progress
@@ -5070,18 +4253,8 @@ paths:
         This API will return a jobID representing the import operation. The import itself will continue asynchronously in the background.
       operationId: createImportJob
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: JSON object containing URL to import
         content:
@@ -5122,18 +4295,8 @@ paths:
         This API will return status of an import jobID. The jobID was returned from a previous import request.
       operationId: importJobStatus
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: jobId
           in: path
           description: job ID of the import to check
@@ -5161,18 +4324,8 @@ paths:
       summary: Import entities from a tsv file
       operationId: flexibleImportEntities
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Destination Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Destination Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: async
           in: query
           description: Import asynchronously?
@@ -5227,18 +4380,8 @@ paths:
       summary: Lock Workspace
       operationId: lockWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: No response was specified
@@ -5264,18 +4407,8 @@ paths:
       summary: Get a method configuration in a workspace
       operationId: getWorkspaceMethodConfig
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: configNamespace
           in: path
           description: Configuration Namespace
@@ -5309,18 +4442,8 @@ paths:
         The method configuration name and namespace in the URI must match the values in the JSON.
       operationId: overwriteWorkspaceMethodConfig
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: configNamespace
           in: path
           description: Configuration Namespace
@@ -5369,18 +4492,8 @@ paths:
         If the location in the request body is different to the location in the URI, and there is a method config already at that location, 409 is returned.
       operationId: updateWorkspaceMethodConfig
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: configNamespace
           in: path
           description: Configuration Namespace
@@ -5426,18 +4539,8 @@ paths:
       summary: Delete a method configuration in a workspace
       operationId: deleteWorkspaceMethodConfig
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: configNamespace
           in: path
           description: Configuration Namespace
@@ -5469,18 +4572,8 @@ paths:
       summary: Rename a method configuration in a workspace
       operationId: renameWorkspaceMethodConfig
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: configNamespace
           in: path
           description: Configuration Namespace
@@ -5526,18 +4619,8 @@ paths:
       summary: get syntax validation information for a method configuration
       operationId: validate_method_configuration
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: configNamespace
           in: path
           description: Method Configuration Namespace
@@ -5573,18 +4656,8 @@ paths:
       summary: Copy a Method Repository Configuration into a workspace
       operationId: copyFromMethodRepo
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Method Configuration to Copy
         content:
@@ -5618,18 +4691,8 @@ paths:
       summary: Copy a Method Config in a workspace to the Method Repository
       operationId: copyToMethodRepo
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Method Configuration to Copy
         content:
@@ -5688,18 +4751,8 @@ paths:
         If you are only working with Agora methods, the fields `"sourceRepo"` and `"methodUri"` can be considered informational and do not need to be round-tripped (see the corresponding `POST /api/workspaces/{workspaceNamespace}/{workspaceName}/methodconfigs` for more details).
       operationId: listWorkspaceMethodConfigs
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
         - name: allRepos
           in: query
           description: Configs for all repos, not just Agora
@@ -5756,18 +4809,8 @@ paths:
         The system is specified to check for a URI first before falling back to the legacy fields. Unsupported repos will return a 400 Bad Request.
       operationId: postWorkspaceMethodConfig
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Method Configuration contents
         content:
@@ -5799,18 +4842,8 @@ paths:
         references
       operationId: workspacePermissionReport
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Users and/or configs on which to report, both optional
         content:
@@ -5840,18 +4873,8 @@ paths:
       summary: Sends notifications for change to workspace
       operationId: changedWorkspaceNotification
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: workspace namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: workspace name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Success
@@ -5859,11 +4882,6 @@ paths:
         403:
           description: Insufficient permisions to send notification on this workspace
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
@@ -5874,18 +4892,8 @@ paths:
         bucket
       operationId: getStorageCostEstimate
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -5908,18 +4916,8 @@ paths:
         List submissions.
       operationId: listSubmissions
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: List of submissions
@@ -5939,18 +4937,8 @@ paths:
         Create a submission.
       operationId: createSubmission
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Post Submission
         content:
@@ -5988,18 +4976,8 @@ paths:
         Returns a map of status:count.
       operationId: countSubmissions
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Successful Request
@@ -6029,24 +5007,9 @@ paths:
         Monitor submission status
       operationId: monitorSubmission
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/submissionIdParam'
       responses:
         200:
           description: Successful Request
@@ -6066,11 +5029,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
     delete:
@@ -6080,24 +5038,9 @@ paths:
         abort a submission
       operationId: abortSubmission
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/submissionIdParam'
       responses:
         204:
           description: Aborted successfully
@@ -6117,24 +5060,9 @@ paths:
       description: Update user comment for a submission
       operationId: updateSubmissionUserComment
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: submissionId
-          in: path
-          description: Submission Id
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/submissionIdParam'
       requestBody:
         description: User comment to be updated
         content:
@@ -6165,18 +5093,8 @@ paths:
       description: Validate expression syntax for a submission
       operationId: validateSubmission
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Description of a submission.
         content:
@@ -6227,30 +5145,10 @@ paths:
       description: Get call-level metadata for workflow
       operationId: workflowMetadata
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
-        - name: workflowId
-          in: path
-          description: Workflow ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/submissionIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
         - name: includeKey
           in: query
           description: |
@@ -6304,30 +5202,10 @@ paths:
         Get workflow outputs.
       operationId: workflowOutputsInSubmission
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
-        - name: workflowId
-          in: path
-          description: Workflow ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/submissionIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
       responses:
         200:
           description: Get workflow outputs
@@ -6348,30 +5226,10 @@ paths:
         Retrieve workflow cost, if available.
       operationId: workflowCostInSubmission
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: submissionId
-          in: path
-          description: Submission ID
-          required: true
-          schema:
-            type: string
-        - name: workflowId
-          in: path
-          description: Workflow ID
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/submissionIdParam'
+        - $ref: '#/components/parameters/workflowIdParam'
       responses:
         200:
           description: Successful Request
@@ -6391,11 +5249,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/tags:
@@ -6406,18 +5259,8 @@ paths:
         Get the tags for this workspace.
       operationId: getWorkspaceTags
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Workspace tags
@@ -6439,18 +5282,8 @@ paths:
         Replace all tags for this workspace with the user input.
       operationId: putWorkspaceTags
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: List of tags.
         content:
@@ -6483,18 +5316,8 @@ paths:
         Remove the user-supplied tags from the workspace.
       operationId: deleteWorkspaceTags
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: List of tags.
         content:
@@ -6527,18 +5350,8 @@ paths:
         Add tags to the workspace without modifying pre-existing tags.
       operationId: patchWorkspaceTags
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: List of tags.
         content:
@@ -6571,18 +5384,8 @@ paths:
       summary: Unlock Workspace
       operationId: unlockWorkspace
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: No response was specified
@@ -6609,18 +5412,8 @@ paths:
         Modify attributes on a workspace.
       operationId: updateAttributes
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: Attribute operations. WARNING! This should not be used to change
           library metadata (republish will not happen). Use UpdateAttributes in the
@@ -6656,18 +5449,8 @@ paths:
         Set attributes on a workspace.
       operationId: setAttributes
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       requestBody:
         description: New attribute values, as Map[String, Attribute]. WARNING! This
           should not be used to change library metadata (republish will not happen).
@@ -6768,18 +5551,8 @@ paths:
         TSV file containing workspace attributes (allows cookie-based authentication)
       operationId: browserDownloadAttributes
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
       responses:
         200:
           description: Workspace attributes in TSV format
@@ -6806,24 +5579,9 @@ paths:
         It is here for documentation purposes only.
       operationId: browserDownloadEntitiesTSVGet
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
         - name: attributeNames
           in: query
           description: comma separated list of ordered attribute names to be in downloaded
@@ -6865,28 +5623,14 @@ paths:
         It is here for documentation purposes only.
       operationId: browserDownloadEntitiesTSV
       parameters:
-        - name: workspaceNamespace
-          in: path
-          description: Workspace Namespace
-          required: true
-          schema:
-            type: string
-        - name: workspaceName
-          in: path
-          description: Workspace Name
-          required: true
-          schema:
-            type: string
-        - name: entityType
-          in: path
-          description: Entity Type
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
       requestBody:
         content:
-          multipart/form-data:
+          application/x-www-form-urlencoded:
             schema:
+              type: object
               required:
                 - FCtoken
               properties:
@@ -7079,11 +5823,6 @@ paths:
         500:
           description: Internal Server Error
           content: {}
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
       x-passthrough: false
       x-codegen-request-body-name: body
   /api/duos/consent/orsp/{orspId}:
@@ -7601,7 +6340,7 @@ paths:
                   $ref: '#/components/schemas/ToolClass'
       x-passthrough: true
       x-passthrough-target: agora
-  /servicePerimeters/{servicePerimeterName}/projects/{projectName}:
+  /api/servicePerimeters/{servicePerimeterName}/projects/{projectName}:
     put:
       tags:
         - Service Perimeters
@@ -10438,7 +9177,6 @@ components:
           default: false
         bucketLocation:
           type: string
-          required: false
           description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceRequestClone:
@@ -10472,7 +9210,6 @@ components:
           default: false
         bucketLocation:
           type: string
-          required: false
           description: Region (NOT multi-region) in which bucket attached to the workspace should be created. If not provided, the bucket will be created in the 'US' multi-region.
       description: ""
     WorkspaceResponse:
@@ -11082,6 +9819,13 @@ components:
       name: attributeName
       in: path
       description: Attribute Name
+      required: true
+      schema:
+        type: string
+    billingProjectPathParam:
+      name: projectId
+      in: path
+      description: Billing Project ID
       required: true
       schema:
         type: string

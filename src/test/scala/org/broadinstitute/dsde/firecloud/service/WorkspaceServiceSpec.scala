@@ -42,7 +42,7 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
       val tsvReturnString = List(
         List("workspace:e", "d", "b", "c", "a", "f").mkString("\t"),
-        List("v1", "escape quo\\\"te", 1.23, "", "true", "[\"v6\",999,true]").mkString("\t")).mkString("\n")
+        List("\"this\thas\ttabs\tin\tit\"", "escape quo\"te", 1.23, "", "true", "[\"v6\",999,true]").mkString("\t")).mkString("\n")
 
       assertResult(tsvReturnString) {
         tsvString

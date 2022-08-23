@@ -4,10 +4,10 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
 
-import scala.util.{Failure, Success, Try}
-import spray.json.JsValue
-
 object TSVFormatter {
+
+  // for serializing entity references
+  val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
   /**
     * Generate file content from headers and rows.
@@ -49,7 +49,7 @@ object TSVFormatter {
     val rowMap: Map[Int, String] =  entity.attributes map {
       case (attributeName, attribute) =>
         val columnPosition = headerValues.indexOf(AttributeName.toDelimitedName(attributeName))
-        val cellValue = AttributeStringifier(attribute)
+        val cellValue = tsvSafeAttribute(attribute)
         columnPosition -> cellValue
     }
     // If there are entities that don't have a value for which there is a known header, that will
@@ -68,14 +68,35 @@ object TSVFormatter {
   }
 
   /**
-    * JsValues are double-quoted. Need to remove them before putting them into a cell position
+    * Given an Attribute, creates a string that is safe to output into a TSV as a cell value.
+    * - if the input attribute contains a tab character, then double-quote it
     *
-    * @param value The JsValue to remove leading and trailing quotes from.
-    * @return Trimmed string value
+    * @param value The input attribute to make safe
+    * @return the safe value
     */
-  def cleanValue(value: JsValue): String = {
-    val regex = "^\"|\"$".r
-    regex.replaceAllIn(value.toString(), "")
+  def tsvSafeAttribute(attribute: Attribute): String = {
+    // AttributeStringifier works for everything except single entity references;
+    // it even works for AttributeEntityReferenceList
+    val intermediateString = attribute match {
+      case ref:AttributeEntityReference => attributeFormat.write(ref).compactPrint
+      case _ => AttributeStringifier(attribute)
+    }
+    tsvSafeString(intermediateString)
+  }
+
+  /**
+    * Creates a string that is safe to output into a TSV as a cell value.
+    * - if the input string contains a tab character, then double-quote it
+    *
+    * @param value The input value to make safe
+    * @return the safe value
+    */
+  def tsvSafeString(value: String): String = {
+    if (value.contains(TSVParser.DELIMITER)) {
+      s"\"$value\""
+    } else {
+      value
+    }
   }
 
   /**

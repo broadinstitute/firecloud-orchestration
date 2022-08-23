@@ -9,7 +9,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.{EnabledUserDirectives, RestJsonClient, StandardUserInfoDirectives}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.slf4j.LoggerFactory
 
@@ -52,7 +52,12 @@ object UserApiService {
 
 // TODO: this should use UserInfoDirectives, not StandardUserInfoDirectives. That would require a refactoring
 // of how we create service actors, so I'm pushing that work out to later.
-trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient {
+trait UserApiService
+  extends FireCloudRequestBuilding
+    with FireCloudDirectives
+    with StandardUserInfoDirectives
+    with EnabledUserDirectives
+    with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
 
@@ -115,19 +120,17 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         }
       } ~
       path("profile" / "terra") {
-        get {
-          requireUserInfo() { userInfo =>
-            complete { userServiceConstructor(userInfo).getTerraPreference }
-          }
-        } ~
-        post {
-          requireUserInfo() { userInfo =>
-            complete { userServiceConstructor(userInfo).setTerraPreference() }
-          }
-        } ~
-        delete {
-          requireUserInfo() { userInfo =>
-            complete { userServiceConstructor(userInfo).deleteTerraPreference() }
+        requireUserInfo() { userInfo =>
+          requireEnabledUser(userInfo) {
+            get {
+              complete { userServiceConstructor(userInfo).getTerraPreference }
+            } ~
+            post {
+              complete { userServiceConstructor(userInfo).setTerraPreference() }
+            } ~
+            delete {
+              complete { userServiceConstructor(userInfo).deleteTerraPreference() }
+            }
           }
         }
       } ~
@@ -153,7 +156,9 @@ trait UserApiService extends FireCloudRequestBuilding with FireCloudDirectives w
         pathEnd {
           get {
             requireUserInfo() { userInfo =>
-              complete { userServiceConstructor(userInfo).getAllUserKeys }
+              complete {
+                userServiceConstructor(userInfo).getAllUserKeys
+              }
             }
           }
         }

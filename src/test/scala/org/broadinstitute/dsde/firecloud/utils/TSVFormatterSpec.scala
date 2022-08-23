@@ -9,6 +9,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
+import spray.json.{JsArray, JsFalse, JsNumber, JsObject, JsString, JsTrue}
 
 import scala.io.Source
 import scala.language.postfixOps
@@ -168,6 +169,57 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
         }
         val pairSetList = List(Entity("pair_set_1", "pair_set", pairSetAtts))
         testMembershipDataSet("pair_set", pairSetList, pairs.list.size)
+      }
+    }
+
+    "Values containing tabs should be quoted" in {
+      val entityType = "sample"
+      val attrs1 = {
+        Map(
+          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("abcdefg"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("this\tvalue\thas\ttabs"),
+          AttributeName.withDefaultNS("spaces") -> AttributeString("this value has spaces")
+        )
+      }
+      val attrs2 = {
+        Map(
+          AttributeName.withDefaultNS("nowhitespace") -> AttributeString("hijklm"),
+          AttributeName.withDefaultNS("tabs") -> AttributeString("another\tvalue\twith\ttabs"),
+          AttributeName.withDefaultNS("spaces") -> AttributeString("another value with spaces")
+        )
+      }
+      val entities = List(
+        Entity("1", entityType, attrs1),
+        Entity("2", entityType, attrs2))
+
+      val tsvHeaders = TSVFormatter.makeEntityHeaders(entityType, List("nowhitespace", "tabs", "spaces"), None)
+      val tsvRows = TSVFormatter.makeEntityRows(entityType, entities, tsvHeaders)
+
+      tsvRows shouldBe Seq(
+        Seq("1", "abcdefg", "\"this\tvalue\thas\ttabs\"", "this value has spaces"),
+        Seq("2", "hijklm", "\"another\tvalue\twith\ttabs\"", "another value with spaces"),
+      )
+    }
+
+    val tsvSafeAttributeTestData = Map(
+      AttributeString("foo") -> "foo",
+      AttributeString(""""quoted string"""") -> """"quoted string"""",
+      AttributeNumber(123.45) -> "123.45",
+      AttributeBoolean(true) -> "true",
+      AttributeBoolean(false) -> "false",
+      AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three"))) -> """["one","two","three"]""",
+      AttributeValueRawJson(JsObject(Map("foo" -> JsString("bar"), "baz" -> JsNumber(123)))) -> """{"foo":"bar","baz":123}""",
+      AttributeEntityReference("targetType", "targetName") -> """{"entityType":"targetType","entityName":"targetName"}""",
+      AttributeEntityReferenceList(Seq(
+        AttributeEntityReference("type1", "name1"),
+        AttributeEntityReference("type2", "name2"))) -> """[{"entityType":"type1","entityName":"name1"},{"entityType":"type2","entityName":"name2"}]"""
+    )
+    "tsvSafeAttribute() method" - {
+      tsvSafeAttributeTestData foreach {
+        case (input, expected) =>
+          s"should stringify correctly for input $input" in {
+            TSVFormatter.tsvSafeAttribute(input) shouldBe expected
+          }
       }
     }
 
