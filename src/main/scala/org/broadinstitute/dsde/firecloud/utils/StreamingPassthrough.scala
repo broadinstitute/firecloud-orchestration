@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.utils
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.`Timeout-Access`
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
@@ -12,6 +13,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -40,27 +42,57 @@ trait StreamingPassthrough
     * @return the outbound request to be sent to another service
     */
   def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri)(req: HttpRequest): HttpRequest = {
-    // TODO: do this without going toString() everywhere!
     // TODO: unit tests!
     // TODO: handle warnings about "HTTP header 'Timeout-Access: <function1>' is not allowed in requests"
     // TODO: any other headers that should be removed?
     // TODO: don't match Timeout-Access header by name
+    val targetUri = convertToTargetUri(req.uri, localBasePath, remoteBaseUri)
 
-    val localUri:Uri = req.uri
-    val localPath:Uri.Path = localUri.path
-    if (!localPath.toString().startsWith(localBasePath.toString())) {
-      throw new Exception(s"doesn't start properly: $localPath does not start with $localBasePath")
-    }
-    val extra: String = localPath.toString().replaceFirst(localBasePath.toString(), "")
-
-    val tempUri = Uri(remoteBaseUri.toString() + extra)
-
-    val targetUri = localUri.copy(scheme = tempUri.scheme, authority = tempUri.authority, path = tempUri.path)
+    logger.warn(s"${req.method} ${req.uri} => $targetUri")
 
     val localHeaders = req.headers
     val targetHeaders = localHeaders.filterNot(_.name() == `Timeout-Access`.name)
 
     req.withUri(targetUri).withHeaders(targetHeaders)
+  }
+
+  def convertToTargetUri(requestUri:Uri, localBasePath: Uri.Path, remoteBaseUri: Uri): Uri = {
+    val requestPath: Path = requestUri.path
+
+    // Ensure the incoming request starts with the localBasePath. Abort if it doesn't.
+    // This condition should only be caused by developer error in which the streamingPassthrough
+    // directive is incorrectly configured inside a route.
+    if (!requestPath.startsWith(localBasePath)) {
+      throw new Exception(s"doesn't start properly: $requestPath does not start with $localBasePath")
+    }
+
+    @tailrec
+    def findPathRemainder(base: Path, actual: Path): Path = {
+      if (base.isEmpty || !actual.startsWith(base)) {
+        logger.warn(s"***** DONE with drilldown: $actual")
+        actual
+      } else {
+        logger.warn(s"***** drilling down: $base | $actual")
+        findPathRemainder(base.tail, actual.tail)
+      }
+    }
+
+    // find the "remainder" - the portion of the actual request path
+    // that comes after the localBasePath
+    val remainder = findPathRemainder(localBasePath, requestPath)
+    // append the remainder to the remoteBaseUri's path
+    val remotePath = remoteBaseUri.path ++ remainder
+
+    // build a new Uri for the remote system. This uses:
+    // * the scheme, host, and port as defined in remoteBaseUri (host and port are combined into authority)
+    // * the path built from the remoteBaseUri path + remainder
+    // * everything else (querystring, fragment, userinfo) from the original request
+    val targetUri = requestUri.copy(
+      scheme = remoteBaseUri.scheme,
+      authority = remoteBaseUri.authority,
+      path = remotePath)
+
+    targetUri
   }
 
   /**
