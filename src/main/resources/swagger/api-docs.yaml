@@ -3971,9 +3971,28 @@ paths:
               - desc
         - name: filterTerms
           in: query
-          description: Filter terms
+          description: Terms to search for inside entity attributes
           schema:
             type: string
+        - name: filterOperator
+          in: query
+          description: Filter operator to use with multiple terms in filterTerms (AND or OR, default AND)
+          schema:
+            type: string
+            default: and
+            enum:
+              - and
+              - or
+        - name: fields
+          in: query
+          description: |
+            When specified, include only these attributes in the response payload and exclude other attributes. Accepts a comma-delimited list of values. If omitted, will return the full response payload.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         200:
           description: List of entities in workspace
