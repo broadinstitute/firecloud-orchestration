@@ -20,7 +20,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec with Matchers with StreamingP
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val expected = Uri("https://example.com/api/version/foo/baz/qux")
-      convertToTargetUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
     }
     "should pass on a querystring" in {
       val requestUri = Uri("http://localhost:8123/foo/bar/baz/qux?hello=world")
@@ -28,15 +28,19 @@ class StreamingPassthroughSpec extends AnyFreeSpec with Matchers with StreamingP
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val expected = Uri("https://example.com/api/version/foo/baz/qux?hello=world")
-      convertToTargetUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
     }
     "should handle an empty remainder" is (pending)
   }
 
-  "should NOT forward undesirable headers" is (pending)
+  "should NOT forward Timeout-Access header" is (pending)
   "should forward Authorization header" is (pending)
   "should forward miscellaneous headers" is (pending)
   "should preserve request method" is (pending)
+
+  "should reply with remote-system 2xx responses" is (pending)
+  "should reply with remote-system 4xx errors" is (pending)
+  "should reply with remote-system 5xx errors" is (pending)
 
   "mockserver-based route test" is (pending)
 
