@@ -17,19 +17,19 @@ final class BillingApiServiceNegativeSpec extends ServiceSpec with BillingApiSer
   var workspaceServer: ClientAndServer = _
 
   "BillingApiService" - {
-    "non-POST requests hitting /api/billing are not passed through" in {
+    "non-POST requests hitting /api/billing are not passed through" ignore {
       allHttpMethodsExcept(POST) foreach { method =>
         checkIfPassedThrough(billingServiceRoutes, method, "/billing", toBeHandled = false)
       }
     }
 
-    "non-GET requests hitting /api/billing/{projectId}/members are not passed through" in {
+    "non-GET requests hitting /api/billing/{projectId}/members are not passed through" ignore {
       allHttpMethodsExcept(GET) foreach { method =>
         checkIfPassedThrough(billingServiceRoutes, method, "/billing/project1/members", toBeHandled = false)
       }
     }
 
-    "non-DELETE/PUT requests hitting /api/billing/{projectId}/{role}/{email} are not passed through" in {
+    "non-DELETE/PUT requests hitting /api/billing/{projectId}/{role}/{email} are not passed through" ignore {
       allHttpMethodsExcept(DELETE, PUT) foreach { method =>
         checkIfPassedThrough(billingServiceRoutes, method, "/billing/project2/user/foo@bar.com", toBeHandled = false)
       }
