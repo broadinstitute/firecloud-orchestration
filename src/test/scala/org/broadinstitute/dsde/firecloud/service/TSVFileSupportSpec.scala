@@ -103,6 +103,9 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       Double.MaxValue.toString -> AttributeNumber(Double.MaxValue)
     )
     val stringTestCases = List("", "string", "true525600", ",")
+    val referenceTestCases = Map(
+      """{"entityType":"targetType","entityName":"targetName"}""" -> AttributeEntityReference("targetType", "targetName")
+    )
 
     "should detect boolean values when applicable" in {
       booleanTestCases foreach {
@@ -123,6 +126,14 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     "should detect double values when applicable" in {
       doubleTestCases foreach {
         case (input, expected) => withClue(s"should handle potential double: $input") {
+          stringToTypedAttribute(input) shouldBe expected
+        }
+      }
+    }
+
+    "should detect entity references when applicable" in {
+      referenceTestCases foreach {
+        case (input, expected) => withClue(s"should handle potential reference: $input") {
           stringToTypedAttribute(input) shouldBe expected
         }
       }

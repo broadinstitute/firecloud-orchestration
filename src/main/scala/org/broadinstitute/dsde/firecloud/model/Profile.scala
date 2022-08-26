@@ -29,25 +29,20 @@ case class BasicProfile (
     title: String,
     contactEmail: Option[String],
     institute: String,
-    institutionalProgram: String,
     programLocationCity: String,
     programLocationState: String,
     programLocationCountry: String,
-    pi: String,
-    nonProfitStatus: String,
-    termsOfService: Option[String]
+    termsOfService: Option[String],
+    researchArea: Option[String]
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
   require(ProfileValidator.nonEmpty(title), "title must be non-empty")
   require(ProfileValidator.emptyOrValidEmail(contactEmail), "contact email must be valid or empty")
   require(ProfileValidator.nonEmpty(institute), "institute must be non-empty")
-  require(ProfileValidator.nonEmpty(institutionalProgram), "institutional program must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
-  require(ProfileValidator.nonEmpty(pi), "principal investigator/program lead must be non-empty")
-  require(ProfileValidator.nonEmpty(nonProfitStatus), "non-profit status must be non-empty")
 }
 
 case class Profile (
@@ -56,12 +51,10 @@ case class Profile (
     title: String,
     contactEmail: Option[String],
     institute: String,
-    institutionalProgram: String,
     programLocationCity: String,
     programLocationState: String,
     programLocationCountry: String,
-    pi: String,
-    nonProfitStatus: String,
+    researchArea: Option[String],
     linkedNihUsername: Option[String] = None,
     linkExpireTime: Option[Long] = None
   ) extends mappedPropVals {
@@ -70,21 +63,18 @@ case class Profile (
   require(ProfileValidator.nonEmpty(title), "title must be non-empty")
   require(ProfileValidator.emptyOrValidEmail(contactEmail), "contact email must be valid or empty")
   require(ProfileValidator.nonEmpty(institute), "institute must be non-empty")
-  require(ProfileValidator.nonEmpty(institutionalProgram), "institutional program must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
-  require(ProfileValidator.nonEmpty(pi), "principal investigator/program lead must be non-empty")
-  require(ProfileValidator.nonEmpty(nonProfitStatus), "non-profit status must be non-empty")
 }
 
 object Profile {
 
   // increment this number every time you make a change to the user-provided profile fields
-  val currentVersion:Int = 3
+  val currentVersion:Int = 4
 
-  val requiredKeys = List("firstName", "lastName", "title", "institute", "institutionalProgram", "programLocationCity",
-                          "programLocationState", "programLocationCountry", "pi", "nonProfitStatus")
+  val requiredKeys = List("firstName", "lastName", "title", "institute", "programLocationCity",
+                          "programLocationState", "programLocationCountry")
 
   def apply(wrapper: ProfileWrapper): Profile = {
     val mappedKVPs: Map[String, String] = (wrapper.keyValuePairs collect {
@@ -101,12 +91,10 @@ object Profile {
       title = mappedKVPs("title"),
       contactEmail = mappedKVPs.get("contactEmail"),
       institute = mappedKVPs("institute"),
-      institutionalProgram = mappedKVPs("institutionalProgram"),
       programLocationCity = mappedKVPs("programLocationCity"),
       programLocationState = mappedKVPs("programLocationState"),
       programLocationCountry = mappedKVPs("programLocationCountry"),
-      pi = mappedKVPs("pi"),
-      nonProfitStatus = mappedKVPs("nonProfitStatus"),
+      researchArea = mappedKVPs.get("researchArea"),
       linkedNihUsername = mappedKVPs.get("linkedNihUsername"),
       linkExpireTime = mappedKVPs.get("linkExpireTime") match {
         case Some(time) => Some(time.toLong)

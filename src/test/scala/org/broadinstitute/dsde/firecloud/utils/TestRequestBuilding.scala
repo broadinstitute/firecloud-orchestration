@@ -13,7 +13,7 @@ trait TestRequestBuilding extends FireCloudRequestBuilding {
   }
 
   def dummyUserIdHeaders(userId: String, token: String = "access_token", email: String = "random@site.com"): WithTransformerConcatenation[HttpRequest, HttpRequest] = {
-    addCredentials(OAuth2BearerToken(dummyToken)) ~>
+    addCredentials(OAuth2BearerToken(token)) ~>
       addHeader(RawHeader("OIDC_CLAIM_user_id", userId)) ~>
       addHeader(RawHeader("OIDC_access_token", token)) ~>
       addHeader(RawHeader("OIDC_CLAIM_email", email)) ~>
