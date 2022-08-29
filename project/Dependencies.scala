@@ -25,7 +25,7 @@ object Dependencies {
     "io.netty"                       % "netty-codec-http"    % nettyV,
     "io.netty"                       % "netty-handler"       % nettyV,
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "30.1.1-jre",
+    "com.google.guava"               % "guava"               % "31.1-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
