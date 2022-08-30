@@ -64,10 +64,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // this is technically vulnerable to a race condition in which the workspace attributes have changed
       // between the time we retrieved them and here, where we update them.
       val allOperations = generateAttributeOperations(workspaceResponse.workspace.attributes.getOrElse(Map.empty), newAttributes, _.namespace != AttributeName.libraryNamespace)
-      rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations) map { ws =>
-        republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
-        RequestComplete(ws)
-      }
+      for {
+        ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations)
+        _ <- republishDocument(ws, ontologyDAO, searchDAO, consentDAO)
+      } yield RequestComplete(ws)
     }
   }
 
