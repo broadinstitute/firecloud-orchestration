@@ -118,7 +118,7 @@ trait StreamingPassthrough
     // This condition should only be caused by developer error in which the streamingPassthrough
     // directive is incorrectly configured inside a route.
     if (!requestUri.path.startsWith(localBasePath)) {
-      throw new Exception(s"request path doesn't start properly: $requestUri.path does not start with $localBasePath")
+      throw new Exception(s"request path doesn't start properly: ${requestUri.path} does not start with $localBasePath")
     }
 
     // recursively loops through the segments of the actual path, and removes
