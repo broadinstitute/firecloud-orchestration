@@ -55,6 +55,7 @@ final class BillingApiServiceSpec extends BaseServiceSpec with BillingApiService
     workspaceServer.stop()
   }
 
+  // streamingPassthrough directive needs to see the routes under "/api", which is how FireCloudApiService starts them
   val testableRoutes = pathPrefix("api") { billingServiceRoutes }
 
   "BillingApiService" - {
