@@ -42,11 +42,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         checkIfPassedThrough(cromIamApiServiceRoutes, HttpMethods.POST, endpoint, toBeHandled = true)
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(List(HttpMethods.POST)) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/abort" - {
@@ -60,11 +55,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/releaseHold" - {
@@ -72,17 +62,12 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
       val endpoint = workflowRoot + "/my-bogus-workflow-id-565656/releaseHold"
       val myMethods = List(HttpMethods.POST)
 
-      "should pass through my methods" ignore {
+      "should pass through my methods" in {
         myMethods foreach { method =>
           checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/labels" - {
@@ -96,11 +81,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/metadata" - {
@@ -114,7 +94,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should forward query parameters on GET" ignore {
+      "should forward query parameters on GET" in {
 
         val request = org.mockserver.model.HttpRequest.request()
           .withMethod("GET")
@@ -138,11 +118,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/backend/metadata" - {
@@ -166,17 +141,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else PAPIv1" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV1, toBeHandled = false)
-        }
-      }
-
-      "should reject everything else PAPIv2" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV2, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/query" - {
@@ -190,7 +154,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should forward query parameters on GET" ignore {
+      "should forward query parameters on GET" in {
 
         val request = org.mockserver.model.HttpRequest.request()
           .withMethod("GET")
@@ -214,11 +178,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/callcaching/diff" - {
@@ -232,7 +191,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should forward query parameters on GET" ignore {
+      "should forward query parameters on GET" in {
 
         val request = org.mockserver.model.HttpRequest.request()
           .withMethod("GET")
@@ -256,11 +215,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/engine/{version}/status" - {
@@ -273,11 +227,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/engine/{version}/version" - {
@@ -290,11 +239,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" ignore {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
   }
