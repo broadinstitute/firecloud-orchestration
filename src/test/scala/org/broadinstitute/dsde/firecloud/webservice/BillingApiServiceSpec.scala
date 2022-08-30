@@ -55,27 +55,29 @@ final class BillingApiServiceSpec extends BaseServiceSpec with BillingApiService
     workspaceServer.stop()
   }
 
+  val testableRoutes = pathPrefix("api") { billingServiceRoutes }
+
   "BillingApiService" - {
-    "create project" ignore {
-      Post("/billing") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+    "create project" in {
+      Post("/api/billing") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(Created)
       }
     }
 
-    "list project members" ignore {
-      Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+    "list project members" in {
+      Get("/api/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(OK)
       }
     }
 
-    "add user" ignore {
-      Put("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+    "add user" in {
+      Put("/api/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(OK)
       }
     }
 
-    "remove user" ignore {
-      Delete("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+    "remove user" in {
+      Delete("/api/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(OK)
       }
     }
