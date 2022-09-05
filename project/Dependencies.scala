@@ -24,7 +24,7 @@ object Dependencies {
     "io.netty"                       % "netty-codec"         % nettyV,
     "io.netty"                       % "netty-codec-http"    % nettyV,
     "io.netty"                       % "netty-handler"       % nettyV,
-    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
+    "org.apache.lucene"              % "lucene-queryparser"  % "9.3.0", // pin to this version; it's the latest compatible with our elasticsearch client
     "com.google.guava"               % "guava"               % "30.1.1-jre",
     // END transitive dependency overrides
 
