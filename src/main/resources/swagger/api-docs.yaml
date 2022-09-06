@@ -7947,6 +7947,9 @@ components:
         url:
           type: string
           description: link to publically accessible file to import
+        tdrSyncPermissions:
+          type: boolean
+          description: optional parameter for permissions to sync for tdr snapshots
     ImportResponse:
       required:
         - jobId

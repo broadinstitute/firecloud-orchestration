@@ -156,7 +156,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     requireUserInfo() { userInfo =>
                       // this endpoint does not accept a filetype. We hardcode the filetype to "pfb".
                       entity(as[PFBImportRequest]) { pfbRequest =>
-                        val importRequest = AsyncImportRequest(pfbRequest.url, FILETYPE_PFB)
+                        val importRequest = AsyncImportRequest(pfbRequest.url, FILETYPE_PFB, None)
                         complete { entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace, workspaceName, importRequest, userInfo) }
                       }
                     }
