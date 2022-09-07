@@ -30,7 +30,41 @@ class StreamingPassthroughSpec extends AnyFreeSpec with Matchers with StreamingP
       val expected = Uri("https://example.com/api/version/foo/baz/qux?hello=world")
       convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
     }
-    "should handle an empty remainder" is (pending)
+    "should handle the base path being present more than once" in {
+      val requestUri = Uri("http://localhost:8123/foo/bar/baz/qux/foo/bar/baz")
+      val localBasePath = Path("/foo/bar")
+      val remoteBaseUri = Uri("https://example.com/api/version/foo")
+
+      val expected = Uri("https://example.com/api/version/foo/baz/qux/foo/bar/baz")
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+    }
+    "should be case-sensitive in remainder calculation" in {
+      val requestUri = Uri("http://localhost:8123/Foo/Bar/baz/qux")
+      val localBasePath = Path("/foo/bar")
+      val remoteBaseUri = Uri("https://example.com/api/version/foo")
+
+      val exception = intercept[Exception] {
+        convertToRemoteUri(requestUri, localBasePath, remoteBaseUri)
+      }
+
+      exception.getMessage shouldBe "request path doesn't start properly: /Foo/Bar/baz/qux does not start with /foo/bar"
+    }
+    "should handle an empty remainder" in {
+      val requestUri = Uri("http://localhost:8123/foo/bar")
+      val localBasePath = Path("/foo/bar")
+      val remoteBaseUri = Uri("https://example.com/api/version/foo")
+
+      val expected = Uri("https://example.com/api/version/foo")
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+    }
+    "should handle trailing slash as remainder" in {
+      val requestUri = Uri("http://localhost:8123/foo/bar/")
+      val localBasePath = Path("/foo/bar")
+      val remoteBaseUri = Uri("https://example.com/api/version/foo")
+
+      val expected = Uri("https://example.com/api/version/foo")
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+    }
   }
 
   "should NOT forward Timeout-Access header" is (pending)

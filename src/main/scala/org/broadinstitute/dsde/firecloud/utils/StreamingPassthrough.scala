@@ -113,7 +113,7 @@ trait StreamingPassthrough
     * @param remoteBaseUri the remote system to use as passthrough target
     * @return the URI suitable for sending to the remote system
     */
-  def convertToRemoteUri(requestUri:Uri, localBasePath: Uri.Path, remoteBaseUri: Uri): Uri = {
+  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri): Uri = {
     // Ensure the incoming request starts with the localBasePath. Abort if it doesn't.
     // This condition should only be caused by developer error in which the streamingPassthrough
     // directive is incorrectly configured inside a route.
@@ -121,20 +121,10 @@ trait StreamingPassthrough
       throw new Exception(s"request path doesn't start properly: ${requestUri.path} does not start with $localBasePath")
     }
 
-    // recursively loops through the segments of the actual path, and removes
-    // all segments present in the base path. Returns the result:
-    // every part of the path, minus the base.
-    // This should be equivalent to `actual.toString.replace(base.toString, "")`
-    // without needing string conversion.
-    @tailrec
-    def findPathRemainder(base: Path, actual: Path): Path = {
-      if (base.isEmpty || !actual.startsWith(base)) {
-        actual
-      } else {
-        findPathRemainder(base.tail, actual.tail)
-      }
-    }
-    val remainder = findPathRemainder(localBasePath, requestUri.path)
+    // find every part of the actual request path, minus the base.
+    val baseString = localBasePath.toString
+    val requestString = requestUri.path.toString
+    val remainder = Uri.Path(requestString.replaceFirst(baseString, ""))
 
     // append the remainder to the remoteBaseUri's path
     val remotePath = remoteBaseUri.path ++ remainder
