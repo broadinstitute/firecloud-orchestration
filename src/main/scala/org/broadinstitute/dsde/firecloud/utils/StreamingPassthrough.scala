@@ -96,7 +96,7 @@ trait StreamingPassthrough
     val targetHeaders = req.headers.filter(_.isNot(`Timeout-Access`.lowercaseName))
 
     // TODO: what should this log?
-    streamingPassthroughLogger.info(s"${req.method} ${req.uri} => $targetUri")
+    streamingPassthroughLogger.info(s"Passthrough API called. Forwarding call: ${req.method} ${req.uri} => $targetUri")
 
     // return a copy of the inbound request, using the new URI and new headers.
     req.withUri(targetUri).withHeaders(targetHeaders)
