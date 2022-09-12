@@ -1,5 +1,0 @@
-update:sample_id	participant_id	sample_type	new_attribute
-sample_01	participant_01	primary_solid_tumor	new_attribute_01
-sample_02	participant_01	new_sample_type	new_attribute_02
-sample_03	participant_02	primary_solid_tumor	new_attribute_03
-sample_04	participant_02	blood-derived_normal	new_attribute_04
