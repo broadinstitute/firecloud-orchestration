@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.13.3"
   val jacksonHotfixV = "2.13.3" // for when only some of the Jackson libs have hotfix releases
   val akkaV = "2.6.19"
-  val akkaHttpV = "10.2.9"
+  val akkaHttpV = "10.2.10"
   val workbenchLibsHash = "5863cbd"
 
   val workbenchModelV  = s"0.15-$workbenchLibsHash"
