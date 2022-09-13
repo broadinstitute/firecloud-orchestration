@@ -1,0 +1,5 @@
+entity:sample_id	participant_id	sample_type
+sample_01	participant_01	primary_solid_tumor
+sample_02	participant_01	blood_derived_normal
+sample_03	participant_02	primary_solid_tumor
+sample_04	participant_02	blood-derived_normal
