@@ -1,0 +1,17 @@
+{
+  "summary": {
+    "title": "Orchestration Threat Model",
+    "owner": "Albano Drazhi",
+    "description": "Description"
+  },
+  "detail": {
+    "contributors": [],
+    "diagrams": [
+      {
+        "title": "Testte",
+        "thumbnail": "./public/content/images/thumbnail.jpg",
+        "id": 0
+      }
+    ]
+  }
+}
