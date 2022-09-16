@@ -227,7 +227,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
     val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
-    val importRequest = AsyncImportRequest(gcsPath, FILETYPE_RAWLS, None)
+    val importRequest = AsyncImportRequest(gcsPath, FILETYPE_RAWLS)
     importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert)(userInfo)
   }
 

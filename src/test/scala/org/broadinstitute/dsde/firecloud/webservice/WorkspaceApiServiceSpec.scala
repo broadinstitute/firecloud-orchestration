@@ -1269,7 +1269,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should 400 if import service indicates a bad request" in {
 
-            (Post(importJobPath, AsyncImportRequest("https://bad.request.avro", filetype, None))
+            (Post(importJobPath, AsyncImportRequest("https://bad.request.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
@@ -1278,7 +1278,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           }
 
           "should 403 if import service access is forbidden" in {
-            (Post(importJobPath, AsyncImportRequest("https://forbidden.avro", filetype, None))
+            (Post(importJobPath, AsyncImportRequest("https://forbidden.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(Forbidden)
@@ -1288,7 +1288,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
           "should propagate any other errors from import service" in {
             // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
-            (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype, None))
+            (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(UnavailableForLegalReasons)
@@ -1304,7 +1304,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               jobId = "MockImportServiceDAO will generate a random UUID",
               workspace = WorkspaceName(workspace.namespace, workspace.name))
 
-            (Post(importJobPath, AsyncImportRequest("https://good.avro", filetype, None))
+            (Post(importJobPath, AsyncImportRequest("https://good.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(Accepted)
