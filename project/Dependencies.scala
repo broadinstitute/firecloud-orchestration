@@ -81,7 +81,7 @@ object Dependencies {
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.12"   % "test",
-    "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
+    "org.mock-server"                % "mockserver-netty"    % "3.12"  % "test", // TODO: upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
