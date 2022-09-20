@@ -55,27 +55,30 @@ final class BillingApiServiceSpec extends BaseServiceSpec with BillingApiService
     workspaceServer.stop()
   }
 
+  // streamingPassthrough directive needs to see the routes under "/api", which is how FireCloudApiService starts them
+  val testableRoutes = pathPrefix("api") { billingServiceRoutes }
+
   "BillingApiService" - {
     "create project" in {
-      Post("/billing") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+      Post("/api/billing") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(Created)
       }
     }
 
     "list project members" in {
-      Get("/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+      Get("/api/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(OK)
       }
     }
 
     "add user" in {
-      Put("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+      Put("/api/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(OK)
       }
     }
 
     "remove user" in {
-      Delete("/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(billingServiceRoutes) ~> check {
+      Delete("/api/billing/project2/user/foo@bar.com") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(OK)
       }
     }
