@@ -127,7 +127,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
       actual.headers should contain theSameElementsAs (expectedHeaders)
     }
-    "should NOT forward Host header" in {
+    "should rewrite Host header" in {
       val requestHeaders = fixtureHeaders :+ Host("overwritten")
       val expectedHeaders = fixtureHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)

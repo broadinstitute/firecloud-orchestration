@@ -98,9 +98,10 @@ trait StreamingPassthrough
     //
     // Host: The Nginx ingress controller used in Terra's BEE environments uses the Host header for routing,
     // so we remove and set it with targetUri host
-    val filteredHeaders = req.headers.
-      filter(_.isNot(`Timeout-Access`.lowercaseName)).
-      filter(_.isNot(Host.lowercaseName))
+    val filteredHeaders = req.headers.filter { hdr =>
+      hdr.isNot(`Timeout-Access`.lowercaseName) &&
+        hdr.isNot(Host.lowercaseName)
+    }
 
     val targetHeaders = filteredHeaders :+ Host(targetUri.authority.host)
 
