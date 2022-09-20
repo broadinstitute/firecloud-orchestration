@@ -28,7 +28,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
 
   private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, importRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     // the payload to Import Service sends "path" and filetype.
-    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = importRequest.url, filetype = importRequest.filetype, isUpsert = isUpsert, tdrSyncPermissions = importRequest.tdrSyncPermissions)
+    val importServicePayload: ImportServiceRequest = ImportServiceRequest(path = importRequest.url, filetype = importRequest.filetype, isUpsert = isUpsert, options = importRequest.options)
 
     val importServiceUrl = FireCloudDirectiveUtils.encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
 

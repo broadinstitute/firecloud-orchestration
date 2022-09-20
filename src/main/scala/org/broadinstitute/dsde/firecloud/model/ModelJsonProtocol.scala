@@ -235,6 +235,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
   implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
   implicit val impPFBImportRequest = jsonFormat1(PFBImportRequest)
+  implicit val impOptions = jsonFormat1(ImportOptions)
   implicit val impAsyncImportRequest = jsonFormat3(AsyncImportRequest)
   implicit val impAsyncImportResponse = jsonFormat3(AsyncImportResponse)
   implicit val impImportServiceRequest = jsonFormat4(ImportServiceRequest)
