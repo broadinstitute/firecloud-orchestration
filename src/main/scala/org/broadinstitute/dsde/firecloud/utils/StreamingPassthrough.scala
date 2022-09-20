@@ -4,6 +4,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.headers.`Timeout-Access`
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
@@ -90,10 +91,18 @@ trait StreamingPassthrough
     // Convert the URI to the one suitable for the remote system
     val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri)
 
-    // Remove unwanted headers. Akka automatically adds a Timeout-Access to the request
+    // Remove unwanted headers:
+    // Timeout-Access: Akka automatically adds a Timeout-Access to the request
     // for internal use in managing timeouts; see akka.http.server.request-timeout.
     // This header is not legal to pass to an external remote system.
-    val targetHeaders = req.headers.filter(_.isNot(`Timeout-Access`.lowercaseName))
+    //
+    // Host: The Nginx ingress controller used in Terra's BEE environments uses the Host header for routing,
+    // so we remove and set it with targetUri host
+    val filteredHeaders = req.headers.
+      filter(_.isNot(`Timeout-Access`.lowercaseName)).
+      filter(_.isNot(Host.lowercaseName))
+
+    val targetHeaders = filteredHeaders :+ Host.apply(targetUri.authority)
 
     // TODO: what should this log?
     streamingPassthroughLogger.info(s"Passthrough API called. Forwarding call: ${req.method} ${req.uri} => $targetUri")
