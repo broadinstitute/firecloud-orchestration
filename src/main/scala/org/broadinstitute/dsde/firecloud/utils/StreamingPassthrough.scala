@@ -102,7 +102,7 @@ trait StreamingPassthrough
       filter(_.isNot(`Timeout-Access`.lowercaseName)).
       filter(_.isNot(Host.lowercaseName))
 
-    val targetHeaders = filteredHeaders :+ Host.apply(targetUri.authority)
+    val targetHeaders = filteredHeaders :+ Host(targetUri.authority.host)
 
     // TODO: what should this log?
     streamingPassthroughLogger.info(s"Passthrough API called. Forwarding call: ${req.method} ${req.uri} => $targetUri")
