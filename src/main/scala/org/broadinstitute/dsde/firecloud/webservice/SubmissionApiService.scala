@@ -10,10 +10,8 @@ trait SubmissionApiService extends FireCloudDirectives with StreamingPassthrough
     pathPrefix("submissions" / "queueStatus") {
       streamingPassthrough(submissionQueueStatusUrl)
     } ~
-    pathPrefix("workspaces" / Segment / Segment / "submissionsCount") { (namespace, name) =>
-      streamingPassthrough(s"$workspacesUrl/${escapePathSegment(namespace)}/${escapePathSegment(name)}/submissionsCount")
-    } ~
     pathPrefix("workspaces" / Segment / Segment / "submissions") { (namespace, name) =>
+      // N.B. streamingPassthrough to ".../submissions" also handles ".../submissionsCount"
       streamingPassthrough(s"$workspacesUrl/${escapePathSegment(namespace)}/${escapePathSegment(name)}/submissions")
     }
   }
