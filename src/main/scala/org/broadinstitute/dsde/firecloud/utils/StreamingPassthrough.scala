@@ -3,19 +3,17 @@ package org.broadinstitute.dsde.firecloud.utils
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.headers.`Timeout-Access`
+import akka.http.scaladsl.model.headers.{Host, `Timeout-Access`}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.{BasicDirectives, RouteDirectives}
 import akka.stream.scaladsl.{Sink, Source}
+import com.google.common.net.UrlEscapers
 import com.typesafe.scalalogging.Logger
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.slf4j.LoggerFactory
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -30,6 +28,10 @@ trait StreamingPassthrough
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
   val passthroughErrorReportSource: ErrorReportSource = ErrorReportSource("Orchestration")
+
+  def escapePathSegment(pathString: String) = {
+    UrlEscapers.urlPathSegmentEscaper().escape(pathString)
+  }
 
   /**
     * Passes through, to remoteBaseUri, all requests that match or start with the
