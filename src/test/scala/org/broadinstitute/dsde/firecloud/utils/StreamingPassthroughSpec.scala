@@ -170,7 +170,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
   "mockserver-based tests" - {
 
     val testRoute = {
-      streamingPassthrough(s"http://localhost:$localMockserverPort/statuscode/checker")
+      streamingPassthrough(Uri(s"http://localhost:$localMockserverPort/statuscode/checker"))
     }
 
     testableStatusCodes foreach { codeUnderTest =>

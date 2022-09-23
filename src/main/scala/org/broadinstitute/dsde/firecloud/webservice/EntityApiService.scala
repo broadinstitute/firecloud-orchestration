@@ -72,7 +72,6 @@ trait EntityApiService extends FireCloudDirectives
               }
           } ~
           pathPrefix("entityQuery") {
-            UrlEscapers.urlPathSegmentEscaper().escape(workspaceNamespace)
             streamingPassthrough(entityQueryPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName)))
           } ~
           pathPrefix("entityTypes") {
