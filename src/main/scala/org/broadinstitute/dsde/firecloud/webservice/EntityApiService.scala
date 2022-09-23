@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
+import com.google.common.net.UrlEscapers
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls.entityQueryPathFromWorkspace
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -67,11 +68,12 @@ trait EntityApiService extends FireCloudDirectives
                 }
               } ~
               pathPrefix(Segment) { entityType =>
-                streamingPassthrough(baseRawlsEntitiesUrl + "/" + entityType)
+                streamingPassthrough(FireCloudConfig.Rawls.entityPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName)) + "/" + entityType)
               }
           } ~
           pathPrefix("entityQuery") {
-            streamingPassthrough(entityQueryPathFromWorkspace(workspaceNamespace, workspaceName))
+            UrlEscapers.urlPathSegmentEscaper().escape(workspaceNamespace)
+            streamingPassthrough(entityQueryPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName)))
           } ~
           pathPrefix("entityTypes") {
             extractRequest { req =>

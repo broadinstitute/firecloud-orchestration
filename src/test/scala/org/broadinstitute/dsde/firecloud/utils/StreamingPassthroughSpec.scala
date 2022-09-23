@@ -2,8 +2,8 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.headers.{Accept, Authorization, Host, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
@@ -170,7 +170,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
   "mockserver-based tests" - {
 
     val testRoute = {
-      streamingPassthrough(Uri(s"http://localhost:$localMockserverPort/statuscode/checker"))
+      streamingPassthrough(s"http://localhost:$localMockserverPort/statuscode/checker")
     }
 
     testableStatusCodes foreach { codeUnderTest =>
@@ -182,6 +182,15 @@ class StreamingPassthroughSpec extends AnyFreeSpec
           }
         }
       }
+    }
+  }
+
+  "escapePathSegment" - {
+    "should replace spaces with %20" in {
+      val input = "workspace name with spaces"
+      val actual = escapePathSegment(input)
+      val expected = "workspace%20name%20with%20spaces"
+      actual shouldBe expected
     }
   }
 
