@@ -103,7 +103,7 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
   }
 
   private def userAuthedRequestToUnit(request: HttpRequest)(implicit userInfo: WithAccessToken): Future[Unit] = {
-    userAuthedRequest(request).map { resp =>
+    userAuthedRequest(request).flatMap { resp =>
       if(resp.status.isSuccess) Future.successful({
         resp.discardEntityBytes()
       })

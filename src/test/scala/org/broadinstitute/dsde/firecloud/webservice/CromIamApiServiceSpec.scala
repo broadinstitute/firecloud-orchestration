@@ -28,25 +28,23 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     workspaceServer.stop()
   }
 
+  // streamingPassthrough directive needs to see the routes under "/api", which is how FireCloudApiService starts them
+  val testableRoutes = pathPrefix("api") { cromIamApiServiceRoutes }
+
   "CromIAM passthrough" - {
 
-    lazy val workflowRoot: String = "/workflows/v1"
+    lazy val workflowRoot: String = "/api/workflows/v1"
     lazy val engineRoot: String = "/engine/v1"
-    lazy val womtoolRoot: String = "/womtool/v1"
+    lazy val womtoolRoot: String = "/api/womtool/v1"
 
     "/api/womtool/{version}/describe" - {
 
       val endpoint = s"$womtoolRoot/describe"
 
       "should pass through my methods" in {
-        checkIfPassedThrough(cromIamApiServiceRoutes, HttpMethods.POST, endpoint, toBeHandled = true)
+        checkIfPassedThrough(testableRoutes, HttpMethods.POST, endpoint, toBeHandled = true)
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(List(HttpMethods.POST)) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/abort" - {
@@ -56,15 +54,10 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should pass through my methods" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpoint, toBeHandled = true)
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/releaseHold" - {
@@ -74,15 +67,10 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should pass through my methods" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpoint, toBeHandled = true)
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/labels" - {
@@ -92,15 +80,10 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should pass through my methods" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpoint, toBeHandled = true)
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/metadata" - {
@@ -110,7 +93,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should pass through my methods" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpoint, toBeHandled = true)
         }
       }
 
@@ -118,7 +101,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
         val request = org.mockserver.model.HttpRequest.request()
           .withMethod("GET")
-          .withPath(s"/api$endpoint")
+          .withPath(s"$endpoint")
           .withQueryStringParameter("includeKey", "hit")
           .withQueryStringParameter("includeKey", "hitFailure")
 
@@ -130,7 +113,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery(Query("includeKey=hit&includeKey=hitFailure"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("includeKey=hit&includeKey=hitFailure"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(testableRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -138,11 +121,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/backend/metadata" - {
@@ -156,27 +134,16 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should pass through my methods PAPIv1" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV1, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpointPapiV1, toBeHandled = true)
         }
       }
 
       "should pass through my methods PAPIv2" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV2, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpointPapiV2, toBeHandled = true)
         }
       }
 
-      "should reject everything else PAPIv1" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV1, toBeHandled = false)
-        }
-      }
-
-      "should reject everything else PAPIv2" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpointPapiV2, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/query" - {
@@ -186,7 +153,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should pass through my methods" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpoint, toBeHandled = true)
         }
       }
 
@@ -194,7 +161,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
         val request = org.mockserver.model.HttpRequest.request()
           .withMethod("GET")
-          .withPath(s"/api$endpoint")
+          .withPath(s"$endpoint")
           .withQueryStringParameter("start", "start value")
           .withQueryStringParameter("end", "end value")
 
@@ -206,7 +173,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery(Query("start=start%20value&end=end%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("start=start%20value&end=end%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(testableRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -214,11 +181,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/api/workflows/{version}/callcaching/diff" - {
@@ -228,7 +190,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should pass through my methods" in {
         myMethods foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = true)
+          checkIfPassedThrough(testableRoutes, method, endpoint, toBeHandled = true)
         }
       }
 
@@ -236,7 +198,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
         val request = org.mockserver.model.HttpRequest.request()
           .withMethod("GET")
-          .withPath(s"/api$endpoint")
+          .withPath(s"$endpoint")
           .withQueryStringParameter("workflowA", "workflowA value")
           .withQueryStringParameter("workflowB", "workflowB value")
 
@@ -248,7 +210,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery(Query("workflowA=workflowA%20value&workflowB=workflowB%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(cromIamApiServiceRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("workflowA=workflowA%20value&workflowB=workflowB%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(testableRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -256,11 +218,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamApiServiceRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/engine/{version}/status" - {
@@ -273,11 +230,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
     "/engine/{version}/version" - {
@@ -290,11 +242,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
         }
       }
 
-      "should reject everything else" in {
-        allHttpMethodsExcept(myMethods) foreach { method =>
-          checkIfPassedThrough(cromIamEngineRoutes, method, endpoint, toBeHandled = false)
-        }
-      }
     }
 
   }
