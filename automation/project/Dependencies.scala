@@ -37,7 +37,7 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
     "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
     "org.scalatest"       %%  "scalatest"     % "3.2.13"   % Test,
-    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
 
     // required but not provided by workbench-google.
     // workbench-google specifies 7.0.1
