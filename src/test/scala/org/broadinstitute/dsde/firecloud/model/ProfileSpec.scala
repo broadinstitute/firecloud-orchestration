@@ -27,6 +27,21 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
         )
         basicProfile shouldNot be(null)
       }
+      "BasicProfile with well-formed contact email (example #2) is valid" in {
+        val basicProfile = BasicProfile(
+          firstName = randomString,
+          lastName = randomString,
+          title = randomString,
+          contactEmail = Some("user@theiagen.training"),
+          institute = randomString,
+          researchArea = Some(randomString),
+          programLocationCity = randomString,
+          programLocationState = randomString,
+          programLocationCountry = randomString,
+          termsOfService = Some(termsOfServiceUrl)
+        )
+        basicProfile shouldNot be(null)
+      }
       "Profile with blank contact email is valid" in {
         val profile = Profile(
           firstName = randomString,

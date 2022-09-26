@@ -116,7 +116,8 @@ case class ShibbolethToken(eraCommonsUsername: String, iat: Long) {
 }
 
 object ProfileValidator {
-  private val emailRegex = """^([\w-\+]+(?:\.[\w-\+]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$""".r
+  // from https://www.regular-expressions.info/email.html
+  private val emailRegex = """(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$""".r
   def nonEmpty(field: String): Boolean = !field.trim.isEmpty
   def nonEmpty(field: Option[String]): Boolean = !field.getOrElse("").trim.isEmpty
   def emptyOrValidEmail(field: Option[String]): Boolean = field match {
