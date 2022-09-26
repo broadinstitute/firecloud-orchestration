@@ -2,10 +2,12 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
+import com.google.common.net.UrlEscapers
+import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls.entityQueryPathFromWorkspace
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
-import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives, StreamingPassthrough}
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.{EntityCopyDefinition, WorkspaceName}
 import org.slf4j.LoggerFactory
@@ -14,6 +16,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 trait EntityApiService extends FireCloudDirectives
+  with StreamingPassthrough
   with FireCloudRequestBuilding with StandardUserInfoDirectives with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
@@ -65,47 +68,11 @@ trait EntityApiService extends FireCloudDirectives
                 }
               } ~
               pathPrefix(Segment) { entityType =>
-                val entityTypeUrl = encodeUri(baseRawlsEntitiesUrl + "/" + entityType)
-                pathEnd {
-                  requireUserInfo() { _ =>
-                    passthrough(entityTypeUrl, HttpMethods.GET)
-                  }
-                } ~
-                  pathPrefix(Segment) { entityName =>
-                    pathEnd {
-                      requireUserInfo() { _ =>
-                        passthrough(entityTypeUrl + "/" + entityName, HttpMethods.GET, HttpMethods.PATCH)
-                      }
-                    } ~
-                    path("evaluate") {
-                      requireUserInfo() { _ =>
-                        passthrough(entityTypeUrl + "/" + entityName + "/evaluate", HttpMethods.POST)
-                      }
-                    } ~
-                    path("rename") {
-                      requireUserInfo() { _ =>
-                        passthrough(entityTypeUrl + "/" + entityName + "/rename", HttpMethods.POST)
-                      }
-                    }
-                  }
+                streamingPassthrough(FireCloudConfig.Rawls.entityPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName)) + "/" + entityType)
               }
           } ~
-          pathPrefix("entityQuery" / Segment) { entityType =>
-            pathEnd {
-              get {
-                requireUserInfo() { userInfo => requestContext =>
-                  val requestUri = requestContext.request.uri
-                  val entityQueryUri = FireCloudConfig.Rawls.
-                    entityQueryUriFromWorkspaceAndQuery(workspaceNamespace, workspaceName, entityType).
-                    withQuery(requestUri.query())
-                  val extReq = Get(entityQueryUri)
-
-                  userAuthedRequest(extReq)(userInfo).flatMap { resp =>
-                    requestContext.complete(resp)
-                  }
-                }
-              }
-            }
+          pathPrefix("entityQuery") {
+            streamingPassthrough(entityQueryPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName)))
           } ~
           pathPrefix("entityTypes") {
             extractRequest { req =>
