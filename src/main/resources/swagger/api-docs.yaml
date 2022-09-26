@@ -50,7 +50,8 @@ paths:
     post:
       tags:
         - Billing
-      summary: create billing project in Terra and google
+      summary: Create billing project in Terra and Google. Deprecated, use v2 version.
+      deprecated: true
       operationId: createBillingProjectFull
       requestBody:
         description: create project request
@@ -97,7 +98,8 @@ paths:
     get:
       tags:
         - Billing
-      summary: list members of billing project the caller owns
+      summary: List members of billing project the caller owns. Deprecated, use v2 version.
+      deprecated: true
       operationId: listBillingProjectMembers
       parameters:
         - $ref: '#/components/parameters/billingProjectPathParam'
@@ -234,7 +236,8 @@ paths:
     put:
       tags:
         - Billing
-      summary: add user to billing project the caller owns
+      summary: Add user to billing project the caller owns. Deprecated, use v2 version.
+      deprecated: true
       operationId: addUserToBillingProject
       parameters:
         - $ref: '#/components/parameters/billingProjectPathParam'
@@ -280,7 +283,8 @@ paths:
     delete:
       tags:
         - Billing
-      summary: remove user from billing project the caller owns
+      summary: Remove user from billing project the caller owns. Deprecated, use v2 version.
+      deprecated: true
       operationId: removeUserFromBillingProject
       parameters:
         - $ref: '#/components/parameters/billingProjectPathParam'
@@ -600,7 +604,8 @@ paths:
     delete:
       tags:
         - Billing
-      summary: delete billing project
+      summary: Delete billing project. Deprecated, use v2 version.
+      deprecated: true
       description: delete billing project
       operationId: deleteBillingProjectV2
       parameters:
@@ -2734,7 +2739,8 @@ paths:
     get:
       tags:
         - Profile
-      summary: List billing projects for a user
+      summary: List billing projects for a user. Deprecated, use v2 billing API.
+      deprecated: true
       operationId: billing
       responses:
         200:
@@ -2757,7 +2763,8 @@ paths:
     get:
       tags:
         - Profile
-      summary: billing project status
+      summary: Billing project status. Deprecated, use v2 billing API.
+      deprecated: true
       description: billing project status
       operationId: billingProjectStatus
       parameters:
