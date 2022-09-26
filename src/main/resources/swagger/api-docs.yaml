@@ -328,11 +328,35 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
   /api/billing/v2:
+    get:
+      tags:
+        - BillingV2
+      summary: list billing projects for a user
+      description: list billing projects for a user
+      operationId: listUserBillingProjectsV2
+      responses:
+        200:
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                type: array
+                description: list of billing projects for this user
+                items:
+                  $ref: '#/components/schemas/RawlsBillingProjectResponse'
+        404:
+          description: User not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
     post:
       tags:
         - BillingV2
       summary: create billing project in rawls
-      description: create new billing project in rawls
+      description: create new billing project in rawls; the client must provide either Azure managed app coordinates or a Google billing account ID. Providing both will result in an error.
       operationId: createBillingProjectFullV2
       requestBody:
         description: create project request
@@ -381,7 +405,7 @@ paths:
           content:
             'application/json':
               schema:
-                $ref: '#/components/schemas/BillingProjectResponse'
+                $ref: '#/components/schemas/RawlsBillingProjectResponse'
         404:
           description: Project Not Found
           content:
@@ -7090,7 +7114,6 @@ components:
       description: ""
     CreateRawlsV2BillingProjectFullRequest:
       required:
-        - billingAccount
         - projectName
       type: object
       properties:
@@ -7099,14 +7122,34 @@ components:
           description: the name of the project to create
         billingAccount:
           type: string
-          description: the id of the billing account to use, must start with 'billingAccounts/'
+          description: the id of the Google billing account to use, must start with 'billingAccounts/'
         servicePerimeter:
           type: string
           description: The fully qualified name of the GCP service perimeter to put
             this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME].
             Caller must have the add_project action for this service perimeter in
             Sam.
+        managedAppCoordinates:
+          $ref: '#/components/schemas/AzureManagedAppCoordinates'
       description: ""
+    AzureManagedAppCoordinates:
+      required:
+        - tenantId
+        - subscriptionId
+        - managedResourceGroupId
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+          description: UUID of the Azure tenant for this managed application deployment
+        subscriptionId:
+          type: string
+          format: uuid
+          description: UUID of the Azure subscription for this managed application deployment.
+        managedResourceGroupId:
+          type: string
+          description: ID of the Azure managed resource group for this managed application deployment.
     CuratorStatus:
       required:
         - curator
@@ -8071,6 +8114,50 @@ components:
         sourceName:
           type: string
           description: Method configuration source name
+    RawlsBillingProjectResponse:
+      required:
+        - projectName
+        - invalidBillingAccount
+        - roles
+      type: object
+      properties:
+        projectName:
+          type: string
+          description: the name of the project
+        billingAccount:
+          type: string
+          description: the billing account to use in google projects
+        servicePerimeter:
+          type: string
+          description: the name of the service parameters for google project
+        invalidBillingAccount:
+          type: boolean
+          description: whether or not the billing account is usable by Terra
+        roles:
+          type: array
+          items:
+            type: string
+          description: the roles the caller has on the project
+        status:
+          deprecated: true
+          type: string
+          enum:
+            - Creating
+            - Ready
+            - Error
+            - AddingToPerimeter
+          description: the status of allocating the billing project's resources.
+        message:
+          deprecated: true
+          type: string
+          description: informational message about the project
+        azureManagedAppCoordinates:
+          $ref: '#/components/schemas/AzureManagedAppCoordinates'
+        cloudPlatform:
+          type: string
+          enum:
+            - GCP
+            - AZURE
     RawlsGroupRef:
       type: object
       properties:
@@ -9798,43 +9885,6 @@ components:
         labels:
           type: string
           description: The custom labels as json
-    BillingProjectResponse:
-      required:
-        - projectName
-        - invalidBillingAccount
-        - roles
-      type: object
-      properties:
-        projectName:
-          type: string
-          description: the name of the project
-        billingAccount:
-          type: string
-          description: the billing account to use in google projects
-        servicePerimeter:
-          type: string
-          description: the name of the service permeters for google project
-        invalidBillingAccount:
-          type: boolean
-          description: whether or not the billing account is usable by Terra
-        roles:
-          type: array
-          items:
-            type: string
-          description: the roles the caller has on the project
-        status:
-          deprecated: true
-          type: string
-          enum:
-            - Creating
-            - Ready
-            - Error
-            - AddingToPerimeter
-          description: the status of allocating the billing project's resources.
-        message:
-          deprecated: true
-          type: string
-          description: informational message about the project
     WorkspaceBillingAccount:
       required:
         - workspaceName
