@@ -8158,6 +8158,7 @@ components:
           enum:
             - GCP
             - AZURE
+            - UNKNOWN
     RawlsGroupRef:
       type: object
       properties:
