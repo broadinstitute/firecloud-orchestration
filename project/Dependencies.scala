@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val akkaV = "2.5.32"
-  val akkaHttpV = "10.2.9"
+  val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.77.Final"
