@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.5.32"
   val akkaHttpV = "10.2.9"
-  val jacksonV = "2.13.3"
-  val jacksonHotfixV = "2.13.3" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.13.4"
+  val jacksonHotfixV = "2.13.4" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.77.Final"
   val workbenchLibsHash = "20f9225"
 
@@ -25,14 +25,14 @@ object Dependencies {
     "io.netty"                       % "netty-codec-http"    % nettyV,
     "io.netty"                       % "netty-handler"       % nettyV,
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "30.1.1-jre",
+    "com.google.guava"               % "guava"               % "31.1-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.17.2",
-    "ch.qos.logback"                 % "logback-classic"     % "1.2.11",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.19.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.1",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
-    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.4",
+    "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
     excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-e0584dbdc")
@@ -71,7 +71,7 @@ object Dependencies {
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.1.0",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.1.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
@@ -80,12 +80,12 @@ object Dependencies {
     "com.github.erosb"               % "everit-json-schema"  % "1.14.1",
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.12"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.13"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.124.14" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.124.15" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }

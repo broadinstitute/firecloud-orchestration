@@ -2,8 +2,8 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
@@ -121,7 +121,15 @@ class StreamingPassthroughSpec extends AnyFreeSpec
 
     "should NOT forward Timeout-Access header" in {
       val requestHeaders = fixtureHeaders :+ RawHeader("Timeout-Access", "doesnt matter")
-      val expectedHeaders = fixtureHeaders
+      val expectedHeaders = fixtureHeaders :+ Host("example.com")
+      val req = fixtureRequest.withHeaders(requestHeaders)
+      // call transformToPassthroughRequest
+      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
+      actual.headers should contain theSameElementsAs (expectedHeaders)
+    }
+    "should rewrite Host header" in {
+      val requestHeaders = fixtureHeaders :+ Host("overwritten")
+      val expectedHeaders = fixtureHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
       val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
@@ -129,7 +137,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
     }
     "should forward Authorization header" in {
       val requestHeaders = fixtureHeaders :+ Authorization(OAuth2BearerToken("123456"))
-      val expectedHeaders = requestHeaders
+      val expectedHeaders = requestHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
       val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
@@ -137,7 +145,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
     }
     "should forward miscellaneous headers" in {
       val requestHeaders = fixtureHeaders :+ RawHeader("X-FireCloud-Id", FireCloudConfig.FireCloud.fireCloudId)
-      val expectedHeaders = requestHeaders
+      val expectedHeaders = requestHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
       val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
@@ -174,6 +182,15 @@ class StreamingPassthroughSpec extends AnyFreeSpec
           }
         }
       }
+    }
+  }
+
+  "escapePathSegment" - {
+    "should replace spaces with %20" in {
+      val input = "workspace name with spaces"
+      val actual = escapePathSegment(input)
+      val expected = "workspace%20name%20with%20spaces"
+      actual shouldBe expected
     }
   }
 

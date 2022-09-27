@@ -1,9 +1,6 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 
@@ -29,8 +26,11 @@ case class BagitImportRequest(bagitURL: String, format: String)
 
 // legacy class specific to PFB import; prefer AsyncImportRequest instead
 case class PFBImportRequest(url: String)
+
+// additional import options
+case class ImportOptions(tdrSyncPermissions: Option[Boolean] = None)
 // the request payload sent by users to Orchestration for async PFB and TDR snapshot imports
-case class AsyncImportRequest(url: String, filetype: String)
+case class AsyncImportRequest(url: String, filetype: String, options: Option[ImportOptions] = None)
 
 // the response payload received by users from Orchestration for async PFB/TSV/TDR snapshot imports
 case class AsyncImportResponse(url: String,
@@ -41,7 +41,8 @@ case class AsyncImportResponse(url: String,
 case class ImportServiceRequest(
   path: String,
   filetype: String,
-  isUpsert: Boolean)
+  isUpsert: Boolean,
+  options: Option[ImportOptions])
 // the response payload received by Orchestration from Import Service
 case class ImportServiceResponse(
   jobId: String,
