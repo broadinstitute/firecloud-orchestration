@@ -3,18 +3,17 @@ package org.broadinstitute.dsde.firecloud.utils
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.headers.`Timeout-Access`
+import akka.http.scaladsl.model.headers.{Host, `Timeout-Access`}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.{BasicDirectives, RouteDirectives}
 import akka.stream.scaladsl.{Sink, Source}
+import com.google.common.net.UrlEscapers
 import com.typesafe.scalalogging.Logger
 import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.slf4j.LoggerFactory
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -29,6 +28,10 @@ trait StreamingPassthrough
   implicit val system: ActorSystem
   implicit val executionContext: ExecutionContext
   val passthroughErrorReportSource: ErrorReportSource = ErrorReportSource("Orchestration")
+
+  def escapePathSegment(pathString: String) = {
+    UrlEscapers.urlPathSegmentEscaper().escape(pathString)
+  }
 
   /**
     * Passes through, to remoteBaseUri, all requests that match or start with the
@@ -90,10 +93,19 @@ trait StreamingPassthrough
     // Convert the URI to the one suitable for the remote system
     val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri)
 
-    // Remove unwanted headers. Akka automatically adds a Timeout-Access to the request
+    // Remove unwanted headers:
+    // Timeout-Access: Akka automatically adds a Timeout-Access to the request
     // for internal use in managing timeouts; see akka.http.server.request-timeout.
     // This header is not legal to pass to an external remote system.
-    val targetHeaders = req.headers.filter(_.isNot(`Timeout-Access`.lowercaseName))
+    //
+    // Host: The Nginx ingress controller used in Terra's BEE environments uses the Host header for routing,
+    // so we remove and set it with targetUri host
+    val filteredHeaders = req.headers.filter { hdr =>
+      hdr.isNot(`Timeout-Access`.lowercaseName) &&
+        hdr.isNot(Host.lowercaseName)
+    }
+
+    val targetHeaders = filteredHeaders :+ Host(targetUri.authority.host)
 
     // TODO: what should this log?
     streamingPassthroughLogger.info(s"Passthrough API called. Forwarding call: ${req.method} ${req.uri} => $targetUri")
