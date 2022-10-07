@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.77.Final"
+  val nettyV = "4.1.82.Final"
   val workbenchLibsHash = "20f9225"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -80,7 +80,7 @@ object Dependencies {
     "com.github.erosb"               % "everit-json-schema"  % "1.14.1",
     "com.github.pathikrit"          %% "better-files"        % "3.9.1",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.13"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.14"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
