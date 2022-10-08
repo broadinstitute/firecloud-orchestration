@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4" // for when only some of the Jackson libs have hotfix releases
   val akkaV = "2.6.19"
-  val akkaHttpV = "10.2.9"
+  val akkaHttpV = "10.2.10"
   val workbenchLibsHash = "5863cbd"
 
   val workbenchModelV  = s"0.15-$workbenchLibsHash"
@@ -28,7 +28,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
-    "ch.qos.logback" % "logback-classic" % "1.4.1",
+    "ch.qos.logback" % "logback-classic" % "1.4.3",
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-stream-testkit" % akkaV,
     "com.typesafe.akka"   %%  "akka-http"           % akkaHttpV,
@@ -36,7 +36,7 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
     "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
-    "org.scalatest"       %%  "scalatest"     % "3.2.13"   % Test,
+    "org.scalatest"       %%  "scalatest"     % "3.2.14"   % Test,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
 
     // required but not provided by workbench-google.
