@@ -14,6 +14,14 @@ object Dependencies {
   val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
   val excludeSprayJson = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-spray-json_2.13")
 
+  // Overrides for transitive dependencies. These apply - via Settings.scala - to all projects in this codebase.
+  // These are overrides only; if the direct dependencies stop including any of these, they will not be included
+  // by being listed here.
+  // One reason to specify an override here is to avoid static-analysis security warnings.
+  val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
+    "org.yaml" % "snakeyaml" % "1.33"
+  )
+
   val rootDependencies: Seq[ModuleID] = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
