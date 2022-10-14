@@ -38,7 +38,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.19.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.3",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.4",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
@@ -93,7 +93,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.124.15" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.124.17" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
