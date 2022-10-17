@@ -4,7 +4,7 @@ object Dependencies {
   val scalaV = "2.13"
 
   val jacksonV = "2.13.4"
-  val jacksonHotfixV = "2.13.4" // for when only some of the Jackson libs have hotfix releases
+  val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
   val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
   val workbenchLibsHash = "5863cbd"
@@ -20,13 +20,18 @@ object Dependencies {
   val workbenchServiceTestV = s"2.0-$workbenchLibsHash"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
-  val rootDependencies: Seq[ModuleID] = Seq(
-    // proactively pull in latest versions of Jackson libs, instead of relying on the versions
-    // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
+  // Overrides for transitive dependencies. These apply - via Settings.scala - to all projects in this codebase.
+  // These are overrides only; if the direct dependencies stop including any of these, they will not be included
+  // by being listed here.
+  // One reason to specify an override here is to avoid static-analysis security warnings.
+  val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV,
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV
+  )
+
+  val rootDependencies: Seq[ModuleID] = Seq(
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
     "ch.qos.logback" % "logback-classic" % "1.4.4",
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
