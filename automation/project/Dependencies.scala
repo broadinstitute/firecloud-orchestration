@@ -27,11 +27,11 @@ object Dependencies {
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
-    "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV
+    "com.fasterxml.jackson.core" % "jackson-core" % jacksonV
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
     "ch.qos.logback" % "logback-classic" % "1.4.4",
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
