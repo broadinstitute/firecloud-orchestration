@@ -42,7 +42,8 @@ object Settings {
     organization  := "org.broadinstitute.dsde.firecloud",
     scalaVersion  := "2.13.9",
     resolvers ++= commonResolvers,
-    scalacOptions ++= commonCompilerSettings
+    scalacOptions ++= commonCompilerSettings,
+    dependencyOverrides ++= transitiveDependencyOverrides
   )
 
   //the full list of settings for the root project that's ultimately the one we build into a fat JAR and run
