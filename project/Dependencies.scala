@@ -29,7 +29,7 @@ object Dependencies {
     // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     // TODO: can these move to sbt's dependencyOverrides?
-    "io.netty"                       % "netty-handler"        % nettyV, // netty is needed by the Elasticsearch client at runtime
+    "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
     "com.google.guava"               % "guava"               % "31.1-jre",
     // END transitive dependency overrides
