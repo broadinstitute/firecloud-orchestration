@@ -5,7 +5,6 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.82.Final"
   val workbenchLibsHash = "20f9225"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -19,6 +18,9 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
+    "io.netty" % "netty-codec" % nettyV,
+    "io.netty" % "netty-codec-http" % nettyV,
+    "io.netty" % "netty-handler" % nettyV,
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
@@ -29,9 +31,6 @@ object Dependencies {
     // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     // TODO: can these move to sbt's dependencyOverrides?
-    "io.netty"                       % "netty-codec"         % nettyV,
-    "io.netty"                       % "netty-codec-http"    % nettyV,
-    "io.netty"                       % "netty-handler"       % nettyV,
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
     "com.google.guava"               % "guava"               % "31.1-jre",
     // END transitive dependency overrides
