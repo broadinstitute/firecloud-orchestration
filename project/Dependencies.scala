@@ -18,9 +18,6 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "io.netty" % "netty-codec" % nettyV,
-    "io.netty" % "netty-codec-http" % nettyV,
-    "io.netty" % "netty-handler" % nettyV,
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
