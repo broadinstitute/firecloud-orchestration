@@ -8485,6 +8485,10 @@ components:
         userComment:
           type: string
           description: Freeform user defined description, optional (max length 1000 characters)
+        ignoreEmptyOutputs:
+          type: boolean
+          default: false
+          description: Whether or not to create output columns if they would be empty and optional.  Defaults to false (columns are created).
       description: If the referenced method configuration takes no root entity, do
         not define `entityType`, `entityName` and `expression`.
     SubmissionStatus:
