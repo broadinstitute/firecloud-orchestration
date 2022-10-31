@@ -62,7 +62,7 @@ object Dependencies {
 
     "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
 
-    "org.elasticsearch.client"       % "transport"           % "5.6.16" // pin to this version; it's the latest compatible with our elasticsearch server
+    "org.elasticsearch.client"       % "transport"           % "7.17.7" // pin to this version; it's the latest compatible with our elasticsearch server
       exclude("io.netty", "netty-codec")
       exclude("io.netty", "netty-transport")
       exclude("io.netty", "netty-resolver")
