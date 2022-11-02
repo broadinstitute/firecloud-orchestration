@@ -15,7 +15,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class eImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService with SprayJsonSupport {
+class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService with SprayJsonSupport {
 
   def actorRefFactory = system
 
