@@ -48,9 +48,9 @@ object FireCloudApiService extends LazyLogging {
         if (logger.underlying.isDebugEnabled) {
           logger.debug(e.getMessage, e)
         } else {
-          logger.error(e.getMessage)
+          logger.error(s"$e")
         }
-        complete(StatusCodes.InternalServerError -> ErrorReport(e))
+        complete(StatusCodes.InternalServerError)
     }
   }
 }
