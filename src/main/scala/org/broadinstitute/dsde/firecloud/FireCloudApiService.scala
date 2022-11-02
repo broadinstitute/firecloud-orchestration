@@ -50,7 +50,8 @@ object FireCloudApiService extends LazyLogging {
         } else {
           logger.error(s"$e")
         }
-        complete(StatusCodes.InternalServerError)
+        // ErrorReport.apply with "message" kwarg. is specifically used to mute Stack Trace output in HTTP Error Responses
+        complete(StatusCodes.InternalServerError -> ErrorReport(message="An error occurred. Please see logs for more details."))
     }
   }
 }
