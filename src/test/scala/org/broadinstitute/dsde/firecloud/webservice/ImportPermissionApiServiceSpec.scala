@@ -90,18 +90,19 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
         responseAs[UserImportPermission].writableWorkspace shouldBe false
       }
     }
+
     "should propagate an error if the call to get workspaces fails" in {
       Get(endpoint) ~> dummyUserIdHeaders("userid","thisWillError;hasProjects") ~> sealRoute(userServiceRoutes) ~> check {
         status should equal(InternalServerError)
         val err:ErrorReport = responseAs[ErrorReport]
-        err.message shouldBe "An error occurred. Please see logs for more details."
+        err.message shouldBe "intentional exception for getWorkspaces catchall case"
       }
     }
     "should propagate an error if the call to get billing projects fails" in {
       Get(endpoint) ~> dummyUserIdHeaders("userid","hasWorkspaces;thisWillError") ~> sealRoute(userServiceRoutes) ~> check {
         status should equal(InternalServerError)
         val err:ErrorReport = responseAs[ErrorReport]
-        err.message shouldBe "An error occurred. Please see logs for more details."
+        err.message shouldBe "intentional exception for getProjects catchall case"
       }
     }
   }
