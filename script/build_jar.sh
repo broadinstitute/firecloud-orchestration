@@ -6,7 +6,7 @@
 set -e
 
 # Set for versioning the jar
-GIT_MODEL_HASH=$(git rev-parse --short origin/${BRANCH})
+GIT_MODEL_HASH=$(git log -n 1 --pretty=format:%h)
 
 docker run --rm -e GIT_MODEL_HASH=${GIT_MODEL_HASH} \
   -v $PWD:/working \
