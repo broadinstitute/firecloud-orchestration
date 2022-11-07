@@ -8139,16 +8139,15 @@ components:
             type: string
           description: the roles the caller has on the project
         status:
-          deprecated: true
           type: string
           enum:
             - Creating
             - Ready
             - Error
             - AddingToPerimeter
+            - CreatingLandingZone
           description: the status of allocating the billing project's resources.
         message:
-          deprecated: true
           type: string
           description: informational message about the project
         azureManagedAppCoordinates:
