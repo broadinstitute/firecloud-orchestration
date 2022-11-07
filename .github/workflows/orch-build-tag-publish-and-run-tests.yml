@@ -1,5 +1,4 @@
 # Github action to Build Orch, add/promote semantic tagging and then run tests
-#
 
 name: orch-build-tag-publish-and-run-tests
 
@@ -88,7 +87,8 @@ jobs:
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          inputs: '{ "bee-name": "${{ github.event.repository.name }}-${{ github.run_id }}-${{ matrix.terra-env }}", "version-template": "${{ matrix.terra-env }}", "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}" }'
+          # Note: There is a hard limit of bee-name not exceeding 32 characters
+          inputs: '{ "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}", "version-template": "${{ matrix.terra-env }}", "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}" }'
 
   orch-swat-test-job:
     strategy:
@@ -109,7 +109,7 @@ jobs:
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          inputs: '{ "bee-name": "${{ github.event.repository.name }}-${{ github.run_id }}-${{ matrix.terra-env }}", "ENV": "${{ matrix.testing-env }}" }'
+          inputs: '{ "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}", "ENV": "${{ matrix.testing-env }}" }'
 
   destroy-bee-workflow:
     strategy:
@@ -130,4 +130,4 @@ jobs:
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          inputs: '{ "bee-name": "${{ github.event.repository.name }}-${{ github.run_id }}-${{ matrix.terra-env }}" }'
+          inputs: '{ "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}" }'
