@@ -7,7 +7,7 @@ on:
     paths-ignore: ['**.md']
   push:
     branches:
-      - DDO-2379
+      - develop
     paths-ignore: ['**.md']
 
 jobs:
