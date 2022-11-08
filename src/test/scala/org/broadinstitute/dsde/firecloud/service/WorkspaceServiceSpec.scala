@@ -59,19 +59,21 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val workspaceNamespace = "projectowner"
       val rqComplete = Await.
         result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
-        asInstanceOf[RequestComplete[Option[String]]]
-      val workspaceDeleteResponse = rqComplete.response
+        asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
+      val (status, workspaceDeleteResponse) = rqComplete.response
       workspaceDeleteResponse.isDefined should be (true)
+      status should be (StatusCodes.Accepted)
     }
 
     "should delete a published workspace successfully" in {
       val workspaceNamespace = "unpublishsuccess"
       val rqComplete = Await.
         result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
-        asInstanceOf[RequestComplete[Option[String]]]
-      val workspaceDeleteResponse = rqComplete.response
+        asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
+      val (status, workspaceDeleteResponse) = rqComplete.response
       workspaceDeleteResponse.isDefined should be (true)
       workspaceDeleteResponse.get should include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
+      status should be (StatusCodes.Accepted)
     }
 
     "should not delete a published workspace if un-publish fails" in {
