@@ -508,10 +508,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
 
-      s"OK status is returned for HTTP DELETE" in {
-        stubRawlsService(HttpMethods.DELETE, workspacesPath, OK)
+      s"Accepted status is returned for HTTP DELETE" in {
         new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-          status should equal(OK)
+          status should equal(Accepted)
         }
       }
     }
