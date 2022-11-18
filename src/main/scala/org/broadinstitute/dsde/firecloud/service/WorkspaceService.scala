@@ -186,7 +186,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
         Future.successful(wsResponse.workspace)
       unpublishFuture flatMap { ws =>
         rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
-          RequestComplete(Some(List(wsResponse.getOrElse(""), unPublishSuccessMessage(ns, name)).mkString(" ")))
+          RequestComplete(StatusCodes.Accepted, Some(List(wsResponse.getOrElse(""), unPublishSuccessMessage(ns, name)).mkString(" ")))
         }
       } recover {
         case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
