@@ -36,7 +36,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.19.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.4",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.5",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
