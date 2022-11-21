@@ -77,7 +77,7 @@ object Dependencies {
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.1.1",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.1.2",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
