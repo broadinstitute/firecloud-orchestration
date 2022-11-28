@@ -185,6 +185,7 @@ class MockRawlsDAO extends RawlsDAO {
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -217,6 +218,7 @@ class MockRawlsDAO extends RawlsDAO {
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -260,6 +262,7 @@ class MockRawlsDAO extends RawlsDAO {
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -284,7 +287,8 @@ class MockRawlsDAO extends RawlsDAO {
       googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
       billingAccount = Some(RawlsBillingAccountName("billingAccount")),
       completedCloneWorkspaceFileTransfer = Option(DateTime.now()),
-      workspaceType = None
+      workspaceType = None,
+      cloudPlatform = None
     )
   }
 
@@ -485,5 +489,5 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
 
-  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None))
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None, None))
 }
