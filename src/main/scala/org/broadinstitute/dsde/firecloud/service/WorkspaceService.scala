@@ -197,7 +197,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
       // from the auth domain group(s). A user is allowed to delete these workspaces, but not view them. Because Orchestration
       // has the extra step to get and unpublish a workspace, that would cause the above rawlsDAO.getWorkspace call to fail, thus
       // preventing the user from deleting the workspace. They could delete the workspace by calling Rawls directly because it does not
-      // bother unpublishing a workspace (that is strictly an Orch concept), but that is not a friendly UX, and we want to make our best
+      // bother with unpublishing a workspace (that is strictly an Orch concept), but that is not a friendly UX, and we want to make our best
       // attempt to unpublish the workspace if possible, although it is not critical. It is unlikely that this recoverWith would be
       // reached for a published workspace anyway.
       case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) => {
