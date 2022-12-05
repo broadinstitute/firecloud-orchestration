@@ -1,11 +1,11 @@
 import sbt._
 
 object Dependencies {
-  val akkaV = "2.5.32"
+  val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.82.Final"
+  val nettyV = "4.1.84.Final"
   val workbenchLibsHash = "20f9225"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -29,9 +29,7 @@ object Dependencies {
     // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     // TODO: can these move to sbt's dependencyOverrides?
-    "io.netty"                       % "netty-codec"         % nettyV,
-    "io.netty"                       % "netty-codec-http"    % nettyV,
-    "io.netty"                       % "netty-handler"       % nettyV,
+    "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
     "com.google.guava"               % "guava"               % "31.1-jre",
     // END transitive dependency overrides
@@ -43,7 +41,7 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-e0584dbdc")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-902d77f8-SNAP")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
@@ -53,6 +51,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.24-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.3-$workbenchLibsHash",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -93,7 +92,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.124.17" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.124.18" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }

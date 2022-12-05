@@ -48,9 +48,10 @@ object FireCloudApiService extends LazyLogging {
         if (logger.underlying.isDebugEnabled) {
           logger.debug(e.getMessage, e)
         } else {
-          logger.error(e.getMessage)
+          logger.error(e.toString)
         }
-        complete(StatusCodes.InternalServerError -> ErrorReport(e))
+        // ErrorReport.apply with "message" kwarg. is specifically used to mute Stack Trace output in HTTP Error Responses
+        complete(StatusCodes.InternalServerError -> ErrorReport(message=e.getMessage))
     }
   }
 }
