@@ -186,11 +186,24 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
         Future.successful(wsResponse.workspace)
       unpublishFuture flatMap { ws =>
         rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
-          RequestComplete(Some(List(wsResponse.getOrElse(""), unPublishSuccessMessage(ns, name)).mkString(" ")))
+          RequestComplete(StatusCodes.Accepted, Some(List(wsResponse.getOrElse(""), unPublishSuccessMessage(ns, name)).mkString(" ")))
         }
       } recover {
         case e: FireCloudExceptionWithErrorReport => RequestComplete(e.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError), ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}"))
         case e: Throwable => RequestComplete(StatusCodes.InternalServerError, ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}"))
+      }
+    } recoverWith {
+      // This case is only possible when a user owns a workspace, but has lost access to it because they have been removed
+      // from the auth domain group(s). A user is allowed to delete these workspaces, but not view them. Because Orchestration
+      // has the extra step to get and unpublish a workspace, that would cause the above rawlsDAO.getWorkspace call to fail, thus
+      // preventing the user from deleting the workspace. They could delete the workspace by calling Rawls directly because it does not
+      // bother with unpublishing a workspace (that is strictly an Orch concept), but that is not a friendly UX, and we want to make our best
+      // attempt to unpublish the workspace if possible, although it is not critical. It is unlikely that this recoverWith would be
+      // reached for a published workspace anyway.
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) => {
+        rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+          RequestComplete(StatusCodes.Accepted, Some(wsResponse.getOrElse("")))
+        }
       }
     }
   }

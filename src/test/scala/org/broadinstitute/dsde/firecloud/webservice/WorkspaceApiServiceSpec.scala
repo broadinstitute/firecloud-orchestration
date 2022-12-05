@@ -51,6 +51,7 @@ object WorkspaceApiServiceSpec {
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -78,6 +79,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -142,6 +144,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -163,6 +166,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -184,6 +188,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -230,7 +235,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None, None)
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -252,7 +257,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
     val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None)
+    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None, None)
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -508,10 +513,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
 
-      s"OK status is returned for HTTP DELETE" in {
-        stubRawlsService(HttpMethods.DELETE, workspacesPath, OK)
+      s"Accepted status is returned for HTTP DELETE" in {
         new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-          status should equal(OK)
+          status should equal(Accepted)
         }
       }
     }
