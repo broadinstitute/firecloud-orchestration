@@ -93,6 +93,7 @@ object Dependencies {
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
     "com.google.cloud"               % "google-cloud-nio"    % "0.124.18" % "test",
+    "com.google.cloud"              % "google-cloud-storage" % "2.15.1",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
