@@ -5,7 +5,7 @@ import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudException}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.BeforeAndAfterEach
@@ -59,19 +59,21 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val workspaceNamespace = "projectowner"
       val rqComplete = Await.
         result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
-        asInstanceOf[RequestComplete[Option[String]]]
-      val workspaceDeleteResponse = rqComplete.response
+        asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
+      val (status, workspaceDeleteResponse) = rqComplete.response
       workspaceDeleteResponse.isDefined should be (true)
+      status should be (StatusCodes.Accepted)
     }
 
     "should delete a published workspace successfully" in {
       val workspaceNamespace = "unpublishsuccess"
       val rqComplete = Await.
         result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
-        asInstanceOf[RequestComplete[Option[String]]]
-      val workspaceDeleteResponse = rqComplete.response
+        asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
+      val (status, workspaceDeleteResponse) = rqComplete.response
       workspaceDeleteResponse.isDefined should be (true)
       workspaceDeleteResponse.get should include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
+      status should be (StatusCodes.Accepted)
     }
 
     "should not delete a published workspace if un-publish fails" in {
@@ -81,6 +83,17 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         asInstanceOf[RequestComplete[(StatusCode, ErrorReport)]]
       val (status, error) = rqComplete.response
       status should be (StatusCodes.InternalServerError)
+    }
+
+    "should delete a workspace and skip unpublishing if a user has lost access to view a workspace" in {
+      val workspaceNamespace = "deleteWithoutUnpublish"
+      val rqComplete = Await.
+        result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf).
+        asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
+      val (status, workspaceDeleteResponse) = rqComplete.response
+      workspaceDeleteResponse.isDefined should be (true)
+      workspaceDeleteResponse.get should not include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
+      status should be (StatusCodes.Accepted)
     }
   }
 }
@@ -110,6 +123,7 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
     ns match {
       case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
+      case "deleteWithoutUnpublish" => Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(source = "Mock Rawls", message = "You do not have access to view this workspace or it does not exist", statusCode = Some(StatusCodes.NotFound), causes = Seq.empty, stackTrace = Seq.empty, exceptionClass = None)))
       case "projectowner" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.ProjectOwner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None))
       case "unpublishsuccess" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishsuccess, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None))
       case "unpublishfailure" => Future(WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(true), canCompute = Some(true), catalog = Some(false), unpublishfailure, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None))
