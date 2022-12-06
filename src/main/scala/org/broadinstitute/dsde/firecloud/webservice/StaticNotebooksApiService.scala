@@ -32,7 +32,7 @@ trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInf
     }
   }
 
-  val staticNotebooksRoutes: Route = {
+  val staticRmdRoutes: Route = {
     path("staticRmd" / "convert") {
       requireUserInfo() { userInfo =>
         post {
