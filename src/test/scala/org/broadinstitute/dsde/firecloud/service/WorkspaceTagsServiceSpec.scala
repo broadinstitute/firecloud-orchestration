@@ -321,6 +321,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
