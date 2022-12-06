@@ -3013,7 +3013,7 @@ paths:
       x-passthrough-target: calhoun
       x-codegen-request-body-name: notebook
 
-  /api/staticRMarkdown/convert:
+  /api/staticRmd/convert:
     post:
       tags:
         - Static R Markdown files
