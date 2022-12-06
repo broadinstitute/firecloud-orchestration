@@ -3012,6 +3012,55 @@ paths:
       x-passthrough: true
       x-passthrough-target: calhoun
       x-codegen-request-body-name: notebook
+
+  /api/staticRMarkdown/convert:
+    post:
+      tags:
+        - Static R Markdown files
+      summary: |
+        Converts an R Markdown file to HTML. Accepts the content of an .Rmd file in the request body.
+      description: |
+        Converts an R Markdown file to HTML. Accepts the content of an .Rmd file in the request body.
+      operationId: convertRmd
+      requestBody:
+        description: R Markdown file
+        content:
+          text/plain:
+            schema:
+              type: string
+              format: binary
+              example: |
+                ---
+                title: "test-rmd"
+                output: html_document
+                ---
+                ```{r setup, include=FALSE}
+                knitr::opts_chunk$set(echo = TRUE)
+                ```
+                ## R Markdown
+                This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+                When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+                ```{r cars}
+                summary(cars)
+                ```
+                ## Including Plots
+                You can also embed plots, for example:
+                ```{r pressure, echo=FALSE}
+                plot(pressure)
+                ```
+                Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+        required: true
+      responses:
+        200:
+          description: Success
+          content: { }
+        500:
+          description: Internal Error
+          content: { }
+      x-passthrough: true
+      x-passthrough-target: calhoun
+      x-codegen-request-body-name: rmd
+
   /api/storage/{bucket}/{object}:
     get:
       tags:
