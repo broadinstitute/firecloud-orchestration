@@ -89,7 +89,8 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
     googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
     billingAccount = Some(RawlsBillingAccountName("billingAccount")),
     completedCloneWorkspaceFileTransfer = Some(DateTime.now()),
-    workspaceType = None
+    workspaceType = None,
+    cloudPlatform = None
   )
 
 
@@ -833,6 +834,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           Some(RawlsBillingAccountName("billingAccount")),
           None,
           Option(DateTime.now()),
+          None,
           None
         )
 

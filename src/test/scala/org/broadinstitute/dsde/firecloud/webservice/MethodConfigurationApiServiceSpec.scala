@@ -39,6 +39,7 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
