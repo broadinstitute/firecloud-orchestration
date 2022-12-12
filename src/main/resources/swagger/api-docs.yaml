@@ -9192,7 +9192,6 @@ components:
         - workspaceId
         - googleProject
         - workspaceVersion
-        - cloudPlatform
       type: object
       properties:
         attributes:
