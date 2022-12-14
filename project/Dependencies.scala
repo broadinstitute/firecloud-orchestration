@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.84.Final"
+  val nettyV = "4.1.85.Final"
   val workbenchLibsHash = "20f9225"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -41,7 +41,7 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-902d77f8-SNAP")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-04a7a76b")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
@@ -92,7 +92,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.124.18" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.124.21" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
