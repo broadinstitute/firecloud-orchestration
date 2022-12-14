@@ -38,6 +38,7 @@ object MockWorkspaceServer {
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 
@@ -59,6 +60,7 @@ object MockWorkspaceServer {
     Some(RawlsBillingAccountName("billingAccount")),
     None,
     Option(DateTime.now()),
+    None,
     None
   )
 

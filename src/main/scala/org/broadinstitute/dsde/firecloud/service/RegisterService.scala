@@ -6,10 +6,11 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.rawls.model.Notifications.{ActivationNotification, NotificationFormat}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserSubjectId}
+import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, NotificationFormat}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport}
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
+import org.broadinstitute.dsde.workbench.model.WorkbenchUserId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -54,7 +55,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def registerUser(userInfo: UserInfo, termsOfService: Option[String]): Future[RegistrationInfo] = {
     for {
       registrationInfo <- samDao.registerUser(termsOfService)(userInfo)
-      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(ActivationNotification(RawlsUserSubjectId(userInfo.id))).compactPrint))
+      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(ActivationNotification(WorkbenchUserId(userInfo.id))).compactPrint))
     } yield {
       registrationInfo
     }
