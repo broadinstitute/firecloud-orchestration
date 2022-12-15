@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.84.Final"
+  val nettyV = "4.1.85.Final"
   val workbenchLibsHash = "20f9225"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -36,7 +36,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.19.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.4",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.5",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
@@ -78,7 +78,7 @@ object Dependencies {
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.1.1",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.1.2",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
@@ -92,7 +92,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.124.18" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.124.21" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
