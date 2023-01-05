@@ -80,6 +80,7 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
             passthrough(samTosDetailsUrl, GET)
           }
         }
+      }
     }
   }
 }
