@@ -60,19 +60,19 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
               passthrough(samTosBaseUrl, POST)
             }
           } ~
-            delete {
-              requireUserInfo() { _ =>
-                passthrough(samTosBaseUrl, DELETE)
-              }
-            }
-        } ~
-          path("status") {
-            get {
-              requireUserInfo() { _ =>
-                passthrough(samTosStatusUrl, GET)
-              }
+          delete {
+            requireUserInfo() { _ =>
+              passthrough(samTosBaseUrl, DELETE)
             }
           }
+        } ~
+        path("status") {
+          get {
+            requireUserInfo() { _ =>
+              passthrough(samTosStatusUrl, GET)
+            }
+          }
+        }
       }
       pathPrefix("v2" / "self" / "termsOfServiceDetails") {
         get {
