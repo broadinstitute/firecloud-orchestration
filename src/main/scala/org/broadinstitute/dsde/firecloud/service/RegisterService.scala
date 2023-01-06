@@ -18,6 +18,7 @@ object RegisterService {
   val samTosTextUrl = s"${Sam.baseUrl}/tos/text"
   val samTosBaseUrl = s"${Sam.baseUrl}/register/user/v1/termsofservice"
   val samTosStatusUrl = s"${samTosBaseUrl}/status"
+  val samTosDetailsUrl = s"${Sam.baseUrl}/register/user/v2/self/termsOfServiceDetails"
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)
