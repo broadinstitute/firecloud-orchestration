@@ -6209,19 +6209,6 @@ paths:
         404:
           description: User Not Found.
           content: { }
-  /register/user/v2/self/termsOfServiceDetails:
-    get:
-      tags:
-        - Terms of Service
-      summary: gets terms of service details, including user's accepted version
-      operationId: getTermsOfServiceDetails
-      responses:
-        200:
-          description: success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TermsOfServiceDetails'
   /ga4gh/v1/tools/{id}:
     get:
       tags:
@@ -9915,27 +9902,6 @@ components:
         currentBillingAccountOnGoogleProject:
           type: string
           description: the billing project associated with the workspace
-    TermsOfServiceDetails:
-      required:
-        - isEnabled
-        - isGracePeriodEnabled
-        - currentVersion
-        - userAcceptedVersion
-      type: object
-      properties:
-        isEnabled:
-          type: boolean
-          description: true if terms of service is enforced in Sam
-        isGracePeriodEnabled:
-          type: boolean
-          description: true if there is currently a grace period enabled,
-            letting users use the system without accepting the terms of service
-        currentVersion:
-          type: string
-          description: the current version of terms of service for the system
-        userAcceptedVersion:
-          type: string
-          description: the version of the terms of service the user has accepted
   parameters:
     AttributeNamePathParam:
       name: attributeName
