@@ -73,7 +73,7 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
             }
           }
         }
-      }
+      } ~
       pathPrefix("v2" / "self" / "termsOfServiceDetails") {
         get {
           requireUserInfo() { _ =>
