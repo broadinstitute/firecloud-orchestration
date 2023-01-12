@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.directives.{BasicDirectives, RouteDirectives}
 import akka.stream.scaladsl.{Sink, Source}
 import com.google.common.net.UrlEscapers
 import com.typesafe.scalalogging.Logger
-import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.slf4j.LoggerFactory
 
@@ -92,7 +92,6 @@ trait StreamingPassthrough
   def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri)(req: HttpRequest): HttpRequest = {
     // Convert the URI to the one suitable for the remote system
     val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri)
-
     // Remove unwanted headers:
     // Timeout-Access: Akka automatically adds a Timeout-Access to the request
     // for internal use in managing timeouts; see akka.http.server.request-timeout.
@@ -112,6 +111,25 @@ trait StreamingPassthrough
 
     // return a copy of the inbound request, using the new URI and new headers.
     req.withUri(targetUri).withHeaders(targetHeaders)
+  }
+
+  // TODO: get feedback on this method. Not happy having rawls specific request handling here (rather have it on CromiamApiService)
+  /**
+   * Private method that modifies the requestPath for the one workflow passthrough to Rawls
+   * due to the fact that the Rawls endpoint has a different URI construction, making suffix
+   * passthroughs inept
+   * @param requestUri
+   * @param remoteBaseUri
+   * @return the requestPath (String) suitable to be sent to the remote system
+   */
+  private def requestStringConstruction(requestUri: Uri, remoteBaseUri: Uri) : String = {
+    val requestPath = requestUri.path.toString
+    if (
+        FireCloudConfig.Rawls.authUrl.contains(remoteBaseUri.authority.toString()) &&
+        requestPath.contains("/backend/metadata/")
+    ) {
+      requestPath.replace("backend/metadata", "genomics")
+    } else requestPath
   }
 
   /**
@@ -135,9 +153,8 @@ trait StreamingPassthrough
 
     // find every part of the actual request path, minus the base.
     val baseString = localBasePath.toString
-    val requestString = requestUri.path.toString
+    val requestString = requestStringConstruction(requestUri, remoteBaseUri)
     val remainder = Uri.Path(requestString.replaceFirst(baseString, ""))
-
     // append the remainder to the remoteBaseUri's path
     val remotePath = remoteBaseUri.path ++ remainder
 
