@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.directives.{BasicDirectives, RouteDirectives}
 import akka.stream.scaladsl.{Sink, Source}
 import com.google.common.net.UrlEscapers
 import com.typesafe.scalalogging.Logger
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.slf4j.LoggerFactory
 
@@ -66,7 +66,7 @@ trait StreamingPassthrough
     *   - call the remote system and reply to the user via `routeResponse` streaming
    */
   private def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri): Route = {
-    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri)) {
+    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, None)) {
       extractRequest { req =>
         complete {
           routeResponse(req)
@@ -75,6 +75,19 @@ trait StreamingPassthrough
     }
   }
 
+  /**
+   * The Rawls passthrough implementation:
+   *   - Similar to the passthroughImpl except it supplies a remotePath to be used in downstream uri construction
+   */
+  def rawlsPassthrough(localBasePath: Uri.Path, remoteBaseUri: Uri, rawlsPath: String): Route = {
+    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, Option(rawlsPath))) {
+      extractRequest { req =>
+        complete {
+          routeResponse(req)
+        }
+      }
+    }
+  }
 
   /**
     * Accepts an http request from an end user to Orchestration,
@@ -89,9 +102,9 @@ trait StreamingPassthrough
     * @param req the request inbound to Orchestration
     * @return the outbound request to be sent to another service
     */
-  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri)(req: HttpRequest): HttpRequest = {
+  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePath: Option[String])(req: HttpRequest): HttpRequest = {
     // Convert the URI to the one suitable for the remote system
-    val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri)
+    val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri, remotePath)
     // Remove unwanted headers:
     // Timeout-Access: Akka automatically adds a Timeout-Access to the request
     // for internal use in managing timeouts; see akka.http.server.request-timeout.
@@ -113,25 +126,6 @@ trait StreamingPassthrough
     req.withUri(targetUri).withHeaders(targetHeaders)
   }
 
-  // TODO: get feedback on this method. Not happy having rawls specific request handling here (rather have it on CromiamApiService)
-  /**
-   * Private method that modifies the requestPath for the one workflow passthrough to Rawls
-   * due to the fact that the Rawls endpoint has a different URI construction, making suffix
-   * passthroughs inept
-   * @param requestUri
-   * @param remoteBaseUri
-   * @return the requestPath (String) suitable to be sent to the remote system
-   */
-  private def requestStringConstruction(requestUri: Uri, remoteBaseUri: Uri) : String = {
-    val requestPath = requestUri.path.toString
-    if (
-        FireCloudConfig.Rawls.authUrl.contains(remoteBaseUri.authority.toString()) &&
-        requestPath.contains("/backend/metadata/")
-    ) {
-      requestPath.replace("backend/metadata", "genomics")
-    } else requestPath
-  }
-
   /**
     * Inspects the URI for an actual end-user request to Orchestration, finds the portion
     * of that Uri after the localBasePath, and appends that remainder to the remoteBaseUri.
@@ -141,9 +135,10 @@ trait StreamingPassthrough
     * @param requestUri the end-user's request to Orchestration
     * @param localBasePath the portion of the path to strip off
     * @param remoteBaseUri the remote system to use as passthrough target
+    * @param modifiedRemotePath a modified path value to be used over requestUri.path.toString if provided
     * @return the URI suitable for sending to the remote system
     */
-  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri): Uri = {
+  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri, modifiedRemotePath: Option[String]): Uri = {
     // Ensure the incoming request starts with the localBasePath. Abort if it doesn't.
     // This condition should only be caused by developer error in which the streamingPassthrough
     // directive is incorrectly configured inside a route.
@@ -153,7 +148,7 @@ trait StreamingPassthrough
 
     // find every part of the actual request path, minus the base.
     val baseString = localBasePath.toString
-    val requestString = requestStringConstruction(requestUri, remoteBaseUri)
+    val requestString = if(modifiedRemotePath.isEmpty) requestUri.path.toString() else modifiedRemotePath.get
     val remainder = Uri.Path(requestString.replaceFirst(baseString, ""))
     // append the remainder to the remoteBaseUri's path
     val remotePath = remoteBaseUri.path ++ remainder

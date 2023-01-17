@@ -5,7 +5,6 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloud
 import org.broadinstitute.dsde.firecloud.utils.{StandardUserInfoDirectives, StreamingPassthrough}
 import akka.http.scaladsl.model.{HttpMethods, Uri}
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.Directives._
 
 trait CromIamApiService extends FireCloudRequestBuilding
   with FireCloudDirectives with StandardUserInfoDirectives
@@ -21,13 +20,13 @@ trait CromIamApiService extends FireCloudRequestBuilding
   // Adam Nichols, 2019-02-04
 
   val cromIamApiServiceRoutes: Route = {
+    val localBase = s"/api/workflows/v1"
+    pathPrefix("workflows" / Segment / Segment / "backend" / "metadata" / Segments) {(version, workflowId, operationSegments) =>
+      val suffix = operationSegments.mkString("/")
+      rawlsPassthrough(Uri.Path(localBase), Uri(rawlsWorkflowRoot), s"/${workflowId}/genomics/${suffix}")
+    } ~
     pathPrefix( "workflows" / Segments ) { segmentsArr =>
-      // TODO: get feedback on this method
-      // There is one endpoint that is meant to be redirected to rawls and not cromIAM ("/backend/metadata/" substring present)
-      // Root assignment can be handled here, curious if there's any way to handle req.path modifications here as well
-      val suffix = segmentsArr.mkString("/")
-      val root = if (suffix.contains("/backend/metadata/")) rawlsWorkflowRoot else workflowRoot
-      streamingPassthrough(Uri.Path(s"/api/workflows/v1") -> Uri(root))
+      streamingPassthrough(Uri.Path(localBase) -> Uri(workflowRoot))
     } ~
     pathPrefix( "womtool" / Segment ) { _ =>
       path( "describe" ) {
