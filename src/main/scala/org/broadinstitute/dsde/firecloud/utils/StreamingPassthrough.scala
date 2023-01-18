@@ -56,7 +56,7 @@ trait StreamingPassthrough
     *                           to use as target for passthrough requests.
     */
   def streamingPassthrough(passthroughMapping: (Uri.Path, Uri)): Route = {
-    passthroughImpl(passthroughMapping._1, passthroughMapping._2, None)
+    passthroughImpl(passthroughMapping._1, passthroughMapping._2)
   }
 
   /**
