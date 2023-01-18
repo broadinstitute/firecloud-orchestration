@@ -125,7 +125,7 @@ trait StreamingPassthrough
     * @param modifiedRemotePath a modified path value to be used over requestUri.path.toString if provided
     * @return the URI suitable for sending to the remote system
     */
-  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri, modifiedRemotePath: Option[String]): Uri = {
+  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri, modifiedRemotePath: Option[String] = None): Uri = {
     // Ensure the incoming request starts with the localBasePath. Abort if it doesn't.
     // This condition should only be caused by developer error in which the streamingPassthrough
     // directive is incorrectly configured inside a route.
