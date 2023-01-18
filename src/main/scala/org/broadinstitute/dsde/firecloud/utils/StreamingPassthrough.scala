@@ -89,7 +89,7 @@ trait StreamingPassthrough
     * @param req the request inbound to Orchestration
     * @return the outbound request to be sent to another service
     */
-  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePath: Option[String])(req: HttpRequest): HttpRequest = {
+  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePath: Option[String] = None)(req: HttpRequest): HttpRequest = {
     // Convert the URI to the one suitable for the remote system
     val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri, remotePath)
     // Remove unwanted headers:
