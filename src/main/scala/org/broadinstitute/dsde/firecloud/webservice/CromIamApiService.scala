@@ -23,7 +23,7 @@ trait CromIamApiService extends FireCloudRequestBuilding
     val localBase = s"/api/workflows/v1"
     pathPrefix("workflows" / Segment / Segment / "backend" / "metadata" / Segments) {(version, workflowId, operationSegments) =>
       val suffix = operationSegments.mkString("/")
-      rawlsPassthrough(Uri.Path(localBase), Uri(rawlsWorkflowRoot), s"/${workflowId}/genomics/${suffix}")
+      passthroughImpl(Uri.Path(localBase), Uri(rawlsWorkflowRoot), Option(s"/${workflowId}/genomics/${suffix}"))
     } ~
     pathPrefix( "workflows" / Segments ) { segmentsArr =>
       streamingPassthrough(Uri.Path(localBase) -> Uri(workflowRoot))

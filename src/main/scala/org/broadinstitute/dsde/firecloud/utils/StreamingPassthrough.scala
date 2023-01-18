@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.directives.{BasicDirectives, RouteDirectives}
 import akka.stream.scaladsl.{Sink, Source}
 import com.google.common.net.UrlEscapers
 import com.typesafe.scalalogging.Logger
-import org.broadinstitute.dsde.firecloud.{FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.slf4j.LoggerFactory
 
@@ -56,31 +56,18 @@ trait StreamingPassthrough
     *                           to use as target for passthrough requests.
     */
   def streamingPassthrough(passthroughMapping: (Uri.Path, Uri)): Route = {
-    passthroughImpl(passthroughMapping._1, passthroughMapping._2)
+    passthroughImpl(passthroughMapping._1, passthroughMapping._2, None)
   }
 
   /**
     * The passthrough implementation:
     *   - `mapRequest` to transform the incoming request to what we want to send to the remote system
     *   - `extractRequest` so we have the transformed request as an object
+   *    - `remotePathOverride` to provide a pre-configured path if remote path structure is different from local
     *   - call the remote system and reply to the user via `routeResponse` streaming
    */
-  private def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri): Route = {
-    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, None)) {
-      extractRequest { req =>
-        complete {
-          routeResponse(req)
-        }
-      }
-    }
-  }
-
-  /**
-   * The Rawls passthrough implementation:
-   *   - Similar to the passthroughImpl except it supplies a remotePath to be used in downstream uri construction
-   */
-  def rawlsPassthrough(localBasePath: Uri.Path, remoteBaseUri: Uri, rawlsPath: String): Route = {
-    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, Option(rawlsPath))) {
+  def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePathOverride: Option[String] = None): Route = {
+    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, remotePathOverride)) {
       extractRequest { req =>
         complete {
           routeResponse(req)
@@ -148,7 +135,7 @@ trait StreamingPassthrough
 
     // find every part of the actual request path, minus the base.
     val baseString = localBasePath.toString
-    val requestString = if(modifiedRemotePath.isEmpty) requestUri.path.toString() else modifiedRemotePath.get
+    val requestString = modifiedRemotePath.getOrElse(requestUri.path.toString())
     val remainder = Uri.Path(requestString.replaceFirst(baseString, ""))
     // append the remainder to the remoteBaseUri's path
     val remotePath = remoteBaseUri.path ++ remainder
