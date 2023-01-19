@@ -60,13 +60,28 @@ trait StreamingPassthrough
   }
 
   /**
+   * Passes through, to a remote server, all requests that match or start with the
+   * supplied local path with a supplied remotePath for remote Uri construction
+   *
+   * @param passthroughMapping in the form `localBasePath -> remoteBaseUri`, where
+   *                           the localBasePath is the Orchestration-local path
+   *                           which must be matched for passthroughs, and remoteBaseUri
+   *                           is the fully-qualified URL to a remote system
+   *                           to use as target for passthrough requests.
+   *  @param pathOverride as the pre-defined path to use when constructing the remote path value
+   */
+  def streamingPassthroughWithPathRedirect(passthroughMapping: (Uri.Path, Uri), pathOverride: String): Route = {
+    passthroughImpl(passthroughMapping._1, passthroughMapping._2, Option(pathOverride))
+  }
+
+  /**
     * The passthrough implementation:
     *   - `mapRequest` to transform the incoming request to what we want to send to the remote system
     *   - `extractRequest` so we have the transformed request as an object
    *    - `remotePathOverride` to provide a pre-configured path if remote path structure is different from local
     *   - call the remote system and reply to the user via `routeResponse` streaming
    */
-  def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePathOverride: Option[String] = None): Route = {
+  private def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePathOverride: Option[String] = None): Route = {
     mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, remotePathOverride)) {
       extractRequest { req =>
         complete {
