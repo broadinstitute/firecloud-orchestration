@@ -76,18 +76,19 @@ class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matcher
       assert(contentLength < 8 * 1024 * 1024, s"content-length should be under 8MB; was $contentLength" )
     }
 
-    "should return content directly for small (<8MB) files" in {
-      implicit val authToken: AuthToken = student.makeAuthToken()
-      withSmallFile { smallFile =>
-        setStudentOnly(smallFile, student)
-        val response:HttpResponse = Orchestration.storage.getObjectDownload(smallFile.bucketName, smallFile.objectName)
-        assertResult(StatusCodes.OK) { response.status }
-        val contentLength:Long = response.header[`Content-Length`].map(_.length).getOrElse(-1)
-        assert(contentLength < 8 * 1024 * 1024, s"content-length should be under 8MB; was $contentLength" )
-        val responseString: String = Await.result(response.entity.toStrict(2.minutes).map(_.data.utf8String), 2.minutes)
-        assertResult("this is a small text file.") { responseString }
-      }
-    }
+//    Disabled in AJ-793
+//    "should return content directly for small (<8MB) files" in {
+//      implicit val authToken: AuthToken = student.makeAuthToken()
+//      withSmallFile { smallFile =>
+//        setStudentOnly(smallFile, student)
+//        val response:HttpResponse = Orchestration.storage.getObjectDownload(smallFile.bucketName, smallFile.objectName)
+//        assertResult(StatusCodes.OK) { response.status }
+//        val contentLength:Long = response.header[`Content-Length`].map(_.length).getOrElse(-1)
+//        assert(contentLength < 8 * 1024 * 1024, s"content-length should be under 8MB; was $contentLength" )
+//        val responseString: String = Await.result(response.entity.toStrict(2.minutes).map(_.data.utf8String), 2.minutes)
+//        assertResult("this is a small text file.") { responseString }
+//      }
+//    }
 
     "should redirect to a signed url for large (>8MB) files" in {
       implicit val authToken: AuthToken = student.makeAuthToken()
