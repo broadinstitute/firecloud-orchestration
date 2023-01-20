@@ -1002,8 +1002,8 @@ paths:
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
     get:
       tags:
-        - CromIAM Workflows (for Job Manager)
-      summary: Get backend (e.g. PAPI) metadata for a job
+        - Rawls Workflows (for Job Manager)
+      summary: Get backend (e.g. PAPI, Google Life Sciences) metadata for a job
       parameters:
         - $ref: '#/components/parameters/versionParam'
         - name: id
