@@ -7144,7 +7144,33 @@ components:
             Sam.
         managedAppCoordinates:
           $ref: '#/components/schemas/AzureManagedAppCoordinates'
+        members:
+          description: The list of members to add to the billing project
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAccessUpdate'
+        inviteUsersNotFound:
+          description: If true, invite the users to Terra if they are not registered in the system. They will be given access to the project when they register.
+          type: boolean
       description: ""
+    ProjectRole:
+      description: the role on the billing project
+      type: string
+      enum:
+        - owner
+        - user
+    ProjectAccessUpdate:
+      required:
+        - email
+        - role
+      type: object
+      properties:
+        email:
+          description: the email of the member to modify access for
+          type: string
+        role:
+          description: the role to modify for the specified member
+          $ref: '#/components/schemas/ProjectRole'
     AzureManagedAppCoordinates:
       required:
         - tenantId
