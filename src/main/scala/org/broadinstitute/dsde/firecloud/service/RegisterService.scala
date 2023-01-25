@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, AzurePreviewActivationNotification, AzurePreviewActivationNotificationType, NotificationFormat}
+import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, AzurePreviewActivationNotification, AzurePreviewActivationNotificationType, Notification, NotificationFormat}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
@@ -53,15 +53,17 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     }
   }
 
-  private def registerUser(userInfo: UserInfo, termsOfService: Option[String]): Future[RegistrationInfo] = {
-    val notification = userInfo match {
-      case UserInfo(_, _, _, _, None) if userInfo.isB2C => NotificationFormat.write(AzurePreviewActivationNotification(WorkbenchUserId(userInfo.id)))
-      case _ => NotificationFormat.write(ActivationNotification(WorkbenchUserId(userInfo.id)))
+  def generateWelcomeEmail(userInfo: UserInfo): Notification = {
+    userInfo match {
+      case UserInfo(_, _, _, _, None) if userInfo.isB2C => AzurePreviewActivationNotification(WorkbenchUserId(userInfo.id))
+      case _ => ActivationNotification(WorkbenchUserId(userInfo.id))
     }
+  }
 
+  private def registerUser(userInfo: UserInfo, termsOfService: Option[String]): Future[RegistrationInfo] = {
     for {
       registrationInfo <- samDao.registerUser(termsOfService)(userInfo)
-      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(notification.compactPrint))
+      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
     } yield {
       registrationInfo
     }
