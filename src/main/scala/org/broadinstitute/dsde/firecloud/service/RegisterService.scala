@@ -54,6 +54,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   }
 
   def generateWelcomeEmail(userInfo: UserInfo): Notification = {
+    //If the user is a B2C user and does not have a Google access token, we can safely assume that they're an Azure user
     userInfo.googleAccessTokenThroughB2C match {
       case None if userInfo.isB2C => AzurePreviewActivationNotification(WorkbenchUserId(userInfo.id))
       case _ => ActivationNotification(WorkbenchUserId(userInfo.id))
