@@ -13,6 +13,7 @@ object Merging {
     case x if x.contains("javax/annotation") => MergeStrategy.first
 
     case x if x.endsWith("kotlin-stdlib.kotlin_module") => MergeStrategy.first
+    case x if x.contains("bouncycastle") => MergeStrategy.first
     case x if x.endsWith("kotlin-stdlib-common.kotlin_module") => MergeStrategy.first
     case x if x.endsWith("arrow-git.properties") => MergeStrategy.concat
 
