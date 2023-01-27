@@ -60,13 +60,19 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
             }
           } ~
             pathPrefix("id" / Segment) { workspaceId =>
-              pathEnd {
-                requireUserInfo() { _ =>
-                  extract(_.request.uri.query()) { query =>
-                    passthrough(Uri(rawlsWorkspacesRoot + "/id/%s".format(workspaceId)).withQuery(query), HttpMethods.GET)
+              get {
+                pathEnd {
+                  requireUserInfo() { _ =>
+                    extract(_.request.uri.query()) { query =>
+                      passthrough(Uri(rawlsWorkspacesRoot + "/id/%s".format(workspaceId)).withQuery(query), HttpMethods.GET)
+                    }
                   }
                 }
-              }
+              } ~
+                delete {
+                  complete(StatusCodes.MethodNotAllowed,
+                    ErrorReport("DELETE not allowed by workspace ID, see /api/workspaces/{workspaceNamespace}/{workspaceName} to delete by namespace and name."))
+                }
             } ~
             pathPrefix("tags") {
               pathEnd {
