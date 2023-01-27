@@ -3198,6 +3198,52 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
       x-codegen-request-body-name: workspace
+  /api/workspaces/id/{workspaceId}:
+    get:
+      tags:
+        - Workspaces
+      summary: Get workspace details by id
+      description: |
+        Get a single workspace's details, optionally filtered to only the specified fields. See additional GET methods in this section to retrieve additional details about the workspace. For instance, this API only returns the workspace's owners; use the GET .../acl method to retrieve the full list of all users at all permission levels.
+      operationId: getWorkspaceById
+      parameters:
+        - name: workspaceId
+          in: path
+          description: Workspace Id
+          required: true
+          schema:
+            type: string
+        - name: fields
+          in: query
+          description: |
+            When specified, include only these keys in the response payload and exclude other keys. Accepts a comma-delimited list of values. To include a nested key, specify the key's path using a dot delimiter; for example, to include {"workspace": {"attributes": {}}}, specify "workspace.attributes". Legal values are any first-level key in the response, any first-level key inside the {"workspace": {}} object, and any first-level key inside the {"workspace": {"attributes": {}}} object. If omitted, will return the full response payload.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        400:
+          description: Unrecognized query parameters
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
   /api/workspaces/{workspaceNamespace}/{workspaceName}:
     get:
       tags:
