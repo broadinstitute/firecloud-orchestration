@@ -1,6 +1,9 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+
+import scala.util.Try
+
 /**
  * Created by dvoet on 7/21/15.
  *
@@ -16,10 +19,22 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
   *  This is so that we can use AccessToken for cookies we get from the browser, which do not come with the fields in
   *  UserInfo.
  */
+
 trait WithAccessToken { val accessToken : OAuth2BearerToken }
 
-case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String) extends WithAccessToken {
-  def getUniqueId = id
+/**
+  * Represents an authenticated user.
+  * @param userEmail the user's email address. Resolved to the owner if the request is from a pet.
+  * @param accessToken the user's access token. Either a B2C JWT or a Google opaque token.
+  * @param accessTokenExpiresIn number of seconds until the access token expires.
+  * @param id the user id. Either a Google id (numeric) or a B2C id (uuid).
+  * @param googleAccessTokenThroughB2C if this is a Google login through B2C, contains the opaque
+  *                                    Google access token. Empty otherwise.
+  */
+case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String, googleAccessTokenThroughB2C: Option[OAuth2BearerToken] = None) extends WithAccessToken {
+  def isB2C: Boolean =
+  // B2C ids are uuids, while google ids are numeric
+    Try(BigInt(id)).isFailure
 }
 
 object UserInfo {
