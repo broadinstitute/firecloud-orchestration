@@ -59,6 +59,15 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               }
             }
           } ~
+            pathPrefix("id" / Segment) { workspaceId =>
+              pathEnd {
+                requireUserInfo() { _ =>
+                  extract(_.request.uri.query()) { query =>
+                    passthrough(Uri(rawlsWorkspacesRoot + "/id/%s".format(workspaceId)).withQuery(query), HttpMethods.GET)
+                  }
+                }
+              }
+            } ~
             pathPrefix("tags") {
               pathEnd {
                 requireUserInfo() { _ =>
