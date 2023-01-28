@@ -1002,8 +1002,8 @@ paths:
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
     get:
       tags:
-        - CromIAM Workflows (for Job Manager)
-      summary: Get backend (e.g. PAPI) metadata for a job
+        - Rawls Workflows (for Job Manager)
+      summary: Get backend (e.g. PAPI, Google Life Sciences) metadata for a job
       parameters:
         - $ref: '#/components/parameters/versionParam'
         - name: id
@@ -3016,8 +3016,8 @@ paths:
     get:
       tags:
         - Storage
-      summary: |
-        Get metadata about an object stored in GCS.
+      deprecated: true
+      summary: This API will be deleted on April 1, 2023.
       description: |
         Returns a subset of the metadata available from Google's Cloud Storage JSON API, as well as the estimated egress
         charge to North America. If you need the full metadata, we recommend you use Google's API directly; see
@@ -5560,8 +5560,8 @@ paths:
     get:
       tags:
         - Storage
-      summary: |
-        Download GCS object using a cookie token
+      deprecated: true
+      summary: This API will be deleted on April 1, 2023.
       description: |
         Download GCS object using a cookie token
       operationId: getStorageDownload
@@ -7144,7 +7144,33 @@ components:
             Sam.
         managedAppCoordinates:
           $ref: '#/components/schemas/AzureManagedAppCoordinates'
+        members:
+          description: The list of members to add to the billing project
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAccessUpdate'
+        inviteUsersNotFound:
+          description: If true, invite the users to Terra if they are not registered in the system. They will be given access to the project when they register.
+          type: boolean
       description: ""
+    ProjectRole:
+      description: the role on the billing project
+      type: string
+      enum:
+        - owner
+        - user
+    ProjectAccessUpdate:
+      required:
+        - email
+        - role
+      type: object
+      properties:
+        email:
+          description: the email of the member to modify access for
+          type: string
+        role:
+          description: the role to modify for the specified member
+          $ref: '#/components/schemas/ProjectRole'
     AzureManagedAppCoordinates:
       required:
         - tenantId

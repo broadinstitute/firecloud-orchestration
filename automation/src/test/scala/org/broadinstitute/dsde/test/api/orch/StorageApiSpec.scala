@@ -76,7 +76,8 @@ class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matcher
       assert(contentLength < 8 * 1024 * 1024, s"content-length should be under 8MB; was $contentLength" )
     }
 
-    "should return content directly for small (<8MB) files" in {
+    // Ignored in AJ-793
+    "should return content directly for small (<8MB) files" ignore {
       implicit val authToken: AuthToken = student.makeAuthToken()
       withSmallFile { smallFile =>
         setStudentOnly(smallFile, student)
