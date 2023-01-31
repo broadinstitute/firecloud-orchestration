@@ -3016,8 +3016,8 @@ paths:
     get:
       tags:
         - Storage
-      summary: |
-        Get metadata about an object stored in GCS.
+      deprecated: true
+      summary: This API will be deleted on April 1, 2023.
       description: |
         Returns a subset of the metadata available from Google's Cloud Storage JSON API, as well as the estimated egress
         charge to North America. If you need the full metadata, we recommend you use Google's API directly; see
@@ -5560,8 +5560,8 @@ paths:
     get:
       tags:
         - Storage
-      summary: |
-        Download GCS object using a cookie token
+      deprecated: true
+      summary: This API will be deleted on April 1, 2023.
       description: |
         Download GCS object using a cookie token
       operationId: getStorageDownload
