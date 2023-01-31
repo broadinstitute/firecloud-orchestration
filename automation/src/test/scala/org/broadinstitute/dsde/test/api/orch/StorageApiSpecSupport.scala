@@ -4,7 +4,7 @@ import java.util.{Calendar, UUID}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.test.OrchConfig
 import org.broadinstitute.dsde.workbench.auth.AuthToken
-import org.broadinstitute.dsde.workbench.config.Credentials
+import org.broadinstitute.dsde.workbench.config.{Credentials, ServiceTestConfig}
 import org.broadinstitute.dsde.workbench.dao.Google.googleStorageDAO
 import org.broadinstitute.dsde.workbench.model.WorkbenchEmail
 import org.broadinstitute.dsde.workbench.model.google.GcsEntityTypes.{Group, User}
@@ -73,6 +73,11 @@ trait StorageApiSpecSupport extends ScalaFutures with LazyLogging {
   }
 
   def setStudentOnly(path: GcsPath, student: Credentials)(implicit token: AuthToken): Unit = {
+    setStudentOnlyNoWait(path, student)
+    Thread.sleep(ServiceTestConfig.FireCloud.waitForAccessTime.toMillis)
+  }
+
+  def setStudentOnlyNoWait(path: GcsPath, student: Credentials)(implicit token: AuthToken): Unit = {
     // give student's proxy group access to this file
     val proxyGroup = Sam.user.proxyGroup(student.email)
     val proxyGroupEntity = EmailGcsEntity(Group, proxyGroup)
@@ -81,10 +86,11 @@ trait StorageApiSpecSupport extends ScalaFutures with LazyLogging {
 
   def setStudentAndSA(path: GcsPath, student: Credentials)(implicit token: AuthToken): Unit = {
     // give student's proxy group access to this file
-    setStudentOnly(path, student)
+    setStudentOnlyNoWait(path, student)
     // give signing SA access to this file
     val signingSAEntity = EmailGcsEntity(User, WorkbenchEmail(OrchConfig.GCS.orchStorageSigningSA))
     googleStorageDAO.setObjectAccessControl(path.bucketName, path.objectName, signingSAEntity, Reader).futureValue
+    Thread.sleep(ServiceTestConfig.FireCloud.waitForAccessTime.toMillis)
   }
 
 }
