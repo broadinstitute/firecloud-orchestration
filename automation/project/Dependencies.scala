@@ -7,13 +7,13 @@ object Dependencies {
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
   val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
-  val workbenchLibsHash = "5863cbd"
+  val workbenchLibsHash = "1174fb6"
 
   val workbenchModelV  = s"0.15-$workbenchLibsHash"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
   val excludeWorkbenchModel = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-model_" + scalaV)
 
-  val workbenchGoogleV = s"0.21-$workbenchLibsHash"
+  val workbenchGoogleV = s"0.22-$workbenchLibsHash"
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google_" + scalaV)
 
@@ -41,7 +41,7 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-testkit"        % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-slf4j"          % akkaV,
     "org.specs2"          %%  "specs2-core"   % "4.15.0"  % "test",
-    "org.scalatest"       %%  "scalatest"     % "3.2.14"   % Test,
+    "org.scalatest"       %%  "scalatest"     % "3.2.15"   % Test,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
 
     // required but not provided by workbench-google.

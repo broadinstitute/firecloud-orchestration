@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.workbench.config.{Credentials, UserPool}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.service.{Orchestration, RestException}
 import org.broadinstitute.dsde.workbench.service.Orchestration.storage.ObjectMetadata
+import org.scalatest.concurrent.Eventually
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -27,7 +28,7 @@ import scala.language.implicitConversions
   these tests are likely to fail.
  */
 
-class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matchers with LazyLogging {
+class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matchers with LazyLogging with Eventually {
   implicit val system: ActorSystem = ActorSystem()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
@@ -76,13 +77,17 @@ class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matcher
       assert(contentLength < 8 * 1024 * 1024, s"content-length should be under 8MB; was $contentLength" )
     }
 
-    // Ignored in AJ-793
-    "should return content directly for small (<8MB) files" ignore {
+    "should return content directly for small (<8MB) files" in {
       implicit val authToken: AuthToken = student.makeAuthToken()
       withSmallFile { smallFile =>
         setStudentOnly(smallFile, student)
-        val response:HttpResponse = Orchestration.storage.getObjectDownload(smallFile.bucketName, smallFile.objectName)
-        assertResult(StatusCodes.OK) { response.status }
+        val response = eventually {
+          val response: HttpResponse = Orchestration.storage.getObjectDownload(smallFile.bucketName, smallFile.objectName)
+          assertResult(StatusCodes.OK) {
+            response.status
+          }
+          response
+        }(PatienceConfig(timeout = 10.minutes, interval = 30.seconds), implicitly, implicitly)
         val contentLength:Long = response.header[`Content-Length`].map(_.length).getOrElse(-1)
         assert(contentLength < 8 * 1024 * 1024, s"content-length should be under 8MB; was $contentLength" )
         val responseString: String = Await.result(response.entity.toStrict(2.minutes).map(_.data.utf8String), 2.minutes)
@@ -94,8 +99,13 @@ class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matcher
       implicit val authToken: AuthToken = student.makeAuthToken()
       withLargeFile { largeFile =>
         setStudentAndSA(largeFile, student)
-        val response:HttpResponse = Orchestration.storage.getObjectDownload(largeFile.bucketName, largeFile.objectName)
-        assertResult(StatusCodes.TemporaryRedirect) { response.status }
+        val response = eventually {
+          val response: HttpResponse = Orchestration.storage.getObjectDownload(largeFile.bucketName, largeFile.objectName)
+          assertResult(StatusCodes.TemporaryRedirect) {
+            response.status
+          }
+          response
+        }(PatienceConfig(timeout = 10.minutes, interval = 30.seconds), implicitly, implicitly)
         val redirectUriOption = response.header[Location].map(_.getUri())
         assert(redirectUriOption.isDefined, "redirect should have a Location header")
         redirectUriOption.map { redirectUri =>
@@ -121,8 +131,13 @@ class StorageApiSpec extends AnyFreeSpec with StorageApiSpecSupport with Matcher
       implicit val authToken: AuthToken = student.makeAuthToken()
       withLargeFile { largeFile =>
         setStudentOnly(largeFile, student)
-        val response:HttpResponse = Orchestration.storage.getObjectDownload(largeFile.bucketName, largeFile.objectName)
-        assertResult(StatusCodes.TemporaryRedirect) { response.status }
+        val response = eventually {
+          val response: HttpResponse = Orchestration.storage.getObjectDownload(largeFile.bucketName, largeFile.objectName)
+          assertResult(StatusCodes.TemporaryRedirect) {
+            response.status
+          }
+          response
+        }(PatienceConfig(timeout = 10.minutes, interval = 30.seconds), implicitly, implicitly)
         val redirectUriOption = response.header[Location].map(_.getUri())
         assert(redirectUriOption.isDefined, "redirect should have a Location header")
         redirectUriOption.map { redirectUri =>
