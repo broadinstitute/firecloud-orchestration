@@ -6,8 +6,8 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, NotificationFormat}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport}
+import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, AzurePreviewActivationNotification, AzurePreviewActivationNotificationType, Notification, NotificationFormat}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
 import org.broadinstitute.dsde.workbench.model.WorkbenchUserId
@@ -18,6 +18,7 @@ object RegisterService {
   val samTosTextUrl = s"${Sam.baseUrl}/tos/text"
   val samTosBaseUrl = s"${Sam.baseUrl}/register/user/v1/termsofservice"
   val samTosStatusUrl = s"${samTosBaseUrl}/status"
+  val samTosDetailsUrl = s"${Sam.baseUrl}/register/user/v2/self/termsOfServiceDetails"
 
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
     new RegisterService(app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)
@@ -52,10 +53,18 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     }
   }
 
+  def generateWelcomeEmail(userInfo: UserInfo): Notification = {
+    //If the user is a B2C user and does not have a Google access token, we can safely assume that they're an Azure user
+    userInfo.googleAccessTokenThroughB2C match {
+      case None if userInfo.isB2C => AzurePreviewActivationNotification(WorkbenchUserId(userInfo.id))
+      case _ => ActivationNotification(WorkbenchUserId(userInfo.id))
+    }
+  }
+
   private def registerUser(userInfo: UserInfo, termsOfService: Option[String]): Future[RegistrationInfo] = {
     for {
       registrationInfo <- samDao.registerUser(termsOfService)(userInfo)
-      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(ActivationNotification(WorkbenchUserId(userInfo.id))).compactPrint))
+      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
     } yield {
       registrationInfo
     }

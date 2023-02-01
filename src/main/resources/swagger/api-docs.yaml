@@ -1002,8 +1002,8 @@ paths:
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
     get:
       tags:
-        - CromIAM Workflows (for Job Manager)
-      summary: Get backend (e.g. PAPI) metadata for a job
+        - Rawls Workflows (for Job Manager)
+      summary: Get backend (e.g. PAPI, Google Life Sciences) metadata for a job
       parameters:
         - $ref: '#/components/parameters/versionParam'
         - name: id
@@ -3065,8 +3065,8 @@ paths:
     get:
       tags:
         - Storage
-      summary: |
-        Get metadata about an object stored in GCS.
+      deprecated: true
+      summary: This API will be deleted on April 1, 2023.
       description: |
         Returns a subset of the metadata available from Google's Cloud Storage JSON API, as well as the estimated egress
         charge to North America. If you need the full metadata, we recommend you use Google's API directly; see
@@ -5609,8 +5609,8 @@ paths:
     get:
       tags:
         - Storage
-      summary: |
-        Download GCS object using a cookie token
+      deprecated: true
+      summary: This API will be deleted on April 1, 2023.
       description: |
         Download GCS object using a cookie token
       operationId: getStorageDownload
@@ -6258,6 +6258,19 @@ paths:
         404:
           description: User Not Found.
           content: { }
+  /register/user/v2/self/termsOfServiceDetails:
+    get:
+      tags:
+        - Terms of Service
+      summary: gets terms of service details, including user's accepted version
+      operationId: getTermsOfServiceDetails
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermsOfServiceDetails'
   /ga4gh/v1/tools/{id}:
     get:
       tags:
@@ -7180,7 +7193,33 @@ components:
             Sam.
         managedAppCoordinates:
           $ref: '#/components/schemas/AzureManagedAppCoordinates'
+        members:
+          description: The list of members to add to the billing project
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAccessUpdate'
+        inviteUsersNotFound:
+          description: If true, invite the users to Terra if they are not registered in the system. They will be given access to the project when they register.
+          type: boolean
       description: ""
+    ProjectRole:
+      description: the role on the billing project
+      type: string
+      enum:
+        - owner
+        - user
+    ProjectAccessUpdate:
+      required:
+        - email
+        - role
+      type: object
+      properties:
+        email:
+          description: the email of the member to modify access for
+          type: string
+        role:
+          description: the role to modify for the specified member
+          $ref: '#/components/schemas/ProjectRole'
     AzureManagedAppCoordinates:
       required:
         - tenantId
@@ -9304,6 +9343,12 @@ components:
           description: The date all files were successfully transferred to the workspace bucket if applicable
             in yyyy-MM-ddTHH:mm:ss.SSSZZ format
           format: date-time
+        cloudPlatform:
+          type: string
+          description: The cloud platform of the workspace
+          enum:
+            - GCP
+            - AZURE
       description: ""
     WorkspaceListResponse:
       type: object
@@ -9945,6 +9990,27 @@ components:
         currentBillingAccountOnGoogleProject:
           type: string
           description: the billing project associated with the workspace
+    TermsOfServiceDetails:
+      required:
+        - isEnabled
+        - isGracePeriodEnabled
+        - currentVersion
+        - userAcceptedVersion
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+          description: true if terms of service is enforced in Sam
+        isGracePeriodEnabled:
+          type: boolean
+          description: true if there is currently a grace period enabled,
+            letting users use the system without accepting the terms of service
+        currentVersion:
+          type: string
+          description: the current version of terms of service for the system
+        userAcceptedVersion:
+          type: string
+          description: the version of the terms of service the user has accepted
   parameters:
     AttributeNamePathParam:
       name: attributeName
