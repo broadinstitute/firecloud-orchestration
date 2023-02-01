@@ -33,7 +33,7 @@ trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInf
   }
 
   val staticRmdRoutes: Route = {
-    pathPrefix("staticRmd" / "convert") {
+    pathPrefix("staticNotebooks" / "convertRmd") {
       streamingPassthrough(calhounStaticRMarkdownURL)
     }
   }

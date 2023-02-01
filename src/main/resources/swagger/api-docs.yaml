@@ -3013,10 +3013,10 @@ paths:
       x-passthrough-target: calhoun
       x-codegen-request-body-name: notebook
 
-  /api/staticRmd/convert:
+  /api/staticNotebooks/convertRmd:
     post:
       tags:
-        - Static R Markdown files
+        - Static Notebooks
       summary: |
         Converts an R Markdown file to HTML. Accepts the content of an .Rmd file in the request body.
       description: |
