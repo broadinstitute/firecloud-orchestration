@@ -15,8 +15,8 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
 import com.google.api.client.json.jackson2.JacksonFactory
-import com.google.api.services.admin.directory.model.{Group, Member}
-import com.google.api.services.admin.directory.{Directory, DirectoryScopes}
+import com.google.api.services.directory.model.{Group, Member}
+import com.google.api.services.directory.{Directory, DirectoryScopes}
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
 import com.google.api.services.storage.model.Bucket
