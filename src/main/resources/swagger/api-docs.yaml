@@ -3055,8 +3055,11 @@ paths:
           description: Success
           content: { }
         500:
-          description: Internal Error
-          content: { }
+          description: FireCloud Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
       x-passthrough: true
       x-passthrough-target: calhoun
       x-codegen-request-body-name: rmd

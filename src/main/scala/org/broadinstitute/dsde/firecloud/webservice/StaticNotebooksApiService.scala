@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service._
-import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives, StreamingPassthrough}
 
 import scala.concurrent.ExecutionContext
 
@@ -34,18 +34,7 @@ trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInf
 
   val staticRmdRoutes: Route = {
     path("staticRmd" / "convert") {
-      requireUserInfo() { userInfo =>
-        post {
-          requestContext =>
-            // call Calhoun and pass its response back to our own caller
-            // can't use passthrough() here because that demands a JSON response
-            // and we expect this to return text/html
-            val extReq = Post(calhounStaticRMarkdownURL, requestContext.request.entity)
-            userAuthedRequest(extReq)(userInfo).flatMap { resp =>
-              requestContext.complete(resp)
-            }
-        }
-      }
+      streamingPassthrough(calhounStaticRMarkdownURL)
     }
   }
 }
