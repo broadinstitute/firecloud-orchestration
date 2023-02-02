@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfo
 
 import scala.concurrent.ExecutionContext
 
-trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient {
+trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInfoDirectives with RestJsonClient with StreamingPassthrough {
 
   implicit val executionContext: ExecutionContext
 
