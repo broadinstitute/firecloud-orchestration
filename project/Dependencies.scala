@@ -85,7 +85,7 @@ object Dependencies {
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
     "com.github.erosb"               % "everit-json-schema"  % "1.14.1",
-    "com.github.pathikrit"          %% "better-files"        % "3.9.1",
+    "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.15"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
