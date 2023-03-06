@@ -4002,7 +4002,7 @@ paths:
               - desc
         - name: filterTerms
           in: query
-          description: terms to search for, using substring matching, in all attributes of an entity. Mutually exclusive with the entityNameFilter and columnFilter parameters.
+          description: terms to search for, using substring matching, in all attributes of an entity. Mutually exclusive with the columnFilter parameter.
           schema:
             type: string
         - name: filterOperator
@@ -4014,14 +4014,9 @@ paths:
             enum:
               - and
               - or
-        - name: entityNameFilter
-          in: query
-          description: exact-match name of entity to return. Mutually exclusive with the filterTerms and columnFilter parameters.
-          schema:
-            type: string
         - name: columnFilter
           in: query
-          description: exact-match filter for a value in a single column, in the form columnName=string-to-match. Mutually exclusive with the filterTerms and entityNameFilter parameters.
+          description: exact-match filter for a value in a single column, in the form columnName=string-to-match. Mutually exclusive with the filterTerms parameter.
           schema:
             type: string
         - name: fields
