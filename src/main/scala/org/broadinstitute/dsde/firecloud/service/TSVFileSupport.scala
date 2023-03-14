@@ -150,8 +150,9 @@ trait TSVFileSupport {
     Try (java.lang.Integer.parseInt(value)) match {
       case Success(intValue) => AttributeNumber(intValue)
       case Failure(_) => Try (java.lang.Double.parseDouble(value)) match {
-        case Success(doubleValue) => AttributeNumber(doubleValue)
-        case Failure(_) => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
+        case Success(doubleValue) if !Double.NegativeInfinity.equals(doubleValue) && !Double.PositiveInfinity.equals(doubleValue) =>
+          AttributeNumber(doubleValue)
+        case _ => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
           case Success(booleanValue) => AttributeBoolean(booleanValue)
           case Failure(_) =>
             Try(value.parseJson.convertTo[AttributeEntityReference]) match {

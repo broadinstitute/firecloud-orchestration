@@ -146,6 +146,13 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
         }
       }
     }
+
+    List("6e260905", "-5e345678") foreach {str =>
+      s"should handle a string '$str' that looks like scientific notation but translates to Infinity (positive or negative)" in {
+        stringToTypedAttribute(str) shouldBe AttributeString(str)
+      }
+    }
+
   }
 
   "setAttributesOnEntity" - {
