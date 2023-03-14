@@ -153,6 +153,12 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       }
     }
 
+    List("NaN") foreach { str =>
+      s"should handle a string '$str' that looks like not-a-number" in {
+        stringToTypedAttribute(str) shouldBe AttributeString(str)
+      }
+    }
+
   }
 
   "setAttributesOnEntity" - {
