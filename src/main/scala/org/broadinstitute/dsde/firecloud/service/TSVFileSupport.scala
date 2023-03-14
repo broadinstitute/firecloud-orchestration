@@ -150,6 +150,9 @@ trait TSVFileSupport {
     Try (java.lang.Integer.parseInt(value)) match {
       case Success(intValue) => AttributeNumber(intValue)
       case Failure(_) => Try (java.lang.Double.parseDouble(value)) match {
+        // because we represent AttributeNumber as a BigDecimal, and BigDecimal has no concept of infinity,
+        // if we find infinite numbers here, don't save them as AttributeNumber; instead let them fall through
+        // to AttributeString.
         case Success(doubleValue) if !Double.NegativeInfinity.equals(doubleValue) && !Double.PositiveInfinity.equals(doubleValue) =>
           AttributeNumber(doubleValue)
         case _ => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
