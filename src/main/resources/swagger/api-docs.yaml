@@ -8188,6 +8188,8 @@ components:
             - Creating
             - Ready
             - Error
+            - Deleting
+            - DeletionFailed
             - AddingToPerimeter
             - CreatingLandingZone
           description: the status of allocating the billing project's resources.
@@ -8202,6 +8204,10 @@ components:
             - GCP
             - AZURE
             - UNKNOWN
+        landingZoneId:
+          type: string
+          format: uuid
+          description: the UUID of the landing zone associated with the project (cloudPlatform AZURE only)
     RawlsGroupRef:
       type: object
       properties:
