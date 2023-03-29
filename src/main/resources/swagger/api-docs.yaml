@@ -5526,43 +5526,6 @@ paths:
           content: {}
       x-passthrough: true
       x-passthrough-target: rawls
-  /cookie-authed/download/b/{bucket}/o/{object}:
-    get:
-      tags:
-        - Storage
-      deprecated: true
-      summary: This API will be deleted on April 1, 2023.
-      description: |
-        Download GCS object using a cookie token
-      operationId: getStorageDownload
-      parameters:
-        - name: bucket
-          in: path
-          description: Name of the bucket in which the object resides.
-          required: true
-          schema:
-            type: string
-        - name: object
-          in: path
-          description: Name of the object. (be sure to urlencode)
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        404:
-          description: Not Found
-          content: {}
-        500:
-          description: Internal Error
-          content: {}
-      x-passthrough: false
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
     get:
       tags:
