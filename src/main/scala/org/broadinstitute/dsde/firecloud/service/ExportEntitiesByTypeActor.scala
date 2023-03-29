@@ -1,9 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import java.io
-
 import akka.{Done, NotUsed}
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharsets, HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.RequestContext
 import akka.pattern.pipe
@@ -45,9 +44,9 @@ object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
   case object ExportEntities extends ExportEntitiesByTypeMessage
 
-  def constructor(app: Application, materializer: ActorMaterializer)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
+  def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
     new ExportEntitiesByTypeActor(app.rawlsDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
-      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, materializer)
+      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, system)
 }
 
 /**
@@ -66,12 +65,12 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 entityType: String,
                                 attributeNames: Option[IndexedSeq[String]],
                                 model: Option[String],
-                                argMaterializer: ActorMaterializer)
+                                argSystem: ActorSystem)
                                (implicit protected val executionContext: ExecutionContext) extends LazyLogging {
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
-  implicit val materializer: ActorMaterializer = argMaterializer
+  implicit val system:ActorSystem = argSystem
 
   implicit val modelSchema: ModelSchema = model match {
     case Some(name) => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.withName(name))
