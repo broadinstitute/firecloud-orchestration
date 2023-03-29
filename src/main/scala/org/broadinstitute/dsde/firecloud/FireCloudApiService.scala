@@ -64,7 +64,6 @@ trait FireCloudApiService extends CookieAuthedApiService
   with NihApiService
   with OauthApiService
   with RegisterApiService
-  with StorageApiService
   with WorkspaceApiService
   with NotificationsApiService
   with MethodConfigurationApiService
@@ -196,7 +195,6 @@ trait FireCloudApiService extends CookieAuthedApiService
       oauthRoutes ~
       profileRoutes ~
       registerRoutes ~
-      storageRoutes ~
       oidcConfig.swaggerRoutes("swagger/api-docs.yaml") ~
       oidcConfig.oauth2Routes ~
       syncRoute ~

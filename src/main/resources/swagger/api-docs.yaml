@@ -3012,41 +3012,6 @@ paths:
       x-passthrough: true
       x-passthrough-target: calhoun
       x-codegen-request-body-name: notebook
-  /api/storage/{bucket}/{object}:
-    get:
-      tags:
-        - Storage
-      deprecated: true
-      summary: This API will be deleted on April 1, 2023.
-      description: |
-        Returns a subset of the metadata available from Google's Cloud Storage JSON API, as well as the estimated egress
-        charge to North America. If you need the full metadata, we recommend you use Google's API directly; see
-        https://cloud.google.com/storage/docs/json_api/v1/objects/get.
-      operationId: getMetadata
-      parameters:
-        - name: bucket
-          in: path
-          description: Name of the bucket in which the object resides.
-          required: true
-          schema:
-            type: string
-        - name: object
-          in: path
-          description: Name of the object. (be sure to urlencode)
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content: {}
-        404:
-          description: Not Found
-          content: {}
-        500:
-          description: Internal Error
-          content: {}
-      x-passthrough: false
   /api/submissions/queueStatus:
     get:
       tags:
