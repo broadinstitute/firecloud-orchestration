@@ -59,7 +59,7 @@ object Boot extends App with LazyLogging {
     val healthChecks = new HealthChecks(app)
     val healthMonitorChecks = healthChecks.healthMonitorChecks
     val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
-    system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
+    system.scheduler.scheduleWithFixedDelay(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
 
     val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
 
