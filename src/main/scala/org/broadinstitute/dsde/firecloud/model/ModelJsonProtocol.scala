@@ -243,8 +243,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
   implicit val impWorkspaceStorageCostEstimate = jsonFormat2(WorkspaceStorageCostEstimate)
 
-  implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
-
   implicit object impManagedGroupRoleFormat extends RootJsonFormat[ManagedGroupRole] {
     override def write(obj: ManagedGroupRole): JsValue = JsString(obj.toString)
 

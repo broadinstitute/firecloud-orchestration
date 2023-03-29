@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, ProfileWrapper, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus

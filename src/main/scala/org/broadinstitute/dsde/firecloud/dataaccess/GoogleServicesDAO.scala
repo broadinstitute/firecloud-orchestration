@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.io.InputStream
 import akka.http.scaladsl.model.HttpResponse
 import com.google.api.services.storage.model.Bucket
-import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}

@@ -146,10 +146,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     getScopedServiceAccountCredentials(rawlsSACreds, storageReadOnly)
   }
 
-  def getRawlsServiceAccountAccessToken = {
-    getRawlsServiceAccountCredential.refreshAccessToken().getTokenValue
-  }
-
   override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = {
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
     val listRequest = storage.objects().list(bucketName).setPrefix(prefix)

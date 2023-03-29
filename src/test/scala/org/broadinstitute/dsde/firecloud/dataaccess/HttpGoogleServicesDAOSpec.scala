@@ -11,7 +11,6 @@ import com.google.cloud.storage.Storage.BlobWriteOption
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
 import com.typesafe.config.ConfigFactory
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.ObjectMetadata
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.workbench.google2.{GoogleStorageInterpreter, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
