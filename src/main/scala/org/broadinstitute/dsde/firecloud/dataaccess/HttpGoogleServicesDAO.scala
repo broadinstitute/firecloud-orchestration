@@ -279,24 +279,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
   def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
 
-  def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
-                    (implicit executionContext: ExecutionContext): Future[ObjectMetadata] = {
-
-    // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
-    // project in which a pet service account is created. The XML api does not have this limitation.
-    val metadataRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
-
-    userAuthedRequest(metadataRequest)(AccessToken(authToken)).map { response =>
-      response.status match {
-        case OK => xmlApiResponseToObject(response, bucketName, objectKey)
-        case _ => {
-          response.discardEntityBytes()
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(response.status, response.status.reason))
-        }
-      }
-    }
-  }
-
   def getXmlApiMetadataUrl(bucketName: String, objectKey: String) = {
     // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
     // project in which a pet service account is created. The XML api does not have this limitation.
