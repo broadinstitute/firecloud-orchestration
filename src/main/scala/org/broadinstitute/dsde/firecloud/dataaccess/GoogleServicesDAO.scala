@@ -24,8 +24,6 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
   def getUserProfile(accessToken: WithAccessToken)
                     (implicit executionContext: ExecutionContext): Future[HttpResponse]
-  def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
-                 (implicit executionContext: ExecutionContext): Future[PerRequestMessage]
 
   def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
   def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String

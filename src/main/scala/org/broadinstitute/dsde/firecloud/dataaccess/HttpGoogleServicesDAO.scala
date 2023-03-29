@@ -1,38 +1,32 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io.{ByteArrayInputStream, FileInputStream}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
-import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.http.scaladsl.model.HttpResponse
 import akka.stream.Materializer
-import cats.effect.{IO, Resource}
+import cats.effect.std.Semaphore
 import cats.effect.unsafe.implicits.global
+import cats.effect.{IO, Resource}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest
 import com.google.api.client.http.HttpResponseException
-import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.directory.model.{Group, Member}
 import com.google.api.services.directory.{Directory, DirectoryScopes}
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
-import com.google.api.services.storage.model.Bucket
-import com.google.api.services.storage.model.Objects
+import com.google.api.services.storage.model.{Bucket, Objects}
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, OAuthUser, ObjectMetadata, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath, GoogleProject}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -40,13 +34,10 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import spray.json.{DefaultJsonProtocol, _}
 
-import scala.jdk.CollectionConverters._
+import java.io.{ByteArrayInputStream, FileInputStream}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
-import cats.effect.Temporal
-import cats.effect.std.Semaphore
-import cats.effect.unsafe.IORuntime
-import com.google.api.client.json.gson.GsonFactory
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -249,103 +240,9 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     }
   }
 
-  // create a GCS signed url as per https://cloud.google.com/storage/docs/access-control/create-signed-urls-program
-  // TODO: should we sign as the user's pet??
-  def getSignedUrl(bucketName: String, objectKey: String) = {
-
-    // generate the string-to-be-signed
-    val verb = "GET"
-    val md5 = ""
-    val contentType = ""
-    val expireSeconds = (System.currentTimeMillis() / 1000) + 120 // expires 2 minutes (120 seconds) from now
-    val objectPath = s"/$bucketName/$objectKey"
-
-    val signableString = s"$verb\n$md5\n$contentType\n$expireSeconds\n$objectPath"
-
-    val privateKey = rawlsSACreds.getPrivateKey
-
-    // sign the string
-    val signature = java.security.Signature.getInstance("SHA256withRSA")
-    signature.initSign(privateKey)
-    signature.update(signableString.getBytes("UTF-8"))
-    val signedBytes = signature.sign()
-
-    // assemble the final url
-    s"https://storage.googleapis.com/$bucketName/$objectKey" +
-      s"?GoogleAccessId=${rawlsSACreds.getClientId}" +
-      s"&Expires=$expireSeconds" +
-      "&Signature=" + java.net.URLEncoder.encode(java.util.Base64.getEncoder.encodeToString(signedBytes), "UTF-8")
-  }
-
-  def getDirectDownloadUrl(bucketName: String, objectKey: String) = s"https://storage.cloud.google.com/$bucketName/$objectKey"
-
-  def getXmlApiMetadataUrl(bucketName: String, objectKey: String) = {
-    // explicitly use the Google Cloud Storage xml api here. The json api requires that storage apis are enabled in the
-    // project in which a pet service account is created. The XML api does not have this limitation.
-    val gcsStatUrl = "https://storage.googleapis.com/%s/%s"
-    gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
-  }
-
-  def xmlApiResponseToObject(response: HttpResponse, bucketName: String, objectKey: String): ObjectMetadata = {
-    // crc32c and md5hash are both in x-goog-hash, which exists multiple times in the response headers.
-    val crc32c:String = response.headers
-      .find{h => h.lowercaseName.equals("x-goog-hash") && h.value.startsWith("crc32c=")}
-      .map(_.value.replaceFirst("crc32c=",""))
-        .getOrElse("")
-    val md5Hash: Option[String] = response.headers
-      .find{h => h.lowercaseName.equals("x-goog-hash") && h.value.startsWith("md5=")}
-      .map(_.value.replaceFirst("md5=",""))
-
-    val headerMap: Map[String, String] = response.headers.map { h =>
-      h.lowercaseName -> h.value
-    }.toMap
-
-    //we're done with the response and we don't care about the body, so we should discard the bytes now
-    response.discardEntityBytes()
-
-    // exists in xml api, same value as json api
-    val generation: String = headerMap("x-goog-generation")
-    val size: String = headerMap("x-goog-stored-content-length") // present in x-goog-stored-content-length vs. content-length
-    val storageClass: String = headerMap("x-goog-storage-class")
-    val updated: String = headerMap("last-modified")
-    val contentType: Option[String] = headerMap.get("content-type")
-    val contentDisposition: Option[String] = headerMap.get("content-disposition")
-    val contentEncoding: Option[String] = headerMap.get("content-encoding") // present in x-goog-stored-content-encoding vs. content-encoding
-
-    // different value in json and xml apis
-    val quotedEtag: String = headerMap("etag") //  xml api returns a quoted string. Unquote.
-    val etag:String = if (quotedEtag.startsWith(""""""") && quotedEtag.endsWith("""""""))
-      quotedEtag.substring(1, quotedEtag.length-1)
-    else
-      quotedEtag
-
-
-    // not in response headers but can be calculated from request
-    val bucket: String = bucketName
-    val name: String = objectKey
-    val id: String = s"$bucket/$name/$generation"
-
-    // not present in xml api, does exist in json api. Leaving in the model for compatibility.
-    val mediaLink: Option[String] = None
-    val timeCreated: Option[String] = None
-
-
-    val estimatedCostUSD: Option[BigDecimal] = None // hardcoded to None; not part of the Google response
-
-    ObjectMetadata(bucket,crc32c,etag,generation,id,md5Hash,mediaLink,name,size,storageClass,
-          timeCreated,updated,contentDisposition,contentEncoding,contentType,estimatedCostUSD)
-  }
-
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
-  }
-
-  def objectAccessCheck(bucketName: String, objectKey: String, authToken: WithAccessToken)
-                       (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
-    val accessRequest = Head( getXmlApiMetadataUrl(bucketName, objectKey) )
-
-    userAuthedRequest(accessRequest)(authToken)
   }
 
   def getUserProfile(accessToken: WithAccessToken)
@@ -353,95 +250,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
 
     userAuthedRequest(profileRequest)(accessToken)
-  }
-
-  // download "proxy" for GCS objects. When using a simple RESTful url to download from GCS, Chrome/GCS will look
-  // at all the currently-signed in Google identities for the browser, and pick the "most recent" one. This may
-  // not be the one we want to use for downloading the GCS object. To force the identity we want, we jump through
-  // some hoops: if we can, we presign a url using a service account.
-  // pseudocode:
-  //  if (we can determine the user's identity via google)
-  //    if (the user has access to the object)
-  //      if (the service account has access to the object)
-  //        redirect to a signed url that guarantees the user's identity
-  //      else
-  //        redirect to a direct download in GCS
-  def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
-                 (implicit executionContext: ExecutionContext): Future[PerRequestMessage] = {
-
-    val objectStr = s"gs://$bucketName/$objectKey" // for logging
-    // can we determine the current user's identity with Google?
-    getUserProfile(userAuthToken) flatMap { userResponse =>
-      userResponse.status match {
-        case OK =>
-          // user is known to Google. Extract the user's email and SID from the response, for logging
-          import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impOAuthUser
-          import spray.json._
-          val oauthUser = Try(Unmarshaller.stringUnmarshaller.map(_.parseJson.convertTo[OAuthUser]))
-          val userStr = (oauthUser getOrElse userResponse.entity).toString
-          userResponse.discardEntityBytes()
-          // Does the user have access to the target file?
-          objectAccessCheck(bucketName, objectKey, userAuthToken) flatMap { objectResponse =>
-            objectResponse.status match {
-              case OK =>
-                val objMetadata: ObjectMetadata = xmlApiResponseToObject(objectResponse, bucketName, objectKey)
-
-                // user has access to the object.
-                // switch solutions based on the size of the target object. If the target object is small enough,
-                // proxy it through orchestration; this allows embedded images inside HTML reports to render correctly.
-                val objSize = objMetadata.size.toLong
-                // 8MB or under ...
-                if (objSize > 0 && objSize < 8388608) {
-                  logger.info(s"$userStr download via proxy allowed for [$objectStr]")
-                  val gcsApiUrl = getXmlApiMetadataUrl(bucketName, objectKey)
-                  val extReq = Get(gcsApiUrl)
-
-                  userAuthedRequest(extReq)(userAuthToken).map { proxyResponse =>
-                    proxyResponse.header[`Content-Type`] match {
-                      case Some(ct) =>
-                        RequestCompleteWithHeaders(proxyResponse, `Content-Type`(ct.contentType))
-                      case None => RequestComplete(proxyResponse)
-                    }
-                  }
-                } else {
-                  // object is too large to proxy; try to make a signed url.
-                  // now make a final request to see if our service account has access, so it can sign a URL
-                  objectAccessCheck(bucketName, objectKey, AccessToken(getRawlsServiceAccountAccessToken)) map { serviceAccountResponse =>
-                    serviceAccountResponse.status match {
-                      case OK =>
-                        // the service account can read the object too. We are safe to sign a url.
-                        logger.info(s"$userStr download via signed URL allowed for [$objectStr]")
-                        val redirectUrl = getSignedUrl(bucketName, objectKey)
-                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, Location(Uri(redirectUrl)))
-                      case _ =>
-                        // the service account cannot read the object, even though the user can. We cannot
-                        // make a signed url, because the service account won't have permission to sign it.
-                        // therefore, we rely on a direct link. We accept that a direct link is vulnerable to
-                        // identity problems if the current user is signed in to multiple google identies in
-                        // the same browser profile, but this is the best we can do.
-                        // generate direct link per https://cloud.google.com/storage/docs/authentication#cookieauth
-                        logger.info(s"$userStr download via direct link allowed for [$objectStr]")
-                        val redirectUrl = getDirectDownloadUrl(bucketName, objectKey)
-                        RequestCompleteWithHeaders(StatusCodes.TemporaryRedirect, Location(Uri(redirectUrl)))
-
-                    }
-                  }
-                }
-
-              case _ =>
-                objectResponse.discardEntityBytes()
-                // the user does not have access to the object.
-                logger.warn(s"$userStr download denied for [$objectStr], because (${objectResponse.status})")
-                Future(RequestComplete((Forbidden, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
-            }
-          }
-        case _ =>
-          userResponse.discardEntityBytes()
-          // Google did not return a profile for this user; abort. Reloading will resolve the issue if it's caused by an expired token.
-          logger.warn(s"Unknown user attempted download for [$objectStr] and was denied.")
-          Future(RequestComplete((Forbidden, "There was a problem authorizing your download. Please reload FireCloud and try again.")))
-      }
-    }
   }
 
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
