@@ -90,7 +90,6 @@ trait FireCloudApiService extends CookieAuthedApiService
   val namespaceServiceConstructor: (UserInfo) => NamespaceService
   val nihServiceConstructor: () => NihService
   val registerServiceConstructor: () => RegisterService
-  val storageServiceConstructor: (UserInfo) => StorageService
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService
   val statusServiceConstructor: () => StatusService
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService
@@ -221,7 +220,6 @@ class FireCloudApiServiceImpl(val agoraPermissionService: (UserInfo) => AgoraPer
                               val namespaceServiceConstructor: (UserInfo) => NamespaceService,
                               val nihServiceConstructor: () => NihService,
                               val registerServiceConstructor: () => RegisterService,
-                              val storageServiceConstructor: (UserInfo) => StorageService,
                               val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService,
                               val statusServiceConstructor: () => StatusService,
                               val permissionReportServiceConstructor: (UserInfo) => PermissionReportService,
