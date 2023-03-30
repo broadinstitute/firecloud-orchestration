@@ -146,7 +146,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // Result of this will be a tuple of Future[IOResult] that represents the success or failure of
     // streaming content to the file sinks.
     val fileStreamIOResults: Future[IOResult] = {
-      RunnableGraph.fromGraph(GraphDSL.create(entitySink) { implicit builder =>
+      RunnableGraph.fromGraph(GraphDSL.createGraph(entitySink) { implicit builder =>
         (eSink) =>
           import GraphDSL.Implicits._
 
@@ -202,7 +202,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // Result of this will be a tuple of Future[IOResult] that represents the success or failure of
     // streaming content to the file sinks.
     val fileStreamIOResults: (Future[IOResult], Future[IOResult]) = {
-      RunnableGraph.fromGraph(GraphDSL.create(entitySink, membershipSink)((_, _)) { implicit builder =>
+      RunnableGraph.fromGraph(GraphDSL.createGraph(entitySink, membershipSink)((_, _)) { implicit builder =>
         (eSink, mSink) =>
           import GraphDSL.Implicits._
 
