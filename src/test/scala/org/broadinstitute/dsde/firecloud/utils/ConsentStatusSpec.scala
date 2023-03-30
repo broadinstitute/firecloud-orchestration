@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import org.broadinstitute.dsde.firecloud.dataaccess.ReportsSubsystemStatus
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.scalatest.concurrent.ScalaFutures
@@ -21,7 +20,6 @@ class ConsentStatusSpec extends AnyFreeSpec with ScalaFutures with ReportsSubsys
 
   implicit val system: ActorSystem = ActorSystem("ConsentStatusSpec")
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(30, Seconds), interval = Span(5, Millis))
 
   "ReportsSubsystemStatus" - {
