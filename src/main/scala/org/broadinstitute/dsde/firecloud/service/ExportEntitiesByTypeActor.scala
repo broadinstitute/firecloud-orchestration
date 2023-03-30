@@ -173,16 +173,14 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // Check that each file is completed
     val fileStreamResult = for {
       eResult <- fileStreamIOResults
-    } yield eResult.wasSuccessful
+    } yield eResult
 
-    val tsvResult = fileStreamResult flatMap { s =>
-      if (s) {
-        Future.successful(tempEntityFile)
-      } else {
-        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream tsv file to user for $workspaceNamespace:$workspaceName:$entityType")))
-      }
+    fileStreamResult map { _ =>
+      tempEntityFile
+    } recover {
+      case _:Exception =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream tsv file to user for $workspaceNamespace:$workspaceName:$entityType"))
     }
-    tsvResult
   }
 
   private def streamCollectionType(entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata): Future[File] = {
@@ -238,19 +236,17 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     val fileStreamResult = for {
       eResult <- fileStreamIOResults._1
       mResult <- fileStreamIOResults._2
-    } yield eResult.wasSuccessful && mResult.wasSuccessful
+    } yield ()
 
     // And then map those files to a ZIP.
-    val zipResult = fileStreamResult flatMap { s =>
-      if (s) {
-        val zipFile: Future[File] = writeFilesToZip(tempEntityFile, tempMembershipFile)
-        // The output to the user
-        zipFile
-      } else {
-        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream zip file to user for $workspaceNamespace:$workspaceName:$entityType")))
-      }
+    fileStreamResult flatMap { _ =>
+      val zipFile: Future[File] = writeFilesToZip(tempEntityFile, tempMembershipFile)
+      // The output to the user
+      zipFile
+    } recover {
+      case _:Exception =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream zip file to user for $workspaceNamespace:$workspaceName:$entityType"))
     }
-    zipResult
   }
 
   private def writeFilesToZip(entityTSV: File, membershipTSV: File): Future[File] = {
