@@ -27,7 +27,7 @@ object Settings {
     "-deprecation",
     "-feature",
     "-encoding", "utf8",
-    "-target:jvm-1.8"
+    "-release:8"
   )
 
   //sbt assembly settings

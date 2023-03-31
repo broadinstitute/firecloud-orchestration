@@ -27,7 +27,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   def actorRefFactory: ActorSystem = system
 
-  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, ActorMaterializer())
+  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, actorRefFactory)
   val storageServiceConstructor: (UserInfo) => StorageService = StorageService.constructor(app)
 
   val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"

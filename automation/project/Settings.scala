@@ -21,7 +21,7 @@ object Settings {
     "-unchecked",
     "-deprecation",
     "-feature",
-    "-target:jvm-1.8",
+    "-release:8",
     "-encoding", "utf8", "100"
   )
 

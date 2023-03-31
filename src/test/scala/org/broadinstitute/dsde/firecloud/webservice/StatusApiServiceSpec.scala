@@ -25,7 +25,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
 
   val healthMonitorChecks = new HealthChecks(app).healthMonitorChecks
   val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
-  val monitorSchedule = system.scheduler.schedule(Duration.Zero, 1.second, healthMonitor, HealthMonitor.CheckAll)
+  val monitorSchedule = system.scheduler.scheduleWithFixedDelay(Duration.Zero, 1.second, healthMonitor, HealthMonitor.CheckAll)
 
   override def beforeAll() = {
     // wait for the healthMonitor to start up ...
