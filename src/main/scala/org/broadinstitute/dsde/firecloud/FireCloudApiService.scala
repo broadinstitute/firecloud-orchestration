@@ -64,7 +64,6 @@ trait FireCloudApiService extends CookieAuthedApiService
   with NihApiService
   with OauthApiService
   with RegisterApiService
-  with StorageApiService
   with WorkspaceApiService
   with NotificationsApiService
   with MethodConfigurationApiService
@@ -91,7 +90,6 @@ trait FireCloudApiService extends CookieAuthedApiService
   val namespaceServiceConstructor: (UserInfo) => NamespaceService
   val nihServiceConstructor: () => NihService
   val registerServiceConstructor: () => RegisterService
-  val storageServiceConstructor: (UserInfo) => StorageService
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService
   val statusServiceConstructor: () => StatusService
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService
@@ -196,7 +194,6 @@ trait FireCloudApiService extends CookieAuthedApiService
       oauthRoutes ~
       profileRoutes ~
       registerRoutes ~
-      storageRoutes ~
       oidcConfig.swaggerRoutes("swagger/api-docs.yaml") ~
       oidcConfig.oauth2Routes ~
       syncRoute ~
@@ -223,7 +220,6 @@ class FireCloudApiServiceImpl(val agoraPermissionService: (UserInfo) => AgoraPer
                               val namespaceServiceConstructor: (UserInfo) => NamespaceService,
                               val nihServiceConstructor: () => NihService,
                               val registerServiceConstructor: () => RegisterService,
-                              val storageServiceConstructor: (UserInfo) => StorageService,
                               val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService,
                               val statusServiceConstructor: () => StatusService,
                               val permissionReportServiceConstructor: (UserInfo) => PermissionReportService,
