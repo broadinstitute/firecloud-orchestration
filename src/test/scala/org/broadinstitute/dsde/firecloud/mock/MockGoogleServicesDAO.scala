@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{ObjectMetadata, ProfileWrapper, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -82,10 +82,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
     }
   }
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
-  override def getObjectMetadata(bucketName: String, objectKey: String, authToken: String)
-                                (implicit executionContext: ExecutionContext): Future[ObjectMetadata] = {
-    Future.successful(ObjectMetadata("foo", "bar", "baz", "bla", "blah", None, Some("blahh"), "blahh", "blahh", "blahh", Some("blahh"), "blahh", Option("blahh"), Option("blahh"), Option("blahh"), None))
-  }
 
   override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = List("foo", "bar")
   override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = "my object contents"
@@ -94,8 +90,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
 
   override def getUserProfile(accessToken: WithAccessToken)
                              (implicit executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
-  override def getDownload(bucketName: String, objectKey: String, userAuthToken: WithAccessToken)
-                          (implicit executionContext: ExecutionContext): Future[PerRequestMessage] = {Future.successful(RequestComplete(StatusCodes.NotImplemented))}
   override val fetchPriceList: Future[GooglePriceList] = {
     Future.successful(GooglePriceList(GooglePrices(Map("us" -> 0.01, "europe-west1" -> 0.02), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
   }
