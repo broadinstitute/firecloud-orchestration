@@ -108,10 +108,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = GsonFactory.getDefaultInstance
 
-  // credentials for the rawls service account, used for signing GCS urls
-  lazy private val rawlsSACreds = ServiceAccountCredentials
-    .fromStream(new FileInputStream(FireCloudConfig.Auth.rawlsSAJsonFile))
-
   // credential for creating anonymized Google groups
   val userAdminAccount = FireCloudConfig.FireCloud.userAdminAccount
   // settings for users in anonymized Google groups
@@ -142,9 +138,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     getScopedServiceAccountCredentials(firecloudAdminSACreds, Seq(PubsubScopes.PUBSUB))
   }
 
-  def getRawlsServiceAccountCredential = {
-    getScopedServiceAccountCredentials(rawlsSACreds, storageReadOnly)
-  }
 
   /**
     * Uploads the supplied data to GCS, using the Rawls service account credentials
