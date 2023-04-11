@@ -1,14 +1,13 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.io.InputStream
 import akka.http.scaladsl.model.HttpResponse
 import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
-import org.broadinstitute.dsde.firecloud.service.PerRequest.PerRequestMessage
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
+import java.io.InputStream
 import scala.concurrent.{ExecutionContext, Future}
 
 object GoogleServicesDAO {
@@ -24,9 +23,6 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
   def getUserProfile(accessToken: WithAccessToken)
                     (implicit executionContext: ExecutionContext): Future[HttpResponse]
-
-  def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String]
-  def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String
 
   val fetchPriceList: Future[GooglePriceList]
   
