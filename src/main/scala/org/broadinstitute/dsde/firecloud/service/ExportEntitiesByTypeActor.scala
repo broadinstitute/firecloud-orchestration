@@ -1,9 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import java.io
-
 import akka.{Done, NotUsed}
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharsets, HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.RequestContext
 import akka.pattern.pipe
@@ -45,9 +44,9 @@ object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
   case object ExportEntities extends ExportEntitiesByTypeMessage
 
-  def constructor(app: Application, materializer: ActorMaterializer)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
+  def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
     new ExportEntitiesByTypeActor(app.rawlsDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
-      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, materializer)
+      exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, system)
 }
 
 /**
@@ -66,12 +65,12 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 entityType: String,
                                 attributeNames: Option[IndexedSeq[String]],
                                 model: Option[String],
-                                argMaterializer: ActorMaterializer)
+                                argSystem: ActorSystem)
                                (implicit protected val executionContext: ExecutionContext) extends LazyLogging {
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
-  implicit val materializer: ActorMaterializer = argMaterializer
+  implicit val system:ActorSystem = argSystem
 
   implicit val modelSchema: ModelSchema = model match {
     case Some(name) => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.withName(name))
@@ -147,7 +146,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // Result of this will be a tuple of Future[IOResult] that represents the success or failure of
     // streaming content to the file sinks.
     val fileStreamIOResults: Future[IOResult] = {
-      RunnableGraph.fromGraph(GraphDSL.create(entitySink) { implicit builder =>
+      RunnableGraph.fromGraph(GraphDSL.createGraph(entitySink) { implicit builder =>
         (eSink) =>
           import GraphDSL.Implicits._
 
@@ -174,16 +173,14 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // Check that each file is completed
     val fileStreamResult = for {
       eResult <- fileStreamIOResults
-    } yield eResult.wasSuccessful
+    } yield eResult
 
-    val tsvResult = fileStreamResult flatMap { s =>
-      if (s) {
-        Future.successful(tempEntityFile)
-      } else {
-        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream tsv file to user for $workspaceNamespace:$workspaceName:$entityType")))
-      }
+    fileStreamResult map { _ =>
+      tempEntityFile
+    } recover {
+      case _:Exception =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream tsv file to user for $workspaceNamespace:$workspaceName:$entityType"))
     }
-    tsvResult
   }
 
   private def streamCollectionType(entityQueries: Seq[EntityQuery], metadata: EntityTypeMetadata): Future[File] = {
@@ -203,7 +200,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // Result of this will be a tuple of Future[IOResult] that represents the success or failure of
     // streaming content to the file sinks.
     val fileStreamIOResults: (Future[IOResult], Future[IOResult]) = {
-      RunnableGraph.fromGraph(GraphDSL.create(entitySink, membershipSink)((_, _)) { implicit builder =>
+      RunnableGraph.fromGraph(GraphDSL.createGraph(entitySink, membershipSink)((_, _)) { implicit builder =>
         (eSink, mSink) =>
           import GraphDSL.Implicits._
 
@@ -239,19 +236,17 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     val fileStreamResult = for {
       eResult <- fileStreamIOResults._1
       mResult <- fileStreamIOResults._2
-    } yield eResult.wasSuccessful && mResult.wasSuccessful
+    } yield ()
 
     // And then map those files to a ZIP.
-    val zipResult = fileStreamResult flatMap { s =>
-      if (s) {
-        val zipFile: Future[File] = writeFilesToZip(tempEntityFile, tempMembershipFile)
-        // The output to the user
-        zipFile
-      } else {
-        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream zip file to user for $workspaceNamespace:$workspaceName:$entityType")))
-      }
+    fileStreamResult flatMap { _ =>
+      val zipFile: Future[File] = writeFilesToZip(tempEntityFile, tempMembershipFile)
+      // The output to the user
+      zipFile
+    } recover {
+      case _:Exception =>
+        throw new FireCloudExceptionWithErrorReport(ErrorReport(s"FireCloudException: Unable to stream zip file to user for $workspaceNamespace:$workspaceName:$entityType"))
     }
-    zipResult
   }
 
   private def writeFilesToZip(entityTSV: File, membershipTSV: File): Future[File] = {
