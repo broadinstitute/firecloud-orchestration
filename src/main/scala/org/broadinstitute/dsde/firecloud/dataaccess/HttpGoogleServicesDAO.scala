@@ -16,7 +16,7 @@ import com.google.api.services.directory.model.{Group, Member}
 import com.google.api.services.directory.{Directory, DirectoryScopes}
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
-import com.google.api.services.storage.model.{Bucket, Objects}
+import com.google.api.services.storage.model.Bucket
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
@@ -108,10 +108,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = GsonFactory.getDefaultInstance
 
-  // credentials for the rawls service account, used for signing GCS urls
-  lazy private val rawlsSACreds = ServiceAccountCredentials
-    .fromStream(new FileInputStream(FireCloudConfig.Auth.rawlsSAJsonFile))
-
   // credential for creating anonymized Google groups
   val userAdminAccount = FireCloudConfig.FireCloud.userAdminAccount
   // settings for users in anonymized Google groups
@@ -142,35 +138,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     getScopedServiceAccountCredentials(firecloudAdminSACreds, Seq(PubsubScopes.PUBSUB))
   }
 
-  def getRawlsServiceAccountCredential = {
-    getScopedServiceAccountCredentials(rawlsSACreds, storageReadOnly)
-  }
-
-  override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
-    val listRequest = storage.objects().list(bucketName).setPrefix(prefix)
-    Try(executeGoogleRequest[Objects](listRequest)) match {
-      case Failure(ex) =>
-        // handle this case so we can give a good log message. In the future we may handle this
-        // differently, such as returning an empty list.
-        logger.warn(s"could not list objects in bucket/prefix gs://$bucketName/$prefix", ex)
-        throw ex
-      case Success(obs) =>
-        Option(obs.getItems) match {
-          case None => List.empty[String]
-          case Some(items) => items.asScala.toList.map { ob =>
-            ob.getName
-          }
-        }
-    }
-  }
-
-  // WARNING: only call on smallish objects!
-  override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getRawlsServiceAccountCredential)).setApplicationName(appName).build()
-    val is = storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
-    scala.io.Source.fromInputStream(is).mkString
-  }
 
   /**
     * Uploads the supplied data to GCS, using the Rawls service account credentials
