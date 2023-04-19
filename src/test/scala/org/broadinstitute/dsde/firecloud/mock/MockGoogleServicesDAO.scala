@@ -1,20 +1,15 @@
 package org.broadinstitute.dsde.firecloud.mock
 
-import java.io.{ByteArrayInputStream, InputStream}
-import java.util.concurrent.LinkedBlockingQueue
-
-import akka.actor.ActorRefFactory
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import akka.http.scaladsl.model.HttpResponse
 import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
+import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import spray.json.JsObject
 import spray.json._
 
+import java.io.{ByteArrayInputStream, InputStream}
+import java.util.concurrent.LinkedBlockingQueue
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -82,9 +77,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
     }
   }
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
-
-  override def listObjectsAsRawlsSA(bucketName: String, prefix: String): List[String] = List("foo", "bar")
-  override def getObjectContentsAsRawlsSA(bucketName: String, objectKey: String): String = "my object contents"
 
   override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = GcsPath(bucketName, objectKey)
 
