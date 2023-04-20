@@ -47,7 +47,7 @@ object Dependencies {
       exclude("com.google.code.findbugs", "jsr305")
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"), // TODO: upgrading to latest workbench-libs hash causes failures
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.7-01a11c3"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.25-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
@@ -75,8 +75,10 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
+
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230218-2.0.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230406-2.0.0"),
+
 
     "com.github.jwt-scala"          %% "jwt-core"            % "9.2.0",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
