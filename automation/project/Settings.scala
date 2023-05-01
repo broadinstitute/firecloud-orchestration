@@ -10,6 +10,9 @@ object Settings {
     "artifactory-releases" at artifactory + "libs-release",
     "artifactory-snapshots" at artifactory + "libs-snapshot"
   )
+  val proxyResolvers = List(
+    "internal-maven-proxy" at artifactory + "maven-central"
+  )
 
   //coreDefaultSettings + defaultConfigs = the now deprecated defaultSettings
   val commonBuildSettings = Defaults.coreDefaultSettings ++ Defaults.defaultConfigs ++ Seq(
@@ -40,7 +43,7 @@ object Settings {
     commonBuildSettings ++ testSettings ++ List(
     organization  := "org.broadinstitute.dsde.firecloud",
     scalaVersion  := "2.13.10",
-    resolvers ++= commonResolvers,
+    resolvers := proxyResolvers ++: resolvers.value ++: commonResolvers,
     scalacOptions ++= commonCompilerSettings,
     dependencyOverrides ++= transitiveDependencyOverrides
   )

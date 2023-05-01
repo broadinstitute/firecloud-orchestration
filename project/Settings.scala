@@ -16,6 +16,10 @@ object Settings {
     "jitpack.io" at "https://jitpack.io"
   )
 
+  val proxyResolvers = List(
+    "internal-maven-proxy" at artifactory + "maven-central"
+  )
+
   //coreDefaultSettings + defaultConfigs = the now deprecated defaultSettings
   val commonBuildSettings = Defaults.coreDefaultSettings ++ Defaults.defaultConfigs ++ Seq(
     javaOptions += "-Xmx2G",
@@ -41,7 +45,7 @@ object Settings {
     commonBuildSettings ++ commonAssemblySettings ++ commonTestSettings ++ List(
     organization  := "org.broadinstitute.dsde.firecloud",
     scalaVersion  := "2.13.10",
-    resolvers ++= commonResolvers,
+    resolvers := proxyResolvers ++: resolvers.value ++: commonResolvers,
     scalacOptions ++= commonCompilerSettings,
     dependencyOverrides ++= transitiveDependencyOverrides
   )
