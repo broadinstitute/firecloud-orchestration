@@ -77,7 +77,7 @@ object Dependencies {
 
 
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230218-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230406-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230425-2.0.0"),
 
 
     "com.github.jwt-scala"          %% "jwt-core"            % "9.2.0",
