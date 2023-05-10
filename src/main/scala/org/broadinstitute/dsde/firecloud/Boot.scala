@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.typesafe.scalalogging.LazyLogging
@@ -22,8 +21,7 @@ object Boot extends App with LazyLogging {
 
   private def startup(): Unit = {
     // we need an ActorSystem to host our application in
-    implicit val system = ActorSystem("FireCloud-Orchestration-API")
-    implicit val materializer = ActorMaterializer()
+    implicit val system: ActorSystem = ActorSystem("FireCloud-Orchestration-API")
 
     val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
 
@@ -43,7 +41,7 @@ object Boot extends App with LazyLogging {
     val app:Application = Application(agoraDAO, googleServicesDAO, ontologyDAO, consentDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, importServiceDAO, shibbolethDAO);
 
     val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
-    val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, materializer)
+    val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, system)
     val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
     val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
     val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
@@ -60,7 +58,7 @@ object Boot extends App with LazyLogging {
     val healthChecks = new HealthChecks(app)
     val healthMonitorChecks = healthChecks.healthMonitorChecks
     val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
-    system.scheduler.schedule(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
+    system.scheduler.scheduleWithFixedDelay(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
 
     val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
 
