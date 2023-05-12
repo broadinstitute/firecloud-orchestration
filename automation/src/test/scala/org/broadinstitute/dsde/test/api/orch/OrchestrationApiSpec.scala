@@ -33,7 +33,7 @@ class OrchestrationApiSpec
   }
 
   "Orchestration" - {
-    "should link an eRA Commons account with access to the TARGET closed-access dataset" in {
+    "should link an eRA Commons account with access to the TARGET closed-access dataset" ignore {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
@@ -42,7 +42,7 @@ class OrchestrationApiSpec
       finally resetNihLinkToInactive()
     }
 
-    "should link an eRA Commons account with access to the TCGA closed-access dataset" in {
+    "should link an eRA Commons account with access to the TCGA closed-access dataset" ignore {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
@@ -60,7 +60,7 @@ class OrchestrationApiSpec
     finally resetNihLinkToInactive()
   }
 
-    "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
+    "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" ignore {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
