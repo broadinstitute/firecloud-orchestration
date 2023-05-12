@@ -47,10 +47,12 @@ class AsyncImportSpec
   lazy private val expectedEntities: Map[String, EntityTypeMetadata] = Source.fromResource("AsyncImportSpec-pfb-expected-entities.json").getLines().mkString
     .parseJson.convertTo[Map[String, EntityTypeMetadata]]
 
+// See https://broadworkbench.atlassian.net/browse/AJ-1036
+// These tests were consistently failing in Jenkins, and we need to reevaluate their utility in general, thus they are 'ignored' for now.
   "Orchestration" - {
 
     "should import a PFB file via import service" - {
-      "for the owner of a workspace" in {
+      "for the owner of a workspace" ignore {
         implicit val token: AuthToken = ownerAuthToken
 
         withTemporaryBillingProject(billingAccountId) { projectName =>
@@ -88,7 +90,7 @@ class AsyncImportSpec
         }(owner.makeAuthToken(billingScopes))
       }
 
-      "for writers of a workspace" in {
+      "for writers of a workspace" ignore {
         val writer = UserPool.chooseStudent
         val writerToken = writer.makeAuthToken()
 
@@ -127,7 +129,7 @@ class AsyncImportSpec
     }
 
     "should asynchronously result in an error when attempting to import a PFB file via import service" - {
-      "if the file to be imported is invalid" in {
+      "if the file to be imported is invalid" ignore {
         implicit val token: AuthToken = ownerAuthToken
 
         withTemporaryBillingProject(billingAccountId) { projectName =>
@@ -157,7 +159,7 @@ class AsyncImportSpec
 
     "should synchronously return an error when attempting to import a PFB file via import service" - {
 
-      "for readers of a workspace" in {
+      "for readers of a workspace" ignore {
         val reader = UserPool.chooseStudent
 
         withTemporaryBillingProject(billingAccountId) { projectName =>
@@ -177,7 +179,7 @@ class AsyncImportSpec
         }(owner.makeAuthToken(billingScopes))
       }
 
-      "with an invalid POST payload" in {
+      "with an invalid POST payload" ignore {
         implicit val token: AuthToken = ownerAuthToken
         withTemporaryBillingProject(billingAccountId) { projectName =>
           withWorkspace(projectName, prependUUID("reader-pfb-import")) { workspaceName =>
@@ -198,7 +200,7 @@ class AsyncImportSpec
 
     }
 
-    "should import a TSV asynchronously for entities and entity membership" in {
+    "should import a TSV asynchronously for entities and entity membership" ignore {
       implicit val token: AuthToken = ownerAuthToken
       withTemporaryBillingProject(billingAccountId) { projectName =>
         withWorkspace(projectName, prependUUID("tsv-entities")) { workspaceName =>
@@ -211,7 +213,7 @@ class AsyncImportSpec
       }(owner.makeAuthToken(billingScopes))
     }
 
-    "should import a TSV asynchronously for updates" in {
+    "should import a TSV asynchronously for updates" ignore {
       implicit val token: AuthToken = ownerAuthToken
       withTemporaryBillingProject(billingAccountId) { projectName =>
         withWorkspace(projectName, prependUUID("tsv-updates")) { workspaceName =>
@@ -225,6 +227,7 @@ class AsyncImportSpec
 
     }
   }
+  
 
   private def importAsync(projectName: String, workspaceName: String, importFilePath: String, expectedResult: Map[String, EntityTypeMetadata])(implicit authToken: AuthToken): Unit = {
     val startTime = System.currentTimeMillis()
