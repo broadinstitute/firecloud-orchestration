@@ -22,7 +22,9 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "org.yaml" % "snakeyaml" % "1.33"
+    "org.yaml" % "snakeyaml" % "1.33",
+    // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
+    "org.bitbucket.b_c" % "jose4j" % "0.9.3"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -52,8 +54,6 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.3-$workbenchLibsHash",
-    // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
-    "org.bitbucket.b_c" % "jose4j" % "0.9.3",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
