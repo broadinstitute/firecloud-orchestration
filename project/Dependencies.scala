@@ -91,7 +91,7 @@ object Dependencies {
     "com.github.erosb"               % "everit-json-schema"  % "1.14.2",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.15"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.16"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
