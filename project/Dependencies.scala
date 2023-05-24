@@ -22,7 +22,9 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "org.yaml" % "snakeyaml" % "1.33"
+    "org.yaml" % "snakeyaml" % "1.33",
+    // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
+    "org.bitbucket.b_c" % "jose4j" % "0.9.3"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -76,7 +78,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230218-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230425-2.0.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230425-2.0.0"),
 
 
