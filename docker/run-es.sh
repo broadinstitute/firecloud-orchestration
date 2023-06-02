@@ -38,14 +38,14 @@ start() {
     # prepopulate data via elasticdump: https://www.npmjs.com/package/elasticdump
     # add --quiet to these calls if they are too verbose
     echo "pre-populating ontology fixture data; this can take a few minutes ..."
-    docker run --net=host --rm -v $PWD/docker/data:/tmp elasticdump/elasticsearch-dump \
+    docker run --net=host --rm -v $PWD/docker/data:/tmp elasticdump/elasticsearch-dump:v6.100.0 \
       --input=/tmp/ontology_mapping_dump.json.gz \
       --output=http://localhost:9200/ontology-unittest \
       --fsCompress \
       --type=mapping
 
     # limit 100 is the default, but we list it explicitly here for clarity and to make it easy to change later
-    docker run --net=host --rm -v $PWD/docker/data:/tmp elasticdump/elasticsearch-dump \
+    docker run --net=host --rm -v $PWD/docker/data:/tmp elasticdump/elasticsearch-dump:v6.100.0 \
       --input=/tmp/ontology_data_dump.json.gz \
       --output=http://localhost:9200/ontology-unittest \
       --fsCompress \
