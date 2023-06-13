@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.92.Final"
+  val nettyV = "4.1.93.Final"
   val workbenchLibsHash = "084d25b"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -78,11 +78,11 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230425-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230425-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230509-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230516-2.0.0"),
 
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.2.0",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.3.0",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
@@ -91,12 +91,12 @@ object Dependencies {
     "com.github.erosb"               % "everit-json-schema"  % "1.14.2",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.15"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.16"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.126.14" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.126.16" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
