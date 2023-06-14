@@ -1,0 +1,204 @@
+{{- $b2cAppId := ( secret "secret/dsde/terra/azure/dev/b2c/application_id" ).Data.value -}}
+{{- $legacyGoogleClientId := ( secret "secret/dsde/firecloud/dev/common/refresh-token-oauth-credential.json" ).Data.web.client_id -}}
+{{- $legacyGoogleClientIdPrefix := index (printf "%s" $legacyGoogleClientId | split "-") 0 -}}
+ServerTokens ProductOnly
+TraceEnable off
+
+LogFormat "%h %l %u \"%{OAUTH2_CLAIM_email}i\" \"%{X-App-ID}i\" [%{%FT%T}t.%{msec_frac}t%{%z}t] %D %X \"%r\" %>s %b \"%{Referer}i\" \"%{Origin}i\" \"%{User-Agent}i\"" combined
+LogFormat "%{X-Forwarded-For}i %l %u \"%{OAUTH2_CLAIM_email}i\" \"%{X-App-ID}i\" [%{%FT%T}t.%{msec_frac}t%{%z}t] %D %X \"%r\" %>s %b \"%{Referer}i\" \"%{Origin}i\" \"%{User-Agent}i\"" proxy
+SetEnvIf X-Forwarded-For "^.*\..*\..*\..*" forwarded
+CustomLog "/dev/stdout" combined env=!forwarded
+CustomLog "/dev/stdout" proxy env=forwarded
+LogLevel ${LOG_LEVEL}
+
+AddType application/x-httpd-php .php
+
+Header unset X-Frame-Options
+Header always set X-Frame-Options SAMEORIGIN
+Header unset X-XSS-Protection
+Header always set X-XSS-Protection "1; mode=block"
+Header unset X-Content-Type-Options
+Header always set X-Content-Type-Options: nosniff
+Header unset Strict-Transport-Security
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+Header unset Referrer-Policy
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+
+ProxyTimeout ${PROXY_TIMEOUT}
+
+
+<VirtualHost _default_:${HTTPD_PORT}>
+    ServerAdmin ${SERVER_ADMIN}
+    ServerName ${SERVER_NAME}
+
+
+
+    ErrorLog /dev/stdout
+    CustomLog "/dev/stdout" combined
+    Redirect 307 / https://${SERVER_NAME}/
+</VirtualHost>
+
+<VirtualHost _default_:${SSL_HTTPD_PORT}>
+    ServerAdmin ${SERVER_ADMIN}
+    ServerName ${SERVER_NAME}
+
+
+
+    TimeOut ${APACHE_HTTPD_TIMEOUT}
+    KeepAlive ${APACHE_HTTPD_KEEPALIVE}
+    KeepAliveTimeout ${APACHE_HTTPD_KEEPALIVETIMEOUT}
+    MaxKeepAliveRequests ${APACHE_HTTPD_MAXKEEPALIVEREQUESTS}
+
+    DocumentRoot /app
+
+    <Directory "/app">
+        # disable mod_rewrite
+        RewriteEngine off
+
+        AllowOverride All
+        Options -Indexes
+
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+    ErrorLog /dev/stdout
+    CustomLog "/dev/stdout" combined
+
+    SSLEngine on
+    SSLProxyEngine on
+    SSLProtocol ${SSL_PROTOCOL}
+    SSLCipherSuite ${SSL_CIPHER_SUITE}
+    SSLCertificateFile "/etc/ssl/certs/server.crt"
+    SSLCertificateKeyFile "/etc/ssl/private/server.key"
+
+    <Location ${INTROSPECT_PATH}>
+        RewriteEngine off
+        Require all granted
+        AuthType None
+    </Location>
+
+    <LocationMatch "^(?!${INTROSPECT_PATH})(${PROXY_PATH})(.*)">
+        Header unset Access-Control-Allow-Origin
+        Header always set Access-Control-Allow-Origin "*"
+        Header unset Access-Control-Allow-Headers
+        Header always set Access-Control-Allow-Headers "authorization,content-type,accept,origin,x-app-id"
+        Header unset Access-Control-Allow-Methods
+        Header always set Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD"
+        Header unset Access-Control-Max-Age
+        Header always set Access-Control-Max-Age 1728000
+
+        RewriteEngine On
+        RewriteCond %{REQUEST_METHOD} OPTIONS
+        RewriteRule ^(.*)$ $1 [R=204,L]
+
+        <Limit OPTIONS>
+            Require all granted
+        </Limit>
+
+        ${AUTH_TYPE}
+        ${AUTH_REQUIRE}
+
+        <Limit OPTIONS>
+            Require all granted
+        </Limit>
+
+        ProxyPassMatch ${PROXY_URL}$2
+        ProxyPassReverse ${PROXY_URL}
+
+        ${FILTER}
+    </LocationMatch>
+
+    <Location ${PROXY_PATH2}>
+        Header unset Access-Control-Allow-Origin
+        Header always set Access-Control-Allow-Origin "*"
+        Header unset Access-Control-Allow-Headers
+        Header always set Access-Control-Allow-Headers "authorization,content-type,accept,origin,x-app-id"
+        Header unset Access-Control-Allow-Methods
+        Header always set Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD"
+        Header unset Access-Control-Max-Age
+        Header always set Access-Control-Max-Age 1728000
+
+        RewriteEngine On
+        RewriteCond %{REQUEST_METHOD} OPTIONS
+        RewriteRule ^(.*)$ $1 [R=204,L]
+
+        <Limit OPTIONS>
+            Require all granted
+        </Limit>
+
+        ${AUTH_TYPE2}
+
+        <RequireAll>
+          <RequireAll>
+            ${AUTH_REQUIRE2}
+          </RequireAll>
+          <RequireAny>
+            # Note: we need to reference %{REMOTE_USER} to ensure that this expression is evaluated _after_ the authentication has happened
+            # %{REMOTE_USER} != %{REMOTE_USER} will never evaluate to true but will ensure that the expression is evaluated at the correct time
+            # Allow service accounts for tests, and B2C app id ({{ $b2cAppId }}) and dev oauth client id ({{ $legacyGoogleClientIdPrefix }}) so that swagger oauth works
+            # (It's also reasonable to remove this check entirely for local development)
+            Require expr "%{REMOTE_USER} != %{REMOTE_USER} || ((%{HTTP:OAUTH2_CLAIM_email} =~ /\.gserviceaccount.com$/) || (%{HTTP:OAUTH2_CLAIM_xms_mirid} =~ m#^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/Microsoft\.ManagedIdentity/userAssignedIdentities/[^/]+$#) || (%{HTTP:OAUTH2_CLAIM_aud} =~ /^{{ $legacyGoogleClientIdPrefix }}/) || (%{HTTP:OAUTH2_CLAIM_aud} == '{{ $b2cAppId }}'))"
+          </RequireAny>
+        </RequireAll>
+
+        <Limit OPTIONS>
+            Require all granted
+        </Limit>
+
+        RequestHeader set oidc_claim_email "expr=%{HTTP:OAUTH2_CLAIM_email}"
+        RequestHeader set oidc_claim_user_id "expr=%{HTTP:OAUTH2_CLAIM_sub}"
+        RequestHeader set oidc_access_token "expr=%{HTTP:OAUTH2_CLAIM_access_token}"
+        RequestHeader set oidc_claim_expires_in "expr=%{HTTP:OAUTH2_CLAIM_exp}"
+
+        ProxyPass ${PROXY_URL2}
+        ProxyPassReverse ${PROXY_URL2}
+
+        ${FILTER2}
+    </Location>
+
+    <Location ${PROXY_PATH3}>
+        Header unset Access-Control-Allow-Origin
+        Header always set Access-Control-Allow-Origin "*"
+        Header unset Access-Control-Allow-Headers
+        Header always set Access-Control-Allow-Headers "authorization,content-type,accept,origin,x-app-id"
+        Header unset Access-Control-Allow-Methods
+        Header always set Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD"
+        Header unset Access-Control-Max-Age
+        Header always set Access-Control-Max-Age 1728000
+
+        RewriteEngine On
+        RewriteCond %{REQUEST_METHOD} OPTIONS
+        RewriteRule ^(.*)$ $1 [R=204,L]
+
+        <Limit OPTIONS>
+            Require all granted
+        </Limit>
+
+        ${AUTH_TYPE3}
+        ${AUTH_REQUIRE3}
+
+        <Limit OPTIONS>
+            Require all granted
+        </Limit>
+
+        RequestHeader set oidc_claim_email "expr=%{HTTP:OAUTH2_CLAIM_email}"
+        RequestHeader set oidc_claim_user_id "expr=%{HTTP:OAUTH2_CLAIM_sub}"
+        RequestHeader set oidc_access_token "expr=%{HTTP:OAUTH2_CLAIM_access_token}"
+        RequestHeader set oidc_claim_expires_in "expr=%{HTTP:OAUTH2_CLAIM_exp}"
+
+        ProxyPass ${PROXY_URL3}
+        ProxyPassReverse ${PROXY_URL3}
+
+        ${FILTER3}
+    </Location>
+
+    <Location ${CALLBACK_PATH}>
+        AuthType openid-connect
+        Require valid-user
+    </Location>
+
+</VirtualHost>
+
+# The end

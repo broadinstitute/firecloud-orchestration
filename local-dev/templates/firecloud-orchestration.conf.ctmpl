@@ -1,0 +1,148 @@
+{{- $appsDomain := "test.firecloud.org" -}}
+{{- $b2cEnv := "dev" -}}
+{{- $b2cTenant := "dev" -}}
+{{- $b2cAppId := (secret "secret/dsde/terra/azure/dev/b2c/application_id" ).Data.value -}}
+{{- $refreshTokenCredential := (secret "secret/dsde/firecloud/dev/common/refresh-token-oauth-credential.json").Data -}}
+{{- $firecloudSaKey := (secret "secret/dsde/firecloud/dev/common/firecloud-account.json").Data -}}
+{{- $rawlsSaKey := (secret "secret/dsde/firecloud/dev/rawls/rawls-account.json").Data -}}
+{{- $commonSecrets := (secret "secret/dsde/firecloud/dev/common/secrets").Data -}}
+
+akka {
+  loglevel = "INFO"
+  logger-startup-timeout = 20s
+
+  log-dead-letters = 10
+  log-dead-letters-during-shutdown = on
+
+  # Log the complete configuration at INFO level when the actor system is started.
+  # This is useful when you are uncertain of what configuration is used.
+  log-config-on-start = off
+
+  actor {
+    debug {
+      # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill et.c.)
+      autoreceive = off
+      # enable DEBUG logging of actor lifecycle changes
+      lifecycle = off
+      # enable DEBUG logging of subscription changes on the eventStream
+      event-stream = off
+    }
+  }
+  http {
+    server {
+      idle-timeout = 210 s
+      request-timeout = infinite
+      parsing {
+        max-content-length = 50m
+      }
+    }
+    client {
+      # allow waiting for slow responses from rawls et al
+      idle-timeout = 300 s
+      connecting-timeout = 20 s
+    }
+    host-connection-pool {
+      max-open-requests = 16384
+      max-connections = 2000
+
+      # The "new" pool implementation will fail a connection early and clear the slot if a response entity was not
+      # subscribed during the given time period after the response was dispatched. In busy systems the timeout might be
+      # too tight if a response is not picked up quick enough after it was dispatched by the pool.
+      # default is 1.second
+      response-entity-subscription-timeout = 30.seconds
+    }
+    parsing {
+      # The maximum number of bytes to allow when reading the entire entity into memory with `toStrict`
+      # (which is used by the `toStrictEntity` and `extractStrictEntity` directives)
+      max-to-strict-bytes = 55m
+    }
+  }
+}
+
+
+auth {
+	authorityEndpoint = "https://terra{{ $b2cTenant }}b2c.b2clogin.com/terra{{ $b2cTenant }}b2c.onmicrosoft.com/v2.0?p=b2c_1a_signup_signin_{{ $b2cEnv }}"
+	oidcClientId = "{{ $b2cAppId }}"
+	legacyGoogleClientId = "{{ $refreshTokenCredential.web.client_id }}"
+
+	pemFile = "/etc/firecloud-account.pem"
+	pemFileClientId = "{{ $firecloudSaKey.client_email }}"
+	jsonFile = "/etc/firecloud-account.json"
+	firecloudAdminSA = "/etc/firecloud-account.json"
+
+	rawlsPemFile = "/etc/rawls-account.pem"
+	rawlsPemFileClientId = "{{ $rawlsSaKey.client_email }}"
+	rawlsSA = "/etc/rawls-account.json"
+}
+
+agora {
+	baseUrl = "https://agora.dsde-dev.broadinstitute.org"
+}
+
+rawls {
+	baseUrl = "https://rawls.dsde-dev.broadinstitute.org"
+}
+
+sam {
+	baseUrl = "https://sam.dsde-dev.broadinstitute.org"
+}
+
+# CromIAM is not publicly accessible, so we need to use its `-priv` address
+cromiam {
+	baseUrl = "https://cromiam-priv.dsde-dev.broadinstitute.org"
+}
+
+thurloe {
+	baseUrl = "https://thurloe.dsde-dev.broadinstitute.org"
+}
+
+firecloud {
+	baseUrl = "https://firecloud-orchestration.dsde-dev.broadinstitute.org"
+	portalUrl = "https://firecloud.dsde-dev.broadinstitute.org"
+	fireCloudId = "{{ $commonSecrets.firecloud_id }}"
+	serviceProject = "broad-dsde-dev"
+	supportDomain = "support.{{ $appsDomain }}"
+	supportPrefix = "terra-user-dev-"
+	userAdminAccount = "google@{{ $appsDomain }}"
+}
+
+shibboleth {
+	publicKeyUrl = "https://broad-shibboleth-prod.appspot.com/dev/public-key.pem"
+}
+
+nih {
+	whitelistBucket = "firecloud-whitelist-dev"
+	whitelists = {{ ( secret "secret/dsde/firecloud/local/firecloud-orchestration/whitelists" ).Data | toJSONPretty }}
+}
+
+elasticsearch {
+	urls = "elasticsearch5a1.dsde-dev.broadinstitute.org:9300,elasticsearch5a2.dsde-dev.broadinstitute.org:9300,elasticsearch5a3.dsde-dev.broadinstitute.org:9300"
+	clusterName = "elasticsearch5a"
+	index = "library"
+	ontologyIndex = "ontology"
+	discoverGroupNames = ["all_broad_users","demo_users","GP_DataDelivery_TaskTeam"]
+	shareLogIndex = "sharelog"
+	maxAutocomplete = 1000
+}
+
+duos {
+    baseConsentUrl = "https://consent.dsde-dev.broadinstitute.org"
+    baseOntologyUrl = "https://consent-ontology.dsde-dev.broadinstitute.org"
+    dulvn = 4
+}
+
+notification {
+  fullyQualifiedNotificationTopic = "projects/broad-dsde-dev/topics/workbench-notifications-local"
+}
+
+# NOTE: this service is deployed separately from the FireCloud monolith and it is not included in FIABs
+staticNotebooks {
+  baseUrl = "https://calhoun.dsde-dev.broadinstitute.org"
+}
+
+importService {
+  server = "https://terra-importservice-dev.appspot.com"
+  bucketName = "import-service-batchupsert-dev"
+}
+
+
