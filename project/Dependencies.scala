@@ -33,7 +33,7 @@ object Dependencies {
     // TODO: can these move to sbt's dependencyOverrides?
     "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "31.1-jre",
+    "com.google.guava"               % "guava"               % "32.0.1-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
