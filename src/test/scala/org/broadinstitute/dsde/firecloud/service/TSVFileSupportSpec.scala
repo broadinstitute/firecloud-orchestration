@@ -154,6 +154,12 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     }
   }
 
+  List("1234d", "-5678D", "9012f", "3456F") foreach { str =>
+    s"should handle a string '$str' that looks like a number literal" in {
+      stringToTypedAttribute(str) shouldBe AttributeString(str)
+    }
+  }
+
   List("NaN") foreach { str =>
     s"should handle a string '$str' that looks like not-a-number" in {
       stringToTypedAttribute(str) shouldBe AttributeString(str)

@@ -155,7 +155,8 @@ trait TSVFileSupport {
         // to AttributeString.
         case Success(doubleValue) if !Double.NegativeInfinity.equals(doubleValue)
           && !Double.PositiveInfinity.equals(doubleValue)
-          && !Double.NaN.equals(doubleValue) =>
+          && !Double.NaN.equals(doubleValue)
+        && !matchesLiteral(value) =>
           AttributeNumber(doubleValue)
         case _ => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
           case Success(booleanValue) => AttributeBoolean(booleanValue)
@@ -168,6 +169,10 @@ trait TSVFileSupport {
         }
       }
     }
+  }
+
+  def matchesLiteral(value: String): Boolean = {
+    value.toLowerCase().endsWith("d") || value.toLowerCase().endsWith("f")
   }
 
   /**
