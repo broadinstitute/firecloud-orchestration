@@ -110,11 +110,6 @@ shibboleth {
 	publicKeyUrl = "https://broad-shibboleth-prod.appspot.com/dev/public-key.pem"
 }
 
-nih {
-	whitelistBucket = "firecloud-whitelist-dev"
-	whitelists = {{ ( secret "secret/dsde/firecloud/local/firecloud-orchestration/whitelists" ).Data | toJSONPretty }}
-}
-
 elasticsearch {
 	urls = "elasticsearch5a1.dsde-dev.broadinstitute.org:9300,elasticsearch5a2.dsde-dev.broadinstitute.org:9300,elasticsearch5a3.dsde-dev.broadinstitute.org:9300"
 	clusterName = "elasticsearch5a"
