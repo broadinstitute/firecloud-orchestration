@@ -128,7 +128,6 @@ In order to debug in Intellij:
    1. Debugger mode: Attach to remote JVM
    2. Host: localhost
    3. Port: 5051
-   4. Use module classpath: Select Firecloud-Orchestration
 5. Run the local firecloud docker with `./config/docker-rsync-local-orch.sh` from the root directory
 6. In Intellij, choose your debug configuration and run 'debug'.
 
