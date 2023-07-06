@@ -37,6 +37,7 @@ object MockWorkspaceServer {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
+    None,
     Option(DateTime.now()),
     None,
     None
@@ -58,6 +59,7 @@ object MockWorkspaceServer {
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
+    None,
     None,
     Option(DateTime.now()),
     None,
