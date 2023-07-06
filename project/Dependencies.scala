@@ -82,7 +82,7 @@ object Dependencies {
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230516-2.0.0"),
 
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.3.0",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.4.0",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
@@ -96,7 +96,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.126.17" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.126.18" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
