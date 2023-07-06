@@ -38,7 +38,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.20.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.7",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.8",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
@@ -82,7 +82,7 @@ object Dependencies {
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230516-2.0.0"),
 
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.3.0",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.4.0",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
