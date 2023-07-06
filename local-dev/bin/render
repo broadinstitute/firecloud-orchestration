@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -eo pipefail
+
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
+
+IMAGE_NAME="${IMAGE_NAME:-us-central1-docker.pkg.dev/dsp-artifact-registry/firecloud-develop-shim/firecloud-develop-shim}"
+IMAGE_TAG="${IMAGE_TAG:-latest}"
+IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+
+VAULT_TOKEN=$( cat ~/.vault-token )
+
+docker run --pull always \
+  -e VAULT_TOKEN="${VAULT_TOKEN}" \
+  -v "${REPO_ROOT}:/code" \
+  --rm -it "${IMAGE}" \
+  --secrets /code/local-dev/secrets.yaml \
+  --templates /code/local-dev/templates \
+  --output-dir /code/config
+
+cat <<EOF
+
+Don't forget to add the local.broadinstitute.org alias to your hosts file!
+
+$ sudo sh -c "echo '127.0.0.1       local.broadinstitute.org' >> /etc/hosts"
+
+EOF
