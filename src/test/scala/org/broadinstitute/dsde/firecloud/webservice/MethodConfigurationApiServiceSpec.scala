@@ -38,6 +38,7 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
+    None,
     Option(DateTime.now()),
     None,
     None

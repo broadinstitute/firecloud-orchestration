@@ -320,6 +320,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
+    None,
     Option(DateTime.now()),
     None,
     None
