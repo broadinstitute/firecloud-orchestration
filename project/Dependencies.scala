@@ -49,7 +49,7 @@ object Dependencies {
       exclude("com.google.code.findbugs", "jsr305")
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.8-d764a9b"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.9-32f499b"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.30-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.4-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
