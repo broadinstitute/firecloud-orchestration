@@ -51,9 +51,9 @@ object Dependencies {
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.8-d764a9b"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.30-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.4-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
-    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.3-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.5-$workbenchLibsHash",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
