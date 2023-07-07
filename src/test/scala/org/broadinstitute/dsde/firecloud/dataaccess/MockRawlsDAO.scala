@@ -184,6 +184,7 @@ class MockRawlsDAO extends RawlsDAO {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
+    None,
     Option(DateTime.now()),
     None,
     None
@@ -216,6 +217,7 @@ class MockRawlsDAO extends RawlsDAO {
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
+    None,
     None,
     Option(DateTime.now()),
     None,
@@ -260,6 +262,7 @@ class MockRawlsDAO extends RawlsDAO {
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
+    None,
     None,
     Option(DateTime.now()),
     None,
@@ -489,5 +492,5 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
 
-  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, Option(DateTime.now()), None, None))
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, None, Option(DateTime.now()), None, None))
 }

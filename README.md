@@ -27,11 +27,10 @@ FireCloud Orchestration Service
 
 * [Docker Desktop](https://www.docker.com/products/docker-desktop) (4GB+, 8GB recommended)
 * Broad internal internet connection (or VPN, non-split recommended)
-* Render the local configuration files. From the root of the [firecloud-develop](https://github.com/broadinstitute/firecloud-develop) repo, run:
+* Render the local configuration files. From the root of this repo, run:
 ```sh
-sh run-context/local/scripts/firecloud-setup.sh
+./local-dev/bin/render
 ```
-Note: this script will offer to set up configuration for several other services as well. You can skip those if you only want to set up configuration for Orch. If this is your first time running Orch or rendering configuration files, you will want to run through the "Setup vault" step.
 
 *  The `/etc/hosts` file on your machine must contain this entry (for calling Orch endpoints):
 ```sh
