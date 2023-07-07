@@ -833,6 +833,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           Some(GoogleProjectNumber("googleProjectNumber")),
           Some(RawlsBillingAccountName("billingAccount")),
           None,
+          None,
           Option(DateTime.now()),
           None,
           None
