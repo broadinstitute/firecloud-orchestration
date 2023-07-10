@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.93.Final"
+  val nettyV = "4.1.94.Final"
   val workbenchLibsHash = "084d25b"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -38,18 +38,18 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.20.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.7",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.8",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-04a7a76b")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-53fb1d87e")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.8-d764a9b"),
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.9-32f499b"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.25-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
@@ -82,7 +82,7 @@ object Dependencies {
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230516-2.0.0"),
 
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.3.0",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.4.0",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
@@ -96,7 +96,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.126.17" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.126.18" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
