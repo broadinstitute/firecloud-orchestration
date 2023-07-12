@@ -59,12 +59,6 @@ final class BillingApiServiceSpec extends BaseServiceSpec with BillingApiService
   val testableRoutes = pathPrefix("api") { billingServiceRoutes }
 
   "BillingApiService" - {
-    "create project" in {
-      Post("/api/billing") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
-        status should be(Created)
-      }
-    }
-
     "list project members" in {
       Get("/api/billing/project1/members") ~> dummyAuthHeaders ~> sealRoute(testableRoutes) ~> check {
         status should be(OK)
