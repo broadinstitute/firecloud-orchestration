@@ -7003,6 +7003,11 @@ components:
         inviteUsersNotFound:
           description: If true, invite the users to Terra if they are not registered in the system. They will be given access to the project when they register.
           type: boolean
+        protectedData:
+          type: boolean
+          description: Optional, false if not specified. Applicable only for azure
+            billing projects. When set, a billing project with suitable infrastructure
+            for protected data workspaces will be created.
       description: ""
     ProjectRole:
       description: the role on the billing project
