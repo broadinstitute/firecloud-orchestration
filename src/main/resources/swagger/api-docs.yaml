@@ -6976,39 +6976,6 @@ components:
           description: List of entity names to be copied
           items:
             type: string
-    CreateRawlsBillingProjectFullRequest:
-      required:
-        - billingAccount
-        - projectName
-      type: object
-      properties:
-        projectName:
-          type: string
-          description: the name of the project to create
-        billingAccount:
-          type: string
-          description: the id of the billing account to use, must start with 'billingAccounts/'
-        highSecurityNetwork:
-          type: boolean
-          description: Optional, false if not specified. If true, spin up all compute
-            in a VPC network.
-        enableFlowLogs:
-          type: boolean
-          description: Requires highSecurityNetwork = true. Optional, false if not
-            specified. If true, enable flow logs within the high security network.
-        privateIpGoogleAccess:
-          type: boolean
-          description: Requires highSecurityNetwork = true. Optional, false if not
-            specified. If true, it configures the VPC network to only allow access
-            to GCP APIs that are protected by the project's service perimeter and
-            routes all allowed API traffic through a narrow IP range.
-        servicePerimeter:
-          type: string
-          description: The fully qualified name of the GCP service perimeter to put
-            this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME].
-            Caller must have the add_project action for this service perimeter in
-            Sam.
-      description: ""
     CreateRawlsV2BillingProjectFullRequest:
       required:
         - projectName
