@@ -32,6 +32,7 @@ akka {
     server {
       idle-timeout = 210 s
       request-timeout = infinite
+      server-header = ""
       parsing {
         max-content-length = 50m
       }
