@@ -1,27 +1,19 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO._
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
-import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
+import org.broadinstitute.dsde.firecloud.model.Project.RawlsBillingProjectMember
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService
+import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiServiceSpec
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.joda.time.DateTime
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
-import MockRawlsDAO._
-import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigurationShort
-import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
-import org.broadinstitute.dsde.firecloud.model.Project.{ProjectRoles, RawlsBillingProjectMember}
-import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiServiceSpec
-import org.broadinstitute.dsde.rawls.model
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
-import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -187,7 +179,8 @@ class MockRawlsDAO extends RawlsDAO {
     None,
     Option(DateTime.now()),
     None,
-    None
+    None,
+    WorkspaceState.Ready
   )
 
   val publishedRawlsWorkspaceWithAttributes = WorkspaceDetails(
@@ -221,7 +214,8 @@ class MockRawlsDAO extends RawlsDAO {
     None,
     Option(DateTime.now()),
     None,
-    None
+    None,
+    WorkspaceState.Ready
   )
 
   val unpublishedRawlsWorkspaceLibraryValid = WorkspaceDetails(
@@ -266,7 +260,8 @@ class MockRawlsDAO extends RawlsDAO {
     None,
     Option(DateTime.now()),
     None,
-    None
+    None,
+    WorkspaceState.Ready
   )
 
   val rawlsWorkspaceResponseWithAttributes = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare = Some(false), canCompute = Some(true), catalog = Some(false), rawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
@@ -291,7 +286,8 @@ class MockRawlsDAO extends RawlsDAO {
       billingAccount = Some(RawlsBillingAccountName("billingAccount")),
       completedCloneWorkspaceFileTransfer = Option(DateTime.now()),
       workspaceType = None,
-      cloudPlatform = None
+      cloudPlatform = None,
+      state = WorkspaceState.Ready
     )
   }
 
@@ -492,5 +488,5 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
 
-  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, None, Option(DateTime.now()), None, None))
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = Future.successful(WorkspaceDetails(cloneRequest.namespace, cloneRequest.name, "id", "bucket", Some("workflow-collection-id"), DateTime.now(), DateTime.now(), "test-user", Some(cloneRequest.attributes), false, cloneRequest.authorizationDomain, WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, None, Option(DateTime.now()), None, None, WorkspaceState.Ready))
 }

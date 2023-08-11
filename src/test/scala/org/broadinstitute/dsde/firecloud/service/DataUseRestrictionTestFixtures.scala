@@ -131,7 +131,8 @@ object DataUseRestrictionTestFixtures {
       billingAccount = Some(RawlsBillingAccountName("billingAccount")),
       completedCloneWorkspaceFileTransfer = Option(DateTime.now()),
       workspaceType = None,
-      cloudPlatform = None
+      cloudPlatform = None,
+      state = WorkspaceState.Ready
     )
   }
 
