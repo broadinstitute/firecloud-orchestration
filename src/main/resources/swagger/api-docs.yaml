@@ -9093,6 +9093,7 @@ components:
         - workspaceId
         - googleProject
         - workspaceVersion
+        - state
       type: object
       properties:
         attributes:
@@ -9162,6 +9163,17 @@ components:
           enum:
             - GCP
             - AZURE
+        state:
+          type: string
+          description: The lifecycle state of the workspace
+          enum:
+            - Creating
+            - CreateFailed
+            - Ready
+            - Updating
+            - UpdateFailed
+            - Deleting
+            - DeleteFailed
       description: ""
     WorkspaceListResponse:
       type: object
