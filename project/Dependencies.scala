@@ -79,7 +79,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230529-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230801-2.0.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230516-2.0.0"),
 
 
