@@ -126,7 +126,7 @@ trait TSVFileSupport {
       if (value.equals("__DELETE__"))
         RemoveAttribute(AttributeName.fromDelimitedName(name))
       else {
-        AddUpdateAttribute(AttributeName.fromDelimitedName(name), AttributeString(StringContext.processEscapes(value)))
+        AddUpdateAttribute(AttributeName.fromDelimitedName(name), checkForJson(StringContext.processEscapes(value)))
       }
     }
   }
@@ -165,10 +165,16 @@ trait TSVFileSupport {
               case Success(ref) => ref
               case Failure(_) => AttributeString(value)
             }
-
         }
       }
     }
+  }
+
+  def checkForJson(value: String): Attribute = {
+    Try(value.parseJson) match {
+        case Success(_: JsObject) => AttributeValueRawJson(value)
+        case _ => AttributeString(value)
+      }
   }
 
   def matchesLiteral(value: String): Boolean = {
