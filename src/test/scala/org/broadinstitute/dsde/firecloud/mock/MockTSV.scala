@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.mock
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
+import org.broadinstitute.dsde.rawls.model.AttributeValueRawJson
 
 object MockTSVStrings {
 
@@ -309,7 +310,7 @@ object MockTSVLoadFiles {
     Seq("foo", "bar", "baz"),
     Seq(Seq("woop", "", "doo")))
 
-  val validWorkspaceAttributes = TSVLoadFile("workspace", Seq("a1", "a2", "a3"), Seq(Seq("v1", "2", "[1,2,3]")))
+  val validWorkspaceAttributes = TSVLoadFile("workspace", Seq("a1", "a2", "a3", "a4"), Seq(Seq("v1", "2", "[1,2,3]","""{"tables":{"sample":{"save":["participant",false,"sample",true]}}}""")))
   val validOneWorkspaceAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("v1")))
   val validEmptyStrWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("")))
   val validRemoveWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("__DELETE__")))

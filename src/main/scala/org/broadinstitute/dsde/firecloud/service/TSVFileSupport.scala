@@ -126,9 +126,7 @@ trait TSVFileSupport {
       if (value.equals("__DELETE__"))
         RemoveAttribute(AttributeName.fromDelimitedName(name))
       else {
-        //stringToTypedAttribute
-        AddUpdateAttribute(AttributeName.fromDelimitedName(name), stringToTypedAttribute(StringContext.processEscapes(value)))
-//        AddUpdateAttribute(AttributeName.fromDelimitedName(name), AttributeString(StringContext.processEscapes(value)))
+        AddUpdateAttribute(AttributeName.fromDelimitedName(name), checkForJson(StringContext.processEscapes(value)))
       }
     }
   }
@@ -163,18 +161,20 @@ trait TSVFileSupport {
         case _ => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
           case Success(booleanValue) => AttributeBoolean(booleanValue)
           case Failure(_) =>
-            Try(value.parseJson) match {
-              case Success(jsVal) =>
-                  Try(jsVal.convertTo[AttributeEntityReference]) match {
-                    case Success(ref) => ref
-                    case Failure(_) => AttributeValueRawJson(value)
-                  }
+            Try(value.parseJson.convertTo[AttributeEntityReference]) match {
+              case Success(ref) => ref
               case Failure(_) => AttributeString(value)
             }
-
         }
       }
     }
+  }
+
+  def checkForJson(value: String): Attribute = {
+    Try(value.parseJson) match {
+        case Success(jsVal) => AttributeValueRawJson(value)
+        case Failure(_) => AttributeString(value)
+      }
   }
 
   def matchesLiteral(value: String): Boolean = {
