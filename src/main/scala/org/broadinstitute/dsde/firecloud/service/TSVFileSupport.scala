@@ -172,8 +172,8 @@ trait TSVFileSupport {
 
   def checkForJson(value: String): Attribute = {
     Try(value.parseJson) match {
-        case Success(jsVal) => AttributeValueRawJson(value)
-        case Failure(_) => AttributeString(value)
+        case Success(_: JsObject) => AttributeValueRawJson(value)
+        case _ => AttributeString(value)
       }
   }
 

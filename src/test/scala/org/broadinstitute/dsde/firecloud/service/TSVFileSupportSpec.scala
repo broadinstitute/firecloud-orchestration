@@ -23,8 +23,8 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       val attributes = getWorkspaceAttributeCalls(MockTSVLoadFiles.validWorkspaceAttributes)
       assertResult(attributes) {
         List(AddUpdateAttribute(AttributeName("default", "a1"), AttributeString("v1")),
-          AddUpdateAttribute(AttributeName("default", "a2"), AttributeValueRawJson("2")),
-          AddUpdateAttribute(AttributeName("default", "a3"), AttributeValueRawJson("[1,2,3]")),
+          AddUpdateAttribute(AttributeName("default", "a2"), AttributeString("2")),
+          AddUpdateAttribute(AttributeName("default", "a3"), AttributeString("[1,2,3]")),
         AddUpdateAttribute(AttributeName("default", "a4"), AttributeValueRawJson("""{"tables":{"sample":{"save":["participant",false,"sample",true]}}}""")
         ))
       }
@@ -108,9 +108,6 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     val referenceTestCases = Map(
       """{"entityType":"targetType","entityName":"targetName"}""" -> AttributeEntityReference("targetType", "targetName")
     )
-    val jsonTestCases = Map(
-      """{"tables":{"sample":{"save":["bai",true,"bam",true,"participant",false,"sample",true]}}}""" -> AttributeValueRawJson("""{"tables":{"sample":{"save":["bai",true,"bam",true,"participant",false,"sample",true]}}}""")
-    )
 
     "should detect boolean values when applicable" in {
       booleanTestCases foreach {
@@ -143,14 +140,6 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
         }
       }
     }
-
-//    "should detect json values when applicable" in {
-//      jsonTestCases foreach {
-//        case (input, expected) => withClue(s"should handle potential reference: $input") {
-//          stringToTypedAttribute(input) shouldBe expected
-//        }
-//      }
-//    }
 
     "should detect string values when applicable" in {
       stringTestCases foreach {
