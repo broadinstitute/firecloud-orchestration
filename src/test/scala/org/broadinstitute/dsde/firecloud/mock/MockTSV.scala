@@ -3,8 +3,6 @@ package org.broadinstitute.dsde.firecloud.mock
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
-import org.broadinstitute.dsde.rawls.model.AttributeValueRawJson
-
 object MockTSVStrings {
 
   /*
