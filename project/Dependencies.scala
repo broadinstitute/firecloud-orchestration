@@ -39,7 +39,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.20.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.9",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.11",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
@@ -80,7 +80,7 @@ object Dependencies {
 
 
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230529-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230516-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230802-2.0.0"),
 
 
     "com.github.jwt-scala"          %% "jwt-core"            % "9.4.3",

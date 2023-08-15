@@ -24,7 +24,9 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       assertResult(attributes) {
         List(AddUpdateAttribute(AttributeName("default", "a1"), AttributeString("v1")),
           AddUpdateAttribute(AttributeName("default", "a2"), AttributeString("2")),
-          AddUpdateAttribute(AttributeName("default", "a3"), AttributeString("[1,2,3]")))
+          AddUpdateAttribute(AttributeName("default", "a3"), AttributeString("[1,2,3]")),
+        AddUpdateAttribute(AttributeName("default", "a4"), AttributeValueRawJson("""{"tables":{"sample":{"save":["participant",false,"sample",true]}}}""")
+        ))
       }
     }
 
