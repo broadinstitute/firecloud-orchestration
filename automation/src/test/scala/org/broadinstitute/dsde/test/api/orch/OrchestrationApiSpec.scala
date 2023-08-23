@@ -93,12 +93,12 @@ class OrchestrationApiSpec
         val ownerToken: AuthToken = ownerUser.makeAuthToken()
         withTemporaryBillingProject(billingAccountId) { projectName =>
           nowPrint(s"Querying for (owner) user profile billing project status: $projectName")
-          // Returns a map of projectName and creationStatus for the project specified
+          // Returns a map of projectName and status for the project specified
           implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
           eventually {
             val statusMap: Map[String, String] = Orchestration.billingV2.getBillingProject(projectName)(ownerToken)
             statusMap should contain("projectName" -> projectName)
-            statusMap should contain("creationStatus" -> BillingProjectStatus.Ready.toString)
+            statusMap should contain("status" -> BillingProjectStatus.Ready.toString)
           }
         }(ownerUser.makeAuthToken(billingScopes))
       }
