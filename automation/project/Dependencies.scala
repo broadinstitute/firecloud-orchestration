@@ -28,7 +28,9 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "io.grpc" % "grpc-xds" % "1.56.1"
+    "io.grpc" % "grpc-xds" % "1.56.1",
+    "org.typelevel" %% "cats-effect" % "3.4.11",
+    "org.typelevel" %% "cats-core" % "2.10.0"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
