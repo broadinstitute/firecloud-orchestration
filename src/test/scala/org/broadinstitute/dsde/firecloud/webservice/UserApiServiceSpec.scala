@@ -176,23 +176,6 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
       }
     }
 
-    "when calling GET for user billing service" - {
-      "MethodNotAllowed response is not returned" in {
-        Get("/api/profile/billing") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-          log.debug("/api/profile/billing: " + status)
-          status shouldNot equal(MethodNotAllowed)
-        }
-      }
-    }
-
-    "When calling GET for a valid user billing project" - {
-      "MethodNotAllowed response is not returned" in {
-        Get("/api/profile/billing/random-project-name") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-          status shouldNot equal(MethodNotAllowed)
-        }
-      }
-    }
-
     "when calling GET for user refresh token date service" - {
       "MethodNotAllowed response is not returned" in {
         Get("/api/profile/refreshTokenDate") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {

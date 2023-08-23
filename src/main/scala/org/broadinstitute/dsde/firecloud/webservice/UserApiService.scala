@@ -95,18 +95,6 @@ trait UserApiService
       }
     } ~
     pathPrefix("api") {
-      pathPrefix("profile" / "billing") {
-        pathEnd {
-          get {
-            passthrough(UserApiService.billingUrl, HttpMethods.GET)
-          }
-        } ~
-        path(Segment) { projectName =>
-          get {
-            passthrough(UserApiService.billingProjectUrl(projectName), HttpMethods.GET)
-          }
-        }
-      } ~
       path("profile" / "billingAccounts") {
         get {
           passthrough(UserApiService.billingAccountsUrl, HttpMethods.GET)
