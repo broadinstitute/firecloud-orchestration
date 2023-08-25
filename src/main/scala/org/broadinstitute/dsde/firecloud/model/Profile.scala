@@ -1,9 +1,5 @@
 package org.broadinstitute.dsde.firecloud.model
 
-import org.broadinstitute.dsde.firecloud.service.NihDatasetPermission
-import org.broadinstitute.dsde.firecloud.utils.DateUtils
-import spray.json.DefaultJsonProtocol._
-
 import scala.language.postfixOps
 import scala.util.Try
 
