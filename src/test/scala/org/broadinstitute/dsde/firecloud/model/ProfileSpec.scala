@@ -23,7 +23,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           programLocationCity = randomString,
           programLocationState = randomString,
           programLocationCountry = randomString,
-          termsOfService = Some(termsOfServiceUrl)
+          termsOfService = Some(termsOfServiceUrl),
+          department = randomString,
+          interestInTerra = Some(randomString)
         )
         basicProfile shouldNot be(null)
       }
@@ -38,7 +40,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           programLocationCity = randomString,
           programLocationState = randomString,
           programLocationCountry = randomString,
-          termsOfService = Some(termsOfServiceUrl)
+          termsOfService = Some(termsOfServiceUrl),
+          department = randomString,
+          interestInTerra = Some(randomString)
         )
         basicProfile shouldNot be(null)
       }
@@ -52,7 +56,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString
+          programLocationCountry = randomString,
+          department = randomString,
+          interestInTerra = Some(randomString)
         )
         profile shouldNot be(null)
       }
@@ -66,7 +72,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString
+          programLocationCountry = randomString,
+          department = randomString,
+          interestInTerra = Some(randomString)
         )
         profile shouldNot be(null)
       }
@@ -80,7 +88,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString
+          programLocationCountry = randomString,
+          department = randomString,
+          interestInTerra = Some(randomString)
         )
         profile shouldNot be(null)
       }
@@ -99,6 +109,8 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             programLocationState = "",
             programLocationCountry = "",
             None,
+            None,
+            "",
             None
           )
         }
@@ -115,7 +127,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             researchArea = Some(randomString),
             programLocationCity = randomString,
             programLocationState = randomString,
-            programLocationCountry = randomString
+            programLocationCountry = randomString,
+            department = randomString,
+            interestInTerra = Some(randomString)
           )
         }
         ex shouldNot be(null)

@@ -29,7 +29,9 @@ case class BasicProfile (
     programLocationState: String,
     programLocationCountry: String,
     termsOfService: Option[String],
-    researchArea: Option[String]
+    researchArea: Option[String],
+    department: String,
+    interestInTerra: Option[String],
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
@@ -39,6 +41,7 @@ case class BasicProfile (
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
+  require(ProfileValidator.nonEmpty(department), "department must be non-empty")
 }
 
 case class Profile (
@@ -52,7 +55,9 @@ case class Profile (
     programLocationCountry: String,
     researchArea: Option[String],
     linkedNihUsername: Option[String] = None,
-    linkExpireTime: Option[Long] = None
+    linkExpireTime: Option[Long] = None,
+    department: String,
+    interestInTerra: Option[String],
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
   require(ProfileValidator.nonEmpty(lastName), "last name must be non-empty")
@@ -62,14 +67,15 @@ case class Profile (
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
+  require(ProfileValidator.nonEmpty(department), "department must be non-empty")
 }
 
 object Profile {
 
   // increment this number every time you make a change to the user-provided profile fields
-  val currentVersion:Int = 4
+  val currentVersion:Int = 5
 
-  val requiredKeys = List("firstName", "lastName", "title", "institute", "programLocationCity",
+  val requiredKeys = List("firstName", "lastName", "title", "institute", "department", "programLocationCity",
                           "programLocationState", "programLocationCountry")
 
   def apply(wrapper: ProfileWrapper): Profile = {
@@ -95,7 +101,9 @@ object Profile {
       linkExpireTime = mappedKVPs.get("linkExpireTime") match {
         case Some(time) => Some(time.toLong)
         case _ => None
-      }
+      },
+      department = mappedKVPs("department"),
+      interestInTerra = mappedKVPs.get("interestInTerra")
     )
   }
 
