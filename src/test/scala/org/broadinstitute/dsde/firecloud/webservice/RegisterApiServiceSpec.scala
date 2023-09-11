@@ -165,7 +165,7 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
           programLocationState = randomString,
           programLocationCountry = randomString,
           termsOfService = if (hasTermsOfService) Some(termsOfServiceUrl) else None,
-          department = randomString,
+          department = Some(randomString),
           interestInTerra = Some(randomString)
         )
       }

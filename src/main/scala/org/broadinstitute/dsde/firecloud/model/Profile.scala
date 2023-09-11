@@ -30,7 +30,7 @@ case class BasicProfile (
     programLocationCountry: String,
     termsOfService: Option[String],
     researchArea: Option[String],
-    department: String = "N/A",
+    department: Option[String],
     interestInTerra: Option[String],
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
@@ -56,7 +56,7 @@ case class Profile (
     researchArea: Option[String],
     linkedNihUsername: Option[String] = None,
     linkExpireTime: Option[Long] = None,
-    department: String = "N/A",
+    department: Option[String],
     interestInTerra: Option[String],
   ) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(firstName), "first name must be non-empty")
@@ -67,7 +67,6 @@ case class Profile (
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
-  require(ProfileValidator.nonEmpty(department), "department must be non-empty")
 }
 
 object Profile {
@@ -102,7 +101,7 @@ object Profile {
         case Some(time) => Some(time.toLong)
         case _ => None
       },
-      department = mappedKVPs("department"),
+      department = mappedKVPs.get("department"),
       interestInTerra = mappedKVPs.get("interestInTerra")
     )
   }

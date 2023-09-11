@@ -49,7 +49,7 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
     programLocationState = randomAlpha(),
     programLocationCountry = randomAlpha(),
     termsOfService = None,
-    department = randomAlpha(),
+    department = Some(randomAlpha()),
     interestInTerra = Some(randomAlpha())
   )
   val allProperties: Map[String, String] = fullProfile.propertyValueMap
