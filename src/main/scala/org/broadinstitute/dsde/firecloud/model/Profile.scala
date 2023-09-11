@@ -41,7 +41,6 @@ case class BasicProfile (
   require(ProfileValidator.nonEmpty(programLocationCity), "program location city must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationState), "program location state must be non-empty")
   require(ProfileValidator.nonEmpty(programLocationCountry), "program location country must be non-empty")
-  require(ProfileValidator.nonEmpty(department), "department must be non-empty")
 }
 
 case class Profile (
