@@ -7770,6 +7770,12 @@ components:
           description:
             The Terms of Service url, "app.terra.bio/#terms-of-service", which a user
             must include to show they accept the Terms of Service
+        department:
+          type: string
+          description: User's department within an institution
+        interestInTerra:
+          type: string
+          description: A string of comma-separated values of why the User is interested in Terra
     PublishConfigurationIngest:
       required:
         - configurationName

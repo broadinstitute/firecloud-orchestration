@@ -23,7 +23,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           programLocationCity = randomString,
           programLocationState = randomString,
           programLocationCountry = randomString,
-          termsOfService = Some(termsOfServiceUrl)
+          termsOfService = Some(termsOfServiceUrl),
+          department = Some(randomString),
+          interestInTerra = Some(randomString)
         )
         basicProfile shouldNot be(null)
       }
@@ -38,7 +40,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           programLocationCity = randomString,
           programLocationState = randomString,
           programLocationCountry = randomString,
-          termsOfService = Some(termsOfServiceUrl)
+          termsOfService = Some(termsOfServiceUrl),
+          department = Some(randomString),
+          interestInTerra = Some(randomString)
         )
         basicProfile shouldNot be(null)
       }
@@ -52,7 +56,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString
+          programLocationCountry = randomString,
+          department = Some(randomString),
+          interestInTerra = Some(randomString)
         )
         profile shouldNot be(null)
       }
@@ -66,7 +72,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString
+          programLocationCountry = randomString,
+          department = Some(randomString),
+          interestInTerra = Some(randomString)
         )
         profile shouldNot be(null)
       }
@@ -80,8 +88,26 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
           researchArea = Some(randomString),
           programLocationCity = randomString,
           programLocationState = randomString,
-          programLocationCountry = randomString
+          programLocationCountry = randomString,
+          department = Some(randomString),
+          interestInTerra = Some(randomString)
         )
+        profile shouldNot be(null)
+      }
+
+      "Profile instantiated with ProfileWrapper is valid" in {
+        val pw = ProfileWrapper("123", List(
+          FireCloudKeyValue(Some("firstName"), Some("test-firstName")),
+            FireCloudKeyValue(Some("lastName"), Some("test-lastName")),
+            FireCloudKeyValue(Some("title"), Some("test-title")),
+            FireCloudKeyValue(Some("institute"), Some("test-institute")),
+            FireCloudKeyValue(Some("department"), Some("test-department")),
+            FireCloudKeyValue(Some("programLocationCity"), Some("test-programLocationCity")),
+            FireCloudKeyValue(Some("programLocationState"), Some("test-programLocationState")),
+            FireCloudKeyValue(Some("programLocationCountry"), Some("test-programLocationCountry")),
+            FireCloudKeyValue(Some("contactEmail"), Some("test-contactEmail@noreply.com"))
+        ))
+        val profile = Profile(pw)
         profile shouldNot be(null)
       }
     }
@@ -99,6 +125,8 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             programLocationState = "",
             programLocationCountry = "",
             None,
+            None,
+            None,
             None
           )
         }
@@ -115,7 +143,9 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             researchArea = Some(randomString),
             programLocationCity = randomString,
             programLocationState = randomString,
-            programLocationCountry = randomString
+            programLocationCountry = randomString,
+            department = Some(randomString),
+            interestInTerra = Some(randomString)
           )
         }
         ex shouldNot be(null)
@@ -134,7 +164,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
     ))
 
     "getString" - {
-      "returns None if key doesn't exist" - {
+      "returns None if key doesn't exist" in {
         val targetKey = "nonexistent"
         // assert key does not exist in sample data
         pw.keyValuePairs.find(_.key.contains(targetKey)) shouldBe None
@@ -142,7 +172,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
         val actual = ProfileUtils.getString(targetKey, pw)
         actual shouldBe None
       }
-      "returns None if key exists but value doesn't" - {
+      "returns None if key exists but value doesn't" in {
         val targetKey = "imnothing"
         // assert key exists in sample data with no value
         val targetKV = pw.keyValuePairs.find(_.key.contains(targetKey))
@@ -152,14 +182,14 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
         val actual = ProfileUtils.getString(targetKey, pw)
         actual shouldBe None
       }
-      "returns Some(String) if key and value exist" - {
+      "returns Some(String) if key and value exist" in {
         val targetKey = "imastring"
         val actual = ProfileUtils.getString(targetKey, pw)
         actual shouldBe Some("hello")
       }
     }
     "getLong" - {
-      "returns None if key doesn't exist" - {
+      "returns None if key doesn't exist" in {
         val targetKey = "nonexistent"
         // assert key does not exist in sample data
         pw.keyValuePairs.find(_.key.contains(targetKey)) shouldBe None
@@ -168,7 +198,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
         actual shouldBe None
 
       }
-      "returns None if key exists but value doesn't" - {
+      "returns None if key exists but value doesn't" in {
         val targetKey = "imnothing"
         // assert key exists in sample data with no value
         val targetKV = pw.keyValuePairs.find(_.key.contains(targetKey))
@@ -178,7 +208,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
         val actual = ProfileUtils.getLong(targetKey, pw)
         actual shouldBe None
       }
-      "returns None if key and value exist but value is not a Long" - {
+      "returns None if key and value exist but value is not a Long" in {
         val targetKey = "imnotalong"
         // assert the key exists
         ProfileUtils.getString(targetKey, pw) shouldBe Some("not-a-long")
@@ -186,7 +216,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
         val actual = ProfileUtils.getLong(targetKey, pw)
         actual shouldBe None
       }
-      "returns Some(Long) if key and value exist and value is Long-able" - {
+      "returns Some(Long) if key and value exist and value is Long-able" in {
         val targetKey = "imalong"
         val actual = ProfileUtils.getLong(targetKey, pw)
         actual shouldBe Some(1556724034L)
