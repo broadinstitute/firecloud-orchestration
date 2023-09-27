@@ -60,13 +60,29 @@ trait StreamingPassthrough
   }
 
   /**
+   * Passes through, to a remote server, all requests that match or start with the
+   * supplied local path with a supplied remotePath for remote Uri construction
+   *
+   * @param passthroughMapping in the form `localBasePath -> remoteBaseUri`, where
+   *                           the localBasePath is the Orchestration-local path
+   *                           which must be matched for passthroughs, and remoteBaseUri
+   *                           is the fully-qualified URL to a remote system
+   *                           to use as target for passthrough requests.
+   *  @param pathOverride as the pre-defined path to use when constructing the remote path value
+   */
+  def streamingPassthroughWithPathRedirect(passthroughMapping: (Uri.Path, Uri), pathOverride: String): Route = {
+    passthroughImpl(passthroughMapping._1, passthroughMapping._2, Option(pathOverride))
+  }
+
+  /**
     * The passthrough implementation:
     *   - `mapRequest` to transform the incoming request to what we want to send to the remote system
     *   - `extractRequest` so we have the transformed request as an object
+   *    - `remotePathOverride` to provide a pre-configured path if remote path structure is different from local
     *   - call the remote system and reply to the user via `routeResponse` streaming
    */
-  private def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri): Route = {
-    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri)) {
+  private def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePathOverride: Option[String] = None): Route = {
+    mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, remotePathOverride)) {
       extractRequest { req =>
         complete {
           routeResponse(req)
@@ -74,7 +90,6 @@ trait StreamingPassthrough
       }
     }
   }
-
 
   /**
     * Accepts an http request from an end user to Orchestration,
@@ -89,10 +104,9 @@ trait StreamingPassthrough
     * @param req the request inbound to Orchestration
     * @return the outbound request to be sent to another service
     */
-  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri)(req: HttpRequest): HttpRequest = {
+  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePath: Option[String] = None)(req: HttpRequest): HttpRequest = {
     // Convert the URI to the one suitable for the remote system
-    val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri)
-
+    val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri, remotePath)
     // Remove unwanted headers:
     // Timeout-Access: Akka automatically adds a Timeout-Access to the request
     // for internal use in managing timeouts; see akka.http.server.request-timeout.
@@ -123,9 +137,10 @@ trait StreamingPassthrough
     * @param requestUri the end-user's request to Orchestration
     * @param localBasePath the portion of the path to strip off
     * @param remoteBaseUri the remote system to use as passthrough target
+    * @param modifiedRemotePath a modified path value to be used over requestUri.path.toString if provided
     * @return the URI suitable for sending to the remote system
     */
-  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri): Uri = {
+  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri, modifiedRemotePath: Option[String] = None): Uri = {
     // Ensure the incoming request starts with the localBasePath. Abort if it doesn't.
     // This condition should only be caused by developer error in which the streamingPassthrough
     // directive is incorrectly configured inside a route.
@@ -135,9 +150,8 @@ trait StreamingPassthrough
 
     // find every part of the actual request path, minus the base.
     val baseString = localBasePath.toString
-    val requestString = requestUri.path.toString
+    val requestString = modifiedRemotePath.getOrElse(requestUri.path.toString())
     val remainder = Uri.Path(requestString.replaceFirst(baseString, ""))
-
     // append the remainder to the remoteBaseUri's path
     val remotePath = remoteBaseUri.path ++ remainder
 

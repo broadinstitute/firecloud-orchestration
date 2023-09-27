@@ -14,10 +14,6 @@ trait BillingApiService extends FireCloudDirectives with StreamingPassthrough {
     pathPrefix("billing") {
       // all paths under /api/billing pass through to the same path in Rawls
       streamingPassthrough(Uri.Path("/api/billing") -> Uri(FireCloudConfig.Rawls.authUrl + "/billing"))
-    } ~
-    path("user" / "billing" / Segment) { projectId =>
-      delete {
-        passthrough(s"$userBillingUrl/$projectId", DELETE)
-      }
     }
+
 }

@@ -20,8 +20,6 @@ trait CookieAuthedApiService extends Directives with RequestBuilding with LazyLo
 
   implicit val executionContext: ExecutionContext
 
-  val storageServiceConstructor: UserInfo => StorageService
-
   private def dummyUserInfo(tokenStr: String) = UserInfo("dummy", OAuth2BearerToken(tokenStr), -1, "dummy")
 
   val cookieAuthedRoutes: Route =
@@ -52,15 +50,6 @@ trait CookieAuthedApiService extends Directives with RequestBuilding with LazyLo
             }
           }
         }
-    } ~
-      path( "cookie-authed" / "download" / "b" / Segment / "o" / RemainingPath ) { (bucket, obj) =>
-        get {
-          cookie("FCtoken") { tokenCookie =>
-            val userInfo = dummyUserInfo(tokenCookie.value)
-
-            complete { storageServiceConstructor(userInfo).getDownload(bucket, obj.toString) }
-          }
-        }
-      }
+    }
 
 }

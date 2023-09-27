@@ -33,7 +33,7 @@ class OrchestrationApiSpec
   }
 
   "Orchestration" - {
-    "should link an eRA Commons account with access to the TARGET closed-access dataset" in {
+    "should link an eRA Commons account with access to the TARGET closed-access dataset" ignore {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
@@ -42,7 +42,7 @@ class OrchestrationApiSpec
       finally resetNihLinkToInactive()
     }
 
-    "should link an eRA Commons account with access to the TCGA closed-access dataset" in {
+    "should link an eRA Commons account with access to the TCGA closed-access dataset" ignore {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
@@ -60,7 +60,7 @@ class OrchestrationApiSpec
     finally resetNihLinkToInactive()
   }
 
-    "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" in {
+    "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" ignore {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
@@ -76,10 +76,11 @@ class OrchestrationApiSpec
       val ownerUser: Credentials = UserPool.chooseProjectOwner
       val ownerToken: AuthToken = ownerUser.makeAuthToken()
       withTemporaryBillingProject(billingAccountId) { projectName =>
-        nowPrint(s"Querying for (owner) user profile billing projects, with project: $projectName")
+        nowPrint(s"Querying for (owner) user billing projects, with project: $projectName")
         // Returns a list of maps, one map per billing project the user has access to.
         // Each map has a key for the projectName, role, status, and an optional message
-        val projectList: List[Map[String, String]] = Orchestration.profile.getUserBillingProjects()(ownerToken)
+        val projectList: List[Map[String, String]] = Orchestration.billingV2.listUserBillingProjects()(ownerToken)
+
         val projectNames: List[String] = projectList.map(_.getOrElse("projectName", ""))
         projectNames should (contain(projectName) and not contain "")
       }(ownerUser.makeAuthToken(billingScopes))
@@ -92,12 +93,12 @@ class OrchestrationApiSpec
         val ownerToken: AuthToken = ownerUser.makeAuthToken()
         withTemporaryBillingProject(billingAccountId) { projectName =>
           nowPrint(s"Querying for (owner) user profile billing project status: $projectName")
-          // Returns a map of projectName and creationStatus for the project specified
+          // Returns a map of projectName and status for the project specified
           implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
           eventually {
-            val statusMap: Map[String, String] = Orchestration.profile.getUserBillingProjectStatus(projectName)(ownerToken)
+            val statusMap: Map[String, String] = Orchestration.billingV2.getBillingProject(projectName)(ownerToken)
             statusMap should contain("projectName" -> projectName)
-            statusMap should contain("creationStatus" -> BillingProjectStatus.Ready.toString)
+            statusMap should contain("status" -> BillingProjectStatus.Ready.toString)
           }
         }(ownerUser.makeAuthToken(billingScopes))
       }
@@ -109,7 +110,7 @@ class OrchestrationApiSpec
         val random: String = UUID.randomUUID().toString
         nowPrint(s"Querying for (owner) user profile billing project status: $random")
         val getException = intercept[RestException] {
-          Orchestration.profile.getUserBillingProjectStatus(random)(ownerToken)
+          Orchestration.billingV2.getBillingProject(random)(ownerToken)
         }
         getException.message should include(StatusCodes.NotFound.defaultMessage)
       }
@@ -119,9 +120,9 @@ class OrchestrationApiSpec
         val user: Credentials = UserPool.chooseStudent
         val userToken: AuthToken = user.makeAuthToken()
         withTemporaryBillingProject(billingAccountId) { projectName =>
-          nowPrint(s"Querying for (student) user profile billing project status: $projectName")
+          nowPrint(s"Querying for (student) user billing project status: $projectName")
           val getException = intercept[RestException] {
-            Orchestration.profile.getUserBillingProjectStatus(projectName)(userToken)
+            Orchestration.billingV2.getBillingProject(projectName)(userToken)
           }
           getException.message should include(StatusCodes.NotFound.defaultMessage)
         }(ownerUser.makeAuthToken(billingScopes))

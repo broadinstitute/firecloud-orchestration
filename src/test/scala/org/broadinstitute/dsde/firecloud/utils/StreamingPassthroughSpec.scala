@@ -57,14 +57,14 @@ class StreamingPassthroughSpec extends AnyFreeSpec
   }
 
 
-  "convertToTargetUri" - {
+  "convertToRemoteUri" - {
     "should calculate a remainder" in {
       val requestUri = Uri("http://localhost:8123/foo/bar/baz/qux")
       val localBasePath = Path("/foo/bar")
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val expected = Uri("https://example.com/api/version/foo/baz/qux")
-      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri, None) shouldBe expected
     }
     "should pass on a querystring" in {
       val requestUri = Uri("http://localhost:8123/foo/bar/baz/qux?hello=world")
@@ -72,7 +72,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val expected = Uri("https://example.com/api/version/foo/baz/qux?hello=world")
-      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri, None) shouldBe expected
     }
     "should handle the base path being present more than once" in {
       val requestUri = Uri("http://localhost:8123/foo/bar/baz/qux/foo/bar/baz")
@@ -80,7 +80,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val expected = Uri("https://example.com/api/version/foo/baz/qux/foo/bar/baz")
-      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri, None) shouldBe expected
     }
     "should be case-sensitive in remainder calculation" in {
       val requestUri = Uri("http://localhost:8123/Foo/Bar/baz/qux")
@@ -88,7 +88,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val exception = intercept[Exception] {
-        convertToRemoteUri(requestUri, localBasePath, remoteBaseUri)
+        convertToRemoteUri(requestUri, localBasePath, remoteBaseUri, None)
       }
 
       exception.getMessage shouldBe "request path doesn't start properly: /Foo/Bar/baz/qux does not start with /foo/bar"
@@ -99,7 +99,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val expected = Uri("https://example.com/api/version/foo")
-      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri, None) shouldBe expected
     }
     "should handle trailing slash as remainder" in {
       val requestUri = Uri("http://localhost:8123/foo/bar/")
@@ -107,7 +107,16 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val remoteBaseUri = Uri("https://example.com/api/version/foo")
 
       val expected = Uri("https://example.com/api/version/foo/")
-      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri) shouldBe expected
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri, None) shouldBe expected
+    }
+    "should use modifiedRemotePath over req.path if provided" in {
+      val requestUri = Uri("http://localhost:8123/foo/bar/")
+      val localBasePath = Path("/foo/bar")
+      val remoteBaseUri = Uri("https://example.com/api/version/foo")
+      val modifiedRemotePath = Option("/test/value")
+
+      val expected = Uri("https://example.com/api/version/foo/test/value")
+      convertToRemoteUri(requestUri, localBasePath, remoteBaseUri, modifiedRemotePath) shouldBe expected
     }
   }
 
@@ -124,7 +133,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val expectedHeaders = fixtureHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
+      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
       actual.headers should contain theSameElementsAs (expectedHeaders)
     }
     "should rewrite Host header" in {
@@ -132,7 +141,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val expectedHeaders = fixtureHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
+      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
       actual.headers should contain theSameElementsAs (expectedHeaders)
     }
     "should forward Authorization header" in {
@@ -140,7 +149,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val expectedHeaders = requestHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
+      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
       actual.headers should contain theSameElementsAs(expectedHeaders)
     }
     "should forward miscellaneous headers" in {
@@ -148,13 +157,13 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val expectedHeaders = requestHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
+      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
       actual.headers should contain theSameElementsAs (expectedHeaders)
     }
     List(CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE) foreach { methodUnderTest =>
       s"should preserve request method $methodUnderTest" in {
         val req = fixtureRequest.withMethod(methodUnderTest)
-        val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
+        val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
         actual.method shouldBe methodUnderTest
       }
     }
@@ -162,7 +171,7 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val randomJson = JsObject("mykey" -> JsString(UUID.randomUUID().toString))
       val requestEntity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString.apply(randomJson.compactPrint))
       val req = fixtureRequest.withEntity(requestEntity)
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"))(req)
+      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
       actual.entity shouldBe requestEntity
     }
   }

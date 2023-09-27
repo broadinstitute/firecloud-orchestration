@@ -12,7 +12,4 @@ object OrchConfig extends CommonConfig {
     val tempSubjectId = usersConfig.getString("tempSubjectId")
   }
 
-  object GCS extends CommonGCS {
-    val orchStorageSigningSA = gcsConfig.getString("orchStorageSigningSA")
-  }
 }

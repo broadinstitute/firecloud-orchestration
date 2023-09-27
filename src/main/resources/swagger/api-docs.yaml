@@ -11,7 +11,6 @@ info:
 servers:
   - url: /
 tags:
-  - name: Billing
   - name: BillingV2
   - name: CromIAM Engine (for Job Manager)
   - name: CromIAM Workflows (for Admin)
@@ -30,7 +29,6 @@ tags:
   - name: ShareLog
   - name: Static Notebooks
   - name: Status
-  - name: Storage
   - name: Submissions
   - name: Terms of Service
   - name: Version
@@ -46,86 +44,6 @@ security:
       - email
       - profile
 paths:
-  /api/billing:
-    post:
-      tags:
-        - Billing
-      summary: Create billing project in Terra and Google. Deprecated, use v2 version.
-      deprecated: true
-      operationId: createBillingProjectFull
-      requestBody:
-        description: create project request
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/CreateRawlsBillingProjectFullRequest'
-        required: true
-      responses:
-        204:
-          description: Successfully Created Billing Project in Terra and Google
-          content: {}
-        400:
-          description: Terra billing user must be an admin of the billing account
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        403:
-          description: You must be an admin of the google billing account
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        409:
-          description: project already exists in Terra or google
-          content: {}
-        500:
-          description: FireCloud Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      security:
-        - googleoauth:
-            - openid
-            - email
-            - profile
-            - https://www.googleapis.com/auth/cloud-billing
-      x-passthrough: true
-      x-passthrough-target: rawls
-      x-codegen-request-body-name: createProjectRequest
-  /api/billing/{projectId}/members:
-    get:
-      tags:
-        - Billing
-      summary: List members of billing project the caller owns. Deprecated, use v2 version.
-      deprecated: true
-      operationId: listBillingProjectMembers
-      parameters:
-        - $ref: '#/components/parameters/billingProjectPathParam'
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/BillingProjectMember'
-        403:
-          description: You must be a project owner to view the members of a project
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        500:
-          description: FireCloud Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      x-passthrough: true
-      x-passthrough-target: rawls
   /api/billing/v2/{projectId}/spendReportConfiguration:
     get:
       tags:
@@ -228,101 +146,6 @@ paths:
           description: Rawls Internal Error
           content:
             'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      x-passthrough: true
-      x-passthrough-target: rawls
-  /api/billing/{projectId}/{workbenchRole}/{email}:
-    put:
-      tags:
-        - Billing
-      summary: Add user to billing project the caller owns. Deprecated, use v2 version.
-      deprecated: true
-      operationId: addUserToBillingProject
-      parameters:
-        - $ref: '#/components/parameters/billingProjectPathParam'
-        - name: workbenchRole
-          in: path
-          description: role of user for project
-          required: true
-          schema:
-            type: string
-            enum:
-              - user
-              - owner
-        - name: email
-          in: path
-          description: email of user or group to add
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Successfully Added User To Billing Project
-          content: {}
-        403:
-          description: You must be a project owner to add a user to a billing project
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        404:
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        500:
-          description: FireCloud Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      x-passthrough: true
-      x-passthrough-target: rawls
-    delete:
-      tags:
-        - Billing
-      summary: Remove user from billing project the caller owns. Deprecated, use v2 version.
-      deprecated: true
-      operationId: removeUserFromBillingProject
-      parameters:
-        - $ref: '#/components/parameters/billingProjectPathParam'
-        - name: workbenchRole
-          in: path
-          description: role of user for project
-          required: true
-          schema:
-            type: string
-            enum:
-              - user
-              - owner
-        - name: email
-          in: path
-          description: email of user or group to remove
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Successfully Removed User From Billing Project
-          content: {}
-        403:
-          description: You must be a project owner to add a user to a billing project
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        404:
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        500:
-          description: FireCloud Internal Error
-          content:
-            application/json:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
       x-passthrough: true
@@ -620,43 +443,6 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
         500:
           description: FireCloud Internal Error
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-  /api/user/billing/{projectName}:
-    delete:
-      tags:
-        - Billing
-      summary: Delete billing project. Deprecated, use v2 version.
-      deprecated: true
-      description: delete billing project
-      operationId: deleteBillingProjectV2
-      parameters:
-        - name: projectName
-          in: path
-          description: Name of the billing project
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Successfully delete billing project
-          content: {}
-        400:
-          description: Project cannot be deleted because it contains workspaces.
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        403:
-          description: You must be a project owner to delete billing project
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-        500:
-          description: Rawls Internal Error
           content:
             'application/json':
               schema:
@@ -1002,8 +788,8 @@ paths:
   /api/workflows/{version}/{id}/backend/metadata/{backendId}:
     get:
       tags:
-        - CromIAM Workflows (for Job Manager)
-      summary: Get backend (e.g. PAPI) metadata for a job
+        - Rawls Workflows (for Job Manager)
+      summary: Get backend (e.g. PAPI, Google Life Sciences) metadata for a job
       parameters:
         - $ref: '#/components/parameters/versionParam'
         - name: id
@@ -2759,60 +2545,6 @@ paths:
                   $ref: '#/components/schemas/NotificationType'
       x-passthrough: true
       x-passthrough-target: rawls
-  /api/profile/billing:
-    get:
-      tags:
-        - Profile
-      summary: List billing projects for a user. Deprecated, use v2 billing API.
-      deprecated: true
-      operationId: billing
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/BillingProjectMembership'
-        404:
-          description: User Not Found
-          content: {}
-        500:
-          description: Internal Server Error
-          content: {}
-      x-passthrough: true
-      x-passthrough-target: rawls
-  /api/profile/billing/{projectName}:
-    get:
-      tags:
-        - Profile
-      summary: Billing project status. Deprecated, use v2 billing API.
-      deprecated: true
-      description: billing project status
-      operationId: billingProjectStatus
-      parameters:
-        - name: projectName
-          in: path
-          description: Name of the billing project
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BillingProjectStatus'
-        404:
-          description: Project Not Found
-          content: {}
-        500:
-          description: Internal Server Error
-          content: {}
-      x-passthrough: true
-      x-passthrough-target: rawls
   /api/profile/billingAccounts:
     get:
       tags:
@@ -3012,41 +2744,6 @@ paths:
       x-passthrough: true
       x-passthrough-target: calhoun
       x-codegen-request-body-name: notebook
-  /api/storage/{bucket}/{object}:
-    get:
-      tags:
-        - Storage
-      summary: |
-        Get metadata about an object stored in GCS.
-      description: |
-        Returns a subset of the metadata available from Google's Cloud Storage JSON API, as well as the estimated egress
-        charge to North America. If you need the full metadata, we recommend you use Google's API directly; see
-        https://cloud.google.com/storage/docs/json_api/v1/objects/get.
-      operationId: getMetadata
-      parameters:
-        - name: bucket
-          in: path
-          description: Name of the bucket in which the object resides.
-          required: true
-          schema:
-            type: string
-        - name: object
-          in: path
-          description: Name of the object. (be sure to urlencode)
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content: {}
-        404:
-          description: Not Found
-          content: {}
-        500:
-          description: Internal Error
-          content: {}
-      x-passthrough: false
   /api/submissions/queueStatus:
     get:
       tags:
@@ -4002,7 +3699,7 @@ paths:
               - desc
         - name: filterTerms
           in: query
-          description: Terms to search for inside entity attributes
+          description: terms to search for, using substring matching, in all attributes of an entity. Mutually exclusive with the columnFilter parameter.
           schema:
             type: string
         - name: filterOperator
@@ -4014,6 +3711,11 @@ paths:
             enum:
               - and
               - or
+        - name: columnFilter
+          in: query
+          description: exact-match filter for a value in a single column, in the form columnName=string-to-match. Mutually exclusive with the filterTerms parameter.
+          schema:
+            type: string
         - name: fields
           in: query
           description: |
@@ -5556,43 +5258,6 @@ paths:
           content: {}
       x-passthrough: true
       x-passthrough-target: rawls
-  /cookie-authed/download/b/{bucket}/o/{object}:
-    get:
-      tags:
-        - Storage
-      summary: |
-        Download GCS object using a cookie token
-      description: |
-        Download GCS object using a cookie token
-      operationId: getStorageDownload
-      parameters:
-        - name: bucket
-          in: path
-          description: Name of the bucket in which the object resides.
-          required: true
-          schema:
-            type: string
-        - name: object
-          in: path
-          description: Name of the object. (be sure to urlencode)
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        404:
-          description: Not Found
-          content: {}
-        500:
-          description: Internal Error
-          content: {}
-      x-passthrough: false
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/exportAttributesTSV:
     get:
       tags:
@@ -6209,6 +5874,19 @@ paths:
         404:
           description: User Not Found.
           content: { }
+  /register/user/v2/self/termsOfServiceDetails:
+    get:
+      tags:
+        - Terms of Service
+      summary: gets terms of service details, including user's accepted version
+      operationId: getTermsOfServiceDetails
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermsOfServiceDetails'
   /ga4gh/v1/tools/{id}:
     get:
       tags:
@@ -7079,39 +6757,6 @@ components:
           description: List of entity names to be copied
           items:
             type: string
-    CreateRawlsBillingProjectFullRequest:
-      required:
-        - billingAccount
-        - projectName
-      type: object
-      properties:
-        projectName:
-          type: string
-          description: the name of the project to create
-        billingAccount:
-          type: string
-          description: the id of the billing account to use, must start with 'billingAccounts/'
-        highSecurityNetwork:
-          type: boolean
-          description: Optional, false if not specified. If true, spin up all compute
-            in a VPC network.
-        enableFlowLogs:
-          type: boolean
-          description: Requires highSecurityNetwork = true. Optional, false if not
-            specified. If true, enable flow logs within the high security network.
-        privateIpGoogleAccess:
-          type: boolean
-          description: Requires highSecurityNetwork = true. Optional, false if not
-            specified. If true, it configures the VPC network to only allow access
-            to GCP APIs that are protected by the project's service perimeter and
-            routes all allowed API traffic through a narrow IP range.
-        servicePerimeter:
-          type: string
-          description: The fully qualified name of the GCP service perimeter to put
-            this project into in the form accessPolicies/[POLICY NUMBER]/servicePerimeters/[NAME].
-            Caller must have the add_project action for this service perimeter in
-            Sam.
-      description: ""
     CreateRawlsV2BillingProjectFullRequest:
       required:
         - projectName
@@ -7131,7 +6776,38 @@ components:
             Sam.
         managedAppCoordinates:
           $ref: '#/components/schemas/AzureManagedAppCoordinates'
+        members:
+          description: The list of members to add to the billing project
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAccessUpdate'
+        inviteUsersNotFound:
+          description: If true, invite the users to Terra if they are not registered in the system. They will be given access to the project when they register.
+          type: boolean
+        protectedData:
+          type: boolean
+          description: Optional, false if not specified. Applicable only for azure
+            billing projects. When set, a billing project with suitable infrastructure
+            for protected data workspaces will be created.
       description: ""
+    ProjectRole:
+      description: the role on the billing project
+      type: string
+      enum:
+        - owner
+        - user
+    ProjectAccessUpdate:
+      required:
+        - email
+        - role
+      type: object
+      properties:
+        email:
+          description: the email of the member to modify access for
+          type: string
+        role:
+          description: the role to modify for the specified member
+          $ref: '#/components/schemas/ProjectRole'
     AzureManagedAppCoordinates:
       required:
         - tenantId
@@ -8094,6 +7770,12 @@ components:
           description:
             The Terms of Service url, "app.terra.bio/#terms-of-service", which a user
             must include to show they accept the Terms of Service
+        department:
+          type: string
+          description: User's department within an institution
+        interestInTerra:
+          type: string
+          description: A string of comma-separated values of why the User is interested in Terra
     PublishConfigurationIngest:
       required:
         - configurationName
@@ -8139,16 +7821,17 @@ components:
             type: string
           description: the roles the caller has on the project
         status:
-          deprecated: true
           type: string
           enum:
             - Creating
             - Ready
             - Error
+            - Deleting
+            - DeletionFailed
             - AddingToPerimeter
+            - CreatingLandingZone
           description: the status of allocating the billing project's resources.
         message:
-          deprecated: true
           type: string
           description: informational message about the project
         azureManagedAppCoordinates:
@@ -8159,6 +7842,10 @@ components:
             - GCP
             - AZURE
             - UNKNOWN
+        landingZoneId:
+          type: string
+          format: uuid
+          description: the UUID of the landing zone associated with the project (cloudPlatform AZURE only)
     RawlsGroupRef:
       type: object
       properties:
@@ -9197,6 +8884,7 @@ components:
         - workspaceId
         - googleProject
         - workspaceVersion
+        - state
       type: object
       properties:
         attributes:
@@ -9260,6 +8948,23 @@ components:
           description: The date all files were successfully transferred to the workspace bucket if applicable
             in yyyy-MM-ddTHH:mm:ss.SSSZZ format
           format: date-time
+        cloudPlatform:
+          type: string
+          description: The cloud platform of the workspace
+          enum:
+            - GCP
+            - AZURE
+        state:
+          type: string
+          description: The lifecycle state of the workspace
+          enum:
+            - Creating
+            - CreateFailed
+            - Ready
+            - Updating
+            - UpdateFailed
+            - Deleting
+            - DeleteFailed
       description: ""
     WorkspaceListResponse:
       type: object
@@ -9901,6 +9606,27 @@ components:
         currentBillingAccountOnGoogleProject:
           type: string
           description: the billing project associated with the workspace
+    TermsOfServiceDetails:
+      required:
+        - isEnabled
+        - isGracePeriodEnabled
+        - currentVersion
+        - userAcceptedVersion
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+          description: true if terms of service is enforced in Sam
+        isGracePeriodEnabled:
+          type: boolean
+          description: true if there is currently a grace period enabled,
+            letting users use the system without accepting the terms of service
+        currentVersion:
+          type: string
+          description: the current version of terms of service for the system
+        userAcceptedVersion:
+          type: string
+          description: the version of the terms of service the user has accepted
   parameters:
     AttributeNamePathParam:
       name: attributeName

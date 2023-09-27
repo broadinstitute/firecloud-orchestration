@@ -24,7 +24,9 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       assertResult(attributes) {
         List(AddUpdateAttribute(AttributeName("default", "a1"), AttributeString("v1")),
           AddUpdateAttribute(AttributeName("default", "a2"), AttributeString("2")),
-          AddUpdateAttribute(AttributeName("default", "a3"), AttributeString("[1,2,3]")))
+          AddUpdateAttribute(AttributeName("default", "a3"), AttributeString("[1,2,3]")),
+        AddUpdateAttribute(AttributeName("default", "a4"), AttributeValueRawJson("""{"tables":{"sample":{"save":["participant",false,"sample",true]}}}""")
+        ))
       }
     }
 
@@ -145,6 +147,24 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
           stringToTypedAttribute(str) shouldBe AttributeString(str)
         }
       }
+    }
+  }
+
+  List("6e260905", "-5e345678") foreach { str =>
+    s"should handle a string '$str' that looks like scientific notation but translates to Infinity (positive or negative)" in {
+      stringToTypedAttribute(str) shouldBe AttributeString(str)
+    }
+  }
+
+  List("1234d", "-5678D", "9012f", "3456F") foreach { str =>
+    s"should handle a string '$str' that looks like a number literal" in {
+      stringToTypedAttribute(str) shouldBe AttributeString(str)
+    }
+  }
+
+  List("NaN") foreach { str =>
+    s"should handle a string '$str' that looks like not-a-number" in {
+      stringToTypedAttribute(str) shouldBe AttributeString(str)
     }
   }
 

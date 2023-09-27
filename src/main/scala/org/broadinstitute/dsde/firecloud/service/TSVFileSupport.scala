@@ -126,7 +126,7 @@ trait TSVFileSupport {
       if (value.equals("__DELETE__"))
         RemoveAttribute(AttributeName.fromDelimitedName(name))
       else {
-        AddUpdateAttribute(AttributeName.fromDelimitedName(name), AttributeString(StringContext.processEscapes(value)))
+        AddUpdateAttribute(AttributeName.fromDelimitedName(name), checkForJson(StringContext.processEscapes(value)))
       }
     }
   }
@@ -150,18 +150,35 @@ trait TSVFileSupport {
     Try (java.lang.Integer.parseInt(value)) match {
       case Success(intValue) => AttributeNumber(intValue)
       case Failure(_) => Try (java.lang.Double.parseDouble(value)) match {
-        case Success(doubleValue) => AttributeNumber(doubleValue)
-        case Failure(_) => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
+        // because we represent AttributeNumber as a BigDecimal, and BigDecimal has no concept of infinity or NaN,
+        // if we find infinite/NaN numbers here, don't save them as AttributeNumber; instead let them fall through
+        // to AttributeString.
+        case Success(doubleValue) if !Double.NegativeInfinity.equals(doubleValue)
+          && !Double.PositiveInfinity.equals(doubleValue)
+          && !Double.NaN.equals(doubleValue)
+        && !matchesLiteral(value) =>
+          AttributeNumber(doubleValue)
+        case _ => Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
           case Success(booleanValue) => AttributeBoolean(booleanValue)
           case Failure(_) =>
             Try(value.parseJson.convertTo[AttributeEntityReference]) match {
               case Success(ref) => ref
               case Failure(_) => AttributeString(value)
             }
-
         }
       }
     }
+  }
+
+  def checkForJson(value: String): Attribute = {
+    Try(value.parseJson) match {
+        case Success(_: JsObject) => AttributeValueRawJson(value)
+        case _ => AttributeString(value)
+      }
+  }
+
+  def matchesLiteral(value: String): Boolean = {
+    value.toLowerCase().endsWith("d") || value.toLowerCase().endsWith("f")
   }
 
   /**

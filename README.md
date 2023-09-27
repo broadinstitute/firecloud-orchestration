@@ -27,11 +27,10 @@ FireCloud Orchestration Service
 
 * [Docker Desktop](https://www.docker.com/products/docker-desktop) (4GB+, 8GB recommended)
 * Broad internal internet connection (or VPN, non-split recommended)
-* Render the local configuration files. From the root of the [firecloud-develop](https://github.com/broadinstitute/firecloud-develop) repo, run:
+* Render the local configuration files. From the root of this repo, run:
 ```sh
-sh run-context/local/scripts/firecloud-setup.sh
+./local-dev/bin/render
 ```
-Note: this script will offer to set up configuration for several other services as well. You can skip those if you only want to set up configuration for Orch. If this is your first time running Orch or rendering configuration files, you will want to run through the "Setup vault" step.
 
 *  The `/etc/hosts` file on your machine must contain this entry (for calling Orch endpoints):
 ```sh
@@ -101,3 +100,33 @@ To build the orch jar with docker, and then build the orch docker image, run:
 ## Debugging
 
 Remote debugging is enabled for firecloud-orchestration on port 5051.
+In order to debug in Intellij:
+1. first modify the `build.sbt` file as follows:
+   1. Comment out the `Revolver.enableDebugging` [line](https://github.com/broadinstitute/firecloud-orchestration/blob/f0873d444114013ec9612d28c2ccb17bc85f05d2/build.sbt#L11)
+   2. Replace the `reStart / javaOptions` [line](https://github.com/broadinstitute/firecloud-orchestration/blob/f0873d444114013ec9612d28c2ccb17bc85f05d2/build.sbt#L17) with `reStart / javaOptions ++= sys.env.getOrElse("JAVA_OPTS", "")
+      .concat(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5051")
+      .split(" ")
+      .toList`
+
+    That section of the `build.sbt` file should now look like this:
+    ```aidl
+    //Revolver.enableDebugging(port = 5051, suspend = false)
+    
+    // When JAVA_OPTS are specified in the environment, they are usually meant for the application
+    // itself rather than sbt, but they are not passed by default to the application, which is a forked
+    // process. This passes them through to the "re-start" command, which is probably what a developer
+    // would normally expect.
+    reStart / javaOptions ++= sys.env.getOrElse("JAVA_OPTS", "")
+    .concat(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5051")
+    .split(" ")
+    .toList
+    ```
+2. In Intellij, go to Run -> Edit Configurations
+3. Choose "Add new Configuration" (the + sign)
+4. Select "Remote JVM Debug" and set the following configuration:
+   1. Debugger mode: Attach to remote JVM
+   2. Host: localhost
+   3. Port: 5051
+5. Run the local firecloud docker with `./config/docker-rsync-local-orch.sh` from the root directory
+6. In Intellij, choose your debug configuration and run 'debug'.
+

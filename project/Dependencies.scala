@@ -1,12 +1,12 @@
 import sbt._
 
 object Dependencies {
-  val akkaV = "2.5.32"
+  val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.84.Final"
-  val workbenchLibsHash = "20f9225"
+  val nettyV = "4.1.97.Final"
+  val workbenchLibsHash = "084d25b"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -22,7 +22,10 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "org.yaml" % "snakeyaml" % "1.33"
+    "org.yaml" % "snakeyaml" % "1.33",
+    // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
+    "org.bitbucket.b_c" % "jose4j" % "0.9.3",
+    "io.grpc" % "grpc-xds" % "1.56.1"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -31,26 +34,27 @@ object Dependencies {
     // TODO: can these move to sbt's dependencyOverrides?
     "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "31.1-jre",
+    "com.google.guava"               % "guava"               % "32.1.2-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.19.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.4",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.20.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.11",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-e0584dbdc")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "0.1-fb0c9691b")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.6-bc324ba"), // TODO: upgrading to latest workbench-libs hash causes failures
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.24-$workbenchLibsHash",
+    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.10-128901e"),
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.25-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.3-$workbenchLibsHash",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -74,24 +78,26 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20191001-1.30.3"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev110-1.25.0"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.1.1",
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230830-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230822-2.0.0"),
+
+
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.4.4",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
-    "com.github.erosb"               % "everit-json-schema"  % "1.14.1",
-    "com.github.pathikrit"          %% "better-files"        % "3.9.1",
+    "com.github.erosb"               % "everit-json-schema"  % "1.14.2",
+    "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.14"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.17"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.124.18" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.3" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }

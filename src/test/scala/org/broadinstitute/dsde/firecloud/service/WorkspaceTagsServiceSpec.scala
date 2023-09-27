@@ -1,24 +1,22 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.util.concurrent.ConcurrentHashMap
-
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
-import org.broadinstitute.dsde.rawls.model
+import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.scalatest.{Assertions, BeforeAndAfterEach}
-import akka.http.scaladsl.model.StatusCodes._
 import spray.json.DefaultJsonProtocol._
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Unit tests for workspace tag apis.
   *
@@ -320,8 +318,11 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     Some(GoogleProjectNumber("googleProjectNumber")),
     Some(RawlsBillingAccountName("billingAccount")),
     None,
+    None,
     Option(DateTime.now()),
-    None
+    None,
+    None,
+    WorkspaceState.Ready
   )
 
   private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(

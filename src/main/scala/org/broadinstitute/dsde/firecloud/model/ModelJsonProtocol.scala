@@ -213,8 +213,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
   implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
   implicit val impThurloeKeyValues = jsonFormat2(ThurloeKeyValues)
-  implicit val impBasicProfile = jsonFormat10(BasicProfile)
-  implicit val impProfile = jsonFormat11(Profile.apply)
+  implicit val impBasicProfile = jsonFormat12(BasicProfile)
+  implicit val impProfile = jsonFormat13(Profile.apply)
   implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
   implicit val impProfileKVP = jsonFormat2(ProfileKVP)
   implicit val impTerraPreference = jsonFormat2(TerraPreference)
@@ -242,8 +242,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impImportServiceResponse = jsonFormat3(ImportServiceResponse)
 
   implicit val impWorkspaceStorageCostEstimate = jsonFormat2(WorkspaceStorageCostEstimate)
-
-  implicit val impGoogleObjectMetadata = jsonFormat16(ObjectMetadata)
 
   implicit object impManagedGroupRoleFormat extends RootJsonFormat[ManagedGroupRole] {
     override def write(obj: ManagedGroupRole): JsValue = JsString(obj.toString)

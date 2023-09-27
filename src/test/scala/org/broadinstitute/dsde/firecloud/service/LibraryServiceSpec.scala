@@ -1,27 +1,24 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.net.URL
-import java.util.UUID
-
 import org.broadinstitute.dsde.firecloud.dataaccess.ElasticSearchDAOSupport
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.LibraryService._
+import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, _}
+import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 import org.everit.json.schema.ValidationException
+import org.joda.time.DateTime
 import org.parboiled.common.FileUtils
 import org.scalatest.freespec.AnyFreeSpecLike
-import spray.json.{JsObject, _}
 import spray.json.DefaultJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.Ontology.{TermParent, TermResource}
-import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
-import org.joda.time.DateTime
+import spray.json.{JsObject, _}
 
-import scala.jdk.CollectionConverters._
+import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 object LibraryServiceSpec {
@@ -89,7 +86,9 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
     googleProjectNumber = Some(GoogleProjectNumber("googleProjectNumber")),
     billingAccount = Some(RawlsBillingAccountName("billingAccount")),
     completedCloneWorkspaceFileTransfer = Some(DateTime.now()),
-    workspaceType = None
+    workspaceType = None,
+    cloudPlatform = None,
+    state = WorkspaceState.Ready
   )
 
 
@@ -832,8 +831,11 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           Some(GoogleProjectNumber("googleProjectNumber")),
           Some(RawlsBillingAccountName("billingAccount")),
           None,
+          None,
           Option(DateTime.now()),
-          None
+          None,
+          None,
+          WorkspaceState.Ready
         )
 
         attrMaps map { attrMap =>

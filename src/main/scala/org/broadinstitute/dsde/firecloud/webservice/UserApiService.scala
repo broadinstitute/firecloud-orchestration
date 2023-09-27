@@ -101,11 +101,11 @@ trait UserApiService
             passthrough(UserApiService.billingUrl, HttpMethods.GET)
           }
         } ~
-        path(Segment) { projectName =>
-          get {
-            passthrough(UserApiService.billingProjectUrl(projectName), HttpMethods.GET)
+          path(Segment) { projectName =>
+            get {
+              passthrough(UserApiService.billingProjectUrl(projectName), HttpMethods.GET)
+            }
           }
-        }
       } ~
       path("profile" / "billingAccounts") {
         get {
