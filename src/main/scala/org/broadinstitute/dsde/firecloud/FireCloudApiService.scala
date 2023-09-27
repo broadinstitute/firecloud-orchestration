@@ -4,6 +4,8 @@ import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.event.Logging.LogLevel
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.headers.CacheDirectives.{`no-cache`, `no-store`}
+import akka.http.scaladsl.model.headers.{RawHeader, `Cache-Control`}
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
@@ -159,6 +161,16 @@ trait FireCloudApiService extends CookieAuthedApiService
     }
   }
 
+  // Return "cache-control: no-store" and "pragma: no-cache" headers,
+  // if those headers don't already exist on the response. This is included
+  // in `routeWrappers` below, so it affects all responses from Orch.
+  // Note that many Orch APIs are passthroughs, and if the underlying
+  // service (Rawls, Sam, etc) already returns these headers, Orch
+  // will not overwrite them.
+  private val noCacheNoStore: Directive0 = respondWithDefaultHeaders(
+    `Cache-Control`(`no-store`),
+    RawHeader("Pragma", `no-cache`.value))
+
   // routes under /api
   def apiRoutes: server.Route =
     options { complete(StatusCodes.OK) } ~
@@ -179,7 +191,8 @@ trait FireCloudApiService extends CookieAuthedApiService
    handleRejections(org.broadinstitute.dsde.firecloud.model.defaultErrorReportRejectionHandler) &
       handleExceptions(FireCloudApiService.exceptionHandler) &
       appendTimestampOnFailure &
-      logRequests
+      logRequests &
+      noCacheNoStore
 
   def route: server.Route = (routeWrappers) {
     cromIamEngineRoutes ~
