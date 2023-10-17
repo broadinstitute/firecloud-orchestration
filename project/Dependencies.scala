@@ -25,7 +25,8 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "1.33",
     // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
     "org.bitbucket.b_c" % "jose4j" % "0.9.3",
-    "io.grpc" % "grpc-xds" % "1.56.1"
+    "io.grpc" % "grpc-xds" % "1.56.1",
+    "org.json" % "json" % "20231013"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
