@@ -34,7 +34,7 @@ object Dependencies {
     // TODO: can these move to sbt's dependencyOverrides?
     "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "32.1.2-jre",
+    "com.google.guava"               % "guava"               % "32.1.3-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
@@ -80,7 +80,7 @@ object Dependencies {
 
 
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230830-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20230822-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20231005-2.0.0"),
 
 
     "com.github.jwt-scala"          %% "jwt-core"            % "9.4.4",
@@ -97,7 +97,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.4" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.5" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
