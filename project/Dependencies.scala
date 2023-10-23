@@ -25,8 +25,7 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "1.33",
     // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
     "org.bitbucket.b_c" % "jose4j" % "0.9.3",
-    "io.grpc" % "grpc-xds" % "1.56.1",
-    "org.json" % "json" % "20231013"
+    "io.grpc" % "grpc-xds" % "1.56.1"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -39,7 +38,7 @@ object Dependencies {
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.20.0",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.21.0",
     "ch.qos.logback"                 % "logback-classic"     % "1.4.11",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
@@ -80,7 +79,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20230830-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20231010-2.0.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20231005-2.0.0"),
 
 
@@ -90,7 +89,7 @@ object Dependencies {
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
-    "com.github.erosb"               % "everit-json-schema"  % "1.14.2",
+    "com.github.erosb"               % "everit-json-schema"  % "1.14.3",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.17"   % "test",
