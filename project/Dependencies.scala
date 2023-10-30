@@ -79,7 +79,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20231010-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20231019-2.0.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20231005-2.0.0"),
 
 
@@ -97,7 +97,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.5" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.6" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
