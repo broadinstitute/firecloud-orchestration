@@ -30,7 +30,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
 
-  implicit val errorReportSource = ErrorReportSource(RawlsDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(RawlsDAO.serviceName)
 
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"

@@ -70,8 +70,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
       case _ => throw DeserializationException(s"cannot deserialize DiseaseOntologyNodeId from [$json]")
     }
   }
-  implicit val impResearchPurpose = jsonFormat6(ResearchPurpose.apply)
-  implicit val impResearchPurposeRequest = jsonFormat7(ResearchPurposeRequest.apply)
+  implicit val impResearchPurpose: RootJsonFormat[ResearchPurpose] = jsonFormat6(ResearchPurpose.apply)
+  implicit val impResearchPurposeRequest: RootJsonFormat[ResearchPurposeRequest] = jsonFormat7(ResearchPurposeRequest.apply)
 
   implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
     val SEARCH_STRING = "searchString"
@@ -129,10 +129,10 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
-  implicit val ESInnerFieldFormat = jsonFormat7(ESInnerField)
-  implicit val ESInternalTypeFormat = jsonFormat3(ESInternalType)
-  implicit val ESNestedTypeFormat = jsonFormat2(ESNestedType)
-  implicit val ESTypeFormat = jsonFormat3(ESType.apply)
+  implicit val ESInnerFieldFormat: RootJsonFormat[ESInnerField] = jsonFormat7(ESInnerField)
+  implicit val ESInternalTypeFormat: RootJsonFormat[ESInternalType] = jsonFormat3(ESInternalType)
+  implicit val ESNestedTypeFormat: RootJsonFormat[ESNestedType] = jsonFormat2(ESNestedType)
+  implicit val ESTypeFormat: RootJsonFormat[ESType] = jsonFormat3(ESType.apply)
 
   implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
     override def write(input: ESPropertyFields): JsValue = input match {
@@ -153,7 +153,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
-  implicit val ESDatasetPropertiesFormat = jsonFormat1(ESDatasetProperty)
+  implicit val ESDatasetPropertiesFormat: RootJsonFormat[ESDatasetProperty] = jsonFormat1(ESDatasetProperty)
 
   implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
     val CLASS_NAME = "className"
@@ -176,72 +176,72 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   }
 
   // Build error about missing implicit for Spray parameter unmarshaller? Add an entry here.
-  implicit val impMethod = jsonFormat11(OrchMethodRepository.Method.apply)
-  implicit val impConfiguration = jsonFormat10(OrchMethodRepository.Configuration)
-  implicit val impAgoraConfigurationShort = jsonFormat4(OrchMethodRepository.AgoraConfigurationShort)
+  implicit val impMethod: RootJsonFormat[Method] = jsonFormat11(OrchMethodRepository.Method.apply)
+  implicit val impConfiguration: RootJsonFormat[Configuration] = jsonFormat10(OrchMethodRepository.Configuration)
+  implicit val impAgoraConfigurationShort: RootJsonFormat[AgoraConfigurationShort] = jsonFormat4(OrchMethodRepository.AgoraConfigurationShort)
 
-  implicit val impUIWorkspaceResponse = jsonFormat6(UIWorkspaceResponse)
+  implicit val impUIWorkspaceResponse: RootJsonFormat[UIWorkspaceResponse] = jsonFormat6(UIWorkspaceResponse)
 
   //implicit val impEntity = jsonFormat5(Entity)
-  implicit val impEntityCreateResult = jsonFormat4(EntityCreateResult)
-  implicit val impEntityCopyWithoutDestinationDefinition = jsonFormat3(EntityCopyWithoutDestinationDefinition)
-  implicit val impEntityId = jsonFormat2(EntityId)
+  implicit val impEntityCreateResult: RootJsonFormat[EntityCreateResult] = jsonFormat4(EntityCreateResult)
+  implicit val impEntityCopyWithoutDestinationDefinition: RootJsonFormat[EntityCopyWithoutDestinationDefinition] = jsonFormat3(EntityCopyWithoutDestinationDefinition)
+  implicit val impEntityId: RootJsonFormat[EntityId] = jsonFormat2(EntityId)
 
-  implicit val impDestination = jsonFormat3(MethodConfigurationId)
-  implicit val impMethodConfigurationCopy = jsonFormat4(MethodConfigurationCopy)
-  implicit val impConfigurationCopyIngest = jsonFormat5(CopyConfigurationIngest)
-  implicit val impMethodConfigurationPublish = jsonFormat3(MethodConfigurationPublish)
-  implicit val impPublishConfigurationIngest = jsonFormat4(PublishConfigurationIngest)
-  implicit val impMethodConfigurationName = jsonFormat2(OrchMethodConfigurationName.apply)
+  implicit val impDestination: RootJsonFormat[MethodConfigurationId] = jsonFormat3(MethodConfigurationId)
+  implicit val impMethodConfigurationCopy: RootJsonFormat[MethodConfigurationCopy] = jsonFormat4(MethodConfigurationCopy)
+  implicit val impConfigurationCopyIngest: RootJsonFormat[CopyConfigurationIngest] = jsonFormat5(CopyConfigurationIngest)
+  implicit val impMethodConfigurationPublish: RootJsonFormat[MethodConfigurationPublish] = jsonFormat3(MethodConfigurationPublish)
+  implicit val impPublishConfigurationIngest: RootJsonFormat[PublishConfigurationIngest] = jsonFormat4(PublishConfigurationIngest)
+  implicit val impMethodConfigurationName: RootJsonFormat[OrchMethodConfigurationName] = jsonFormat2(OrchMethodConfigurationName.apply)
 
-  implicit val impFireCloudPermission = jsonFormat2(FireCloudPermission)
-  implicit val impAgoraPermission = jsonFormat2(AgoraPermission)
+  implicit val impFireCloudPermission: RootJsonFormat[FireCloudPermission] = jsonFormat2(FireCloudPermission)
+  implicit val impAgoraPermission: RootJsonFormat[AgoraPermission] = jsonFormat2(AgoraPermission)
 
-  implicit val impEntityAccessControl = jsonFormat4(EntityAccessControl)
-  implicit val impEntityAccessControlAgora = jsonFormat3(EntityAccessControlAgora)
-  implicit val impAccessEntry = jsonFormat4(AccessEntry)
-  implicit val impPermissionReport = jsonFormat2(PermissionReport)
-  implicit val impPermissionReportRequest = jsonFormat2(PermissionReportRequest)
-  implicit val impMethodAclPair = jsonFormat3(MethodAclPair)
+  implicit val impEntityAccessControl: RootJsonFormat[EntityAccessControl] = jsonFormat4(EntityAccessControl)
+  implicit val impEntityAccessControlAgora: RootJsonFormat[EntityAccessControlAgora] = jsonFormat3(EntityAccessControlAgora)
+  implicit val impAccessEntry: RootJsonFormat[AccessEntry] = jsonFormat4(AccessEntry)
+  implicit val impPermissionReport: RootJsonFormat[PermissionReport] = jsonFormat2(PermissionReport)
+  implicit val impPermissionReportRequest: RootJsonFormat[PermissionReportRequest] = jsonFormat2(PermissionReportRequest)
+  implicit val impMethodAclPair: RootJsonFormat[MethodAclPair] = jsonFormat3(MethodAclPair)
 
-  implicit val impEntityMetadata = jsonFormat3(EntityMetadata)
-  implicit val impModelSchema = jsonFormat1(EntityModel)
-  implicit val impOrchSubmissionRequest = jsonFormat11(OrchSubmissionRequest)
+  implicit val impEntityMetadata: RootJsonFormat[EntityMetadata] = jsonFormat3(EntityMetadata)
+  implicit val impModelSchema: RootJsonFormat[EntityModel] = jsonFormat1(EntityModel)
+  implicit val impOrchSubmissionRequest: RootJsonFormat[OrchSubmissionRequest] = jsonFormat11(OrchSubmissionRequest)
 
-  implicit val impEntityUpdateDefinition = jsonFormat3(EntityUpdateDefinition)
+  implicit val impEntityUpdateDefinition: RootJsonFormat[EntityUpdateDefinition] = jsonFormat3(EntityUpdateDefinition)
 
-  implicit val impFireCloudKeyValue = jsonFormat2(FireCloudKeyValue)
-  implicit val impThurloeKeyValue = jsonFormat2(ThurloeKeyValue)
-  implicit val impThurloeKeyValues = jsonFormat2(ThurloeKeyValues)
-  implicit val impBasicProfile = jsonFormat12(BasicProfile)
-  implicit val impProfile = jsonFormat13(Profile.apply)
-  implicit val impProfileWrapper = jsonFormat2(ProfileWrapper)
-  implicit val impProfileKVP = jsonFormat2(ProfileKVP)
-  implicit val impTerraPreference = jsonFormat2(TerraPreference)
-  implicit val impShibbolethToken = jsonFormat2(ShibbolethToken)
+  implicit val impFireCloudKeyValue: RootJsonFormat[FireCloudKeyValue] = jsonFormat2(FireCloudKeyValue)
+  implicit val impThurloeKeyValue: RootJsonFormat[ThurloeKeyValue] = jsonFormat2(ThurloeKeyValue)
+  implicit val impThurloeKeyValues: RootJsonFormat[ThurloeKeyValues] = jsonFormat2(ThurloeKeyValues)
+  implicit val impBasicProfile: RootJsonFormat[BasicProfile] = jsonFormat12(BasicProfile)
+  implicit val impProfile: RootJsonFormat[Profile] = jsonFormat13(Profile.apply)
+  implicit val impProfileWrapper: RootJsonFormat[ProfileWrapper] = jsonFormat2(ProfileWrapper)
+  implicit val impProfileKVP: RootJsonFormat[ProfileKVP] = jsonFormat2(ProfileKVP)
+  implicit val impTerraPreference: RootJsonFormat[TerraPreference] = jsonFormat2(TerraPreference)
+  implicit val impShibbolethToken: RootJsonFormat[ShibbolethToken] = jsonFormat2(ShibbolethToken)
 
-  implicit val impJWTWrapper = jsonFormat1(JWTWrapper)
+  implicit val impJWTWrapper: RootJsonFormat[JWTWrapper] = jsonFormat1(JWTWrapper)
 
-  implicit val impOAuthUser = jsonFormat2(OAuthUser)
+  implicit val impOAuthUser: RootJsonFormat[OAuthUser] = jsonFormat2(OAuthUser)
 
-  implicit val impWorkbenchUserInfo = jsonFormat2(WorkbenchUserInfo)
-  implicit val impWorkbenchEnabled = jsonFormat3(WorkbenchEnabled)
-  implicit val impWorkbenchEnabledV2 = jsonFormat3(WorkbenchEnabledV2)
-  implicit val impRegistrationInfo = jsonFormat3(RegistrationInfo)
-  implicit val impRegistrationInfoV2 = jsonFormat3(RegistrationInfoV2)
-  implicit val impUserIdInfo = jsonFormat3(UserIdInfo)
-  implicit val impCurator = jsonFormat1(Curator)
-  implicit val impUserImportPermission = jsonFormat2(UserImportPermission)
+  implicit val impWorkbenchUserInfo: RootJsonFormat[WorkbenchUserInfo] = jsonFormat2(WorkbenchUserInfo)
+  implicit val impWorkbenchEnabled: RootJsonFormat[WorkbenchEnabled] = jsonFormat3(WorkbenchEnabled)
+  implicit val impWorkbenchEnabledV2: RootJsonFormat[WorkbenchEnabledV2] = jsonFormat3(WorkbenchEnabledV2)
+  implicit val impRegistrationInfo: RootJsonFormat[RegistrationInfo] = jsonFormat3(RegistrationInfo)
+  implicit val impRegistrationInfoV2: RootJsonFormat[RegistrationInfoV2] = jsonFormat3(RegistrationInfoV2)
+  implicit val impUserIdInfo: RootJsonFormat[UserIdInfo] = jsonFormat3(UserIdInfo)
+  implicit val impCurator: RootJsonFormat[Curator] = jsonFormat1(Curator)
+  implicit val impUserImportPermission: RootJsonFormat[UserImportPermission] = jsonFormat2(UserImportPermission)
 
-  implicit val impBagitImportRequest = jsonFormat2(BagitImportRequest)
-  implicit val impPFBImportRequest = jsonFormat1(PFBImportRequest)
-  implicit val impOptions = jsonFormat1(ImportOptions)
-  implicit val impAsyncImportRequest = jsonFormat3(AsyncImportRequest)
-  implicit val impAsyncImportResponse = jsonFormat3(AsyncImportResponse)
-  implicit val impImportServiceRequest = jsonFormat4(ImportServiceRequest)
-  implicit val impImportServiceResponse = jsonFormat3(ImportServiceResponse)
+  implicit val impBagitImportRequest: RootJsonFormat[BagitImportRequest] = jsonFormat2(BagitImportRequest)
+  implicit val impPFBImportRequest: RootJsonFormat[PFBImportRequest] = jsonFormat1(PFBImportRequest)
+  implicit val impOptions: RootJsonFormat[ImportOptions] = jsonFormat1(ImportOptions)
+  implicit val impAsyncImportRequest: RootJsonFormat[AsyncImportRequest] = jsonFormat3(AsyncImportRequest)
+  implicit val impAsyncImportResponse: RootJsonFormat[AsyncImportResponse] = jsonFormat3(AsyncImportResponse)
+  implicit val impImportServiceRequest: RootJsonFormat[ImportServiceRequest] = jsonFormat4(ImportServiceRequest)
+  implicit val impImportServiceResponse: RootJsonFormat[ImportServiceResponse] = jsonFormat3(ImportServiceResponse)
 
-  implicit val impWorkspaceStorageCostEstimate = jsonFormat2(WorkspaceStorageCostEstimate)
+  implicit val impWorkspaceStorageCostEstimate: RootJsonFormat[WorkspaceStorageCostEstimate] = jsonFormat2(WorkspaceStorageCostEstimate)
 
   implicit object impManagedGroupRoleFormat extends RootJsonFormat[ManagedGroupRole] {
     override def write(obj: ManagedGroupRole): JsValue = JsString(obj.toString)
@@ -252,27 +252,27 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
-  implicit val impFireCloudManagedGroup = jsonFormat3(FireCloudManagedGroup)
-  implicit val impFireCloudManagedGroupMembership = jsonFormat3(FireCloudManagedGroupMembership)
+  implicit val impFireCloudManagedGroup: RootJsonFormat[FireCloudManagedGroup] = jsonFormat3(FireCloudManagedGroup)
+  implicit val impFireCloudManagedGroupMembership: RootJsonFormat[FireCloudManagedGroupMembership] = jsonFormat3(FireCloudManagedGroupMembership)
 
-  implicit val impResourceId = ValueObjectFormat(ResourceId)
-  implicit val impAccessPolicyName = ValueObjectFormat(AccessPolicyName)
-  implicit val impUserPolicy = jsonFormat5(UserPolicy)
+  implicit val impResourceId: ValueObjectFormat[ResourceId] = ValueObjectFormat(ResourceId)
+  implicit val impAccessPolicyName: ValueObjectFormat[AccessPolicyName] = ValueObjectFormat(AccessPolicyName)
+  implicit val impUserPolicy: RootJsonFormat[UserPolicy] = jsonFormat5(UserPolicy)
 
 
 
   implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(lazyFormat(jsonFormat5(AttributeDetail)))
-  implicit val AttributeDefinitionFormat = jsonFormat1(AttributeDefinition)
+  implicit val AttributeDefinitionFormat: RootJsonFormat[AttributeDefinition] = jsonFormat1(AttributeDefinition)
 
 
-  implicit val impAggregationTermResult = jsonFormat2(AggregationTermResult)
-  implicit val impAggregationFieldResults = jsonFormat2(AggregationFieldResults)
-  implicit val impLibraryAggregationResponse = jsonFormat2(LibraryAggregationResponse)
-  implicit val impLibrarySearchResponse = jsonFormat4(LibrarySearchResponse)
-  implicit val impLibraryBulkIndexResponse = jsonFormat3(LibraryBulkIndexResponse)
+  implicit val impAggregationTermResult: RootJsonFormat[AggregationTermResult] = jsonFormat2(AggregationTermResult)
+  implicit val impAggregationFieldResults: RootJsonFormat[AggregationFieldResults] = jsonFormat2(AggregationFieldResults)
+  implicit val impLibraryAggregationResponse: RootJsonFormat[LibraryAggregationResponse] = jsonFormat2(LibraryAggregationResponse)
+  implicit val impLibrarySearchResponse: RootJsonFormat[LibrarySearchResponse] = jsonFormat4(LibrarySearchResponse)
+  implicit val impLibraryBulkIndexResponse: RootJsonFormat[LibraryBulkIndexResponse] = jsonFormat3(LibraryBulkIndexResponse)
 
-  implicit val impStructuredDataRequest = jsonFormat12(StructuredDataRequest)
-  implicit val impStructuredDataResponse = jsonFormat4(StructuredDataResponse)
+  implicit val impStructuredDataRequest: RootJsonFormat[StructuredDataRequest] = jsonFormat12(StructuredDataRequest)
+  implicit val impStructuredDataResponse: RootJsonFormat[StructuredDataResponse] = jsonFormat4(StructuredDataResponse)
 
   implicit object impDuosDataUse extends RootJsonFormat[DuosDataUse] {
     override def write(ddu: DuosDataUse): JsValue = {
@@ -297,15 +297,15 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
       }
     }
   }
-  implicit val impDuosConsent = jsonFormat11(Consent)
-  implicit val impDuosConsentError = jsonFormat2(ConsentError)
-  implicit val impOntologyTermParent = jsonFormat5(TermParent)
-  implicit val impOntologyTermResource = jsonFormat7(TermResource)
-  implicit val impOntologyESTermParent = jsonFormat2(ESTermParent)
+  implicit val impDuosConsent: RootJsonFormat[Consent] = jsonFormat11(Consent)
+  implicit val impDuosConsentError: RootJsonFormat[ConsentError] = jsonFormat2(ConsentError)
+  implicit val impOntologyTermParent: RootJsonFormat[TermParent] = jsonFormat5(TermParent)
+  implicit val impOntologyTermResource: RootJsonFormat[TermResource] = jsonFormat7(TermResource)
+  implicit val impOntologyESTermParent: RootJsonFormat[ESTermParent] = jsonFormat2(ESTermParent)
 
-  implicit val impThurloeStatus = jsonFormat2(ThurloeStatus)
-  implicit val impDropwizardHealth = jsonFormat2(DropwizardHealth)
-  implicit val impDuosConsentStatus = jsonFormat3(ConsentStatus)
+  implicit val impThurloeStatus: RootJsonFormat[ThurloeStatus] = jsonFormat2(ThurloeStatus)
+  implicit val impDropwizardHealth: RootJsonFormat[DropwizardHealth] = jsonFormat2(DropwizardHealth)
+  implicit val impDuosConsentStatus: RootJsonFormat[ConsentStatus] = jsonFormat3(ConsentStatus)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler.newBuilder().handle {
@@ -315,7 +315,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
 
   // See http://stackoverflow.com/questions/24526103/generic-spray-client and
   // https://gist.github.com/mikemckibben/fad4328de85a79a06bf3
-  implicit def rootEitherFormat[A : RootJsonFormat, B : RootJsonFormat] = new RootJsonFormat[Either[A, B]] {
+  implicit def rootEitherFormat[A : RootJsonFormat, B : RootJsonFormat]: RootJsonFormat[Either[A, B]] = new RootJsonFormat[Either[A, B]] {
     val format = DefaultJsonProtocol.eitherFormat[A, B]
     def write(either: Either[A, B]) = format.write(either)
     def read(value: JsValue) = format.read(value)
@@ -342,13 +342,13 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
-  implicit val impRawlsBillingProjectMember = jsonFormat2(RawlsBillingProjectMember)
+  implicit val impRawlsBillingProjectMember: RootJsonFormat[RawlsBillingProjectMember] = jsonFormat2(RawlsBillingProjectMember)
 
   // END copy/paste from rawls
 
-  implicit val impRawlsBillingProjectMembership = jsonFormat4(RawlsBillingProjectMembership)
+  implicit val impRawlsBillingProjectMembership: RootJsonFormat[RawlsBillingProjectMembership] = jsonFormat4(RawlsBillingProjectMembership)
 
-  implicit val impCreateRawlsBillingProjectFullRequestFormat = jsonFormat2(CreateRawlsBillingProjectFullRequest)
+  implicit val impCreateRawlsBillingProjectFullRequestFormat: RootJsonFormat[CreateRawlsBillingProjectFullRequest] = jsonFormat2(CreateRawlsBillingProjectFullRequest)
 
   implicit object ShareTypeFormat extends RootJsonFormat[ShareType.Value] {
     override def write(obj: ShareType.Value): JsValue = JsString(obj.toString)
@@ -359,5 +359,5 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     }
   }
 
-  implicit val impShareFormat = jsonFormat4(Share)
+  implicit val impShareFormat: RootJsonFormat[Share] = jsonFormat4(Share)
 }

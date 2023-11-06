@@ -16,7 +16,7 @@ object GoogleServicesDAO {
 
 trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
-  implicit val errorReportSource = ErrorReportSource(GoogleServicesDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(GoogleServicesDAO.serviceName)
 
   def getAdminUserAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream

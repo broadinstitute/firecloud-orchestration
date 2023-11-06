@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
-  implicit val errorReportSource = ErrorReportSource("FireCloud")
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource("FireCloud")
 
   override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     doImport(workspaceNamespace, workspaceName, isUpsert, importRequest)

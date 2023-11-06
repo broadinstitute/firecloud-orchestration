@@ -36,8 +36,8 @@ case class NihWhitelist(
 case class NihDatasetPermission(name: String, authorized: Boolean)
 
 object NihStatus {
-  implicit val impNihDatasetPermission = jsonFormat2(NihDatasetPermission)
-  implicit val impNihStatus = jsonFormat3(NihStatus.apply)
+  implicit val impNihDatasetPermission: RootJsonFormat[NihDatasetPermission] = jsonFormat2(NihDatasetPermission)
+  implicit val impNihStatus: RootJsonFormat[NihStatus] = jsonFormat3(NihStatus.apply)
 }
 
 object NihService {

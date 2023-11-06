@@ -32,7 +32,7 @@ object WorkspaceService {
 class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO: RawlsDAO, val samDao: SamDAO, val thurloeDAO: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO, val ontologyDAO: OntologyDAO, val searchDAO: SearchDAO, val consentDAO: ConsentDAO, val shareLogDAO: ShareLogDAO)
                       (implicit protected val executionContext: ExecutionContext) extends AttributeSupport with TSVFileSupport with PermissionsSupport with WorkspacePublishingSupport with SprayJsonSupport with LazyLogging {
 
-  implicit val userToken = argUserToken
+  implicit val userToken: WithAccessToken = argUserToken
 
   def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
