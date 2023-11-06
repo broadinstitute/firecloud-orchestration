@@ -45,7 +45,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
 
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  implicit val userToken = argUserInfo
+  implicit val userToken: UserInfo = argUserInfo
 
   // attributes come in as standard json so we can use json schema for validation. Thus,
   // we need to use the plain-array deserialization.

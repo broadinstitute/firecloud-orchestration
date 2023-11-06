@@ -16,7 +16,7 @@ package object model {
   /*
     Rejection handler: if the response from the rejection is not already json, make it json.
    */
-  implicit val defaultErrorReportRejectionHandler = RejectionHandler.default.mapRejectionResponse {
+  implicit val defaultErrorReportRejectionHandler: RejectionHandler = RejectionHandler.default.mapRejectionResponse {
     case resp@HttpResponse(statusCode, _, ent: HttpEntity.Strict, _) => {
 
       // since all Akka default rejection responses are Strict this will handle all rejections

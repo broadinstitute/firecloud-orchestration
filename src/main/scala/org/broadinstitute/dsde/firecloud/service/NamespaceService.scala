@@ -20,7 +20,7 @@ object NamespaceService {
 class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit protected val executionContext: ExecutionContext)
   extends SprayJsonSupport {
 
-  implicit val userInfo = argUserInfo
+  implicit val userInfo: UserInfo = argUserInfo
 
   def getFireCloudPermissions(ns: String, entity: String): Future[PerRequestMessage] = {
     val agoraPermissions = agoraDAO.getNamespacePermissions(ns, entity)
