@@ -16,7 +16,7 @@ object ThurloeDAO {
 
 trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
 
-  implicit val errorReportSource = ErrorReportSource(ThurloeDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ThurloeDAO.serviceName)
 
   def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]]
   def getAllUserValuesForKey(key: String): Future[Map[String, String]]

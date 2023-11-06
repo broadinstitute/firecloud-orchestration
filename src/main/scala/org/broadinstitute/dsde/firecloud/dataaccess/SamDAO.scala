@@ -24,7 +24,7 @@ object SamDAO {
 
 trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
 
-  implicit val errorReportSource = ErrorReportSource(SamDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(SamDAO.serviceName)
 
   val managedGroupResourceTypeName = "managed-group"
 

@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 package object model {
-  implicit val errorReportSource = ErrorReportSource("FireCloud")
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource("FireCloud")
 
   import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
   import spray.json._

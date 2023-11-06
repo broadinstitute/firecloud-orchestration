@@ -14,7 +14,7 @@ trait OntologyDAO extends ReportsSubsystemStatus {
 
   lazy val ontologySearchUrl = FireCloudConfig.Duos.baseOntologyUrl + "/search"
 
-  implicit val errorReportSource = ErrorReportSource(OntologyDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(OntologyDAO.serviceName)
 
   def search(term: String): List[TermResource]
 

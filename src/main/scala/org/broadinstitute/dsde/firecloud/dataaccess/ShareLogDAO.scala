@@ -9,7 +9,7 @@ object ShareLogDAO {
 
 trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
 
-  implicit val errorReportSource = ErrorReportSource(ShareLogDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ShareLogDAO.serviceName)
 
   override def serviceName: String = ShareLogDAO.serviceName
 

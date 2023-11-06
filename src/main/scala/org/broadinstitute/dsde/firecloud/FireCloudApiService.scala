@@ -31,7 +31,7 @@ object FireCloudApiService extends LazyLogging {
 
     import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 
-    implicit val errorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber source names globally
+    implicit val errorReportSource: ErrorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber source names globally
 
     ExceptionHandler {
       case withErrorReport: FireCloudExceptionWithErrorReport =>

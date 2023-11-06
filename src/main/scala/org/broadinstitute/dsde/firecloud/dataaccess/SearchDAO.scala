@@ -13,7 +13,7 @@ object SearchDAO {
 
 trait SearchDAO extends LazyLogging with ReportsSubsystemStatus {
 
-  implicit val errorReportSource = ErrorReportSource(RawlsDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(RawlsDAO.serviceName)
 
   def initIndex(): Unit
   def recreateIndex(): Unit
