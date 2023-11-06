@@ -25,14 +25,15 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "1.33",
     // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
     "org.bitbucket.b_c" % "jose4j" % "0.9.3",
-    "io.grpc" % "grpc-xds" % "1.56.1"
+    "io.grpc" % "grpc-xds" % "1.56.1",
+    // netty is needed by the Elasticsearch client at runtime
+    "io.netty" % "netty-handler" % nettyV
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
     // proactively pull in latest versions of these libraries, instead of relying on the versions
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     // TODO: can these move to sbt's dependencyOverrides?
-    "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
     "com.google.guava"               % "guava"               % "32.1.3-jre",
     // END transitive dependency overrides
@@ -67,6 +68,7 @@ object Dependencies {
     "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
 
     "org.elasticsearch.client"       % "transport"           % "5.6.16" // pin to this version; it's the latest compatible with our elasticsearch server
+      exclude("org.elasticsearch.plugin", "transport-netty3-client")
       exclude("io.netty", "netty-codec")
       exclude("io.netty", "netty-transport")
       exclude("io.netty", "netty-resolver")
