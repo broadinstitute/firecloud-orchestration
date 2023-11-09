@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, RegisterRequest, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService, UserService}
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NoContent, NotFound, OK}
 import akka.http.scaladsl.model.StatusCode
@@ -10,6 +10,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRegisterRequest
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.mockserver.model.Header
@@ -77,6 +78,24 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
 
   override val userServiceConstructor:(UserInfo) => UserService =
     UserService.constructor(app.copy(thurloeDAO = new RegisterApiServiceSpecThurloeDAO))
+
+  def makeBasicProfile(hasTermsOfService: Boolean): BasicProfile = {
+    val randomString = MockUtils.randomAlpha()
+    BasicProfile(
+      firstName = randomString,
+      lastName = randomString,
+      title = randomString,
+      contactEmail = Some("me@abc.com"),
+      institute = randomString,
+      researchArea = Some(randomString),
+      programLocationCity = randomString,
+      programLocationState = randomString,
+      programLocationCountry = randomString,
+      termsOfService = if (hasTermsOfService) Some(termsOfServiceUrl) else None,
+      department = Some(randomString),
+      interestInTerra = Some(randomString)
+    )
+  }
 
   "RegisterApiService" - {
     "update-preferences API" - {
@@ -151,23 +170,21 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
           status should be(OK)
         }
       }
+    }
 
-      def makeBasicProfile(hasTermsOfService: Boolean): BasicProfile = {
-        val randomString = MockUtils.randomAlpha()
-        BasicProfile(
-          firstName = randomString,
-          lastName = randomString,
-          title = randomString,
-          contactEmail = Some("me@abc.com"),
-          institute = randomString,
-          researchArea = Some(randomString),
-          programLocationCity = randomString,
-          programLocationState = randomString,
-          programLocationCountry = randomString,
-          termsOfService = if (hasTermsOfService) Some(termsOfServiceUrl) else None,
-          department = Some(randomString),
-          interestInTerra = Some(randomString)
-        )
+    "register-with-profile API POST" - {
+      "should fail if Sam does not register the user" in {
+        val payload = makeBasicProfile(false)
+        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = false, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(newRegisterRoutes) ~> check {
+          status should be(BadRequest)
+        }
+      }
+
+      "should succeed if Sam does register the user" in {
+        val payload = makeBasicProfile(true)
+        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = true, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(newRegisterRoutes) ~> check {
+          status should be(OK)
+        }
       }
     }
 

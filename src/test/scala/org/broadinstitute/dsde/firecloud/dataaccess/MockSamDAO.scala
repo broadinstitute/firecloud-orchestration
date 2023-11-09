@@ -4,12 +4,13 @@ import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamResource, UserIdInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamResource, SamUserResponse, UserIdInfo, UserInfo, WithAccessToken, WorkbenchEnabled, WorkbenchUserInfo}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import org.broadinstitute.dsde.workbench.model.{AzureB2CId, GoogleSubjectId, WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 
+import java.time.Instant
 import scala.concurrent.Future
 
 /**
@@ -82,6 +83,18 @@ class MockSamDAO extends SamDAO {
     Future.successful(())
   }
 
+  private val registeredUser = Future.successful {
+    SamUserResponse(
+      id = WorkbenchUserId("foo"),
+      googleSubjectId = Some(GoogleSubjectId("bar")),
+      email = WorkbenchEmail("ltcommanderdata@neighborhood.horse"),
+      azureB2CId = Some(AzureB2CId("baz")),
+      allowed = true,
+      createdAt = Instant.now(),
+      registeredAt = Some(Instant.now()),
+      updatedAt = Instant.now()
+    )
+  }
 
   private val enabledUserInfo = Future.successful {
       RegistrationInfo(
@@ -121,4 +134,12 @@ class MockSamDAO extends SamDAO {
   override def getPetServiceAccountKeyForUser(user: WithAccessToken, project: GoogleProject): Future[String] = Future.successful("""{"fake":"key""}""")
 
   override def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit userInfo: WithAccessToken): Future[Unit] = Future.successful(())
+
+  override def registerUserSelf(acceptsTermsOfService: Boolean)(implicit userInfo: WithAccessToken): Future[SamUserResponse] = {
+    if (acceptsTermsOfService) {
+      registeredUser
+    } else {
+      Future.failed(new FireCloudExceptionWithErrorReport(new ErrorReport("sam", "invalid", Some(StatusCodes.BadRequest), Seq.empty, Seq.empty, None)))
+    }
+  }
 }

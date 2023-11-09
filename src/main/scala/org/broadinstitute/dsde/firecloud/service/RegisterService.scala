@@ -28,6 +28,16 @@ object RegisterService {
 class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO)
   (implicit protected val executionContext: ExecutionContext) extends LazyLogging {
 
+  def createUserWithProfile(userInfo: UserInfo, registerRequest: RegisterRequest): Future[PerRequestMessage] =
+    for {
+      registerResult <- registerUser(userInfo, registerRequest.acceptsTermsOfService)
+      _ <- thurloeDao.saveProfile(userInfo, registerRequest.profile)
+      _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
+      _ <- if (!registerResult.allowed) {
+        thurloeDao.saveKeyValues(userInfo, Map("email" -> userInfo.userEmail))
+      } else Future.successful()
+    } yield RequestComplete(StatusCodes.OK, registerResult)
+
   def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
       _ <- thurloeDao.saveProfile(userInfo, basicProfile)
@@ -68,6 +78,13 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     } yield {
       registrationInfo
     }
+  }
+
+  private def registerUser(userInfo: UserInfo, acceptsTermsOfService: Boolean): Future[SamUserResponse] = {
+    for {
+      userResponse <- samDao.registerUserSelf(acceptsTermsOfService)(userInfo)
+      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
+    } yield userResponse
   }
 
   //  utility method to determine if a preferences key headed to Thurloe is valid for user input.

@@ -220,6 +220,10 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impTerraPreference: RootJsonFormat[TerraPreference] = jsonFormat2(TerraPreference)
   implicit val impShibbolethToken: RootJsonFormat[ShibbolethToken] = jsonFormat2(ShibbolethToken)
 
+  implicit val impRegisterRequest: RootJsonFormat[RegisterRequest] = jsonFormat2(RegisterRequest)
+  implicit val impSamUserRegistrationRequest: RootJsonFormat[SamUserRegistrationRequest] = jsonFormat2(SamUserRegistrationRequest)
+  implicit val impSamUserAttributesRequest: RootJsonFormat[SamUserAttributesRequest] = jsonFormat1(SamUserAttributesRequest)
+
   implicit val impJWTWrapper: RootJsonFormat[JWTWrapper] = jsonFormat1(JWTWrapper)
 
   implicit val impOAuthUser: RootJsonFormat[OAuthUser] = jsonFormat2(OAuthUser)
@@ -229,6 +233,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impWorkbenchEnabledV2: RootJsonFormat[WorkbenchEnabledV2] = jsonFormat3(WorkbenchEnabledV2)
   implicit val impRegistrationInfo: RootJsonFormat[RegistrationInfo] = jsonFormat3(RegistrationInfo)
   implicit val impRegistrationInfoV2: RootJsonFormat[RegistrationInfoV2] = jsonFormat3(RegistrationInfoV2)
+  implicit val impSamUserResponse: RootJsonFormat[SamUserResponse] = jsonFormat8(SamUserResponse)
   implicit val impUserIdInfo: RootJsonFormat[UserIdInfo] = jsonFormat3(UserIdInfo)
   implicit val impCurator: RootJsonFormat[Curator] = jsonFormat1(Curator)
   implicit val impUserImportPermission: RootJsonFormat[UserImportPermission] = jsonFormat2(UserImportPermission)

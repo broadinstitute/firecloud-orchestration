@@ -12,7 +12,7 @@ import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorRepo
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, RegistrationInfoV2, UserIdInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, RegistrationInfoV2, SamUserAttributesRequest, SamUserRegistrationRequest, SamUserResponse, UserIdInfo, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
@@ -36,6 +36,10 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
 
   override def registerUser(termsOfService: Option[String])(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
     authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl, termsOfService), label=Some("HttpSamDAO.registerUser"))
+  }
+
+  override def registerUserSelf(termsOfService: Boolean)(implicit userInfo: WithAccessToken): Future[SamUserResponse] = {
+    authedRequestToObject[SamUserResponse](Post(samUserRegisterSelfUrl, SamUserRegistrationRequest(termsOfService, SamUserAttributesRequest(marketingConsent = Some(false)))), label = Some("HttpSamDAO.registerUserSelf"))
   }
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {
