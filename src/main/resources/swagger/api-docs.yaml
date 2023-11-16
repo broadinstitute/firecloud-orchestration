@@ -5807,6 +5807,34 @@ paths:
           description: OK
           content: {}
       x-passthrough: false
+  /api/users/v1/registerWithProfile:
+    post:
+      tags:
+        - Users
+      summary: Registers the user in Sam and saves the user profile in Thurloe
+      operationId: registerUserWithProfile
+      requestBody:
+        description: A registration request
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: false
+      responses:
+        200:
+          description: OK
+          content: {}
+        400:
+          description: Bad request
+          content: {}
+        403:
+          description: Forbidden
+          content: {}
+        500:
+          description: Internal server error
+          content: {}
+      x-passthrough: false
+      x-codegen-request-body-name: profile
   /tos/text:
     get:
       tags:
@@ -7880,6 +7908,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/KeyValuePair'
+    RegisterRequest:
+      type: object
+      properties:
+        acceptsTermsOfService:
+          type: boolean
+          description: Does the user accept the Terra Terms of Service?
+        profile:
+          $ref: '#/components/schemas/Profile'
     ResearchPurpose:
       required:
         - DS

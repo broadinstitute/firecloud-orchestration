@@ -18,6 +18,19 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
 
   val registerServiceConstructor: () => RegisterService
 
+  val v1RegisterRoutes: Route =
+    pathPrefix("users" / "v1" / "registerWithProfile") {
+        post {
+          requireUserInfo() { userInfo =>
+            entity(as[RegisterRequest]) { registerRequest =>
+              complete {
+                registerServiceConstructor().createUserWithProfile(userInfo, registerRequest)
+              }
+            }
+          }
+        }
+    }
+
   val registerRoutes: Route =
     pathPrefix("register") {
       path("profile") {
