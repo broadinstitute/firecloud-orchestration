@@ -221,8 +221,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impShibbolethToken: RootJsonFormat[ShibbolethToken] = jsonFormat2(ShibbolethToken)
 
   implicit val impRegisterRequest: RootJsonFormat[RegisterRequest] = jsonFormat2(RegisterRequest)
-  implicit val impSamUserRegistrationRequest: RootJsonFormat[SamUserRegistrationRequest] = jsonFormat2(SamUserRegistrationRequest)
   implicit val impSamUserAttributesRequest: RootJsonFormat[SamUserAttributesRequest] = jsonFormat1(SamUserAttributesRequest)
+  implicit val impSamUserRegistrationRequest: RootJsonFormat[SamUserRegistrationRequest] = jsonFormat2(SamUserRegistrationRequest)
 
   implicit val impJWTWrapper: RootJsonFormat[JWTWrapper] = jsonFormat1(JWTWrapper)
 
