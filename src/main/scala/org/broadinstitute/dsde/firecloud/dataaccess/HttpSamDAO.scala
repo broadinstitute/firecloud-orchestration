@@ -38,8 +38,8 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
     authedRequestToObject[RegistrationInfo](Post(samUserRegistrationUrl, termsOfService), label=Some("HttpSamDAO.registerUser"))
   }
 
-  override def registerUserSelf(termsOfService: Boolean)(implicit userInfo: WithAccessToken): Future[SamUserResponse] = {
-    authedRequestToObject[SamUserResponse](Post(samUserRegisterSelfUrl, SamUserRegistrationRequest(termsOfService, SamUserAttributesRequest(marketingConsent = Some(false)))), label = Some("HttpSamDAO.registerUserSelf"))
+  override def registerUserSelf(acceptsTermsOfService: Boolean)(implicit userInfo: WithAccessToken): Future[SamUserResponse] = {
+    authedRequestToObject[SamUserResponse](Post(samUserRegisterSelfUrl, SamUserRegistrationRequest(acceptsTermsOfService, SamUserAttributesRequest(marketingConsent = Some(false)))), label = Some("HttpSamDAO.registerUserSelf"))
   }
 
   override def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo] = {

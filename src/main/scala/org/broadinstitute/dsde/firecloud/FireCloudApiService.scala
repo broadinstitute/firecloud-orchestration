@@ -185,7 +185,7 @@ trait FireCloudApiService extends CookieAuthedApiService
           shareLogServiceRoutes ~
           staticNotebooksRoutes ~
           perimeterServiceRoutes ~
-          newRegisterRoutes
+          v1RegisterRoutes
       }
 
   val routeWrappers: Directive[Unit] =

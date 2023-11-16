@@ -175,14 +175,14 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     "register-with-profile API POST" - {
       "should fail if Sam does not register the user" in {
         val payload = makeBasicProfile(false)
-        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = false, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(newRegisterRoutes) ~> check {
+        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = false, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(v1RegisterRoutes) ~> check {
           status should be(BadRequest)
         }
       }
 
       "should succeed if Sam does register the user" in {
         val payload = makeBasicProfile(true)
-        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = true, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(newRegisterRoutes) ~> check {
+        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = true, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(v1RegisterRoutes) ~> check {
           status should be(OK)
         }
       }
