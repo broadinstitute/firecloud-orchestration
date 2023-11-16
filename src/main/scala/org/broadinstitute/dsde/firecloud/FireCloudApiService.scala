@@ -175,6 +175,7 @@ trait FireCloudApiService extends CookieAuthedApiService
   def apiRoutes: server.Route =
     options { complete(StatusCodes.OK) } ~
       withExecutionContext(ExecutionContext.global) {
+        v1RegisterRoutes ~
         methodsApiServiceRoutes ~
           profileRoutes ~
           cromIamApiServiceRoutes ~
@@ -184,8 +185,7 @@ trait FireCloudApiService extends CookieAuthedApiService
           billingServiceRoutes ~
           shareLogServiceRoutes ~
           staticNotebooksRoutes ~
-          perimeterServiceRoutes ~
-          v1RegisterRoutes
+          perimeterServiceRoutes
       }
 
   val routeWrappers: Directive[Unit] =
