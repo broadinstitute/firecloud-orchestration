@@ -65,6 +65,32 @@ jobs:
           echo "$GITHUB_CONTEXT"
           echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${{ steps.tag.outputs.tag }}\"}}' >> $GITHUB_OUTPUT
 
+  report-to-sherlock:
+    # Report new Firecloudorch version to Broad DevOps
+    uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
+    needs: [ orch-build-tag-publish-job ]
+    with:
+      new-version: ${{ needs.orch-build-tag-publish-job.outputs.tag }}
+      chart-name: 'firecloudorch'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+  set-version-in-dev:
+    # Put new Firecloudorch version in Broad dev environment
+    uses: broadinstitute/sherlock/.github/workflows/client-set-environment-app-version.yaml@main
+    needs: [ orch-build-tag-publish-job, report-to-sherlock ]
+    if: false # disabled for now, use the below line when ready to cut over from jenkins.
+    # if: ${{ github.ref_name == 'develop' }}
+    with:
+      new-version: ${{ needs.orch-build-tag-publish-job.outputs.tag }}
+      chart-name: 'firecloudorch'
+      environment-name: 'dev'
+    secrets:
+      sync-git-token: ${{ secrets.BROADBOT_TOKEN }}
+    permissions:
+      id-token: 'write'
+  
   create-bee-workflow:
     strategy:
       matrix:
