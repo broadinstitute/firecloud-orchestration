@@ -12,7 +12,9 @@ import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
 import org.broadinstitute.dsde.workbench.model.WorkbenchUserId
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.language.postfixOps
 
 object RegisterService {
   val samTosTextUrl = s"${Sam.baseUrl}/tos/text"
@@ -28,15 +30,16 @@ object RegisterService {
 class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleServicesDAO: GoogleServicesDAO)
   (implicit protected val executionContext: ExecutionContext) extends LazyLogging {
 
-  def createUserWithProfile(userInfo: UserInfo, registerRequest: RegisterRequest): Future[PerRequestMessage] =
+  def createUserWithProfile(userInfo: UserInfo, registerRequest: RegisterRequest, waitAtMostForSam: Duration = 10 seconds): Future[PerRequestMessage] = {
+    val registerResult: SamUserResponse = Await.result(registerUser(userInfo, registerRequest.acceptsTermsOfService), waitAtMostForSam)
     for {
-      registerResult <- registerUser(userInfo, registerRequest.acceptsTermsOfService)
       _ <- thurloeDao.saveProfile(userInfo, registerRequest.profile)
       _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
       _ <- if (!registerResult.allowed) {
         thurloeDao.saveKeyValues(userInfo, Map("email" -> userInfo.userEmail))
       } else Future.successful()
     } yield RequestComplete(StatusCodes.OK, registerResult)
+  }
 
   def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
