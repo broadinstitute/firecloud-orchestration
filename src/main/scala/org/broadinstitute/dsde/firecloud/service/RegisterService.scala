@@ -31,10 +31,12 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   def createUserWithProfile(userInfo: UserInfo, registerRequest: RegisterRequest): Future[PerRequestMessage] =
     for {
       registerResult <- registerUser(userInfo, registerRequest.acceptsTermsOfService)
-      _ <- thurloeDao.saveProfile(userInfo, registerRequest.profile)
-      _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
+      // We are using the equivalent value from sam registration to force the order of operations for the thurloe calls
+      registrationResultUserInfo  = userInfo.copy(userEmail = registerResult.email.value)
+      _ <- thurloeDao.saveProfile(registrationResultUserInfo, registerRequest.profile)
+      _ <- thurloeDao.saveKeyValues(registrationResultUserInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
       _ <- if (!registerResult.allowed) {
-        thurloeDao.saveKeyValues(userInfo, Map("email" -> userInfo.userEmail))
+        thurloeDao.saveKeyValues(registrationResultUserInfo, Map("email" -> userInfo.userEmail))
       } else Future.successful()
     } yield RequestComplete(StatusCodes.OK, registerResult)
 
