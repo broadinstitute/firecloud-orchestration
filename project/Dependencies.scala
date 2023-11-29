@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.101.Final"
-  val workbenchLibsHash = "2147824"
+  val workbenchLibsHash = "084d25b"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -25,7 +25,9 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "1.33",
     // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
     "org.bitbucket.b_c" % "jose4j" % "0.9.3",
-    "io.grpc" % "grpc-xds" % "1.56.1"
+    "io.grpc" % "grpc-xds" % "1.56.1",
+    // workbench-google2 has bouncycastle as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
+    "org.bouncycastle" % "bcprov-jdk18on" % "1.74"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -51,10 +53,10 @@ object Dependencies {
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.10-128901e"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.34-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.5-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.25-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
-    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.3-$workbenchLibsHash",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
