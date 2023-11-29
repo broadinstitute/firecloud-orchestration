@@ -53,7 +53,7 @@ jobs:
         with:
           workflow: orch-build
           repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
+          ref: refs/heads/DDO-3317
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           inputs: '{ "repository": "${{ github.event.repository.full_name }}", "ref": "${{ steps.extract-branch.outputs.ref }}", "orch-release-tag": "${{ steps.tag.outputs.tag }}" }'
 
@@ -66,7 +66,7 @@ jobs:
           echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${{ steps.tag.outputs.tag }}\"}}' >> $GITHUB_OUTPUT
 
           
-          
+
   create-bee-workflow:
     strategy:
       matrix:
