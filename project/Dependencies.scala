@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.101.Final"
-  val workbenchLibsHash = "084d25b"
+  val workbenchLibsHash = "2147824"
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -51,10 +51,10 @@ object Dependencies {
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.10-128901e"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.34-2147824",
-    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.34-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.5-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
-    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.3-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
