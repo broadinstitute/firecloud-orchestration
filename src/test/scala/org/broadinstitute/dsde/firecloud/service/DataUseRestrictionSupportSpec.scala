@@ -4,7 +4,6 @@ import java.lang.reflect.Field
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
-import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.DataUse.StructuredDataRequest
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures._
 import org.broadinstitute.dsde.rawls.model._

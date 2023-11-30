@@ -4,7 +4,6 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.OntologyDAO
 import org.broadinstitute.dsde.firecloud.model.{ConsentCodes}
-import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.AttributeNameFormat
