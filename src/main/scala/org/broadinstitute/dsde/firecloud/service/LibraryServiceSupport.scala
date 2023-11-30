@@ -41,46 +41,27 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     val nodes = uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
     // query ontology for this set of nodes, save in a map
-    val parentCache = nodes map {id => (id, lookupParentNodes(id, ontologyDAO))}
+    val parentCache = nodes map { id => (id, lookupParentNodes(id, ontologyDAO)) }
     val parentMap = parentCache.toMap.filter(e => e._2.nonEmpty) // remove nodes that have no parent
     logger.debug(s"have parent results for ${parentMap.size} ontology nodes")
 
-    // identify the unique ORSP codes in this list of workspaces
-    val orspIds = uniqueWorkspaceStringAttributes(workspaces, orspIdAttribute)
-
-    // set up an exception-resilient Future to get the ORSP restrictions for those codes
-    val futureRestrictions:Future[Set[(String, Option[DuosDataUse])]] = Future.sequence(orspIds map {orspId =>
-      consentDAO.getRestriction(orspId) map { restriction =>
-        orspId -> restriction
-      } recover {
-        case e:Exception =>
-          // content owners regularly publish datasets that reference an orspId that has yet to be approved
-          // or even doesn't exist yet. Therefore, this exception case is benign.
-          logger.info(e.getMessage)
-          orspId -> None
+    // as of Nov 27 2023 (actually "some time ago" before that), the DUOS/Consent system no longer supports
+    // lookup of ORSP ids; these lookups will always return 404. The code below previously looked up DU attributes
+    // from consent for a given ORSP id and updated the workspace attributes with consent's result. Now, the code
+    // simply updates workspace attributes with a Map.empty, reflecting the fact that consent always 404s.
+    val annotatedWorkspaces = workspaces map { ws =>
+      // does this workspace have an orsp id?
+      ws.attributes.getOrElse(Map.empty).get(orspIdAttribute) match {
+        case Some(_) =>
+          // if so, remove explicit DU attributes
+          val newAttrs = replaceDataUseAttributes(ws.attributes.getOrElse(Map.empty), Map.empty[AttributeName, Attribute])
+          ws.copy(attributes = Option(newAttrs))
+        case _ =>
+          // this workspace does not have an ORSP id; leave it untouched
+          ws
       }
-    })
-
-    futureRestrictions.map { restrictions =>
-      val restrictionMap:Map[String,AttributeMap] = restrictions.map {
-        case (orspId, None) => orspId -> Map.empty[AttributeName, Attribute]
-        case (orspId, Some(dataUse)) => orspId -> generateStructuredUseRestrictionAttribute(dataUse, ontologyDAO)
-      }.toMap
-
-      val annotatedWorkspaces = workspaces map { ws =>
-        // does this workspace have an orsp id?
-        ws.attributes.getOrElse(Map.empty).get(orspIdAttribute) match {
-          case Some(s:AttributeString) =>
-            val orspAttrs = restrictionMap.getOrElse(s.value, Map.empty[AttributeName, Attribute])
-            val newAttrs = replaceDataUseAttributes(ws.attributes.getOrElse(Map.empty), orspAttrs)
-            ws.copy(attributes = Option(newAttrs))
-          case _ =>
-            // this workspace does not have an ORSP id; leave it untouched
-            ws
-        }
-      }
-      annotatedWorkspaces map {w => indexableDocument(w, parentMap, ontologyDAO)}
     }
+    Future.successful(annotatedWorkspaces map { w => indexableDocument(w, parentMap, ontologyDAO) })
   }
 
   private def indexableDocument(workspace: WorkspaceDetails, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {

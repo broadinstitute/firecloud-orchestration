@@ -10,12 +10,12 @@ object ConsentDAO {
   lazy val serviceName = "Consent"
 }
 
+// TODO: AJ-1488: if we don't use ConsentDAO at all, can we remove it entirely? Can we remove it from Orch's status?
+// TODO: AJ-1488: are there config values we can remove too?
 trait ConsentDAO extends ReportsSubsystemStatus {
 
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ConsentDAO.serviceName)
 
   override def serviceName:String = ConsentDAO.serviceName
-
-  def getRestriction(orspId: String)(implicit userInfo: WithAccessToken): Future[Option[DuosDataUse]]
 
 }

@@ -19,13 +19,6 @@ class HttpConsentDAO(implicit val system: ActorSystem, implicit val executionCon
 
   private val consentUri = Uri(FireCloudConfig.Duos.baseConsentUrl)
 
-  // TODO AJ-1488: given changes in consent, this will always return 404. Remove the code.
-  override def getRestriction(orspId: String)(implicit userInfo: WithAccessToken): Future[Option[DuosDataUse]] = {
-    val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
-    val req = Get(Uri(consentUrl).withQuery(Query(("name", orspId))))
-    authedRequestToObject[Consent](req) map (_.dataUse)
-  }
-
   override def status: Future[SubsystemStatus] = {
     getStatusFromDropwizardChecks(unAuthedRequest(Get(consentUri.withPath(Uri.Path("/status")))))
   }
