@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.DataUse._
@@ -24,8 +23,6 @@ trait LibraryApiService extends FireCloudDirectives
 
   val libraryServiceConstructor: UserInfo => LibraryService
   val ontologyServiceConstructor: () => OntologyService
-
-  val consentUrl = FireCloudConfig.Duos.baseConsentUrl + "/api/consent"
 
   val libraryRoutes: Route =
     pathPrefix("duos") {
@@ -52,7 +49,7 @@ trait LibraryApiService extends FireCloudDirectives
       pathPrefix("schemas") {
         path("library-attributedefinitions-v1") {
           withResourceFileContents(LibraryService.schemaLocation) { jsonContents =>
-            complete(StatusCodes.OK, jsonContents)
+            complete(OK, jsonContents)
           }
         }
       } ~

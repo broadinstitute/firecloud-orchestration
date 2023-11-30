@@ -8,8 +8,6 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
-import org.broadinstitute.dsde.firecloud.mock.MockUtils._
-import org.broadinstitute.dsde.firecloud.model.DUOS.{Consent, ConsentError, DuosDataUse}
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurposeRequest
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -18,7 +16,6 @@ import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.{AttributeFormat, AttributeName, AttributeString, PlainArrayAttributeListSerializer}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.model.HttpRequest.request
 import org.scalatest.BeforeAndAfterEach
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -34,7 +31,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
 
   def actorRefFactory = system
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-  var consentServer: ClientAndServer = _
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
   private def publishedPath(ns:String="namespace", name:String="name") =
@@ -47,7 +43,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
   private final val librarySuggestPath = "/api/library/suggest"
   private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
   private final val libraryGroupsPath = "/api/library/groups"
-  private def duosConsentOrspIdPath(orspId: String): String = "/api/duos/consent/orsp/%s".format(orspId)
+
   private final val duosResearchPurposeQuery = "/duos/researchPurposeQuery"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
@@ -104,32 +100,11 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
   var mockSamServer: ClientAndServer = _
 
   override def beforeAll(): Unit = {
-    consentServer = startClientAndServer(consentServerPort)
-
-    val consentPath = consentUrl.replace(FireCloudConfig.Duos.baseConsentUrl, "")
-    val duosDataUse = DuosDataUse(generalUse = Some(true))
-    val consent = Consent(consentId = "consent-id-12345", name = "12345", translatedUseRestriction = Some("Translation"), dataUse = Some(duosDataUse))
-    val consentError = ConsentError(message = "Unapproved", code = BadRequest.intValue)
-    val consentNotFound = ConsentError(message = "Not Found", code = NotFound.intValue)
-
-    val okGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "12345")
-    val okResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(OK.intValue).withBody(consent.toJson.prettyPrint)
-    consentServer.when(okGet).respond(okResponse)
-
-    val badRequestGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "unapproved")
-    val badRequestResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(BadRequest.intValue).withBody(consentError.toJson.prettyPrint)
-    consentServer.when(badRequestGet).respond(badRequestResponse)
-
-    val notFoundGet = request().withMethod("GET").withPath(consentPath).withQueryStringParameter("name", "missing")
-    val notFoundResponse = org.mockserver.model.HttpResponse.response().withHeaders(MockUtils.header).withStatusCode(NotFound.intValue).withBody(consentNotFound.toJson.prettyPrint)
-    consentServer.when(notFoundGet).respond(notFoundResponse)
-
     mockSamServer = startClientAndServer(MockUtils.samServerPort)
     returnEnabledUser(mockSamServer)
   }
 
   override def afterAll(): Unit = {
-    consentServer.stop()
     mockSamServer.stop()
   }
 
