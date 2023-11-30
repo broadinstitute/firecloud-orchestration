@@ -58,12 +58,6 @@ trait LibraryApiService extends FireCloudDirectives
       } ~
       pathPrefix("api") {
         requireUserInfo() { userInfo =>
-          path("duos" / "consent" / "orsp" / Segment) { (orspId) =>
-            get {
-              //note: not a true passthrough, slight manipulation of the query params here
-              passthrough(Uri(consentUrl).withQuery(Uri.Query(("name"->orspId))), HttpMethods.GET)
-            }
-          } ~
           pathPrefix("library") {
             path("user" / "role" / "curator") {
               get { requestContext =>

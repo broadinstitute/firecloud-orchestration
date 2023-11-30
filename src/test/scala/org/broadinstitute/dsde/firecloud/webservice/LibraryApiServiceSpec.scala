@@ -339,36 +339,6 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       }
     }
 
-    "when searching for ORSP IDs" - {
-      "DELETE, POST, PUT, POST should receive a MethodNotAllowed" in {
-        List(HttpMethods.DELETE, HttpMethods.POST, HttpMethods.PUT, HttpMethods.PATCH) map {
-          method =>
-            new RequestBuilder(method)(duosConsentOrspIdPath("anything")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-              status should equal(MethodNotAllowed)
-            }
-        }
-      }
-      "GET on " + duosConsentOrspIdPath("12345") - {
-        "should return a valid consent for '12345'" in {
-          Get(duosConsentOrspIdPath("12345")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-            val consent = Await.result(Unmarshal(response).to[Consent], Duration.Inf)
-            consent shouldNot equal(None)
-            consent.name should equal("12345")
-          }
-        }
-        "should return a Bad Request error on 'unapproved'" in {
-          Get(duosConsentOrspIdPath("unapproved")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(BadRequest)
-          }
-        }
-        "should return a Not Found error on known 'missing'" in {
-          Get(duosConsentOrspIdPath("missing")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(NotFound)
-          }
-        }
-      }
-    }
     "when working with Library discoverable groups" - {
       "should return the right groups on get" in {
         Get(setDiscoverableGroupsPath("libraryValid","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {

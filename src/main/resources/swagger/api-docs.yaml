@@ -5540,42 +5540,6 @@ paths:
           content: {}
       x-passthrough: false
       x-codegen-request-body-name: body
-  /api/duos/consent/orsp/{orspId}:
-    get:
-      tags:
-        - Library
-      summary: Find Consent by ORSP ID
-      operationId: duosConsentOrspId
-      parameters:
-        - name: orspId
-          in: path
-          description: Finds the consent for the provided ORSP ID.
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Consent
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Consent'
-        400:
-          description: The consent associated with the provided name has not been
-            approved.
-          content: {}
-        401:
-          description: Invalid authorization, must be a Terra user.
-          content: {}
-        404:
-          description: The consent associated with the provided name could not be
-            found.
-          content: {}
-        500:
-          description: Internal Server Error
-          content: {}
-      x-passthrough: true
-      x-passthrough-target: consent
   /error:
     get:
       tags:
