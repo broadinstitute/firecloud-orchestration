@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO, SearchDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, RawlsDAO, SearchDAO}
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.LibraryService.publishedFlag
 import org.broadinstitute.dsde.rawls.model._
@@ -15,8 +15,8 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
 
   implicit val userToken: WithAccessToken
 
-  def publishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Future[Unit] = {
-    indexableDocuments(Seq(ws), ontologyDAO, consentDAO) map { ws =>
+  def publishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO)(implicit userToken: WithAccessToken): Future[Unit] = {
+    indexableDocuments(Seq(ws), ontologyDAO) map { ws =>
       assert(ws.size == 1)
       searchDAO.indexDocument(ws.head)
     }
@@ -26,11 +26,11 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
     searchDAO.deleteDocument(ws.workspaceId)
   }
 
-  def republishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Future[Unit] = {
+  def republishDocument(ws: WorkspaceDetails, ontologyDAO: OntologyDAO, searchDAO: SearchDAO)(implicit userToken: WithAccessToken): Future[Unit] = {
     if (isPublished(ws)) {
       // if already published, republish
       // we do not need to delete before republish
-      publishDocument(ws, ontologyDAO, searchDAO, consentDAO)
+      publishDocument(ws, ontologyDAO, searchDAO)
     } else {
       Future.successful(())
     }
@@ -44,10 +44,10 @@ trait WorkspacePublishingSupport extends LibraryServiceSupport {
     workspace.attributes.getOrElse(Map.empty).get(publishedFlag).fold(false)(_.asInstanceOf[AttributeBoolean].value)
   }
 
-  def setWorkspacePublishedStatus(ws: WorkspaceDetails, publishArg: Boolean, rawlsDAO: RawlsDAO, ontologyDAO: OntologyDAO, searchDAO: SearchDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
+  def setWorkspacePublishedStatus(ws: WorkspaceDetails, publishArg: Boolean, rawlsDAO: RawlsDAO, ontologyDAO: OntologyDAO, searchDAO: SearchDAO)(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
     rawlsDAO.updateLibraryAttributes(ws.namespace, ws.name, updatePublishAttribute(publishArg)) flatMap { workspace =>
       val docPublishFuture = if (publishArg) {
-        publishDocument(workspace, ontologyDAO, searchDAO, consentDAO)
+        publishDocument(workspace, ontologyDAO, searchDAO)
       } else {
         Future(removeDocument(workspace, searchDAO))
       }

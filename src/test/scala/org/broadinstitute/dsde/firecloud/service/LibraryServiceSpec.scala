@@ -248,7 +248,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -269,7 +269,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -286,7 +286,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
       "should be the different for attribute operations" in {
@@ -312,7 +312,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -334,7 +334,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -355,7 +355,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -378,7 +378,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -397,7 +397,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
       "should generate indexable document with no parent info when DOID has no parents" in {
@@ -412,7 +412,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
       "should generate indexable document with no parent info when DOID not valid" in {
@@ -427,7 +427,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -445,7 +445,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }

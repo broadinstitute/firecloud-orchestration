@@ -2,9 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.dataaccess.{ConsentDAO, OntologyDAO, RawlsDAO, SamDAO}
-import org.broadinstitute.dsde.firecloud.model.DUOS.DuosDataUse
-import org.broadinstitute.dsde.firecloud.model.DataUse._
+import org.broadinstitute.dsde.firecloud.dataaccess.{OntologyDAO, SamDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, UserInfo, WithAccessToken}
@@ -36,7 +34,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
   }
 
-  def indexableDocuments(workspaces: Seq[WorkspaceDetails], ontologyDAO: OntologyDAO, consentDAO: ConsentDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[WorkspaceDetails], ontologyDAO: OntologyDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodes = uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
