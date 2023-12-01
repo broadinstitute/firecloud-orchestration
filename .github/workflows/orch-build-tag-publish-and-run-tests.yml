@@ -59,14 +59,14 @@ jobs:
       # Build Orch jar
       - name: Build Orch jar
         run: |
-          cd $GITHUB_WORKSPACE/firecloud-orchestration
+          cd $GITHUB_WORKSPACE
           ./script/build_jar.sh
 
       # Publish jar to GCR
       - id: publish-orch
         name: Publish Orch
         run: |
-          cd $GITHUB_WORKSPACE/firecloud-orchestration 
+          cd $GITHUB_WORKSPACE
           docker build -t \"${{ github.event.repository.full_name }}:${DOCKER_TAG}\" --pull .
           docker tag \"${{ github.event.repository.full_name }}:${DOCKER_TAG} ${{ env.GCR_REGISTRY }}:${DOCKER_TAG}\"
           gcloud docker -- push $GCR_REGISTRY:${DOCKER_TAG}
