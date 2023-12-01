@@ -51,6 +51,7 @@ jobs:
           service_account: 'dsp-artifact-registry-push@dsp-artifact-registry.iam.gserviceaccount.com'
           id_token_include_email: true
 
+          
       # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v1'
