@@ -46,10 +46,9 @@ jobs:
 
         with:
           token_format: 'id_token'
-          id_token_audience: '1038484894585-k8qvf7l876733laev0lm8kenfa2lj6bn.apps.googleusercontent.com'
           workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
           service_account: 'gcr-publish@broad-dsp-gcr-public.iam.gserviceaccount.com'
-          id_token_include_email: true
+
 
       # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
       - name: 'Set up Cloud SDK'
