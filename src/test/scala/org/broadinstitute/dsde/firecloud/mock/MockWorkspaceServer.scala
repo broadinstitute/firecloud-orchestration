@@ -12,6 +12,7 @@ import org.mockserver.model.HttpClassCallback.callback
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse._
 import akka.http.scaladsl.model.StatusCodes._
+import com.google.common.net.UrlEscapers
 import spray.json._
 
 /**
@@ -152,7 +153,7 @@ object MockWorkspaceServer {
           .withHeader(authHeader)
           .withPath(s"${workspaceBasePath}/%s/%s/submissions"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name)))
-      .callback(
+      .respond(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidSubmissionCallback")
       )
@@ -163,7 +164,7 @@ object MockWorkspaceServer {
           .withMethod("POST")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/validate"
             .format(mockValidWorkspace.namespace, mockValidWorkspace.name)))
-      .callback(
+      .respond(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidSubmissionCallback")
       )
@@ -276,7 +277,7 @@ object MockWorkspaceServer {
         request()
           .withMethod("GET")
           .withPath(s"${workspaceBasePath}/%s/%s/submissions/%s/workflows/%s"
-            .format(mockSpacedWorkspace.namespace, mockSpacedWorkspace.name, mockValidId, mockValidId)))
+            .format(mockSpacedWorkspace.namespace, UrlEscapers.urlPathSegmentEscaper().escape(mockSpacedWorkspace.name), mockValidId, mockValidId)))
       .respond(
         response()
           .withHeaders(header)

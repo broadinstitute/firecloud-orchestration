@@ -3,13 +3,13 @@ package org.broadinstitute.dsde.firecloud.mock
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.rawls.model.EntityCopyDefinition
-import org.mockserver.mock.action.ExpectationCallback
+import org.mockserver.mock.action.ExpectationResponseCallback
 import org.mockserver.model.HttpResponse._
 import org.mockserver.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import spray.json._
 
-class ValidEntityCopyCallback extends ExpectationCallback {
+class ValidEntityCopyCallback extends ExpectationResponseCallback {
 
   override def handle(httpRequest: HttpRequest): HttpResponse = {
 
