@@ -27,7 +27,6 @@ import org.mockserver.logging.MockServerLogger
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.Parameter
 import org.mockserver.socket.tls.KeyStoreFactory
-//import org.mockserver.socket.KeyStoreFactory
 import org.scalatest.BeforeAndAfterEach
 import spray.json.DefaultJsonProtocol._
 import spray.json._
