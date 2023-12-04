@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with TestRequestBuilding {
   // increase the timeout for ScalatestRouteTest from the default of 1 second, otherwise
   // intermittent failures occur on requests not completing in time
-  implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   def actorRefFactory = system
 

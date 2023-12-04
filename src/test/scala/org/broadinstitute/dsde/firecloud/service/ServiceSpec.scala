@@ -23,7 +23,7 @@ import scala.concurrent.duration._
 // common Service Spec to be inherited by service tests
 trait ServiceSpec extends AnyFreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with TestRequestBuilding with TestKitBase {
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   val allHttpMethods = Seq(CONNECT, DELETE, GET, HEAD, PATCH, POST, PUT, TRACE)
 

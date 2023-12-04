@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import spray.json.DefaultJsonProtocol._
+import spray.json.RootJsonFormat
 
 import scala.jdk.CollectionConverters._
 
@@ -45,5 +46,5 @@ case class RequestInfo(
   url: String)
 
 object PassthroughDirectivesSpecSupport {
-  implicit val requestInfoFormat = jsonFormat4(RequestInfo)
+  implicit val requestInfoFormat: RootJsonFormat[RequestInfo] = jsonFormat4(RequestInfo)
 }
