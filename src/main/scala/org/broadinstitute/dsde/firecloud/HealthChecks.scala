@@ -22,7 +22,6 @@ class HealthChecks(app: Application, registerSAs: Boolean = true)
   def healthMonitorChecks: () => Map[Subsystem, Future[SubsystemStatus]] = () => {
     Map(
       Agora -> app.agoraDAO.status,
-      Consent -> app.consentDAO.status,
       GoogleBuckets -> app.googleServicesDAO.status,
       LibraryIndex -> app.searchDAO.status,
       OntologyIndex -> app.ontologyDAO.status,

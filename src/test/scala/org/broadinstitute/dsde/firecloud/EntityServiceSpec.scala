@@ -217,9 +217,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   private def getEntityService(mockGoogleServicesDAO: MockGoogleServicesDAO = new MockGoogleServicesDAO,
                                mockImportServiceDAO: MockImportServiceDAO = new MockImportServiceDAO,
                                rawlsDAO: MockRawlsDAO = new MockRawlsDAO) = {
-    val application = app.copy(googleServicesDAO = mockGoogleServicesDAO,
-                               importServiceDAO = mockImportServiceDAO,
-                               rawlsDAO = rawlsDAO)
+    val application = app.copy(googleServicesDAO = mockGoogleServicesDAO, rawlsDAO = rawlsDAO, importServiceDAO = mockImportServiceDAO)
 
     // instantiate an EntityService, specify importServiceDAO and googleServicesDAO
     implicit val modelSchema: ModelSchema = FirecloudModelSchema
