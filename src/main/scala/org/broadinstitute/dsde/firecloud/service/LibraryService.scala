@@ -31,7 +31,7 @@ object LibraryService {
   final val schemaLocation = "library/attribute-definitions.json"
 
   def constructor(app: Application)(userInfo: UserInfo)(implicit executionContext: ExecutionContext) =
-    new LibraryService(userInfo, app.rawlsDAO, app.samDAO, app.searchDAO, app.ontologyDAO, app.consentDAO)
+    new LibraryService(userInfo, app.rawlsDAO, app.samDAO, app.searchDAO, app.ontologyDAO)
 }
 
 
@@ -39,8 +39,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
                       val rawlsDAO: RawlsDAO,
                       val samDao: SamDAO,
                       val searchDAO: SearchDAO,
-                      val ontologyDAO: OntologyDAO,
-                      val consentDAO: ConsentDAO)
+                      val ontologyDAO: OntologyDAO)
                      (implicit protected val executionContext: ExecutionContext) extends LibraryServiceSupport with AttributeSupport with PermissionsSupport with SprayJsonSupport with LazyLogging with WorkspacePublishingSupport {
 
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -142,7 +141,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
   private def internalPatchWorkspaceAndRepublish(ns: String, name: String, allOperations: Seq[AttributeUpdateOperation], isPublished: Boolean): Future[WorkspaceDetails] = {
     for {
       newws <- rawlsDAO.updateLibraryAttributes(ns, name, allOperations)
-      _ <- republishDocument(newws, ontologyDAO, searchDAO, consentDAO)
+      _ <- republishDocument(newws, ontologyDAO, searchDAO)
     } yield newws
   }
 
@@ -164,7 +163,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
       Future(RequestCompleteWithErrorReport(BadRequest, errorMessage.getOrElse(BadRequest.defaultMessage)))
       else {
         // user requested a change in published flag, and metadata is valid; make the change.
-        setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO, consentDAO) map { ws =>
+        setWorkspacePublishedStatus(workspaceResponse.workspace, publishArg, rawlsDAO, ontologyDAO, searchDAO) map { ws =>
           RequestComplete(ws)
         }
       }
@@ -179,7 +178,7 @@ class LibraryService (protected val argUserInfo: UserInfo,
           Future(RequestComplete(NoContent))
         else {
           logger.info("reindex: requesting ontology parents for workspaces ...")
-          val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO, consentDAO)
+          val toIndex: Future[Seq[Document]] = indexableDocuments(workspaces, ontologyDAO)
           toIndex map { documents =>
             logger.info("reindex: resetting index ...")
             searchDAO.recreateIndex()
