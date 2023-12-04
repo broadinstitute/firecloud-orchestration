@@ -20,11 +20,13 @@ import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
+import org.mockserver.configuration.Configuration
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
+import org.mockserver.logging.MockServerLogger
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.Parameter
-import org.mockserver.socket.KeyStoreFactory
+import org.mockserver.socket.tls.KeyStoreFactory
 import org.scalatest.BeforeAndAfterEach
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -299,7 +301,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     )
 
     // bagit import requires https urls; set up SSL
-    HttpsURLConnection.setDefaultSSLSocketFactory(KeyStoreFactory.keyStoreFactory().sslContext().getSocketFactory())
+    HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(
+      Configuration.configuration(),
+      new MockServerLogger()).sslContext().getSocketFactory)
 
     // set up mockserver for all paths defined above
     mappings.foreach { entry =>

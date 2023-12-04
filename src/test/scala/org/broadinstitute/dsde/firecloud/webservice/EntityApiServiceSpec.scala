@@ -103,7 +103,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
         request()
           .withMethod("POST")
           .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath))
-      .callback(
+      .respond(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityCopyCallback")
       )
@@ -138,7 +138,7 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
         request()
           .withMethod("POST")
           .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/delete"))
-      .callback(
+      .respond(
         callback().
           withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityDeleteCallback")
       )
