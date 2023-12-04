@@ -122,7 +122,6 @@ elasticsearch {
 }
 
 duos {
-    baseConsentUrl = "https://consent.dsde-dev.broadinstitute.org"
     baseOntologyUrl = "https://consent-ontology.dsde-dev.broadinstitute.org"
     dulvn = 4
 }
