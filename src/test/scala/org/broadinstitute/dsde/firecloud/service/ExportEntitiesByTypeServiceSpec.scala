@@ -23,7 +23,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   // On travis, slow processing causes the route to timeout and complete too quickly for the large content checks.
-  override implicit val routeTestTimeout = RouteTestTimeout(30.seconds)
+  override implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(30.seconds)
 
   def actorRefFactory: ActorSystem = system
 
