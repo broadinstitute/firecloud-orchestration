@@ -28,7 +28,7 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDire
   override def beforeAll() = {
     echoServer = startClientAndServer(echoPort)
       echoServer.when(request())
-        .callback(
+        .respond(
           callback().
             withCallbackClass("org.broadinstitute.dsde.firecloud.service.EchoCallback"))
   }

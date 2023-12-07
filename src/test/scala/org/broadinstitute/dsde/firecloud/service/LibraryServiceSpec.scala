@@ -248,7 +248,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -269,7 +269,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -286,7 +286,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
       "should be the different for attribute operations" in {
@@ -312,7 +312,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -334,7 +334,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -355,7 +355,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -378,7 +378,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
@@ -397,7 +397,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
       "should generate indexable document with no parent info when DOID has no parents" in {
@@ -412,7 +412,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
       "should generate indexable document with no parent info when DOID not valid" in {
@@ -427,101 +427,13 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }
     "with an ORSP id in attributes" - {
-      // most of this is unit-tested in DataUseRestrictionSupportSpec; tests here are intentionally high level
-
-      // default json object fields to represent the indexed data use restriction
-      val defaultDataUseFields = Map(
-        "NPU" -> JsBoolean(false),
-        "RS-PD" -> JsBoolean(false),
-        "NCU" -> JsBoolean(false),
-        "RS-G" -> JsBoolean(false),
-        "IRB" -> JsBoolean(false),
-        "NAGR" -> JsBoolean(false),
-        "RS-FM" -> JsBoolean(false),
-        "RS-M" -> JsBoolean(false),
-        "NMDS" -> JsBoolean(false),
-        "NCTRL" -> JsBoolean(false),
-        "GRU" -> JsBoolean(false),
-        "HMB" -> JsBoolean(false),
-        "DS" -> JsArray()
-      )
-
-      "should populate data use restrictions from Consent" in {
-        val w = testWorkspace.copy(attributes = Some(Map(
-          orspIdAttribute -> AttributeString("MOCK-111")
-        )))
-        val expected = Document(testUUID.toString, Map(
-          orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
-          structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
-            defaultDataUseFields ++ Map(
-              "NCU" -> JsBoolean(true),
-              "NCTRL" -> JsBoolean(true)
-            )).prettyPrint),
-          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
-          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
-        ))
-        assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
-        }
-      }
-      "should clear and overwrite pre-existing data use attributes" in {
-        val w = testWorkspace.copy(attributes = Some(Map(
-          orspIdAttribute -> AttributeString("MOCK-111"),
-          AttributeName.withLibraryNS("NCU") -> AttributeBoolean(false), // should be overwritten by orsp DU
-          AttributeName.withLibraryNS("GRU") -> AttributeBoolean(true) // overrides the default, should be erased by orsp DU
-        )))
-        val expected = Document(testUUID.toString, Map(
-          orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
-          structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
-            defaultDataUseFields ++ Map(
-              "NCU" -> JsBoolean(true),
-              "NCTRL" -> JsBoolean(true)
-            )).prettyPrint),
-          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
-          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
-        ))
-        assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
-        }
-      }
-      "should preserve pre-existing non-data use attributes" in {
-        val w = testWorkspace.copy(attributes = Some(Map(
-          orspIdAttribute -> AttributeString("MOCK-111"),
-          AttributeName.withLibraryNS("datasetName") -> AttributeString("my cohort"),
-          AttributeName.withLibraryNS("projectName") -> AttributeString("my project")
-
-        )))
-        val expected = Document(testUUID.toString, Map(
-          orspIdAttribute -> AttributeString("MOCK-111"),
-          consentCodesAttributeName -> AttributeValueList(Seq(AttributeString("NCTRL"), AttributeString("NCU"))),
-          structuredUseRestrictionAttributeName -> AttributeValueRawJson(JsObject(
-            defaultDataUseFields ++ Map(
-              "NCU" -> JsBoolean(true),
-              "NCTRL" -> JsBoolean(true)
-            )).prettyPrint),
-          AttributeName.withLibraryNS("datasetName") -> AttributeString("my cohort"),
-          AttributeName.withLibraryNS("projectName") -> AttributeString("my project"),
-          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
-          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
-        ))
-        assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
-        }
-      }
-      "should generate indexable document without any data use restrictions if ORSP id not found" in {
+      // most of this is unit-tested in DataUseRestrictionSupportSpec; the test here is intentionally high level
+      "should generate indexable document without any data use restrictions if ORSP id is present" in {
         val w = testWorkspace.copy(attributes = Some(Map(
           orspIdAttribute -> AttributeString("MOCK-NOTFOUND")
         )))
@@ -533,22 +445,7 @@ class LibraryServiceSpec extends BaseServiceSpec with AnyFreeSpecLike with Libra
           AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
         ))
         assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
-        }
-      }
-      "should generate indexable document without any data use restrictions if ORSP request throws exception" in {
-        val w = testWorkspace.copy(attributes = Some(Map(
-          orspIdAttribute -> AttributeString("MOCK-EXCEPTION")
-        )))
-        val expected = Document(testUUID.toString, Map(
-          orspIdAttribute -> AttributeString("MOCK-EXCEPTION"),
-          AttributeName.withDefaultNS("name") -> AttributeString(testWorkspace.name),
-          AttributeName.withDefaultNS("namespace") -> AttributeString(testWorkspace.namespace),
-          AttributeName.withDefaultNS("workspaceId") -> AttributeString(testWorkspace.workspaceId),
-          AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString(testGroup1Ref.membersGroupName.value), AttributeString(testGroup2Ref.membersGroupName.value)))
-        ))
-        assertResult(expected) {
-          Await.result(indexableDocuments(Seq(w), ontologyDao, consentDao), dur).head
+          Await.result(indexableDocuments(Seq(w), ontologyDao), dur).head
         }
       }
     }

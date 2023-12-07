@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.integrationtest
 
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockConsentDAO, MockOntologyDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.MockOntologyDAO
 import org.broadinstitute.dsde.firecloud.integrationtest.ESIntegrationSupport._
 import org.broadinstitute.dsde.firecloud.model.{AccessToken, LibrarySearchResponse, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.DataUseRestrictionTestFixtures.DataUseRestriction
@@ -28,7 +28,7 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
     // make sure we specify refresh=true here; otherwise, the documents may not be available in the index by the
     // time the tests start, leading to test failures.
     logger.info("indexing fixtures ...")
-    val docs = Await.result(indexableDocuments(datasets, new MockOntologyDAO, new MockConsentDAO), dur)
+    val docs = Await.result(indexableDocuments(datasets, new MockOntologyDAO), dur)
     searchDAO.bulkIndex(docs, refresh = true)
     logger.info("... fixtures indexed.")
   }

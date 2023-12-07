@@ -45,10 +45,10 @@ class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll with SamMo
   //JWT for NIH username "not-on-whitelist" (don't ever add this to the mock whitelists in MockGoogleServicesDAO.scala)
   val validJwtNotOnWhitelist = JWTWrapper("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlcmFDb21tb25zVXNlcm5hbWUiOiJub3Qtb24td2hpdGVsaXN0IiwiaWF0IjoxNjE0ODc3NTc4MDB9.WpDrgtui5mOgDc5WvdWYC-l6vljGVyRI7DbBnpRYm7QOq00VLU6FI5YzVFe1eyjnHIqdz_KkkQD604Bi3G1qdyzhk_KKFCSeT4k5in-zS4Em_I2rcyUFs9DeHyFqVrBMZK8eZM_oKtSs23AtwGJASQ-sMvfXeXLcjTFuLWUdeiQEYedj9oOOA93ne-5Kaw9V7sR1foX-ybLDDHfHuAwTN2Vnvpmz0Qlk5osvvv-NunCo4M6A4fQ2FQWjrCwXk8-1N4Wf06dgDJ7ymsw9HtwHhzctVDzodaVlVU_RaC2gtSOWeD5nPaAJ7h6aNmNeLRmNwzCBm3TyPDY-qznPVM0DRg")
 
-  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, consentDao: MockConsentDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, shareLogDao: MockShareLogDAO, importServiceDao: MockImportServiceDAO, shibbolethDao: MockShibbolethDAO)(implicit val executionContext: ExecutionContext, implicit val materializer: Materializer) extends ApiServices
+  case class TestApiService(agoraDao: MockAgoraDAO, googleDao: MockGoogleServicesDAO, ontologyDao: MockOntologyDAO, rawlsDao: MockRawlsDAO, samDao: MockSamDAO, searchDao: MockSearchDAO, researchPurposeSupport: MockResearchPurposeSupport, thurloeDao: MockThurloeDAO, shareLogDao: MockShareLogDAO, importServiceDao: MockImportServiceDAO, shibbolethDao: MockShibbolethDAO)(implicit val executionContext: ExecutionContext, implicit val materializer: Materializer) extends ApiServices
 
   def withDefaultApiServices[T](testCode: TestApiService => T): T = {
-    val apiService = TestApiService(new MockAgoraDAO, new MockGoogleServicesDAO, new MockOntologyDAO, new MockConsentDAO, new MockRawlsDAO, new MockSamDAO, new MockSearchDAO, new MockResearchPurposeSupport, new MockThurloeDAO, new MockShareLogDAO, new MockImportServiceDAO, new MockShibbolethDAO)
+    val apiService = TestApiService(new MockAgoraDAO, new MockGoogleServicesDAO, new MockOntologyDAO, new MockRawlsDAO, new MockSamDAO, new MockSearchDAO, new MockResearchPurposeSupport, new MockThurloeDAO, new MockShareLogDAO, new MockImportServiceDAO, new MockShibbolethDAO)
     testCode(apiService)
   }
 

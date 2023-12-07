@@ -3,25 +3,27 @@ package org.broadinstitute.dsde.firecloud.service
 import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpec._
 import org.broadinstitute.dsde.firecloud.service.PassthroughDirectivesSpecSupport._
-import org.mockserver.mock.action.ExpectationCallback
+import org.mockserver.mock.action.ExpectationResponseCallback
 import org.mockserver.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import spray.json.DefaultJsonProtocol._
+import spray.json.RootJsonFormat
 
 import scala.jdk.CollectionConverters._
 
-class EchoCallback extends ExpectationCallback {
+class EchoCallback extends ExpectationResponseCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
     // translate the mockserver request to a spray Uri
-    val sprayparams = httpRequest.getQueryStringParameters.asScala.map{p =>
-      assert(p.getValues.size() <= 1)
-      p.getName.getValue -> p.getValues.asScala.head.getValue}.toMap
+    val query: Query = Option(httpRequest.getQueryStringParameters) match {
+      case None => Query.Empty
+      case Some(params) => Query(params.getRawParameterString)
+    }
 
     val sprayuri = Uri(echoUrl)
       .withPath(Path(httpRequest.getPath.getValue))
-      .withQuery(Query(sprayparams))
+      .withQuery(query)
 
     val requestInfo = RequestInfo(
       httpRequest.getMethod.getValue,
@@ -44,5 +46,5 @@ case class RequestInfo(
   url: String)
 
 object PassthroughDirectivesSpecSupport {
-  implicit val requestInfoFormat = jsonFormat4(RequestInfo)
+  implicit val requestInfoFormat: RootJsonFormat[RequestInfo] = jsonFormat4(RequestInfo)
 }

@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler}
-import org.broadinstitute.dsde.firecloud.model.DUOS._
 import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
@@ -20,7 +19,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.ValueObjectFormat
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.model.google.GoogleModelJsonSupport.InstantFormat
-import spray.json.{JsString, _}
+import spray.json._
 
 import scala.util.{Failure, Success, Try}
 
@@ -279,38 +278,11 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impStructuredDataRequest: RootJsonFormat[StructuredDataRequest] = jsonFormat12(StructuredDataRequest)
   implicit val impStructuredDataResponse: RootJsonFormat[StructuredDataResponse] = jsonFormat4(StructuredDataResponse)
 
-  implicit object impDuosDataUse extends RootJsonFormat[DuosDataUse] {
-    override def write(ddu: DuosDataUse): JsValue = {
-      val existingProps: Seq[(String, JsValue)] = Try(ddu.getClass.getDeclaredFields.map { f =>
-        f.setAccessible(true)
-        f.get(ddu) match {
-          case Some(x: Boolean) => f.getName -> x.toJson
-          case Some(y: String) => f.getName -> y.toJson
-          case Some((h: String) :: tail) => f.getName -> (h +: tail.collect { case z: String => z }).toJson
-          case _ => f.getName -> JsNull
-        }
-      }) match {
-        case Success(props) => props.toIndexedSeq.filterNot(_._2 == JsNull)
-        case Failure(ex) => serializationError(ex.getMessage)
-      }
-      JsObject(existingProps.toMap)
-    }
-    override def read(json: JsValue): DuosDataUse = {
-      Try(DuosDataUse.apply(json.asJsObject.fields)) match {
-        case Success(ddu) => ddu
-        case Failure(ex) => deserializationError(s"Could not read DuosDataUse value: $json", ex)
-      }
-    }
-  }
-  implicit val impDuosConsent: RootJsonFormat[Consent] = jsonFormat11(Consent)
-  implicit val impDuosConsentError: RootJsonFormat[ConsentError] = jsonFormat2(ConsentError)
   implicit val impOntologyTermParent: RootJsonFormat[TermParent] = jsonFormat5(TermParent)
   implicit val impOntologyTermResource: RootJsonFormat[TermResource] = jsonFormat7(TermResource)
   implicit val impOntologyESTermParent: RootJsonFormat[ESTermParent] = jsonFormat2(ESTermParent)
 
   implicit val impThurloeStatus: RootJsonFormat[ThurloeStatus] = jsonFormat2(ThurloeStatus)
-  implicit val impDropwizardHealth: RootJsonFormat[DropwizardHealth] = jsonFormat2(DropwizardHealth)
-  implicit val impDuosConsentStatus: RootJsonFormat[ConsentStatus] = jsonFormat3(ConsentStatus)
 
   // don't make this implicit! It would be pulled in by anything including ModelJsonProtocol._
   val entityExtractionRejectionHandler = RejectionHandler.newBuilder().handle {

@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.13.4"
   val jacksonHotfixV = "2.13.4.2" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.101.Final"
-  val workbenchLibsHash = "084d25b"
+  val workbenchLibsHash = "8ccaa6d" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -25,7 +25,9 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "1.33",
     // workbench-google2 has jose4j as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
     "org.bitbucket.b_c" % "jose4j" % "0.9.3",
-    "io.grpc" % "grpc-xds" % "1.56.1"
+    "io.grpc" % "grpc-xds" % "1.56.1",
+    // workbench-google2 has bouncycastle as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
+    "org.bouncycastle" % "bcprov-jdk18on" % "1.74"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -39,7 +41,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.22.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.11",
+    "ch.qos.logback"                 % "logback-classic"     % "1.4.14",
     "com.getsentry.raven"            % "raven-logback"       % "8.0.3", // TODO: this should be io.sentry / sentry-logback instead
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
@@ -51,10 +53,10 @@ object Dependencies {
       exclude("bio.terra", "workspace-manager-client")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % "0.10-128901e"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.25-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.2-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.35-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.5-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
-    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.3-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -80,10 +82,10 @@ object Dependencies {
 
 
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20231104-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20231005-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20231113-2.0.0"),
 
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "9.4.4",
+    "com.github.jwt-scala"          %% "jwt-core"            % "9.4.5",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
@@ -93,7 +95,7 @@ object Dependencies {
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.17"   % "test",
-    "org.mock-server"                % "mockserver-netty"    % "3.11"  % "test", // TODO: upgrading higher causes failures, need to investigate
+    "org.mock-server"                % "mockserver-netty"    % "5.15.0"  % "test",
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks

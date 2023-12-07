@@ -25,7 +25,7 @@ class PermissionReportApiSpec extends BaseServiceSpec with WorkspaceApiService w
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  val testApp = app.copy(agoraDAO=new PermissionReportMockAgoraDAO(), rawlsDAO=new PermissionReportMockRawlsDAO())
+  val testApp = app.copy(agoraDAO = new PermissionReportMockAgoraDAO(), rawlsDAO = new PermissionReportMockRawlsDAO())
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(testApp)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(testApp)

@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with TestRequestBuilding {
   // increase the timeout for ScalatestRouteTest from the default of 1 second, otherwise
   // intermittent failures occur on requests not completing in time
-  implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   def actorRefFactory = system
 
@@ -28,7 +28,6 @@ trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest w
     val agoraDao: MockAgoraDAO
     val googleDao: MockGoogleServicesDAO
     val ontologyDao: MockOntologyDAO
-    val consentDao: MockConsentDAO
     val rawlsDao: MockRawlsDAO
     val samDao: MockSamDAO
     val searchDao: MockSearchDAO
@@ -41,7 +40,7 @@ trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest w
     def actorRefFactory = system
 
     val nihServiceConstructor = NihService.constructor(
-      new Application(agoraDao, googleDao, ontologyDao, consentDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, shareLogDao, importServiceDao, shibbolethDao)
+      new Application(agoraDao, googleDao, ontologyDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, shareLogDao, importServiceDao, shibbolethDao)
     ) _
 
   }

@@ -37,7 +37,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       _ <- thurloeDao.saveKeyValues(registrationResultUserInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
       _ <- if (!registerResult.allowed) {
         thurloeDao.saveKeyValues(registrationResultUserInfo, Map("email" -> userInfo.userEmail))
-      } else Future.successful()
+      } else Future.successful(())
     } yield RequestComplete(StatusCodes.OK, registerResult)
 
   def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {

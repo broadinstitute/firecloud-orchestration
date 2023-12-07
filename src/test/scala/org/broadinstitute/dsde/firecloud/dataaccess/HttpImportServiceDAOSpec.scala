@@ -19,7 +19,7 @@ import java.util.UUID
 
 class HttpImportServiceDAOSpec extends AsyncFlatSpec with Matchers with SprayJsonSupport {
 
-  implicit val system = ActorSystem("HttpGoogleCloudStorageDAOSpec")
+  implicit val system: ActorSystem = ActorSystem("HttpGoogleCloudStorageDAOSpec")
   import system.dispatcher
 
   behavior of "HttpImportServiceDAO"

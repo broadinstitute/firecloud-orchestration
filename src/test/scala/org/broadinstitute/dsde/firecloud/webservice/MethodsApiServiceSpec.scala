@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.service.{AgoraPermissionService, BaseServiceSpec, ServiceSpec}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
-import org.mockserver.mock.action.ExpectationCallback
+import org.mockserver.mock.action.ExpectationResponseCallback
 import org.mockserver.model.HttpClassCallback.callback
 import org.mockserver.model.HttpRequest._
 import org.mockserver.model.HttpResponse.response
@@ -81,7 +81,7 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
     testCases foreach { api =>
       methodsServer
         .when(request().withMethod(api.verb.name).withPath(api.remotePath))
-          .callback(callback().withCallbackClass("org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceSpecCallback"))
+          .respond(callback().withCallbackClass("org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceSpecCallback"))
     }
   }
 
@@ -128,11 +128,11 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
   }
 }
 
-final class MethodsApiServiceSpecCallback extends ExpectationCallback {
+final class MethodsApiServiceSpecCallback extends ExpectationResponseCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
     val method:String = httpRequest.getMethod.getValue
     val path:String = httpRequest.getPath.getValue
-    val hasParams:Boolean = !httpRequest.getQueryStringParameters.isEmpty
+    val hasParams:Boolean = !httpRequest.getQueryStringParameterList.isEmpty
 
     val content = s"$method $path $hasParams"
 
