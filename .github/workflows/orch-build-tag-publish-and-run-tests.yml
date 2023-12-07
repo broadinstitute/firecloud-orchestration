@@ -9,6 +9,10 @@ on:
     branches:
       - develop
     paths-ignore: ['**.md']
+env:
+  GCR_REGISTRY: gcr.io/broad-dsp-gcr-public/firecloud-orchestration
+  # Region-specific Google Docker repository where GOOGLE_PROJECT/REPOSITORY_NAME can be found
+  GOOGLE_DOCKER_REPOSITORY: us-central1-docker.pkg.dev
 
 jobs:
   orch-build-tag-publish-job:
@@ -17,7 +21,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     outputs:
-      custom-version-json: ${{ steps.render-orch-version.outputs.custom-version-json }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: 'actions/checkout@v3'
 
@@ -29,41 +33,71 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
           RELEASE_BRANCHES: develop
           WITH_V: true
-
-      - name: Extract branch
-        id: extract-branch
+      
+      # Persist output tag from bumper to $GITHUB_ENV.
+      - id: persist-tag
+        name: Persist tag
         run: |
-          GITHUB_EVENT_NAME=${{ github.event_name }}
-          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            GITHUB_REF=${{ github.ref }}
-            GITHUB_SHA=${{ github.sha }}
-          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            GITHUB_REF=refs/heads/${{ github.head_ref }}
-            GITHUB_SHA=${{ github.event.pull_request.head.sha }}
-          else
-            echo "Failed to extract branch information"
-            exit 1
-          fi
+          echo "DOCKER_TAG=${{ steps.tag.outputs.tag }}" >> $GITHUB_ENV
+      
+      - name: Auth to GCP
+        id: 'auth'
+        uses: google-github-actions/auth@v2
 
-          echo "ref=$GITHUB_REF" >> $GITHUB_OUTPUT
-          echo "sha=$GITHUB_SHA" >> $GITHUB_OUTPUT
-
-      - name: dispatch build to terra-github-workflows
-        uses: aurelien-baudet/workflow-dispatch@93e95b157d791ae7f42aef8f8a0d3d723eba1c31 #commit sha for v2.1.1
         with:
-          workflow: orch-build
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
-          token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
-          inputs: '{ "repository": "${{ github.event.repository.full_name }}", "ref": "${{ steps.extract-branch.outputs.ref }}", "orch-release-tag": "${{ steps.tag.outputs.tag }}" }'
+          token_format: 'id_token'
+          workload_identity_provider: 'projects/1038484894585/locations/global/workloadIdentityPools/github-wi-pool/providers/github-wi-provider'
+          service_account: 'gcr-publish@broad-dsp-gcr-public.iam.gserviceaccount.com'
+          id_token_audience: "1038484894585-k8qvf7l876733laev0lm8kenfa2lj6bn.apps.googleusercontent.com"
 
-      - name: Render Orch version
-        id: render-orch-version
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
+
+      # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: Explicitly auth Docker for Artifact Registry
+        run: gcloud auth configure-docker $GOOGLE_DOCKER_REPOSITORY --quiet      
+      
+      # Build Orch jar
+      - name: Build Orch jar
         run: |
-          echo "$GITHUB_CONTEXT"
-          echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${{ steps.tag.outputs.tag }}\"}}' >> $GITHUB_OUTPUT
+          cd $GITHUB_WORKSPACE
+          ./script/build_jar.sh
+
+      # Publish jar to GCR
+      - id: publish-orch
+        name: Publish Orch
+        run: |
+          cd $GITHUB_WORKSPACE
+          docker build -t ${{ github.event.repository.full_name }}:${DOCKER_TAG} --pull .
+          docker tag ${{ github.event.repository.full_name }}:${DOCKER_TAG} ${{ env.GCR_REGISTRY }}:${DOCKER_TAG}
+          gcloud docker -- push $GCR_REGISTRY:${DOCKER_TAG}
+    
+ 
+  report-to-sherlock:
+    # Report new firecloudorch version to Broad DevOps
+    uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
+    needs: orch-build-tag-publish-job
+    with:
+      new-version: ${{ needs.orch-build-tag-publish-job.outputs.tag }}
+      chart-name: 'firecloudorch'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+  set-version-in-dev:
+    # Put new firecloudorch version in Broad dev environment
+    uses: broadinstitute/sherlock/.github/workflows/client-set-environment-app-version.yaml@main
+    needs: [orch-build-tag-publish-job, report-to-sherlock]
+    with:
+      new-version: ${{ needs.orch-build-tag-publish-job.outputs.tag }}
+      chart-name: 'firecloudorch'
+      environment-name: 'dev'
+    secrets:
+      sync-git-token: ${{ secrets.BROADBOT_TOKEN }}
+    permissions:
+      id-token: 'write'
+          
 
   create-bee-workflow:
     strategy:
