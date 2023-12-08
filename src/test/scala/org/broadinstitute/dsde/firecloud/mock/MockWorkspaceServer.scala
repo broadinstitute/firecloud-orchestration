@@ -69,9 +69,9 @@ object MockWorkspaceServer {
     WorkspaceState.Ready
   )
 
-  val mockValidId = randomPositiveInt()
-  val mockInvalidId = randomPositiveInt()
-  val alternativeMockValidId = randomPositiveInt()
+  val mockValidId = 3
+  val mockInvalidId = 6
+  val alternativeMockValidId = 9
 
   val mockValidSubmission = OrchSubmissionRequest(
     methodConfigurationNamespace = Option(randomAlpha()),
