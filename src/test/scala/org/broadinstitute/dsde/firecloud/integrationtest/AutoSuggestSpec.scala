@@ -37,7 +37,7 @@ class AutoSuggestSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll w
     "Text search autocomplete suggestions correctness" - {
 
       val testCases: Seq[(String, Seq[String])] = Seq(
-        ("brca open",    Seq("~~~intentional fail for verifying test behavior~~~")),
+        ("brca open",    Seq("TCGA_BRCA_OpenAccess")),
         ("brca o",       Seq("TCGA_BRCA_OpenAccess")),
         ("BRCA_Cont",    Seq("TCGA_BRCA_ControlledAccess")),
         ("glio",         Seq("Glioblastoma multiforme")),
