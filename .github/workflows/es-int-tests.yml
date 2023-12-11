@@ -28,5 +28,5 @@ jobs:
         run: ./docker/run-es.sh start
 
       - name: Execute Tests
-        run: sbt it:test
+        run: sbt clean "IntegrationTest / test"
 
