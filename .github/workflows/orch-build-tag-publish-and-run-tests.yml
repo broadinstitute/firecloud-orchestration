@@ -73,6 +73,20 @@ jobs:
           docker tag ${{ github.event.repository.full_name }}:${DOCKER_TAG} ${{ env.GCR_REGISTRY }}:${DOCKER_TAG}
           gcloud docker -- push $GCR_REGISTRY:${DOCKER_TAG}
     
+  prepare-configs:
+    runs-on: ubuntu-latest
+    outputs:
+      log-results: ${{ steps.prepare-outputs.outputs.log-results }}
+      test-context: ${{ steps.prepare-outputs.outputs.test-context }}
+    steps:
+      - id: prepare-outputs
+        run: |-
+          echo 'log-results=true' >> $GITHUB_OUTPUT
+          if ${{ github.ref_name == 'develop' }}; then
+            echo 'test-context=dev-merge' >> $GITHUB_OUTPUT
+          else
+            echo 'test-context=pr-test' >> $GITHUB_OUTPUT
+          fi
  
   report-to-sherlock:
     # Report new firecloudorch version to Broad DevOps
@@ -89,6 +103,7 @@ jobs:
     # Put new firecloudorch version in Broad dev environment
     uses: broadinstitute/sherlock/.github/workflows/client-set-environment-app-version.yaml@main
     needs: [orch-build-tag-publish-job, report-to-sherlock]
+    if: ${{ github.ref_name == 'develop' }}
     with:
       new-version: ${{ needs.orch-build-tag-publish-job.outputs.tag }}
       chart-name: 'firecloudorch'
@@ -114,7 +129,7 @@ jobs:
           echo '${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}'
 
       - name: dispatch to terra-github-workflows
-        uses: aurelien-baudet/workflow-dispatch@93e95b157d791ae7f42aef8f8a0d3d723eba1c31 #commit sha for v2.1.1
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: bee-create
           repo: broadinstitute/terra-github-workflows
@@ -122,7 +137,12 @@ jobs:
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
           # Note: There is a hard limit of bee-name not exceeding 32 characters
-          inputs: '{ "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}", "version-template": "${{ matrix.terra-env }}", "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}" }'
+          inputs: '{
+              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
+              "version-template": "${{ matrix.terra-env }}",
+              "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}",
+              "caller_run_id": "${{ github.run_id }}"
+            }'
 
   orch-swat-test-job:
     strategy:
@@ -136,14 +156,20 @@ jobs:
       id-token: 'write'
     steps:
       - name: dispatch to terra-github-workflows
-        uses: aurelien-baudet/workflow-dispatch@93e95b157d791ae7f42aef8f8a0d3d723eba1c31 #commit sha for v2.1.1
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: orch-swat-tests
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          inputs: '{ "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}", "ENV": "${{ matrix.testing-env }}" }'
+          inputs: '{
+              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
+              "ENV": "${{ matrix.testing-env }}",
+              "log-results": "${{ needs.prepare-configs.outputs.log-results }}",
+              "test-context": "${{ needs.prepare-configs.outputs.test-context }}",
+              "caller_run_id": "${{ github.run_id }}"
+            }'
 
   destroy-bee-workflow:
     strategy:
@@ -157,11 +183,14 @@ jobs:
       id-token: 'write'
     steps:
       - name: dispatch to terra-github-workflows
-        uses: aurelien-baudet/workflow-dispatch@93e95b157d791ae7f42aef8f8a0d3d723eba1c31 #commit sha for v2.1.1
+        uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: bee-destroy
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          inputs: '{ "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}" }'
+          inputs: '{
+              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
+              "caller_run_id": "${{ github.run_id }}"
+            }'
