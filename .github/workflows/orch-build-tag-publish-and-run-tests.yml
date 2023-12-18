@@ -194,3 +194,4 @@ jobs:
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "caller_run_id": "${{ github.run_id }}"
             }'
+          wait-for-completion: false
