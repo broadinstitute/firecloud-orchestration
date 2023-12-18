@@ -13,6 +13,7 @@ env:
   GCR_REGISTRY: gcr.io/broad-dsp-gcr-public/firecloud-orchestration
   # Region-specific Google Docker repository where GOOGLE_PROJECT/REPOSITORY_NAME can be found
   GOOGLE_DOCKER_REPOSITORY: us-central1-docker.pkg.dev
+  RUN_NAME: '${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
   orch-build-tag-publish-job:
@@ -132,6 +133,7 @@ jobs:
         uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: bee-create
+          run-name: "bee-create-${{ env.RUN_NAME }}"
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
@@ -140,8 +142,7 @@ jobs:
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "version-template": "${{ matrix.terra-env }}",
-              "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}",
-              "caller_run_id": "${{ github.run_id }}"
+              "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}"
             }'
 
   orch-swat-test-job:
@@ -159,6 +160,7 @@ jobs:
         uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: orch-swat-tests
+          run-name: "orch-test-${{ env.RUN_NAME }}"
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
@@ -167,8 +169,7 @@ jobs:
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "ENV": "${{ matrix.testing-env }}",
               "log-results": "${{ needs.prepare-configs.outputs.log-results }}",
-              "test-context": "${{ needs.prepare-configs.outputs.test-context }}",
-              "caller_run_id": "${{ github.run_id }}"
+              "test-context": "${{ needs.prepare-configs.outputs.test-context }}"
             }'
 
   destroy-bee-workflow:
@@ -186,12 +187,12 @@ jobs:
         uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: bee-destroy
+          run-name: "bee-destroy-${{ env.RUN_NAME }}"
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
           inputs: '{
-              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
-              "caller_run_id": "${{ github.run_id }}"
+              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}"
             }'
           wait-for-completion: false
