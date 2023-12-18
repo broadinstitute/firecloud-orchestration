@@ -168,7 +168,6 @@ jobs:
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "ENV": "${{ matrix.testing-env }}",
-              "log-results": "${{ needs.prepare-configs.outputs.log-results }}",
               "test-context": "${{ needs.prepare-configs.outputs.test-context }}"
             }'
 
