@@ -142,7 +142,8 @@ jobs:
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "version-template": "${{ matrix.terra-env }}",
-              "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}"
+              "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}",
+              "run-name": "bee-create-${{ env.RUN_NAME }}"
             }'
 
   orch-swat-test-job:
@@ -160,7 +161,6 @@ jobs:
         uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: orch-swat-tests
-          run-name: "orch-test-${{ env.RUN_NAME }}"
           repo: broadinstitute/terra-github-workflows
           ref: refs/heads/main
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
@@ -193,6 +193,7 @@ jobs:
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
           inputs: '{
-              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}"
+              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
+              "run-name": "bee-destroy-${{ env.RUN_NAME }}"
             }'
           wait-for-completion: false
