@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.5"
   val jacksonHotfixV = "2.13.5" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.101.Final"
+  val nettyV = "4.1.104.Final"
   val workbenchLibsHash = "8ccaa6d" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -91,7 +91,7 @@ object Dependencies {
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
-    "com.github.erosb"               % "everit-json-schema"  % "1.14.3",
+    "com.github.erosb"               % "everit-json-schema"  % "1.14.4",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.17"   % "test",
