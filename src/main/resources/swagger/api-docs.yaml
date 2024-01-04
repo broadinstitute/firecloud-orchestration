@@ -6781,6 +6781,10 @@ components:
           description: Optional, false if not specified. Applicable only for azure
             billing projects. When set, a billing project with suitable infrastructure
             for protected data workspaces will be created.
+        costSavings:
+          type: boolean
+          description: Optional, false if not specified. Applicable only for azure
+            billing projects. When set, this enables Vertical Pod Autoscaling and Spot Nodes in Azure Kubernetes.
       description: ""
     ProjectRole:
       description: the role on the billing project
