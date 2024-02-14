@@ -93,7 +93,7 @@ object Dependencies {
     "com.github.erosb"               % "everit-json-schema"  % "1.14.4",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.17"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.18"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "5.15.0"  % "test",
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
