@@ -35,8 +35,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val samArbitraryPetTokenUrl = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/token"
   val samPetKeyForProject = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/%s/key"
 
-  val samManagedGroupsBase: String = FireCloudConfig.Sam.baseUrl + "/api/groups"
-  val samManagedGroupBase: String = FireCloudConfig.Sam.baseUrl + "/api/group"
+  val samManagedGroupBase: String = FireCloudConfig.Sam.baseUrl + "/api/groups/v1"
   def samManagedGroup(groupName: WorkbenchGroupName): String = samManagedGroupBase + s"/$groupName"
   def samManagedGroupRequestAccess(groupName: WorkbenchGroupName): String = samManagedGroup(groupName) + "/requestAccess"
   def samManagedGroupPolicy(groupName: WorkbenchGroupName, policyName: ManagedGroupRole): String = samManagedGroup(groupName) + s"/$policyName"

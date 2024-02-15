@@ -66,7 +66,7 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
   }
 
   override def listGroups(implicit userInfo: WithAccessToken): Future[List[FireCloudManagedGroupMembership]] = {
-    authedRequestToObject[List[FireCloudManagedGroupMembership]](Get(samManagedGroupsBase))
+    authedRequestToObject[List[FireCloudManagedGroupMembership]](Get(samManagedGroupBase))
   }
 
   override def getGroupEmail(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[WorkbenchEmail] = {
