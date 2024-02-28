@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.5"
   val jacksonHotfixV = "2.13.5" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.106.Final"
+  val nettyV = "4.1.107.Final"
   val workbenchLibsHash = "8ccaa6d" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -40,9 +40,9 @@ object Dependencies {
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.22.1",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.14",
-    "io.sentry"                      % "sentry-logback"      % "7.3.0",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.0",
+    "io.sentry"                      % "sentry-logback"      % "7.4.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
