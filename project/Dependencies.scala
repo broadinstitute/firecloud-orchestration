@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.5"
   val jacksonHotfixV = "2.13.5" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.106.Final"
+  val nettyV = "4.1.107.Final"
   val workbenchLibsHash = "8ccaa6d" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -40,9 +40,9 @@ object Dependencies {
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.22.1",
-    "ch.qos.logback"                 % "logback-classic"     % "1.4.14",
-    "io.sentry"                      % "sentry-logback"      % "7.3.0",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.0",
+    "io.sentry"                      % "sentry-logback"      % "7.4.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -81,7 +81,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240201-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240208-2.0.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240220-2.0.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.0",
@@ -98,7 +98,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.12" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.13" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
