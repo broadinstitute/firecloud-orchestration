@@ -36,7 +36,7 @@ object Dependencies {
   val rootDependencies: Seq[ModuleID] = Seq(
     "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
-    "ch.qos.logback" % "logback-classic" % "1.5.0",
+    "ch.qos.logback" % "logback-classic" % "1.5.2",
     "com.typesafe.akka"   %%  "akka-http-core"     % akkaHttpV,
     "com.typesafe.akka"   %%  "akka-stream-testkit" % akkaV,
     "com.typesafe.akka"   %%  "akka-http"           % akkaHttpV,
