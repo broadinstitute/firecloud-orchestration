@@ -41,7 +41,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.0",
-    "ch.qos.logback"                 % "logback-classic"     % "1.5.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.2",
     "io.sentry"                      % "sentry-logback"      % "7.5.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
@@ -80,9 +80,8 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240208-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240220-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240220-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240227-2.0.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.0",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
