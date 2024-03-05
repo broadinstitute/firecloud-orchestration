@@ -82,7 +82,7 @@ object Dependencies {
 
 
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240208-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240220-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240227-2.0.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.0",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
