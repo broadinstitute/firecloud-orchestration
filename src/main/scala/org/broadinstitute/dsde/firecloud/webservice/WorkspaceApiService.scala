@@ -1,5 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
+import akka.http.scaladsl.model.StatusCodes.{Accepted, OK}
+
 import java.text.SimpleDateFormat
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
@@ -8,6 +10,7 @@ import akka.http.scaladsl.server.Route
 import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_PFB
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding, PermissionReportService, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
@@ -174,9 +177,13 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 // GET importPFB is deprecated; use GET importJob instead
                 path(("importPFB" | "importJob")) {
                   get {
-                    requireUserInfo() { _ =>
-                      extract(_.request.uri.query()) { query =>
-                        passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")).withQuery(query), HttpMethods.GET)
+                    requireUserInfo() { userInfo =>
+                      parameter(Symbol("running_only").as[Boolean].withDefault(false)) { runningOnly =>
+                        complete {
+                          entityServiceConstructor(FlexibleModelSchema).listJobs(workspaceNamespace, workspaceName, runningOnly, userInfo) map { respBody =>
+                            RequestComplete(OK, respBody)
+                          }
+                        }
                       }
                     }
                   }

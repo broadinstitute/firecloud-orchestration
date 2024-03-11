@@ -7,12 +7,14 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.model.{ImportServiceRequest, ImportServiceResponse, AsyncImportRequest, AsyncImportResponse, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, ImportServiceRequest, ImportServiceResponse, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource, WorkspaceName}
+
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -24,6 +26,22 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
 
   override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     doImport(workspaceNamespace, workspaceName, isUpsert, importRequest)
+  }
+
+  override def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean)(implicit userInfo: UserInfo): Future[List[ImportServiceListResponse]] = {
+    // get jobs from import service
+    val importServiceUrl = FireCloudDirectiveUtils
+      .encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
+      .appendedAll(s"?running_only=$runningOnly")
+
+    val importServiceJobsFuture: Future[List[ImportServiceListResponse]] = userAuthedRequest(Get(importServiceUrl))(userInfo) flatMap { importServiceResponse =>
+      Unmarshal(importServiceResponse).to[List[ImportServiceListResponse]]
+    }
+
+    // TODO AJ-1602: get jobs from cWDS
+
+    // TODO AJ-1602: merge lists and reply
+    importServiceJobsFuture
   }
 
   private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, importRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
