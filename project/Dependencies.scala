@@ -40,7 +40,7 @@ object Dependencies {
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.0",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.1",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.2",
     "io.sentry"                      % "sentry-logback"      % "7.6.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
