@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.UUID
 import akka.http.scaladsl.model.StatusCodes._
 import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_RAWLS, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
@@ -31,4 +31,6 @@ class MockImportServiceDAO extends ImportServiceDAO {
       case _ => ???
     }
   }
+
+  override def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean)(implicit userInfo: UserInfo): Future[List[ImportServiceListResponse]] = ???
 }
