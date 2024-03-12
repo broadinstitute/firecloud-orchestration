@@ -6,13 +6,13 @@ import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, ImportServiceRequest, ImportServiceResponse, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource, WorkspaceName}
+import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, WorkspaceName}
 
 import spray.json.DefaultJsonProtocol._
 
@@ -34,14 +34,9 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
       .encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports")
       .appendedAll(s"?running_only=$runningOnly")
 
-    val importServiceJobsFuture: Future[List[ImportServiceListResponse]] = userAuthedRequest(Get(importServiceUrl))(userInfo) flatMap { importServiceResponse =>
+    userAuthedRequest(Get(importServiceUrl))(userInfo) flatMap { importServiceResponse =>
       Unmarshal(importServiceResponse).to[List[ImportServiceListResponse]]
     }
-
-    // TODO AJ-1602: get jobs from cWDS
-
-    // TODO AJ-1602: merge lists and reply
-    importServiceJobsFuture
   }
 
   private def doImport(workspaceNamespace: String, workspaceName: String, isUpsert: Boolean, importRequest: AsyncImportRequest)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
