@@ -373,6 +373,14 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
   }
 
+  def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[ImportServiceListResponse]] = {
+    // get jobs from Import Service
+    val importServiceJobs = importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
+    // TODO AJ-1602: get jobs from cWDS
+    // TODO AJ-1602: merge lists before replying
+    importServiceJobs
+  }
+
   def getEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {
     rawlsDAO.getEntityTypes(workspaceNamespace, workspaceName)(userInfo).flatMap { entityTypeResponse =>
       val entityTypes = entityTypeResponse.keys.toList
