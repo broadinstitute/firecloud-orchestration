@@ -264,7 +264,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val cwdsDAO = mockito[MockCwdsDAO]
 
       when(importServiceDAO.listJobs(any[String], any[String], any[Boolean])(any[UserInfo])).thenReturn(Future.successful(importServiceResponse))
-      when(cwdsDAO.listJobsV1(any[UUID], any[Boolean])(any[UserInfo])).thenReturn(cwdsResponse)
+      when(cwdsDAO.listJobsV1(any[String], any[Boolean])(any[UserInfo])).thenReturn(cwdsResponse)
 
       // inject mocks to entity service
       val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)

@@ -26,7 +26,7 @@ class HttpCwdsDAO extends CwdsDAO {
     UNKNOWN -> "Error"
   )
 
-  override def listJobsV1(workspaceId: UUID, runningOnly: Boolean)(implicit userInfo: UserInfo)
+  override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
   : List[ImportServiceListResponse] = {
     // determine the proper cWDS statuses based on the runningOnly argument
     val statuses = if (runningOnly) RUNNING_STATUSES else ALL_STATUSES
@@ -40,7 +40,7 @@ class HttpCwdsDAO extends CwdsDAO {
     jobApi.setApiClient(apiClient)
 
     // query cWDS for its jobs, and translate the response to ImportServiceListResponse format
-    jobApi.jobsInInstanceV1(workspaceId, statuses)
+    jobApi.jobsInInstanceV1(UUID.fromString(workspaceId), statuses)
       .asScala
       .map(toImportServiceListResponse)
       .toList
