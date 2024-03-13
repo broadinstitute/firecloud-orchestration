@@ -97,6 +97,10 @@ thurloe {
 	baseUrl = "https://thurloe.dsde-dev.broadinstitute.org"
 }
 
+cwds {
+    baseUrl = "https://cwds.dsde-dev.broadinstitute.org"
+}
+
 firecloud {
 	baseUrl = "https://firecloud-orchestration.dsde-dev.broadinstitute.org"
 	portalUrl = "https://firecloud.dsde-dev.broadinstitute.org"
