@@ -120,6 +120,12 @@ object FireCloudConfig {
     val validPreferenceKeys = profile.getStringList("validPreferenceKeys").asScala.toSet
   }
 
+  object Cwds {
+    private val cwds = config.getConfig("cwds")
+    val baseUrl = cwds.getString("baseUrl")
+    val enabled = cwds.getBoolean("enabled")
+  }
+
   object FireCloud {
     private val firecloud = config.getConfig("firecloud")
     val baseUrl = firecloud.getString("baseUrl")
