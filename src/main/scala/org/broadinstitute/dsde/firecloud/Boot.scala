@@ -36,7 +36,7 @@ object Boot extends App with LazyLogging {
     val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
     val importServiceDAO:ImportServiceDAO = new HttpImportServiceDAO
     val shibbolethDAO:ShibbolethDAO = new HttpShibbolethDAO
-    val cwdsDAO:CwdsDAO = new HttpCwdsDAO
+    val cwdsDAO:CwdsDAO = new HttpCwdsDAO(FireCloudConfig.Cwds.enabled)
 
     val app:Application = Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, importServiceDAO, shibbolethDAO, cwdsDAO);
 

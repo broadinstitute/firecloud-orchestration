@@ -7,6 +7,8 @@ import scala.concurrent.Future
 
 trait CwdsDAO {
 
+  def isEnabled: Boolean
+
   def listJobsV1(workspaceId: String,
                  runningOnly: Boolean
                 )(implicit userInfo: UserInfo): List[ImportServiceListResponse]

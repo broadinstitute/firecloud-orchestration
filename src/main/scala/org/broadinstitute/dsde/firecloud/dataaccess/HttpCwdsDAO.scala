@@ -10,7 +10,7 @@ import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
 import scala.jdk.CollectionConverters._
 import java.util.UUID
 
-class HttpCwdsDAO extends CwdsDAO {
+class HttpCwdsDAO(enabled: Boolean) extends CwdsDAO {
 
   private final val RUNNING_STATUSES: java.util.List[String] = List("CREATED", "QUEUED", "RUNNING").asJava
   private final val ALL_STATUSES: java.util.List[String] = List.empty[String].asJava
@@ -25,6 +25,8 @@ class HttpCwdsDAO extends CwdsDAO {
     CANCELLED -> "Error",
     UNKNOWN -> "Error"
   )
+
+  override def isEnabled: Boolean = enabled
 
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
   : List[ImportServiceListResponse] = {

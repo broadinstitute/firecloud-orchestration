@@ -381,7 +381,11 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
       // get jobs from Import Service
       importServiceJobs <- importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
       // get jobs from cWDS
-      cwdsJobs = cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+      cwdsJobs = if (cwdsDAO.isEnabled) {
+        cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+      } else {
+        List.empty
+      }
     } yield {
       // merge Import Service and cWDS results
       importServiceJobs.concat(cwdsJobs)

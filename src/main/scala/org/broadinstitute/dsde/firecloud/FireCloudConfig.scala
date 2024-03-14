@@ -123,6 +123,7 @@ object FireCloudConfig {
   object Cwds {
     private val cwds = config.getConfig("cwds")
     val baseUrl = cwds.getString("baseUrl")
+    val enabled = cwds.getBoolean("enabled")
   }
 
   object FireCloud {

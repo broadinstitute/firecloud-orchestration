@@ -10,11 +10,11 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{times, verify, when}
+import org.mockito.Mockito.{never, times, verify, when}
 import org.parboiled.common.FileUtils
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar.{mock => mockito}
@@ -224,8 +224,8 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         ImportServiceListResponse("jobId2", "status2", "filetype2", None)
       )
       val cwdsResponse = List(
-        ImportServiceListResponse("jobId1", "status1", "filetype1", None),
-        ImportServiceListResponse("jobId2", "status2", "filetype2", None)
+        ImportServiceListResponse("jobId3", "status3", "filetype3", None),
+        ImportServiceListResponse("jobId4", "status4", "filetype4", None)
       )
 
       listJobsTestImpl(importServiceResponse, cwdsResponse)
@@ -258,6 +258,37 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       listJobsTestImpl(importServiceResponse, cwdsResponse)
     }
 
+    "should not call cWDS if cWDS is not enabled" in {
+      // set up mocks
+      val importServiceDAO = mockito[MockImportServiceDAO]
+      val cwdsDAO = mockito[MockCwdsDAO]
+
+      val importServiceResponse = List(
+        ImportServiceListResponse("jobId1", "status1", "filetype1", None),
+        ImportServiceListResponse("jobId2", "status2", "filetype2", None)
+      )
+      val cwdsResponse = List(
+        ImportServiceListResponse("jobId3", "status3", "filetype3", None),
+        ImportServiceListResponse("jobId4", "status4", "filetype4", None)
+      )
+
+      when(importServiceDAO.listJobs(any[String], any[String], any[Boolean])(any[UserInfo])).thenReturn(Future.successful(importServiceResponse))
+      when(cwdsDAO.listJobsV1(any[String], any[Boolean])(any[UserInfo])).thenReturn(cwdsResponse)
+      when(cwdsDAO.isEnabled).thenReturn(false)
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // list jobs via entity service
+      val actual = entityService.listJobs("workspaceNamespace", "workspaceName", runningOnly = true, dummyUserInfo("mytoken")).futureValue
+
+      // verify cwds list-jobs was NOT called
+      verify(cwdsDAO, never).listJobsV1(any[String], any[Boolean])(any[UserInfo])
+
+      // verify the response only contains Import Service jobs
+      actual should contain theSameElementsAs importServiceResponse
+    }
+
     def listJobsTestImpl(importServiceResponse: List[ImportServiceListResponse], cwdsResponse: List[ImportServiceListResponse]) = {
       // set up mocks
       val importServiceDAO = mockito[MockImportServiceDAO]
@@ -265,6 +296,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
       when(importServiceDAO.listJobs(any[String], any[String], any[Boolean])(any[UserInfo])).thenReturn(Future.successful(importServiceResponse))
       when(cwdsDAO.listJobsV1(any[String], any[Boolean])(any[UserInfo])).thenReturn(cwdsResponse)
+      when(cwdsDAO.isEnabled).thenReturn(true)
 
       // inject mocks to entity service
       val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)

@@ -99,6 +99,7 @@ thurloe {
 
 cwds {
     baseUrl = "https://cwds.dsde-dev.broadinstitute.org"
+    enabled = true
 }
 
 firecloud {
