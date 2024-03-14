@@ -24,7 +24,7 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: 'actions/checkout@v3'
+      - uses: 'actions/checkout@v4'
 
       - name: Bump the tag to a new version
         uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
@@ -54,7 +54,7 @@ jobs:
 
       # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
       - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
+        uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: Explicitly auth Docker for Artifact Registry
         run: gcloud auth configure-docker $GOOGLE_DOCKER_REPOSITORY --quiet      

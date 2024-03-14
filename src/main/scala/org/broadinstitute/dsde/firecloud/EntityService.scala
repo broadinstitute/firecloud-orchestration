@@ -10,7 +10,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
 import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_RAWLS}
-import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{CwdsDAO, GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -34,7 +34,7 @@ import scala.util.{Failure, Success, Try}
 object EntityService {
 
   def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
-    new EntityService(app.rawlsDAO, app.importServiceDAO, app.googleServicesDAO, modelSchema)
+    new EntityService(app.rawlsDAO, app.importServiceDAO, app.cwdsDAO, app.googleServicesDAO, modelSchema)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -102,7 +102,7 @@ object EntityService {
 
 }
 
-class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, googleServicesDAO: GoogleServicesDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
+class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwdsDAO: CwdsDAO, googleServicesDAO: GoogleServicesDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
   extends TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -374,11 +374,22 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
   }
 
   def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[ImportServiceListResponse]] = {
-    // get jobs from Import Service
-    val importServiceJobs = importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
-    // TODO AJ-1602: get jobs from cWDS
-    // TODO AJ-1602: merge lists before replying
-    importServiceJobs
+
+    for {
+      // get jobs from Import Service
+      importServiceJobs <- importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
+      // get jobs from cWDS
+      cwdsJobs <- if (cwdsDAO.isEnabled) {
+        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+          cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+        }
+      } else {
+        Future.successful(List.empty)
+      }
+    } yield {
+      // merge Import Service and cWDS results
+      importServiceJobs.concat(cwdsJobs)
+    }
   }
 
   def getEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {
