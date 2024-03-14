@@ -370,7 +370,24 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
     // validate that filetype exists in the importRequest
     if (importRequest.filetype.isEmpty)
       throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype must be specified"))
-    importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
+
+    // if cwds.enabled, for cwds filetypes send the request to cWDS instead of import service
+    if (cwdsDAO.isEnabled && "pfb".equals(importRequest.filetype.toLowerCase)) {
+      // translate the workspace namespace/name into an id
+      rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+        // create the job in cWDS
+        val cwdsJob = cwdsDAO.importV1(workspace.workspace.workspaceId, importRequest)(userInfo)
+        // massage the cWDS job into the response format Orch requires
+        val asyncImportResponse = AsyncImportResponse(url = importRequest.url,
+          jobId = cwdsJob.getJobId.toString,
+          workspace = WorkspaceName(workspaceNamespace, workspaceName))
+        RequestComplete(Accepted, asyncImportResponse)
+      }
+    } else {
+      importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
+    }
+
+
   }
 
   def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[ImportServiceListResponse]] = {

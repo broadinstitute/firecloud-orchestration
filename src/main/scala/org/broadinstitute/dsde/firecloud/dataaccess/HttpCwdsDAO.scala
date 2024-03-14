@@ -3,14 +3,16 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import okhttp3.Protocol
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpCwdsDAO.commonHttpClient
-import org.broadinstitute.dsde.firecloud.model.{ImportServiceListResponse, UserInfo}
-import org.databiosphere.workspacedata.api.JobApi
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, UserInfo}
+import org.broadinstitute.dsde.rawls.model.WorkspaceName
+import org.databiosphere.workspacedata.api.{ImportApi, JobApi}
 import org.databiosphere.workspacedata.client.ApiClient
-import org.databiosphere.workspacedata.model.GenericJob
+import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
 import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
 
 import scala.jdk.CollectionConverters._
 import java.util.UUID
+import scala.concurrent.Future
 
 object HttpCwdsDAO {
   // singleton common http client to prevent object thrashing
@@ -55,6 +57,23 @@ class HttpCwdsDAO(enabled: Boolean) extends CwdsDAO {
       .asScala
       .map(toImportServiceListResponse)
       .toList
+  }
+
+  override def importV1(workspaceId: String,
+                        importRequest: AsyncImportRequest
+                       )(implicit userInfo: UserInfo): GenericJob = {
+    // prepare the cWDS client
+    val apiClient: ApiClient = new ApiClient()
+    apiClient.setHttpClient(commonHttpClient)
+    apiClient.setBasePath(FireCloudConfig.Cwds.baseUrl)
+    apiClient.setAccessToken(userInfo.accessToken.token)
+    val importApi: ImportApi = new ImportApi()
+    importApi.setApiClient(apiClient)
+
+    // TODO: create import request object
+    val importRequest: ImportRequest = new ImportRequest
+
+    importApi.importV1(importRequest, UUID.fromString(workspaceId))
   }
 
   protected[dataaccess] def toImportServiceListResponse(cwdsJob: GenericJob): ImportServiceListResponse = {

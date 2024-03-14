@@ -1,9 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.{ImportServiceListResponse, UserInfo}
-
-import java.util.UUID
-import scala.concurrent.Future
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, UserInfo}
+import org.databiosphere.workspacedata.model.GenericJob
 
 trait CwdsDAO {
 
@@ -12,4 +10,9 @@ trait CwdsDAO {
   def listJobsV1(workspaceId: String,
                  runningOnly: Boolean
                 )(implicit userInfo: UserInfo): List[ImportServiceListResponse]
+
+  def importV1(workspaceId: String,
+               importRequest: AsyncImportRequest
+              )(implicit userInfo: UserInfo): GenericJob
+
 }
