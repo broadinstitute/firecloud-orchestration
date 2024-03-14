@@ -46,7 +46,7 @@ class HttpCwdsDAO(enabled: Boolean) extends CwdsDAO {
     val apiClient: ApiClient = new ApiClient()
     apiClient.setHttpClient(commonHttpClient)
     apiClient.setBasePath(FireCloudConfig.Cwds.baseUrl)
-    apiClient.setAccessToken(userInfo.accessToken.token)
+    apiClient.setBearerToken(userInfo.accessToken.token)
     val jobApi: JobApi = new JobApi()
     jobApi.setApiClient(apiClient)
 
