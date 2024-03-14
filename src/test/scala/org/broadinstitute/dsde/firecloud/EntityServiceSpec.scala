@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILET
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockImportServiceDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
@@ -262,6 +262,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       // set up mocks
       val importServiceDAO = mockito[MockImportServiceDAO]
       val cwdsDAO = mockito[MockCwdsDAO]
+      val rawlsDAO = mockito[MockRawlsDAO]
 
       val importServiceResponse = List(
         ImportServiceListResponse("jobId1", "status1", "filetype1", None),
@@ -282,6 +283,8 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       // list jobs via entity service
       val actual = entityService.listJobs("workspaceNamespace", "workspaceName", runningOnly = true, dummyUserInfo("mytoken")).futureValue
 
+      // verify Rawls get-workspace was NOT called
+      verify(rawlsDAO, never).getWorkspace(any[String], any[String])(any[WithAccessToken])
       // verify cwds list-jobs was NOT called
       verify(cwdsDAO, never).listJobsV1(any[String], any[Boolean])(any[UserInfo])
 

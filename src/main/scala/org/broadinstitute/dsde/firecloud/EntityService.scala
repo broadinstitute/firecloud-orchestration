@@ -376,15 +376,15 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
   def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[ImportServiceListResponse]] = {
 
     for {
-      // translate workspace namespace/name to workspaceid
-      workspace <- rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo)
       // get jobs from Import Service
       importServiceJobs <- importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
       // get jobs from cWDS
-      cwdsJobs = if (cwdsDAO.isEnabled) {
-        cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+      cwdsJobs <- if (cwdsDAO.isEnabled) {
+        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+          cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+        }
       } else {
-        List.empty
+        Future.successful(List.empty)
       }
     } yield {
       // merge Import Service and cWDS results

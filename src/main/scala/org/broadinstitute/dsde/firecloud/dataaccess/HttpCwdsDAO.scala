@@ -65,6 +65,7 @@ class HttpCwdsDAO(enabled: Boolean) extends CwdsDAO {
   }
 
   protected[dataaccess] def toImportServiceStatus(cwdsStatus: GenericJob.StatusEnum): String = {
+    // don't fail status translation if status somehow could not be found
     STATUS_TRANSLATION.getOrElse(cwdsStatus, "Unknown")
   }
 
