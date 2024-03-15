@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
-import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceName, WorkspaceResponse}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceAccessLevels, WorkspaceBucketOptions, WorkspaceResponse, WorkspaceSubmissionStats}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.databiosphere.workspacedata.model.GenericJob
 import org.mockito.ArgumentMatchers
@@ -347,17 +347,21 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val rawlsDAO = mockito[MockRawlsDAO]
 
       // inject mocks to entity service
-      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO, rawlsDAO = rawlsDAO)
 
       // set up behaviors
       val genericJob: GenericJob = new GenericJob
       genericJob.setJobId(UUID.randomUUID())
+      // the "new MockRawlsDAO()" here is only to get access to a pre-canned WorkspaceResponse object
+      val workspaceResponse = new MockRawlsDAO().rawlsWorkspaceResponseWithAttributes
+
       when(cwdsDAO.isEnabled).thenReturn(cwdsEnabled)
       when(cwdsDAO.getSupportedFormats).thenReturn(cwdsSupportedFormats)
       when(cwdsDAO.importV1(any[String], any[AsyncImportRequest])(any[UserInfo])).thenReturn(genericJob)
       when(importServiceDAO.importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo]))
         .thenReturn(Future.successful(RequestComplete(StatusCodes.Accepted, "")))
-      when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo])).thenCallRealMethod()
+      when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo]))
+        .thenReturn(Future.successful(workspaceResponse))
 
       // create input
       val input = AsyncImportRequest(url = "https://example.com", filetype = importFiletype)
