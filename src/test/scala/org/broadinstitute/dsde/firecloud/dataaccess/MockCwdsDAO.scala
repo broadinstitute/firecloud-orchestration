@@ -16,7 +16,7 @@ class MockCwdsDAO(enabled: Boolean = true) extends CwdsDAO {
   : List[ImportServiceListResponse] = List()
 
   override def importV1(workspaceId: String,
-                        importRequest: AsyncImportRequest
+                        asyncImportRequest: AsyncImportRequest
                        )(implicit userInfo: UserInfo): GenericJob = {
     val genericJob: GenericJob = new GenericJob
     genericJob.setJobId(UUID.randomUUID())

@@ -3,8 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import okhttp3.Protocol
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpCwdsDAO.commonHttpClient
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, UserInfo}
-import org.broadinstitute.dsde.rawls.model.WorkspaceName
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, ImportServiceListResponse, UserInfo}
 import org.databiosphere.workspacedata.api.{ImportApi, JobApi}
 import org.databiosphere.workspacedata.client.ApiClient
 import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
@@ -13,7 +12,6 @@ import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
 import java.net.URI
 import scala.jdk.CollectionConverters._
 import java.util.UUID
-import scala.concurrent.Future
 
 object HttpCwdsDAO {
   // singleton common http client to prevent object thrashing

@@ -10,8 +10,9 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, WorkspaceName, WorkspaceResponse}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
+import org.databiosphere.workspacedata.model.GenericJob
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{never, times, verify, when}
@@ -310,6 +311,75 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       actual should contain theSameElementsAs (importServiceResponse ++ cwdsResponse)
     }
 
+  }
+
+  "EntityService.importJob" - {
+    "should send to cWDS when cWDS is enabled and supports the filetype" in {
+      importJobTestImpl(
+        cwdsEnabled = true,
+        cwdsSupportedFormats = List("pfb","tdrexport"),
+        importFiletype = "tdrexport",
+        expectUsingCwds = true)
+
+    }
+    "should send to Import Service when cWDS is disabled, even if cWDS supports the filetype" in {
+      importJobTestImpl(
+        cwdsEnabled = false,
+        cwdsSupportedFormats = List("pfb","tdrexport"),
+        importFiletype = "tdrexport",
+        expectUsingCwds = false)
+    }
+    "should send to Import Service for filetypes cWDS does not support, even when cWDS is enabled" in {
+      importJobTestImpl(
+        cwdsEnabled = true,
+        cwdsSupportedFormats = List("pfb"),
+        importFiletype = "tdrexport",
+        expectUsingCwds = false)
+    }
+
+    def importJobTestImpl(cwdsEnabled: Boolean,
+                                  cwdsSupportedFormats: List[String],
+                                  importFiletype: String,
+                                  expectUsingCwds: Boolean) = {
+      // set up mocks
+      val importServiceDAO = mockito[MockImportServiceDAO]
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val rawlsDAO = mockito[MockRawlsDAO]
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // set up behaviors
+      val genericJob: GenericJob = new GenericJob
+      genericJob.setJobId(UUID.randomUUID())
+      when(cwdsDAO.isEnabled).thenReturn(cwdsEnabled)
+      when(cwdsDAO.getSupportedFormats).thenReturn(cwdsSupportedFormats)
+      when(cwdsDAO.importV1(any[String], any[AsyncImportRequest])(any[UserInfo])).thenReturn(genericJob)
+      when(importServiceDAO.importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo]))
+        .thenReturn(Future.successful(RequestComplete(StatusCodes.Accepted, "")))
+      when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo])).thenCallRealMethod()
+
+      // create input
+      val input = AsyncImportRequest(url = "https://example.com", filetype = importFiletype)
+
+      entityService.importJob("workspaceNamespace", "workspaceName", input, dummyUserInfo("token"))
+        .futureValue // futureValue waits for the Future to complete
+
+      val (cwdsCallCount, importServiceCallCount, rawlsCallCount) = if (expectUsingCwds) {
+        // when sending imports to cWDS, we call cWDS and Rawls once, but never call Import Service
+        (times(1), never, times(1))
+      } else {
+        // when sending imports to Import Service, we call Import Service once, but never call cWDS or Rawls
+        (never, times(1), never)
+      }
+
+      verify(cwdsDAO, cwdsCallCount)
+        .importV1(any[String], any[AsyncImportRequest])(any[UserInfo])
+      verify(importServiceDAO, importServiceCallCount)
+        .importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo])
+      verify(rawlsDAO, rawlsCallCount)
+        .getWorkspace(any[String], any[String])(any[UserInfo])
+    }
 
   }
 

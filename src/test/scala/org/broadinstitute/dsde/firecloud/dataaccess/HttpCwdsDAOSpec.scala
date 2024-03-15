@@ -1,15 +1,17 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.ImportServiceListResponse
-import org.databiosphere.workspacedata.model.GenericJob
+import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, ImportOptions, ImportServiceListResponse}
+import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
 import org.databiosphere.workspacedata.model.GenericJob.{JobTypeEnum, StatusEnum}
 import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
+import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
+import scala.jdk.CollectionConverters._
 
 class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
 
@@ -101,6 +103,81 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
       }
 
     }
+
+    "toCwdsImportType" - {
+      "input (pfb) should translate to PFB" in {
+        cwdsDao.toCwdsImportType("pfb") shouldBe ImportRequest.TypeEnum.PFB
+      }
+      "input (tdrexport) should translate to TDRMANIFEST" in {
+        cwdsDao.toCwdsImportType("tdrexport") shouldBe ImportRequest.TypeEnum.TDRMANIFEST
+      }
+      "other input should throw" in {
+        a [FireCloudException] should be thrownBy cwdsDao.toCwdsImportType("something-else")
+      }
+    }
+
+    "toCwdsImportRequest" - {
+      "should translate an import request with no options" in {
+        val testURI: URI = URI.create("https://example.com/")
+
+        val input = AsyncImportRequest(url = testURI.toString,
+          filetype = "pfb",
+          options = None)
+
+        val expected = new ImportRequest()
+        expected.setUrl(testURI)
+        expected.setType(ImportRequest.TypeEnum.PFB)
+        expected.setOptions(Map.empty[String,Object].asJava)
+
+        cwdsDao.toCwdsImportRequest(input) shouldBe expected
+      }
+
+      "should translate an import request with empty options" in {
+        val testURI: URI = URI.create("https://example.com/")
+
+        val input = AsyncImportRequest(url = testURI.toString,
+          filetype = "pfb",
+          options = Some(ImportOptions(tdrSyncPermissions = None)))
+
+        val expected = new ImportRequest()
+        expected.setUrl(testURI)
+        expected.setType(ImportRequest.TypeEnum.PFB)
+        expected.setOptions(Map.empty[String,Object].asJava)
+
+        cwdsDao.toCwdsImportRequest(input) shouldBe expected
+      }
+
+      "should translate an import request with tdrSyncPermissions=true" in {
+        val testURI: URI = URI.create("https://example.com/")
+
+        val input = AsyncImportRequest(url = testURI.toString,
+          filetype = "pfb",
+          options = Some(ImportOptions(tdrSyncPermissions = Some(true))))
+
+        val expected = new ImportRequest()
+        expected.setUrl(testURI)
+        expected.setType(ImportRequest.TypeEnum.PFB)
+        expected.setOptions(Map[String,Object]("tdrSyncPermissions" -> true.asInstanceOf[Object]).asJava)
+
+        cwdsDao.toCwdsImportRequest(input) shouldBe expected
+      }
+
+      "should translate an import request with tdrSyncPermissions=false" in {
+        val testURI: URI = URI.create("https://example.com/")
+
+        val input = AsyncImportRequest(url = testURI.toString,
+          filetype = "pfb",
+          options = Some(ImportOptions(tdrSyncPermissions = Some(false))))
+
+        val expected = new ImportRequest()
+        expected.setUrl(testURI)
+        expected.setType(ImportRequest.TypeEnum.PFB)
+        expected.setOptions(Map[String,Object]("tdrSyncPermissions" -> false.asInstanceOf[Object]).asJava)
+
+        cwdsDao.toCwdsImportRequest(input) shouldBe expected
+      }
+    }
+
 
   }
 
