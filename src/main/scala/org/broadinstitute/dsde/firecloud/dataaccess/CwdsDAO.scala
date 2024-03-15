@@ -14,7 +14,7 @@ trait CwdsDAO {
                 )(implicit userInfo: UserInfo): List[ImportServiceListResponse]
 
   def importV1(workspaceId: String,
-               importRequest: AsyncImportRequest
+               asyncImportRequest: AsyncImportRequest
               )(implicit userInfo: UserInfo): GenericJob
 
 }

@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import okhttp3.Protocol
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpCwdsDAO.commonHttpClient
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, UserInfo}
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
@@ -10,6 +10,7 @@ import org.databiosphere.workspacedata.client.ApiClient
 import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
 import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
 
+import java.net.URI
 import scala.jdk.CollectionConverters._
 import java.util.UUID
 import scala.concurrent.Future
@@ -36,6 +37,11 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     UNKNOWN -> "Error"
   )
 
+  private final val TYPE_TRANSLATION: Map[String, ImportRequest.TypeEnum] = Map(
+    "pfb" -> ImportRequest.TypeEnum.PFB,
+    "tdrexport" -> ImportRequest.TypeEnum.TDRMANIFEST
+  )
+
   override def isEnabled: Boolean = enabled
 
   override def getSupportedFormats: List[String] = supportedFormats
@@ -46,13 +52,8 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     // the Java API expects null when not specifying statuses
     val statuses = if (runningOnly) RUNNING_STATUSES else null
 
-    // prepare the cWDS client
-    val apiClient: ApiClient = new ApiClient()
-    apiClient.setHttpClient(commonHttpClient)
-    apiClient.setBasePath(FireCloudConfig.Cwds.baseUrl)
-    apiClient.setBearerToken(userInfo.accessToken.token)
     val jobApi: JobApi = new JobApi()
-    jobApi.setApiClient(apiClient)
+    jobApi.setApiClient(getApiClient(userInfo.accessToken.token))
 
     // query cWDS for its jobs, and translate the response to ImportServiceListResponse format
     jobApi.jobsInInstanceV1(UUID.fromString(workspaceId), statuses)
@@ -62,20 +63,32 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
   }
 
   override def importV1(workspaceId: String,
-                        importRequest: AsyncImportRequest
+                        asyncImportRequest: AsyncImportRequest
                        )(implicit userInfo: UserInfo): GenericJob = {
-    // prepare the cWDS client
-    val apiClient: ApiClient = new ApiClient()
-    apiClient.setHttpClient(commonHttpClient)
-    apiClient.setBasePath(FireCloudConfig.Cwds.baseUrl)
-    apiClient.setAccessToken(userInfo.accessToken.token)
     val importApi: ImportApi = new ImportApi()
-    importApi.setApiClient(apiClient)
+    importApi.setApiClient(getApiClient(userInfo.accessToken.token))
 
-    // TODO: create import request object
+    importApi.importV1(toCwdsImportRequest(asyncImportRequest), UUID.fromString(workspaceId))
+  }
+
+  protected[dataaccess] def toCwdsImportRequest(asyncImportRequest: AsyncImportRequest): ImportRequest = {
     val importRequest: ImportRequest = new ImportRequest
+    importRequest.setUrl(URI.create(asyncImportRequest.url))
+    importRequest.setType(toCwdsImportType(asyncImportRequest.filetype))
 
-    importApi.importV1(importRequest, UUID.fromString(workspaceId))
+    // as of this writing, the only available option is "tdrSyncPermissions"
+    asyncImportRequest.options.map { opts =>
+      opts.tdrSyncPermissions.map { tdrSyncPermissions =>
+        importRequest.setOptions(Map[String, Object]("tdrSyncPermissions" -> tdrSyncPermissions.asInstanceOf[Object]).asJava)
+      }
+    }
+
+    importRequest
+  }
+
+  protected[dataaccess] def toCwdsImportType(input: String): ImportRequest.TypeEnum = {
+    TYPE_TRANSLATION.getOrElse(input,
+      throw new FireCloudException("Import type unknown; possible values are: " + TYPE_TRANSLATION.keys.mkString))
   }
 
   protected[dataaccess] def toImportServiceListResponse(cwdsJob: GenericJob): ImportServiceListResponse = {
@@ -90,5 +103,14 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     STATUS_TRANSLATION.getOrElse(cwdsStatus, "Unknown")
   }
 
+  private def getApiClient(accessToken: String): ApiClient = {
+    // prepare the cWDS client
+    val apiClient: ApiClient = new ApiClient()
+    apiClient.setHttpClient(commonHttpClient)
+    apiClient.setBasePath(FireCloudConfig.Cwds.baseUrl)
+    apiClient.setAccessToken(accessToken)
+
+    apiClient
+  }
 
 }
