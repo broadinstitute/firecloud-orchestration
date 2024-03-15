@@ -106,7 +106,7 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     val apiClient: ApiClient = new ApiClient()
     apiClient.setHttpClient(commonHttpClient)
     apiClient.setBasePath(FireCloudConfig.Cwds.baseUrl)
-    apiClient.setAccessToken(accessToken)
+    apiClient.setBearerToken(accessToken)
 
     apiClient
   }
