@@ -7,9 +7,11 @@ import org.databiosphere.workspacedata.model.GenericJob.{JobTypeEnum, StatusEnum
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class MockCwdsDAO extends CwdsDAO {
+class MockCwdsDAO(enabled: Boolean = true) extends CwdsDAO {
 
-  override def isEnabled: Boolean = true
+  override def isEnabled: Boolean = enabled
+
+  override def getSupportedFormats: List[String] = List("pfb", "tdrexport")
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
   : List[ImportServiceListResponse] = List()
 

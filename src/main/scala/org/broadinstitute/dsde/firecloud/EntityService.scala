@@ -372,7 +372,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
       throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype must be specified"))
 
     // if cwds.enabled, for cwds filetypes send the request to cWDS instead of import service
-    if (cwdsDAO.isEnabled && "pfb".equals(importRequest.filetype.toLowerCase)) {
+    if (cwdsDAO.isEnabled && cwdsDAO.getSupportedFormats.contains(importRequest.filetype.toLowerCase)) {
       // translate the workspace namespace/name into an id
       rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
         // create the job in cWDS

@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ImportServiceListResponse
 import org.databiosphere.workspacedata.model.GenericJob
 import org.databiosphere.workspacedata.model.GenericJob.{JobTypeEnum, StatusEnum}
@@ -12,17 +13,19 @@ import java.util.UUID
 
 class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
 
+  private val supportedFormats: List[String] = List("pfb", "tdrexport")
+
   // a dao that can be reused in multiple tests below
-  private val cwdsDao: HttpCwdsDAO = new HttpCwdsDAO(true)
+  private val cwdsDao: HttpCwdsDAO = new HttpCwdsDAO(true, supportedFormats)
 
   "HttpCwdsDAOSpec" - {
 
     "isEnabled" - {
       "when (true)" in {
-        new HttpCwdsDAO(true).isEnabled shouldBe true
+        new HttpCwdsDAO(true, supportedFormats).isEnabled shouldBe true
       }
       "when (false)" in {
-        new HttpCwdsDAO(false).isEnabled shouldBe false
+        new HttpCwdsDAO(false, supportedFormats).isEnabled shouldBe false
       }
     }
 

@@ -7,6 +7,8 @@ trait CwdsDAO {
 
   def isEnabled: Boolean
 
+  def getSupportedFormats: List[String]
+
   def listJobsV1(workspaceId: String,
                  runningOnly: Boolean
                 )(implicit userInfo: UserInfo): List[ImportServiceListResponse]

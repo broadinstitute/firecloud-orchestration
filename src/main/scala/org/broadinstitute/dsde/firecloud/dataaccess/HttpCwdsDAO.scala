@@ -21,7 +21,7 @@ object HttpCwdsDAO {
     .build
 }
 
-class HttpCwdsDAO(enabled: Boolean) extends CwdsDAO {
+class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends CwdsDAO {
 
   private final val RUNNING_STATUSES: java.util.List[String] = List("CREATED", "QUEUED", "RUNNING").asJava
 
@@ -37,6 +37,8 @@ class HttpCwdsDAO(enabled: Boolean) extends CwdsDAO {
   )
 
   override def isEnabled: Boolean = enabled
+
+  override def getSupportedFormats: List[String] = supportedFormats
 
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
   : scala.collection.immutable.List[ImportServiceListResponse] = {
