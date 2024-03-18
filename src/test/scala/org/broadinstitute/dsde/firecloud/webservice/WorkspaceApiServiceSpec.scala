@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -124,9 +124,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val localShareLogDao: MockShareLogDAO = new WorkspaceApiServiceSpecShareLogDAO
 
+  // use a disabled cWDS for these tests; enabled cWDS has tests coverage elsewhere
+  val mockCwdsDao: MockCwdsDAO = new MockCwdsDAO(enabled = false)
+
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
-  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
+  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app.copy(cwdsDAO = mockCwdsDao))
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 

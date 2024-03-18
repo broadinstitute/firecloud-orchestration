@@ -118,6 +118,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     requireUserInfo() { userInfo =>
                       parameter("async" ? "false") { asyncStr =>
                         parameter("deleteEmptyValues" ? "false") { deleteEmptyValuesStr =>
+
                           formFields(Symbol("entities")) { entitiesTSV =>
                             complete {
                               val isAsync = java.lang.Boolean.valueOf(asyncStr) // for lenient parsing
@@ -125,6 +126,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                               entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo, isAsync, deleteEmptyValues)
                             }
                           }
+
                         }
                       }
                     }
