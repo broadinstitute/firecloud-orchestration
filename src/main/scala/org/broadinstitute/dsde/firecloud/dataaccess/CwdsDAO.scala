@@ -13,6 +13,10 @@ trait CwdsDAO {
                  runningOnly: Boolean
                 )(implicit userInfo: UserInfo): List[ImportServiceListResponse]
 
+  def getJobV1(workspaceId: String,
+               jobId: String
+              )(implicit userInfo: UserInfo): ImportServiceListResponse
+
   def importV1(workspaceId: String,
                asyncImportRequest: AsyncImportRequest
               )(implicit userInfo: UserInfo): GenericJob

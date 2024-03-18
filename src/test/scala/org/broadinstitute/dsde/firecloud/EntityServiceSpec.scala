@@ -387,6 +387,15 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
   }
 
+  "EntityService.getJob" - {
+    "should return correctly if job found in cWDS" is pending
+    "should return correctly if job not found in cWDS, but is found in Import Service" is pending
+    "should return correctly if cWDS errors, but is found in Import Service" is pending
+    "should return 404 if job not found in either cWDS or Import Service" is pending
+    "should return Import Service's error if job not found in cWDS and Import Service errors" is pending
+    "should return Import Service's error if cWDS errors and Import Service errors" is pending
+  }
+
   private def getEntityService(mockGoogleServicesDAO: MockGoogleServicesDAO = new MockGoogleServicesDAO,
                                mockImportServiceDAO: MockImportServiceDAO = new MockImportServiceDAO,
                                rawlsDAO: MockRawlsDAO = new MockRawlsDAO,

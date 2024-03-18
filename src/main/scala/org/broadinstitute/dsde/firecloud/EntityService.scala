@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_RAWLS}
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_RAWLS
 import org.broadinstitute.dsde.firecloud.dataaccess.{CwdsDAO, GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
@@ -28,7 +28,6 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.language.postfixOps
-import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
 object EntityService {
@@ -406,6 +405,31 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
     } yield {
       // merge Import Service and cWDS results
       importServiceJobs.concat(cwdsJobs)
+    }
+  }
+
+  def getJob(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[ImportServiceListResponse] = {
+    // there is no way to tell just from a jobId if the job exists in cWDS or Import Service. So, we have to try both.
+
+    // if cWDS is enabled, query cWDS for job
+    val cwdsFuture: Future[ImportServiceListResponse] = if (cwdsDAO.isEnabled) {
+      rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+        cwdsDAO.getJobV1(workspace.workspace.workspaceId, jobId)(userInfo)
+      }
+    } else {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, s"Import $jobId not found")))
+    }
+
+    // if cWDS found the job, return it; else, try Import Service
+    cwdsFuture map { cwdsResponse =>
+      logger.info(s"Found job $jobId in cWDS")
+      cwdsResponse
+    } recoverWith {
+      case _ =>
+        importServiceDAO.getJob(workspaceNamespace, workspaceName, jobId)(userInfo) map { importServiceResponse =>
+          logger.info(s"Found job $jobId in Import Service")
+          importServiceResponse
+      }
     }
   }
 

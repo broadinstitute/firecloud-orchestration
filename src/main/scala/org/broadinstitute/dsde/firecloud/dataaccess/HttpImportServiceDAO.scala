@@ -2,18 +2,17 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, ResponseEntity, StatusCodes}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, ImportServiceListResponse, ImportServiceRequest, ImportServiceResponse, RequestCompleteWithErrorReport, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, WorkspaceName}
-
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource, WorkspaceName}
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,6 +35,22 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
 
     userAuthedRequest(Get(importServiceUrl))(userInfo) flatMap { importServiceResponse =>
       Unmarshal(importServiceResponse).to[List[ImportServiceListResponse]]
+    }
+  }
+
+  override def getJob(workspaceNamespace: String, workspaceName: String, jobId: String)(implicit userInfo: UserInfo): Future[ImportServiceListResponse] = {
+    // get single job from import service
+    val importServiceUrl = FireCloudDirectiveUtils
+      .encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId")
+
+    userAuthedRequest(Get(importServiceUrl))(userInfo) flatMap { importServiceResponse =>
+      importServiceResponse.status match {
+        case StatusCodes.OK => Unmarshal(importServiceResponse).to[ImportServiceListResponse]
+        case _ =>
+          extractResponseBody(importServiceResponse.entity) flatMap { respBody =>
+            Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(importServiceResponse.status, respBody)))
+          }
+      }
     }
   }
 
@@ -70,13 +85,7 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
         }
       case otherResp =>
         // see if we can extract errors
-        val responseStringFuture = otherResp.entity match {
-          case HttpEntity.Strict(_, data) =>
-            Future.successful(data.utf8String)
-          case nonStrictEntity =>
-            nonStrictEntity.toStrict(10.seconds).map(_.data.utf8String)
-        }
-        responseStringFuture.map { responseString =>
+        extractResponseBody(otherResp.entity).map { responseString =>
           RequestCompleteWithErrorReport(otherResp.status, responseString)
         } recover {
           case t:Throwable =>
@@ -86,4 +95,15 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
         }
     }
   }
+
+  protected[dataaccess] def extractResponseBody(entity: ResponseEntity): Future[String] = {
+    entity match {
+      case HttpEntity.Strict(_, data) =>
+        Future.successful(data.utf8String)
+      case nonStrictEntity =>
+        nonStrictEntity.toStrict(10.seconds).map(_.data.utf8String)
+    }
+  }
+
+
 }
