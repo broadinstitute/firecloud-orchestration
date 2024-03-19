@@ -426,7 +426,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
       logger.info(s"Found job $jobId in Import Service")
       importServiceResponse
     } recover { importServiceError =>
-      logger.info(s"Job $jobId not found in either cWDS or Import Service: " + importServiceError.getClass.getName)
+      logger.info(s"Job $jobId not returned successfully by either cWDS or Import Service")
       importServiceError match {
         case fex: FireCloudExceptionWithErrorReport => throw fex
         case   t => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, t))
