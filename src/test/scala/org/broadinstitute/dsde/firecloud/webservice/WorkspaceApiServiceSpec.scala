@@ -1159,45 +1159,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     }
 
-    "WorkspaceService importPFB job-status Tests" - {
-
-      List(importJobStatusPath, pfbImportPath) foreach { pathUnderTest =>
-        s"Successful passthrough should return OK with payload for $pathUnderTest" in {
-
-          val jobId = UUID.randomUUID().toString
-
-          val responsePayload = JsObject(
-            ("id", JsString(jobId)),
-            ("status", JsString("Running"))
-          )
-
-          importServiceServer
-            .when(request()
-              .withMethod("GET")
-              .withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
-            .respond(org.mockserver.model.HttpResponse.response()
-              .withStatusCode(OK.intValue)
-              .withBody(responsePayload.compactPrint)
-              .withHeader("Content-Type", "application/json"))
-
-          (Get(s"$pathUnderTest/$jobId")
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
-          }
-        }
-
-        s"Passthrough should not pass unrecognized HTTP verbs for $pathUnderTest" in {
-          (Delete(s"$pathUnderTest/dummyJobId")
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(MethodNotAllowed)
-          }
-        }
-      }
-    }
-
     "WorkspaceService POST importJob Tests" - {
 
       List(FILETYPE_PFB, FILETYPE_TDR) foreach { filetype =>

@@ -15,6 +15,9 @@ class MockCwdsDAO(enabled: Boolean = true) extends CwdsDAO {
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
   : List[ImportServiceListResponse] = List()
 
+  override def getJobV1(workspaceId: String, jobId: String)(implicit userInfo: UserInfo): ImportServiceListResponse =
+    ImportServiceListResponse(jobId, "ReadyForUpsert", "pfb", None)
+
   override def importV1(workspaceId: String,
                         asyncImportRequest: AsyncImportRequest
                        )(implicit userInfo: UserInfo): GenericJob = {

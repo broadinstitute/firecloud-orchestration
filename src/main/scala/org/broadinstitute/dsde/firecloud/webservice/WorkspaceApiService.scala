@@ -194,7 +194,11 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 path(("importPFB" | "importJob") / Segment) { jobId =>
                   get {
                     requireUserInfo() { userInfo =>
-                      passthrough(Uri(encodeUri(s"${FireCloudConfig.ImportService.server}/$workspaceNamespace/$workspaceName/imports/$jobId")), HttpMethods.GET)
+                      complete {
+                        entityServiceConstructor(FlexibleModelSchema).getJob(workspaceNamespace, workspaceName, jobId, userInfo) map { respBody =>
+                          RequestComplete(OK, respBody)
+                        }
+                      }
                     }
                   }
                 } ~

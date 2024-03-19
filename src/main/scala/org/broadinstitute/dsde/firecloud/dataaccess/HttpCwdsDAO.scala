@@ -60,6 +60,13 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
       .toList
   }
 
+  override def getJobV1(workspaceId: String, jobId: String)(implicit userInfo: UserInfo): ImportServiceListResponse = {
+    val jobApi: JobApi = new JobApi()
+    jobApi.setApiClient(getApiClient(userInfo.accessToken.token))
+
+    toImportServiceListResponse(jobApi.jobStatusV1(UUID.fromString(jobId)))
+  }
+
   override def importV1(workspaceId: String,
                         asyncImportRequest: AsyncImportRequest
                        )(implicit userInfo: UserInfo): GenericJob = {
