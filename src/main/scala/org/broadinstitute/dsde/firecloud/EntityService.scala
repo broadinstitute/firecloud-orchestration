@@ -19,6 +19,7 @@ import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
+import org.databiosphere.workspacedata.client.ApiException
 import spray.json.DefaultJsonProtocol._
 
 import java.nio.channels.Channels
@@ -419,7 +420,10 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
         cwdsResponse
       }
     } else {
-      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, s"Import $jobId not found")))
+      // if cWDS is disabled, don't call cWDS or Rawls. Just return a 404 error; this error will be caught below
+      // and will trigger a request to Import Service to look for the job there. This is equivalent to making a call
+      // to cWDS but having cWDS return 404.
+      Future.failed(new ApiException(StatusCodes.NotFound.intValue, s"Import $jobId not found"))
     }
 
     val importServiceFuture: () => Future[ImportServiceListResponse] = () => importServiceDAO.getJob(workspaceNamespace, workspaceName, jobId)(userInfo) map { importServiceResponse =>
