@@ -170,7 +170,7 @@ jobs:
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
-              "ref": "${{ steps.branch-names.current_branch }}",
+              "ref": "${{ steps.branch-names.outputs.current_branch }}",
               "ENV": "${{ matrix.testing-env }}",
               "test-context": "${{ needs.prepare-configs.outputs.test-context }}"
             }'
