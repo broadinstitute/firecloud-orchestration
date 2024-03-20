@@ -157,6 +157,9 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
+      - name: Determine Branch Name
+        id: branch-names
+        uses: tj-actions/branch-names@v8
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v4
         with:
@@ -167,6 +170,7 @@ jobs:
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
+              "ref": "${{ steps.branch-names.current_branch }}",
               "ENV": "${{ matrix.testing-env }}",
               "test-context": "${{ needs.prepare-configs.outputs.test-context }}"
             }'
