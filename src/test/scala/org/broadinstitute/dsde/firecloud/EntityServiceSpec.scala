@@ -10,13 +10,17 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
+import org.databiosphere.workspacedata.client.ApiException
+import org.databiosphere.workspacedata.model.GenericJob
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{never, times, verify, when}
+import org.mockito.Mockito.{doThrow, never, times, verify, when}
 import org.parboiled.common.FileUtils
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Span}
 import org.scalatestplus.mockito.MockitoSugar.{mock => mockito}
 
 import java.util.UUID
@@ -25,6 +29,9 @@ import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 
 class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
+
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource("EntityServiceSpec")
+
   override def beforeEach(): Unit = {
     searchDao.reset()
   }
@@ -310,7 +317,270 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       actual should contain theSameElementsAs (importServiceResponse ++ cwdsResponse)
     }
 
+  }
 
+  "EntityService.importJob" - {
+    "should send to cWDS when cWDS is enabled and supports the filetype" in {
+      importJobTestImpl(
+        cwdsEnabled = true,
+        cwdsSupportedFormats = List("pfb","tdrexport"),
+        importFiletype = "tdrexport",
+        expectUsingCwds = true)
+
+    }
+    "should send to Import Service when cWDS is disabled, even if cWDS supports the filetype" in {
+      importJobTestImpl(
+        cwdsEnabled = false,
+        cwdsSupportedFormats = List("pfb","tdrexport"),
+        importFiletype = "tdrexport",
+        expectUsingCwds = false)
+    }
+    "should send to Import Service for filetypes cWDS does not support, even when cWDS is enabled" in {
+      importJobTestImpl(
+        cwdsEnabled = true,
+        cwdsSupportedFormats = List("pfb"),
+        importFiletype = "tdrexport",
+        expectUsingCwds = false)
+    }
+
+    def importJobTestImpl(cwdsEnabled: Boolean,
+                                  cwdsSupportedFormats: List[String],
+                                  importFiletype: String,
+                                  expectUsingCwds: Boolean) = {
+      // set up mocks
+      val importServiceDAO = mockito[MockImportServiceDAO]
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val rawlsDAO = mockito[MockRawlsDAO]
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO, rawlsDAO = rawlsDAO)
+
+      // set up behaviors
+      val genericJob: GenericJob = new GenericJob
+      genericJob.setJobId(UUID.randomUUID())
+      // the "new MockRawlsDAO()" here is only to get access to a pre-canned WorkspaceResponse object
+      val workspaceResponse = new MockRawlsDAO().rawlsWorkspaceResponseWithAttributes
+
+      when(cwdsDAO.isEnabled).thenReturn(cwdsEnabled)
+      when(cwdsDAO.getSupportedFormats).thenReturn(cwdsSupportedFormats)
+      when(cwdsDAO.importV1(any[String], any[AsyncImportRequest])(any[UserInfo])).thenReturn(genericJob)
+      when(importServiceDAO.importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo]))
+        .thenReturn(Future.successful(RequestComplete(StatusCodes.Accepted, "")))
+      when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo]))
+        .thenReturn(Future.successful(workspaceResponse))
+
+      // create input
+      val input = AsyncImportRequest(url = "https://example.com", filetype = importFiletype)
+
+      entityService.importJob("workspaceNamespace", "workspaceName", input, dummyUserInfo("token"))
+        .futureValue // futureValue waits for the Future to complete
+
+      val (cwdsCallCount, importServiceCallCount, rawlsCallCount) = if (expectUsingCwds) {
+        // when sending imports to cWDS, we call cWDS and Rawls once, but never call Import Service
+        (times(1), never, times(1))
+      } else {
+        // when sending imports to Import Service, we call Import Service once, but never call cWDS or Rawls
+        (never, times(1), never)
+      }
+
+      verify(cwdsDAO, cwdsCallCount)
+        .importV1(any[String], any[AsyncImportRequest])(any[UserInfo])
+      verify(importServiceDAO, importServiceCallCount)
+        .importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo])
+      verify(rawlsDAO, rawlsCallCount)
+        .getWorkspace(any[String], any[String])(any[UserInfo])
+    }
+
+  }
+
+  "EntityService.getJob" - {
+
+    val importServiceNotFound = new FireCloudExceptionWithErrorReport(
+      ErrorReport(
+        StatusCodes.NotFound,
+        "Import Service unit test intentional error"))
+
+    "should return correctly if job found in cWDS and not call Import Service" in {
+      val jobId = UUID.randomUUID().toString
+
+      val cwdsResponse = ImportServiceListResponse(jobId, "status1", "filename1", None)
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      when(cwdsDAO.getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(cwdsResponse)
+      when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(Future.failed(importServiceNotFound))
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // get job via entity service
+      val actual = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken")).futureValue
+
+      actual shouldBe cwdsResponse
+      verify(importServiceDAO, never).getJob(any[String], any[String], any[String])(any[UserInfo])
+    }
+    "should return correctly if job not found in cWDS, but is found in Import Service" in {
+      val jobId = UUID.randomUUID().toString
+
+      val importServiceResponse = ImportServiceListResponse(jobId, "status1", "filename1", None)
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      doThrow(new ApiException(404, "unit test intentional error"))
+        .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(Future.successful(importServiceResponse))
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // get job via entity service
+      val actual = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken")).futureValue
+
+      actual shouldBe importServiceResponse
+    }
+    "should return correctly if cWDS errors, but is found in Import Service" in {
+      val jobId = UUID.randomUUID().toString
+
+      val importServiceResponse = ImportServiceListResponse(jobId, "status1", "filename1", None)
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      doThrow(new ApiException(500, "unit test intentional error"))
+        .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(Future.successful(importServiceResponse))
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // get job via entity service
+      val actual = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken")).futureValue
+
+      actual shouldBe importServiceResponse
+    }
+    "should return 404 if job not found in either cWDS or Import Service" in {
+      val jobId = UUID.randomUUID().toString
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      doThrow(new ApiException(404, "cWDS unit test intentional error"))
+        .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(Future.failed(importServiceNotFound))
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // get job via entity service
+      val getJobFuture = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken"))
+
+      ScalaFutures.whenReady(getJobFuture.failed) { actual =>
+        actual shouldBe a [FireCloudExceptionWithErrorReport]
+        val fex = actual.asInstanceOf[FireCloudExceptionWithErrorReport]
+        fex.errorReport.statusCode should contain (StatusCodes.NotFound)
+      }
+    }
+    "should return Import Service's error if job not found in cWDS and Import Service errors" in {
+      val jobId = UUID.randomUUID().toString
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      doThrow(new ApiException(404, "cWDS unit test intentional error"))
+        .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(Future.failed(
+          new FireCloudExceptionWithErrorReport(
+            ErrorReport(
+              StatusCodes.ImATeapot,
+              "Import Service unit test intentional error"))
+        ))
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // get job via entity service
+      val getJobFuture = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken"))
+
+      ScalaFutures.whenReady(getJobFuture.failed) { actual =>
+        actual shouldBe a [FireCloudExceptionWithErrorReport]
+        val fex = actual.asInstanceOf[FireCloudExceptionWithErrorReport]
+        fex.errorReport.statusCode should contain (StatusCodes.ImATeapot)
+        fex.errorReport.message shouldBe "Import Service unit test intentional error"
+      }
+    }
+    "should return Import Service's error if cWDS errors and Import Service errors" in {
+      val jobId = UUID.randomUUID().toString
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      doThrow(new ApiException(500, "cWDS unit test intentional error"))
+        .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(Future.failed(
+          new FireCloudExceptionWithErrorReport(
+            ErrorReport(
+              StatusCodes.ImATeapot,
+              "Import Service unit test intentional error"))
+        ))
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // get job via entity service
+      val getJobFuture = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken"))
+
+      ScalaFutures.whenReady(getJobFuture.failed) { actual =>
+        actual shouldBe a [FireCloudExceptionWithErrorReport]
+        val fex = actual.asInstanceOf[FireCloudExceptionWithErrorReport]
+        fex.errorReport.statusCode should contain (StatusCodes.ImATeapot)
+        fex.errorReport.message shouldBe "Import Service unit test intentional error"
+      }
+    }
+    "should not call cWDS or Rawls if cWDS is not enabled" in {
+      val jobId = UUID.randomUUID().toString
+
+      val importServiceResponse = ImportServiceListResponse(jobId, "status1", "filename1", None)
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+      val mockRawlsDAO = mockito[MockRawlsDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(false)
+      when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(Future.successful(importServiceResponse))
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO, rawlsDAO = mockRawlsDAO)
+
+      // get job via entity service
+      val actual = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken")).futureValue
+
+      actual shouldBe importServiceResponse
+      verify(cwdsDAO, never).getJobV1(any[String], any[String])(any[UserInfo])
+      verify(mockRawlsDAO, never).getWorkspace(any[String], any[String])(any[UserInfo])
+    }
   }
 
   private def getEntityService(mockGoogleServicesDAO: MockGoogleServicesDAO = new MockGoogleServicesDAO,

@@ -24,4 +24,9 @@ trait ImportServiceDAO {
                runningOnly: Boolean
               )(implicit userInfo: UserInfo): Future[List[ImportServiceListResponse]]
 
+  def getJob(workspaceNamespace: String,
+             workspaceName: String,
+             jobId: String,
+            )(implicit userInfo: UserInfo): Future[ImportServiceListResponse]
+
 }
