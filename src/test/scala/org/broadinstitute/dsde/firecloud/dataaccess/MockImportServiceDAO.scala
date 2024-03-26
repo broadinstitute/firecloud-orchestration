@@ -44,4 +44,9 @@ class MockImportServiceDAO extends ImportServiceDAO {
   : Future[List[ImportServiceListResponse]] = {
     Future.successful(List.empty[ImportServiceListResponse])
   }
+
+  override def getJob(workspaceNamespace: String, workspaceName: String, jobId: String)(implicit userInfo: UserInfo)
+  : Future[ImportServiceListResponse] = {
+    Future.successful(ImportServiceListResponse(jobId, "status", "filetype", None))
+  }
 }

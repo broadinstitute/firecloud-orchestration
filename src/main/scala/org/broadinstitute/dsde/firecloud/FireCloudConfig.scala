@@ -122,8 +122,9 @@ object FireCloudConfig {
 
   object Cwds {
     private val cwds = config.getConfig("cwds")
-    val baseUrl = cwds.getString("baseUrl")
-    val enabled = cwds.getBoolean("enabled")
+    val baseUrl: String = cwds.getString("baseUrl")
+    val enabled: Boolean = cwds.getBoolean("enabled")
+    val supportedFormats: List[String] = cwds.getStringList("supportedFormats").asScala.toList
   }
 
   object FireCloud {
@@ -212,6 +213,7 @@ object FireCloudConfig {
   object ImportService {
     lazy val server: String = config.getString("importService.server")
     lazy val bucket: String = config.getString("importService.bucketName")
+    lazy val enabled: Boolean = config.optionalBoolean("importService.enabled").getOrElse(true)
   }
 
   implicit class RichConfig(val config: Config) {
