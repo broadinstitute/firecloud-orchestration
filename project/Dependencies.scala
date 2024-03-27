@@ -34,7 +34,7 @@ object Dependencies {
     // TODO: can these move to sbt's dependencyOverrides?
     "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "33.0.0-jre",
+    "com.google.guava"               % "guava"               % "33.1.0-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
@@ -55,7 +55,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.6-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
-    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.117-SNAPSHOT",
+    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.118-SNAPSHOT",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
