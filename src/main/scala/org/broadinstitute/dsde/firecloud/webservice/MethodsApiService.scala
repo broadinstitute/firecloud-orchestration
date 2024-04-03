@@ -13,11 +13,11 @@ import spray.json.DefaultJsonProtocol._
 import scala.concurrent.ExecutionContext
 
 trait MethodsApiServiceUrls {
-  val remoteMethodsPath = FireCloudConfig.Agora.authPrefix + "/methods"
-  val remoteMethodsUrl = FireCloudConfig.Agora.baseUrl + remoteMethodsPath
-  val remoteConfigurationsPath = FireCloudConfig.Agora.authPrefix + "/configurations"
-  val remoteConfigurationsUrl = FireCloudConfig.Agora.baseUrl + remoteConfigurationsPath
-  val remoteMultiPermissionsUrl = remoteMethodsUrl + "/permissions"
+  lazy val remoteMethodsPath = FireCloudConfig.Agora.authPrefix + "/methods"
+  lazy val remoteMethodsUrl = FireCloudConfig.Agora.baseUrl + remoteMethodsPath
+  lazy val remoteConfigurationsPath = FireCloudConfig.Agora.authPrefix + "/configurations"
+  lazy val remoteConfigurationsUrl = FireCloudConfig.Agora.baseUrl + remoteConfigurationsPath
+  lazy val remoteMultiPermissionsUrl = remoteMethodsUrl + "/permissions"
 
   val localMethodsPath = "methods"
   val localConfigsPath = "configurations"
