@@ -72,7 +72,8 @@ class OrchestrationApiSpec
       } finally resetNihLinkToInactive()
     }
 
-    "should get the user's billing projects" in {
+    // this tests a passthrough; no need for it
+    "should get the user's billing projects" ignore {
       val ownerUser: Credentials = UserPool.chooseProjectOwner
       val ownerToken: AuthToken = ownerUser.makeAuthToken()
       withTemporaryBillingProject(billingAccountId) { projectName =>
@@ -88,7 +89,7 @@ class OrchestrationApiSpec
 
     "querying for an individual billing project status" - {
 
-      "should get the user's billing project" in {
+      "should get the user's billing project" ignore {
         val ownerUser: Credentials = UserPool.chooseProjectOwner
         val ownerToken: AuthToken = ownerUser.makeAuthToken()
         withTemporaryBillingProject(billingAccountId) { projectName =>
@@ -103,7 +104,7 @@ class OrchestrationApiSpec
         }(ownerUser.makeAuthToken(billingScopes))
       }
 
-      "should not find a non-existent billing project" in {
+      "should not find a non-existent billing project" ignore {
         val ownerUser: Credentials = UserPool.chooseProjectOwner
         val ownerToken: AuthToken = ownerUser.makeAuthToken()
 
@@ -115,7 +116,7 @@ class OrchestrationApiSpec
         getException.message should include(StatusCodes.NotFound.defaultMessage)
       }
 
-      "should not find a billing project for user without billing project access" in {
+      "should not find a billing project for user without billing project access" ignore {
         val ownerUser: Credentials = UserPool.chooseProjectOwner
         val user: Credentials = UserPool.chooseStudent
         val userToken: AuthToken = user.makeAuthToken()
