@@ -129,13 +129,12 @@ object FireCloudConfig {
 
   object FireCloud {
     private val firecloud = config.getConfig("firecloud")
-    val baseUrl = firecloud.getString("baseUrl")
     val fireCloudId = firecloud.getString("fireCloudId")
+
     // lazy - only required when google is enabled
     lazy val serviceProject = firecloud.getString("serviceProject")
-    val supportDomain = firecloud.getString("supportDomain")
-    val supportPrefix = firecloud.getString("supportPrefix")
-    // lazy - only required when google is enabled
+    lazy val supportDomain = firecloud.getString("supportDomain")
+    lazy val supportPrefix = firecloud.getString("supportPrefix")
     lazy val userAdminAccount = firecloud.getString("userAdminAccount")
   }
 

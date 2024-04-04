@@ -23,6 +23,7 @@ jobs:
       id-token: 'write'
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      custom-version-json: ${{ steps.publish-orch.outputs.custom-version-json }}
     steps:
       - uses: 'actions/checkout@v4'
 
@@ -73,7 +74,8 @@ jobs:
           docker build -t ${{ github.event.repository.full_name }}:${DOCKER_TAG} --pull .
           docker tag ${{ github.event.repository.full_name }}:${DOCKER_TAG} ${{ env.GCR_REGISTRY }}:${DOCKER_TAG}
           gcloud docker -- push $GCR_REGISTRY:${DOCKER_TAG}
-    
+          echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${{ env.DOCKER_TAG }}\"}}' >> $GITHUB_OUTPUT
+
   prepare-configs:
     runs-on: ubuntu-latest
     outputs:

@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import scala.concurrent.{ExecutionContext, Future}
 
 object OntologyDAO {
-  lazy val serviceName = "Ontology"
+  lazy val serviceName = "OntologyIndex"
 }
 
 trait OntologyDAO extends ReportsSubsystemStatus {
