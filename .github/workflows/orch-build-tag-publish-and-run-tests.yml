@@ -73,7 +73,8 @@ jobs:
           docker build -t ${{ github.event.repository.full_name }}:${DOCKER_TAG} --pull .
           docker tag ${{ github.event.repository.full_name }}:${DOCKER_TAG} ${{ env.GCR_REGISTRY }}:${DOCKER_TAG}
           gcloud docker -- push $GCR_REGISTRY:${DOCKER_TAG}
-    
+          echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${{ env.DOCKER_TAG }}\"}}' >> $GITHUB_OUTPUT
+
   prepare-configs:
     runs-on: ubuntu-latest
     outputs:
@@ -168,8 +169,7 @@ jobs:
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "ENV": "${{ matrix.testing-env }}",
-              "test-context": "${{ needs.prepare-configs.outputs.test-context }}",
-              "ref": "${{ github.ref_name }}"
+              "test-context": "${{ needs.prepare-configs.outputs.test-context }}"
             }'
 
   destroy-bee-workflow:
