@@ -23,6 +23,7 @@ jobs:
       id-token: 'write'
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      custom-version-json: ${{ steps.publish-orch.outputs.custom-version-json }}
     steps:
       - uses: 'actions/checkout@v4'
 
