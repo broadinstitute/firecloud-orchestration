@@ -11,7 +11,7 @@ import java.io.InputStream
 import scala.concurrent.{ExecutionContext, Future}
 
 object GoogleServicesDAO {
-  lazy val serviceName = "Google"
+  lazy val serviceName = "GoogleBuckets"
 }
 
 trait GoogleServicesDAO extends ReportsSubsystemStatus {
