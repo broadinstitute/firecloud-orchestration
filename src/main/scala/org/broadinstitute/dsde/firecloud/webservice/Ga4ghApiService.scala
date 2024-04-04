@@ -12,7 +12,7 @@ trait Ga4ghApiService extends FireCloudDirectives {
 
   implicit val executionContext: ExecutionContext
 
-  private val agoraGA4GH = s"${FireCloudConfig.Agora.baseUrl}/ga4gh/v1"
+  private lazy val agoraGA4GH = s"${FireCloudConfig.Agora.baseUrl}/ga4gh/v1"
 
   val ga4ghRoutes: Route =
     pathPrefix("ga4gh") {
