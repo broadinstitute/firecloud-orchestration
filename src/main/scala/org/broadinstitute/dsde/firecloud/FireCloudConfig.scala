@@ -23,17 +23,21 @@ object FireCloudConfig {
     // implicit flow. Remove once we fully migrate to B2C.
     val legacyGoogleClientId = auth.optionalString("legacyGoogleClientId")
     // credentials for orchestration's "firecloud" service account, used for admin duties
-    val firecloudAdminSAJsonFile = auth.getString("firecloudAdminSA")
-    // credentials for the rawls service account, used for signing GCS urls
-    val rawlsSAJsonFile = auth.getString("rawlsSA")
+    // lazy - only required when google is enabled
+    lazy val firecloudAdminSAJsonFile = auth.getString("firecloudAdminSA")
+    // credentials for the rawls service account, used for writing files to buckets for import
+    // lazy - only required when import service is enabled
+    lazy val rawlsSAJsonFile = auth.getString("rawlsSA")
   }
 
   object Agora {
-    private val methods = config.getConfig("methods")
-    private val agora = config.getConfig("agora")
-    val baseUrl = agora.getString("baseUrl")
-    val authPrefix = methods.getString("authPrefix")
-    val authUrl = baseUrl + authPrefix
+    // lazy - only required when agora is enabled
+    private lazy val methods = config.getConfig("methods")
+    private lazy val agora = config.getConfig("agora")
+    lazy val baseUrl = agora.getString("baseUrl")
+    lazy val authPrefix = methods.getString("authPrefix")
+    lazy val authUrl = baseUrl + authPrefix
+    val enabled = agora.optionalBoolean("enabled").getOrElse(true)
   }
 
   object Rawls {
@@ -48,17 +52,13 @@ object FireCloudConfig {
     val entitiesPath = workspace.getString("entitiesPath")
     val entityQueryPath = workspace.getString("entityQueryPath")
     val entityBagitMaximumSize = workspace.getInt("entityBagitMaximumSize")
-    val importEntitiesPath = workspace.getString("importEntitiesPath")
     val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")
     def workspacesEntitiesCopyUrl(linkExistingEntities: Boolean) = authUrl + workspacesEntitiesCopyPath + "?linkExistingEntities=%s".format(linkExistingEntities)
     val submissionsCountPath = workspace.getString("submissionsCountPath")
     val submissionsPath = workspace.getString("submissionsPath")
-    val submissionsUrl = authUrl + submissionsPath
     val submissionsIdPath = workspace.getString("submissionsIdPath")
     val submissionsWorkflowIdPath = workspace.getString("submissionsWorkflowIdPath")
     val submissionsWorkflowIdOutputsPath = workspace.getString("submissionsWorkflowIdOutputsPath")
-    val overwriteGroupMembershipPath = workspace.getString("overwriteGroupMembershipPath")
-    val alterGroupMembershipPath = workspace.getString("alterGroupMembershipPath")
     val createGroupPath = workspace.getString("createGroup")
     val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
     val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
@@ -70,9 +70,6 @@ object FireCloudConfig {
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
     def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
-    def importEntitiesPathFromWorkspace(namespace: String, name: String) = authUrl + importEntitiesPath.format(namespace, name)
-    def overwriteGroupMembershipUrlFromGroupName(groupName: String, role: String) = authUrl + overwriteGroupMembershipPath.format(groupName, role)
-    def alterGroupMembershipUrlFromGroupName(groupName: String, role: String, email: String) = authUrl + alterGroupMembershipPath.format(groupName, role, email)
     def createGroup(groupName: String) = authUrl + createGroupPath.format(groupName)
     def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
       val baseEntityQueryUri = Uri(FireCloudDirectiveUtils.encodeUri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
@@ -99,10 +96,12 @@ object FireCloudConfig {
   }
 
   object CromIAM {
-    private val cromIam = config.getConfig("cromiam")
-    val baseUrl = cromIam.getString("baseUrl")
-    val authPrefix = cromIam.getString("authPrefix")
-    val authUrl = baseUrl + authPrefix
+    // lazy - only required when cromiam is enabled
+    private lazy val cromIam = config.getConfig("cromiam")
+    lazy val baseUrl = cromIam.getString("baseUrl")
+    lazy val authPrefix = cromIam.getString("authPrefix")
+    lazy val authUrl = baseUrl + authPrefix
+    val enabled = cromIam.optionalBoolean("enabled").getOrElse(true)
   }
 
   object Thurloe {
@@ -121,32 +120,37 @@ object FireCloudConfig {
   }
 
   object Cwds {
-    private val cwds = config.getConfig("cwds")
-    val baseUrl: String = cwds.getString("baseUrl")
-    val enabled: Boolean = cwds.getBoolean("enabled")
-    val supportedFormats: List[String] = cwds.getStringList("supportedFormats").asScala.toList
+    // lazy - only required when cwds is enabled
+    private lazy val cwds = config.getConfig("cwds")
+    lazy val baseUrl: String = cwds.getString("baseUrl")
+    lazy val enabled: Boolean = cwds.getBoolean("enabled")
+    lazy val supportedFormats: List[String] = cwds.getStringList("supportedFormats").asScala.toList
   }
 
   object FireCloud {
     private val firecloud = config.getConfig("firecloud")
     val baseUrl = firecloud.getString("baseUrl")
     val fireCloudId = firecloud.getString("fireCloudId")
-    val fireCloudPortalUrl = firecloud.getString("portalUrl")
-    val serviceProject = firecloud.getString("serviceProject")
+    // lazy - only required when google is enabled
+    lazy val serviceProject = firecloud.getString("serviceProject")
     val supportDomain = firecloud.getString("supportDomain")
     val supportPrefix = firecloud.getString("supportPrefix")
-    val userAdminAccount = firecloud.getString("userAdminAccount")
+    // lazy - only required when google is enabled
+    lazy val userAdminAccount = firecloud.getString("userAdminAccount")
   }
 
   object Shibboleth {
-    private val shibboleth = config.getConfig("shibboleth")
-    val publicKeyUrl = shibboleth.getString("publicKeyUrl")
+    // lazy - only required when shibboleth is enabled
+    private lazy val shibboleth = config.getConfig("shibboleth")
+    lazy val publicKeyUrl = shibboleth.getString("publicKeyUrl")
+    val enabled = shibboleth.optionalBoolean("enabled").getOrElse(true)
   }
 
   object Nih {
-    private val nih = config.getConfig("nih")
-    val whitelistBucket = nih.getString("whitelistBucket")
-    val whitelists: Set[NihWhitelist] = {
+    // lazy - only required when nih is enabled
+    private lazy val nih = config.getConfig("nih")
+    lazy val whitelistBucket = nih.getString("whitelistBucket")
+    lazy val whitelists: Set[NihWhitelist] = {
       val whitelistConfigs = nih.getConfig("whitelists")
 
       whitelistConfigs.root.asScala.collect { case (name, configObject:ConfigObject) =>
@@ -157,17 +161,20 @@ object FireCloudConfig {
         NihWhitelist(name, WorkbenchGroupName(rawlsGroup), fileName)
       }
     }.toSet
+    val enabled = nih.optionalBoolean("enabled").getOrElse(true)
   }
 
   object ElasticSearch {
-    private val elasticsearch = config.getConfig("elasticsearch")
-    val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
-    val clusterName = elasticsearch.getString("clusterName")
-    val indexName = elasticsearch.getString("index") // for library
-    val ontologyIndexName = elasticsearch.getString("ontologyIndex")
-    val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
-    val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
-    val maxAggregations: Int = Try(elasticsearch.getInt("maxAggregations")).getOrElse(1000)
+    // lazy - only required when elasticsearch is enabled
+    private lazy val elasticsearch = config.getConfig("elasticsearch")
+    lazy val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
+    lazy val clusterName = elasticsearch.getString("clusterName")
+    lazy val indexName = elasticsearch.getString("index") // for library
+    lazy val ontologyIndexName = elasticsearch.getString("ontologyIndex")
+    lazy val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
+    lazy val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
+    lazy val maxAggregations: Int = Try(elasticsearch.getInt("maxAggregations")).getOrElse(1000)
+    val enabled = elasticsearch.optionalBoolean("enabled").getOrElse(true)
   }
 
   def parseESServers(confString: String): Seq[Authority] = {
@@ -178,31 +185,31 @@ object FireCloudConfig {
   }
 
   object GoogleCloud {
-    private val googlecloud = config.getConfig("googlecloud")
-    val priceListUrl = googlecloud.getString("priceListUrl")
-    val priceListEgressKey = googlecloud.getString("priceListEgressKey")
-    val priceListStorageKey = googlecloud.getString("priceListStorageKey")
-    val defaultStoragePriceListConf = googlecloud.getConfig("defaultStoragePriceList")
-    val defaultStoragePriceList = defaultStoragePriceListConf.root().keySet().asScala.map(key => key -> BigDecimal(defaultStoragePriceListConf.getDouble(key))).toMap
-    val defaultEgressPriceListConf = googlecloud.getConfig("defaultEgressPriceList")
-    val defaultEgressPriceList = defaultEgressPriceListConf.root().keySet().asScala.map(key => key.toLong -> BigDecimal(defaultEgressPriceListConf.getDouble(key))).toMap
+    // lazy - only required when google is enabled
+    private lazy val googlecloud = config.getConfig("googlecloud")
+    lazy val priceListUrl = googlecloud.getString("priceListUrl")
+    lazy val priceListEgressKey = googlecloud.getString("priceListEgressKey")
+    lazy val priceListStorageKey = googlecloud.getString("priceListStorageKey")
+    lazy val defaultStoragePriceListConf = googlecloud.getConfig("defaultStoragePriceList")
+    lazy val defaultStoragePriceList = defaultStoragePriceListConf.root().keySet().asScala.map(key => key -> BigDecimal(defaultStoragePriceListConf.getDouble(key))).toMap
+    lazy val defaultEgressPriceListConf = googlecloud.getConfig("defaultEgressPriceList")
+    lazy val defaultEgressPriceList = defaultEgressPriceListConf.root().keySet().asScala.map(key => key.toLong -> BigDecimal(defaultEgressPriceListConf.getDouble(key))).toMap
+    val enabled = googlecloud.optionalBoolean("enabled").getOrElse(true)
   }
 
   object Duos {
-    private val duos = config.getConfig("duos")
-    val baseOntologyUrl = duos.getString("baseOntologyUrl")
-    val dulvn = duos.getInt("dulvn")
-  }
-
-  object Spray {
-    private val spray = config.getConfig("spray")
-    // grab a copy of this Spray setting to use when displaying an error message
-    lazy val chunkLimit = spray.getString("can.client.response-chunk-aggregation-limit")
+    // lazy - only required when duos is enabled
+    private lazy val duos = config.getConfig("duos")
+    lazy val baseOntologyUrl = duos.getString("baseOntologyUrl")
+    lazy val dulvn = duos.getInt("dulvn")
+    val enabled = duos.optionalBoolean("enabled").getOrElse(true)
   }
 
   object Notification {
-    private val notification = config.getConfig("notification")
-    val fullyQualifiedNotificationTopic: String = notification.getString("fullyQualifiedNotificationTopic")
+    // lazy - only required when notification is enabled
+    private lazy val notification = config.getConfig("notification")
+    lazy val fullyQualifiedNotificationTopic: String = notification.getString("fullyQualifiedNotificationTopic")
+    val enabled = notification.optionalBoolean("enabled").getOrElse(true)
   }
 
   object StaticNotebooks {
@@ -211,9 +218,10 @@ object FireCloudConfig {
   }
 
   object ImportService {
+    // lazy - only required when import service is enabled
     lazy val server: String = config.getString("importService.server")
     lazy val bucket: String = config.getString("importService.bucketName")
-    lazy val enabled: Boolean = config.optionalBoolean("importService.enabled").getOrElse(true)
+    val enabled: Boolean = config.optionalBoolean("importService.enabled").getOrElse(true)
   }
 
   implicit class RichConfig(val config: Config) {
