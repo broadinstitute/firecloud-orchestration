@@ -67,7 +67,10 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
           Subsystems.withName(GoogleServicesDAO.serviceName),
           Subsystems.withName(SearchDAO.serviceName),
           Subsystems.withName(OntologyDAO.serviceName))
-          assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
+
+        assertResult(expectedSystems) {
+          statusCheckResponse.systems.keySet
+        }
       }
     }
   }

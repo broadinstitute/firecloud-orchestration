@@ -23,12 +23,15 @@ object FireCloudConfig {
     // implicit flow. Remove once we fully migrate to B2C.
     val legacyGoogleClientId = auth.optionalString("legacyGoogleClientId")
     // credentials for orchestration's "firecloud" service account, used for admin duties
+    // lazy - only required when google is enabled
     lazy val firecloudAdminSAJsonFile = auth.getString("firecloudAdminSA")
-    // credentials for the rawls service account, used for signing GCS urls
+    // credentials for the rawls service account, used for writing files to buckets for import
+    // lazy - only required when import service is enabled
     lazy val rawlsSAJsonFile = auth.getString("rawlsSA")
   }
 
   object Agora {
+    // lazy - only required when agora is enabled
     private lazy val methods = config.getConfig("methods")
     private lazy val agora = config.getConfig("agora")
     lazy val baseUrl = agora.getString("baseUrl")
@@ -93,6 +96,7 @@ object FireCloudConfig {
   }
 
   object CromIAM {
+    // lazy - only required when cromiam is enabled
     private lazy val cromIam = config.getConfig("cromiam")
     lazy val baseUrl = cromIam.getString("baseUrl")
     lazy val authPrefix = cromIam.getString("authPrefix")
@@ -116,6 +120,7 @@ object FireCloudConfig {
   }
 
   object Cwds {
+    // lazy - only required when cwds is enabled
     private lazy val cwds = config.getConfig("cwds")
     lazy val baseUrl: String = cwds.getString("baseUrl")
     lazy val enabled: Boolean = cwds.getBoolean("enabled")
@@ -126,19 +131,23 @@ object FireCloudConfig {
     private val firecloud = config.getConfig("firecloud")
     val baseUrl = firecloud.getString("baseUrl")
     val fireCloudId = firecloud.getString("fireCloudId")
+    // lazy - only required when google is enabled
     lazy val serviceProject = firecloud.getString("serviceProject")
     val supportDomain = firecloud.getString("supportDomain")
     val supportPrefix = firecloud.getString("supportPrefix")
+    // lazy - only required when google is enabled
     lazy val userAdminAccount = firecloud.getString("userAdminAccount")
   }
 
   object Shibboleth {
+    // lazy - only required when shibboleth is enabled
     private lazy val shibboleth = config.getConfig("shibboleth")
     lazy val publicKeyUrl = shibboleth.getString("publicKeyUrl")
     val enabled = shibboleth.optionalBoolean("enabled").getOrElse(true)
   }
 
   object Nih {
+    // lazy - only required when nih is enabled
     private lazy val nih = config.getConfig("nih")
     lazy val whitelistBucket = nih.getString("whitelistBucket")
     lazy val whitelists: Set[NihWhitelist] = {
@@ -156,6 +165,7 @@ object FireCloudConfig {
   }
 
   object ElasticSearch {
+    // lazy - only required when elasticsearch is enabled
     private lazy val elasticsearch = config.getConfig("elasticsearch")
     lazy val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
     lazy val clusterName = elasticsearch.getString("clusterName")
@@ -175,6 +185,7 @@ object FireCloudConfig {
   }
 
   object GoogleCloud {
+    // lazy - only required when google is enabled
     private lazy val googlecloud = config.getConfig("googlecloud")
     lazy val priceListUrl = googlecloud.getString("priceListUrl")
     lazy val priceListEgressKey = googlecloud.getString("priceListEgressKey")
@@ -187,6 +198,7 @@ object FireCloudConfig {
   }
 
   object Duos {
+    // lazy - only required when duos is enabled
     private lazy val duos = config.getConfig("duos")
     lazy val baseOntologyUrl = duos.getString("baseOntologyUrl")
     lazy val dulvn = duos.getInt("dulvn")
@@ -194,6 +206,7 @@ object FireCloudConfig {
   }
 
   object Notification {
+    // lazy - only required when notification is enabled
     private lazy val notification = config.getConfig("notification")
     lazy val fullyQualifiedNotificationTopic: String = notification.getString("fullyQualifiedNotificationTopic")
     val enabled = notification.optionalBoolean("enabled").getOrElse(true)
@@ -205,6 +218,7 @@ object FireCloudConfig {
   }
 
   object ImportService {
+    // lazy - only required when import service is enabled
     lazy val server: String = config.getString("importService.server")
     lazy val bucket: String = config.getString("importService.bucketName")
     val enabled: Boolean = config.optionalBoolean("importService.enabled").getOrElse(true)
