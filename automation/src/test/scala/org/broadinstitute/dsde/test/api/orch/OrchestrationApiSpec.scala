@@ -71,64 +71,6 @@ class OrchestrationApiSpec
         verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
       } finally resetNihLinkToInactive()
     }
-
-    // this tests a passthrough; no need for it
-    "should get the user's billing projects" ignore {
-      val ownerUser: Credentials = UserPool.chooseProjectOwner
-      val ownerToken: AuthToken = ownerUser.makeAuthToken()
-      withTemporaryBillingProject(billingAccountId) { projectName =>
-        nowPrint(s"Querying for (owner) user billing projects, with project: $projectName")
-        // Returns a list of maps, one map per billing project the user has access to.
-        // Each map has a key for the projectName, role, status, and an optional message
-        val projectList: List[Map[String, String]] = Orchestration.billingV2.listUserBillingProjects()(ownerToken)
-
-        val projectNames: List[String] = projectList.map(_.getOrElse("projectName", ""))
-        projectNames should (contain(projectName) and not contain "")
-      }(ownerUser.makeAuthToken(billingScopes))
-    }
-
-    "querying for an individual billing project status" - {
-
-      "should get the user's billing project" ignore {
-        val ownerUser: Credentials = UserPool.chooseProjectOwner
-        val ownerToken: AuthToken = ownerUser.makeAuthToken()
-        withTemporaryBillingProject(billingAccountId) { projectName =>
-          nowPrint(s"Querying for (owner) user profile billing project status: $projectName")
-          // Returns a map of projectName and status for the project specified
-          implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
-          eventually {
-            val statusMap: Map[String, String] = Orchestration.billingV2.getBillingProject(projectName)(ownerToken)
-            statusMap should contain("projectName" -> projectName)
-            statusMap should contain("status" -> BillingProjectStatus.Ready.toString)
-          }
-        }(ownerUser.makeAuthToken(billingScopes))
-      }
-
-      "should not find a non-existent billing project" ignore {
-        val ownerUser: Credentials = UserPool.chooseProjectOwner
-        val ownerToken: AuthToken = ownerUser.makeAuthToken()
-
-        val random: String = UUID.randomUUID().toString
-        nowPrint(s"Querying for (owner) user profile billing project status: $random")
-        val getException = intercept[RestException] {
-          Orchestration.billingV2.getBillingProject(random)(ownerToken)
-        }
-        getException.message should include(StatusCodes.NotFound.defaultMessage)
-      }
-
-      "should not find a billing project for user without billing project access" ignore {
-        val ownerUser: Credentials = UserPool.chooseProjectOwner
-        val user: Credentials = UserPool.chooseStudent
-        val userToken: AuthToken = user.makeAuthToken()
-        withTemporaryBillingProject(billingAccountId) { projectName =>
-          nowPrint(s"Querying for (student) user billing project status: $projectName")
-          val getException = intercept[RestException] {
-            Orchestration.billingV2.getBillingProject(projectName)(userToken)
-          }
-          getException.message should include(StatusCodes.NotFound.defaultMessage)
-        }(ownerUser.makeAuthToken(billingScopes))
-      }
-    }
   }
 
   //We need to reset the user's link to a state where it doesn't have access to any of the datasets
