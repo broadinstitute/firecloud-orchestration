@@ -5,18 +5,19 @@ import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
-import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
+import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
+import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
 
 import java.io.InputStream
 import scala.concurrent.{ExecutionContext, Future}
 
 object GoogleServicesDAO {
-  lazy val serviceName = "GoogleBuckets"
+  lazy val serviceName = Subsystems.GoogleBuckets
 }
 
 trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
-  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(GoogleServicesDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(GoogleServicesDAO.serviceName.value)
 
   def getAdminUserAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
@@ -33,7 +34,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String]
 
   def status: Future[SubsystemStatus]
-  override def serviceName: String = GoogleServicesDAO.serviceName
+  override def serviceName: Subsystem = GoogleServicesDAO.serviceName
 
   def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit]
 

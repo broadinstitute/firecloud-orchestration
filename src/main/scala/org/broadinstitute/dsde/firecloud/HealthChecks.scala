@@ -26,7 +26,7 @@ class HealthChecks(app: Application)
       Option.when(FireCloudConfig.ElasticSearch.enabled)(app.ontologyDAO)
 
     servicesToMonitor.map { subsystem =>
-      Subsystems.withName(subsystem.serviceName) -> subsystem.status
+      subsystem.serviceName -> subsystem.status
     }.toMap
   }
 }
