@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGro
 import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import org.broadinstitute.dsde.workbench.util.health.Subsystems
 
 import scala.concurrent.Future
 
@@ -18,13 +19,13 @@ import scala.concurrent.Future
   */
 object SamDAO {
 
-  lazy val serviceName = "Sam"
+  lazy val serviceName = Subsystems.Sam
 
 }
 
 trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
 
-  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(SamDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(SamDAO.serviceName.value)
 
   val managedGroupResourceTypeName = "managed-group"
 

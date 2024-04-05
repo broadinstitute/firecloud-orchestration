@@ -10,6 +10,8 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.util.health.Subsystems
+import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 import org.joda.time.DateTime
 
 import scala.concurrent.Future
@@ -19,7 +21,7 @@ import scala.concurrent.Future
   */
 
 object RawlsDAO {
-  lazy val serviceName = "Rawls"
+  lazy val serviceName = Subsystems.Rawls
 
   def groupUrl(group: String): String = authedUrl(s"/user/group/$group")
   private def authedUrl(path: String) = pathToUrl(FireCloudConfig.Rawls.authPrefix + path)
@@ -30,7 +32,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
 
-  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(RawlsDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(RawlsDAO.serviceName.value)
 
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
@@ -93,6 +95,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def batchUpdateEntities(workspaceNamespace: String, workspaceName: String, entityType: String, updates: Seq[EntityUpdateDefinition])(implicit userToken: UserInfo): Future[HttpResponse]
 
-  override def serviceName:String = RawlsDAO.serviceName
+  override def serviceName:Subsystem = RawlsDAO.serviceName
 
 }

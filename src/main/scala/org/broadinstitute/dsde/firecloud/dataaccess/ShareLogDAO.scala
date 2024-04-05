@@ -2,16 +2,15 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
+import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 
 object ShareLogDAO {
   lazy val serviceName = "ShareLog"
 }
 
-trait ShareLogDAO extends ReportsSubsystemStatus with ElasticSearchDAOSupport {
+trait ShareLogDAO extends ElasticSearchDAOSupport {
 
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ShareLogDAO.serviceName)
-
-  override def serviceName: String = ShareLogDAO.serviceName
 
   /**
     * Logs a record of a user sharing a workspace, group, or method with a user.
