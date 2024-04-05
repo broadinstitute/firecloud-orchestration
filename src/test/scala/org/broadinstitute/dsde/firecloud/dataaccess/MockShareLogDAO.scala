@@ -17,8 +17,6 @@ class MockShareLogDAO extends ShareLogDAO {
   override def getShare(share: Share): Share = throw new Exception(errorMessage)
 
   override def getShares(userId: String, shareType: Option[ShareType.Value] = None): Seq[Share] = throw new Exception(errorMessage)
-
-  override def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, None))
 }
 
 class ShareLogApiServiceSpecShareLogDAO extends MockShareLogDAO {

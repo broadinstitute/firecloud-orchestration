@@ -189,10 +189,10 @@ class UserService(rawlsDAO: RawlsDAO, thurloeDAO: ThurloeDAO, googleServicesDAO:
     val futureKeys:Future[ProfileWrapper] = getAllKeysFromThurloe(userToken)
     futureKeys flatMap { keys: ProfileWrapper =>
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
-        case None | Some("") => {
+        case None | Some("") if FireCloudConfig.GoogleCloud.enabled => {
           setupAnonymizedGoogleGroup(keys, getNewAnonymousGroupName)
         }
-        case Some(_) => {
+        case _ => {
           Future(RequestComplete(keys))
         }
       }

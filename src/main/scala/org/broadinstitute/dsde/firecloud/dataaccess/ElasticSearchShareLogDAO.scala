@@ -143,8 +143,6 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     ).isExists
   }
 
-  override def status: Future[SubsystemStatus] = Future(SubsystemStatus(indexExists, None))
-
   private def init: Unit = {
     if (!indexExists) {
       executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](

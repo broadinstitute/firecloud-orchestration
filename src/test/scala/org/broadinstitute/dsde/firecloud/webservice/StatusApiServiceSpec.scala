@@ -5,10 +5,9 @@ import org.broadinstitute.dsde.firecloud.HealthChecks
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, StatusService}
 import org.broadinstitute.dsde.workbench.util.health.StatusJsonSupport.StatusCheckResponseFormat
 import org.broadinstitute.dsde.workbench.util.health.Subsystems._
-import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, StatusCheckResponse, Subsystems}
+import org.broadinstitute.dsde.workbench.util.health.{HealthMonitor, StatusCheckResponse}
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.StatusCodes.OK
-import org.broadinstitute.dsde.firecloud.dataaccess.{AgoraDAO, GoogleServicesDAO, OntologyDAO, SearchDAO}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -62,15 +61,10 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
     "should contain all the subsystems we care about" in {
       Get(statusPath) ~> statusRoutes ~> check {
         val statusCheckResponse = responseAs[StatusCheckResponse]
-        val expectedSystems = Set(
-          Agora, Rawls, Sam, Thurloe,
-          Subsystems.withName(GoogleServicesDAO.serviceName),
-          Subsystems.withName(SearchDAO.serviceName),
-          Subsystems.withName(OntologyDAO.serviceName))
-
-        assertResult(expectedSystems) {
-          statusCheckResponse.systems.keySet
-        }
+        // changing the values of expectedSystems may affect the orch liveness probe
+        // https://github.com/broadinstitute/terra-helmfile/blob/master/charts/firecloudorch/templates/probe/configmap.yaml
+        val expectedSystems = Set(Agora, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe)
+        assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
       }
     }
   }
