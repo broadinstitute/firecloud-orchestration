@@ -171,6 +171,8 @@ jobs:
               "test-context": "${{ needs.prepare-configs.outputs.test-context }}",
               "ref": "${{ github.head_ref }}"
             }'
+          # github.head_ref, used above, is only populated for PRs and will be blank when merging to develop.
+          # This is ok; the orch-swat-tests workflow uses "develop" as a default when receiving a blank value.
 
   destroy-bee-workflow:
     strategy:
