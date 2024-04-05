@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.workbench.util.health
+import org.broadinstitute.dsde.workbench.util.health.Subsystems
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 import org.joda.time.DateTime
 
@@ -21,7 +21,7 @@ import scala.concurrent.Future
   */
 
 object RawlsDAO {
-  lazy val serviceName = health.Subsystems.Rawls
+  lazy val serviceName = Subsystems.Rawls
 
   def groupUrl(group: String): String = authedUrl(s"/user/group/$group")
   private def authedUrl(path: String) = pathToUrl(FireCloudConfig.Rawls.authPrefix + path)
