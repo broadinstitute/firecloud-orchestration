@@ -169,7 +169,7 @@ jobs:
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "ENV": "${{ matrix.testing-env }}",
               "test-context": "${{ needs.prepare-configs.outputs.test-context }}",
-              "ref": "${{ github.head_ref }}"
+              "ref": ""
             }'
 
   destroy-bee-workflow:
