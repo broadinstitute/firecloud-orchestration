@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.DisabledServiceFactory
-import org.broadinstitute.dsde.workbench.oauth2.{ClientId, ClientSecret, OpenIDConnectConfiguration}
+import org.broadinstitute.dsde.workbench.oauth2.{ClientId, OpenIDConnectConfiguration}
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.elasticsearch.client.transport.TransportClient
 
@@ -53,9 +53,8 @@ object Boot extends App with LazyLogging {
       oauth2Config <- OpenIDConnectConfiguration[IO](
         FireCloudConfig.Auth.authorityEndpoint,
         ClientId(FireCloudConfig.Auth.oidcClientId),
-        oidcClientSecret = FireCloudConfig.Auth.oidcClientSecret.map(ClientSecret),
-        extraGoogleClientId = FireCloudConfig.Auth.legacyGoogleClientId.map(ClientId),
-        extraAuthParams = Some("prompt=login")
+        extraAuthParams = Some("prompt=login"),
+        b2cProfileWithGoogleBillingScope = FireCloudConfig.Auth.b2cProfileWithGoogleBillingScope
       ).unsafeToFuture()(IORuntime.global)
 
       service <- Future {

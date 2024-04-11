@@ -35,10 +35,6 @@ tags:
   - name: Womtool
   - name: Workspaces
 security:
-  - googleoauth:
-      - openid
-      - email
-      - profile
   - oidc:
       - openid
       - email
@@ -207,11 +203,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
       security:
-        - googleoauth:
+        - oidc_google_billing_scope:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/cloud-billing
       x-codegen-request-body-name: createProjectRequest
   /api/billing/v2/{projectId}:
     get:
@@ -301,6 +296,11 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/ErrorReport'
+      security:
+        - oidc_google_billing_scope:
+            - openid
+            - email
+            - profile
       x-passthrough: true
       x-passthrough-target: rawls
     delete:
@@ -2579,11 +2579,10 @@ paths:
           description: Internal Server Error
           content: {}
       security:
-        - googleoauth:
+        - oidc_google_billing_scope:
             - openid
             - email
             - profile
-            - https://www.googleapis.com/auth/cloud-billing
       x-passthrough: true
       x-passthrough-target: rawls
   /api/profile/importstatus:
@@ -9771,22 +9770,22 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorReport'
   securitySchemes:
-    googleoauth:
-      type: oauth2
-      flows:
-        implicit:
-          authorizationUrl: https://accounts.google.com/o/oauth2/auth
-          scopes:
-            openid: open id authorization
-            email: email authorization
-            profile: profile authorization
-            https://www.googleapis.com/auth/cloud-billing: GCS billing
     oidc:
       type: oauth2
       flows:
         authorizationCode:
           authorizationUrl: /oauth2/authorize
           tokenUrl: /oauth2/token
+          scopes:
+            openid: open id authorization
+            email: email authorization
+            profile: profile authorization
+    oidc_google_billing_scope:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize?p=B2C_PROFILE_WITH_GOOGLE_BILLING_SCOPE
+          tokenUrl: /oauth2/token?p=B2C_PROFILE_WITH_GOOGLE_BILLING_SCOPE
           scopes:
             openid: open id authorization
             email: email authorization

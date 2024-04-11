@@ -18,10 +18,8 @@ object FireCloudConfig {
     // OIDC configuration using PKCE flow
     val authorityEndpoint = auth.getString("authorityEndpoint")
     val oidcClientId = auth.getString("oidcClientId")
-    val oidcClientSecret = auth.optionalString("oidcClientSecret")
-    // legacyGoogleClientId is displayed as a separate option in Swagger UI using
-    // implicit flow. Remove once we fully migrate to B2C.
-    val legacyGoogleClientId = auth.optionalString("legacyGoogleClientId")
+    val b2cProfileWithGoogleBillingScope = auth.optionalString("b2cProfileWithGoogleBillingScope")
+
     // credentials for orchestration's "firecloud" service account, used for admin duties
     // lazy - only required when google is enabled
     lazy val firecloudAdminSAJsonFile = auth.getString("firecloudAdminSA")
