@@ -3780,6 +3780,7 @@ paths:
     post:
       tags:
         - Entities
+      deprecated: true
       summary: Import entity TSVs from a zipped [BagIt](https://tools.ietf.org/html/draft-kunze-bagit-14)
         directory, whose payload contains two files - participants.tsv and samples.tsv
       operationId: importBagit
