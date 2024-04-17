@@ -7,7 +7,7 @@ object Dependencies {
   val jacksonHotfixV = "2.13.5" // for when only some of the Jackson libs have hotfix releases
   val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
-  val workbenchLibsHash = "8ccaa6d"
+  val workbenchLibsHash = "d314413"
 
   val workbenchModelV  = s"0.19-$workbenchLibsHash"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
@@ -17,7 +17,7 @@ object Dependencies {
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google_" + scalaV)
 
-  val workbenchServiceTestV = s"4.2-$workbenchLibsHash"
+  val workbenchServiceTestV = s"4.3-$workbenchLibsHash"
   val workbenchServiceTest: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-service-test" % workbenchServiceTestV % "test" classifier "tests" excludeAll (excludeWorkbenchGoogle, excludeWorkbenchModel)
 
   // Overrides for transitive dependencies. These apply - via Settings.scala - to all projects in this codebase.
