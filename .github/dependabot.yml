@@ -12,3 +12,8 @@ updates:
       day: "monday"
       time: "08:00"
       timezone: "America/New_York"
+    groups:
+      artifact-actions:
+        patterns:
+          - "actions/upload-artifact"
+          - "actions/download-artifact"
