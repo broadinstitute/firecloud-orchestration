@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@broadinstitute/dsp-analysis-journeys"
+    commit-message:
+      prefix: "[AJ-1784]"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
