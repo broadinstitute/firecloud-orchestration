@@ -3,6 +3,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.model.{BasicProfile, ProfileWrapper, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
+import org.broadinstitute.dsde.workbench.util.health.Subsystems
+import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -11,12 +13,12 @@ import scala.util.Try
  * Created by mbemis on 10/21/16.
  */
 object ThurloeDAO {
-  lazy val serviceName = "Thurloe"
+  lazy val serviceName = Subsystems.Thurloe
 }
 
 trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
 
-  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ThurloeDAO.serviceName)
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ThurloeDAO.serviceName.value)
 
   def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]]
   def getAllUserValuesForKey(key: String): Future[Map[String, String]]
@@ -44,5 +46,5 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def deleteKeyValue(forUserId: String, keyName: String, callerToken: WithAccessToken): Future[Try[Unit]]
 
-  override def serviceName:String = ThurloeDAO.serviceName
+  override def serviceName:Subsystem = ThurloeDAO.serviceName
 }

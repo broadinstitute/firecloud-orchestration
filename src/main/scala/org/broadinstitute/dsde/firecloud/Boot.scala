@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Directives._
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 import com.typesafe.scalalogging.LazyLogging
@@ -10,12 +9,15 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
+import org.broadinstitute.dsde.firecloud.utils.DisabledServiceFactory
 import org.broadinstitute.dsde.workbench.oauth2.{ClientId, ClientSecret, OpenIDConnectConfiguration}
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.elasticsearch.client.transport.TransportClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
 object Boot extends App with LazyLogging {
 
@@ -23,21 +25,7 @@ object Boot extends App with LazyLogging {
     // we need an ActorSystem to host our application in
     implicit val system: ActorSystem = ActorSystem("FireCloud-Orchestration-API")
 
-    val elasticSearchClient: TransportClient = ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
-
-    val agoraDAO:AgoraDAO = new HttpAgoraDAO(FireCloudConfig.Agora)
-    val rawlsDAO:RawlsDAO = new HttpRawlsDAO
-    val samDAO:SamDAO = new HttpSamDAO
-    val thurloeDAO:ThurloeDAO = new HttpThurloeDAO
-    val googleServicesDAO:GoogleServicesDAO = new HttpGoogleServicesDAO(FireCloudConfig.GoogleCloud.priceListUrl, GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList, UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)), "v1", "1"))
-    val ontologyDAO:OntologyDAO = new ElasticSearchOntologyDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.ontologyIndexName)
-    val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(ontologyDAO)
-    val searchDAO:SearchDAO = new ElasticSearchDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport)
-    val shareLogDAO:ShareLogDAO = new ElasticSearchShareLogDAO(elasticSearchClient, FireCloudConfig.ElasticSearch.shareLogIndexName)
-    val importServiceDAO:ImportServiceDAO = new HttpImportServiceDAO
-    val shibbolethDAO:ShibbolethDAO = new HttpShibbolethDAO
-
-    val app:Application = Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, importServiceDAO, shibbolethDAO);
+    val app: Application = buildApplication
 
     val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService = AgoraPermissionService.constructor(app)
     val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, system)
@@ -61,7 +49,7 @@ object Boot extends App with LazyLogging {
 
     val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
 
-    for {
+    val runningService: Future[Unit] = for {
       oauth2Config <- OpenIDConnectConfiguration[IO](
         FireCloudConfig.Auth.authorityEndpoint,
         ClientId(FireCloudConfig.Auth.oidcClientId),
@@ -70,34 +58,68 @@ object Boot extends App with LazyLogging {
         extraAuthParams = Some("prompt=login")
       ).unsafeToFuture()(IORuntime.global)
 
-      service = new FireCloudApiServiceImpl(
-        agoraPermissionServiceConstructor,
-        exportEntitiesByTypeActorConstructor,
-        entityServiceConstructor,
-        libraryServiceConstructor,
-        ontologyServiceConstructor,
-        namespaceServiceConstructor,
-        nihServiceConstructor,
-        registerServiceConstructor,
-        workspaceServiceConstructor,
-        statusServiceConstructor,
-        permissionReportServiceConstructor,
-        userServiceConstructor,
-        shareLogServiceConstructor,
-        managedGroupServiceConstructor,
-        oauth2Config
-      )
-
-      binding <- Http().newServerAt( "0.0.0.0", 8080).bind(service.route) recover {
-        case t: Throwable =>
-          logger.error("FATAL - failure starting http server", t)
-          throw t
+      service <- Future {
+        new FireCloudApiServiceImpl(
+          agoraPermissionServiceConstructor,
+          exportEntitiesByTypeActorConstructor,
+          entityServiceConstructor,
+          libraryServiceConstructor,
+          ontologyServiceConstructor,
+          namespaceServiceConstructor,
+          nihServiceConstructor,
+          registerServiceConstructor,
+          workspaceServiceConstructor,
+          statusServiceConstructor,
+          permissionReportServiceConstructor,
+          userServiceConstructor,
+          shareLogServiceConstructor,
+          managedGroupServiceConstructor,
+          oauth2Config
+        )
       }
+
+      binding <- Http().newServerAt( "0.0.0.0", 8080).bind(service.route)
       _ <- binding.whenTerminated
-      _ <- system.terminate()
 
     } yield {
 
+    }
+
+    runningService.recover {
+      case t: Throwable => logger.error("FATAL - error starting Firecloud Orchestration", t)
+    }.flatMap(_ => system.terminate())
+  }
+
+  private def buildApplication(implicit system: ActorSystem) = {
+    // can't be disabled
+    val rawlsDAO: RawlsDAO = new HttpRawlsDAO
+    val samDAO: SamDAO = new HttpSamDAO
+    val thurloeDAO: ThurloeDAO = new HttpThurloeDAO
+
+    // can be disabled
+    val agoraDAO: AgoraDAO = whenEnabled[AgoraDAO](FireCloudConfig.Agora.enabled, new HttpAgoraDAO(FireCloudConfig.Agora))
+    val googleServicesDAO: GoogleServicesDAO = whenEnabled[GoogleServicesDAO](FireCloudConfig.GoogleCloud.enabled, new HttpGoogleServicesDAO(FireCloudConfig.GoogleCloud.priceListUrl, GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList, UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)), "v1", "1")))
+    val importServiceDAO: ImportServiceDAO = whenEnabled[ImportServiceDAO](FireCloudConfig.ImportService.enabled, new HttpImportServiceDAO)
+    val shibbolethDAO: ShibbolethDAO = whenEnabled[ShibbolethDAO](FireCloudConfig.Shibboleth.enabled, new HttpShibbolethDAO)
+    val cwdsDAO: CwdsDAO = whenEnabled[CwdsDAO](FireCloudConfig.Cwds.enabled, new HttpCwdsDAO(FireCloudConfig.Cwds.enabled, FireCloudConfig.Cwds.supportedFormats))
+
+    val elasticSearchClient: Option[TransportClient] = Option.when(FireCloudConfig.ElasticSearch.enabled) {
+      ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
+    }
+
+    val ontologyDAO: OntologyDAO = elasticSearchClient.map(new ElasticSearchOntologyDAO(_, FireCloudConfig.ElasticSearch.ontologyIndexName)).getOrElse(DisabledServiceFactory.newDisabledService[OntologyDAO])
+    val researchPurposeSupport: ResearchPurposeSupport = new ESResearchPurposeSupport(ontologyDAO)
+    val searchDAO: SearchDAO = elasticSearchClient.map(new ElasticSearchDAO(_, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport)).getOrElse(DisabledServiceFactory.newDisabledService[SearchDAO])
+    val shareLogDAO: ShareLogDAO = elasticSearchClient.map(new ElasticSearchShareLogDAO(_, FireCloudConfig.ElasticSearch.shareLogIndexName)).getOrElse(DisabledServiceFactory.newDisabledService[ShareLogDAO])
+
+    Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, importServiceDAO, shibbolethDAO, cwdsDAO)
+  }
+
+  private def whenEnabled[T : ClassTag](enabled: Boolean, realService: => T): T = {
+    if (enabled) {
+      realService
+    } else {
+      DisabledServiceFactory.newDisabledService
     }
   }
 

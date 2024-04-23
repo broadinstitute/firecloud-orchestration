@@ -61,6 +61,8 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
     "should contain all the subsystems we care about" in {
       Get(statusPath) ~> statusRoutes ~> check {
         val statusCheckResponse = responseAs[StatusCheckResponse]
+        // changing the values of expectedSystems may affect the orch liveness probe
+        // https://github.com/broadinstitute/terra-helmfile/blob/master/charts/firecloudorch/templates/probe/configmap.yaml
         val expectedSystems = Set(Agora, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe)
         assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
       }

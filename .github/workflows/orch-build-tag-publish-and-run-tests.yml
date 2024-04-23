@@ -23,8 +23,9 @@ jobs:
       id-token: 'write'
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      custom-version-json: ${{ steps.publish-orch.outputs.custom-version-json }}
     steps:
-      - uses: 'actions/checkout@v3'
+      - uses: 'actions/checkout@v4'
 
       - name: Bump the tag to a new version
         uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
@@ -54,7 +55,7 @@ jobs:
 
       # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
       - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
+        uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: Explicitly auth Docker for Artifact Registry
         run: gcloud auth configure-docker $GOOGLE_DOCKER_REPOSITORY --quiet      
@@ -73,7 +74,8 @@ jobs:
           docker build -t ${{ github.event.repository.full_name }}:${DOCKER_TAG} --pull .
           docker tag ${{ github.event.repository.full_name }}:${DOCKER_TAG} ${{ env.GCR_REGISTRY }}:${DOCKER_TAG}
           gcloud docker -- push $GCR_REGISTRY:${DOCKER_TAG}
-    
+          echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${{ env.DOCKER_TAG }}\"}}' >> $GITHUB_OUTPUT
+
   prepare-configs:
     runs-on: ubuntu-latest
     outputs:
@@ -168,8 +170,11 @@ jobs:
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "ENV": "${{ matrix.testing-env }}",
-              "test-context": "${{ needs.prepare-configs.outputs.test-context }}"
+              "test-context": "${{ needs.prepare-configs.outputs.test-context }}",
+              "ref": "${{ github.head_ref }}"
             }'
+          # github.head_ref, used above, is only populated for PRs and will be blank when merging to develop.
+          # This is ok; the orch-swat-tests workflow uses "develop" as a default when receiving a blank value.
 
   destroy-bee-workflow:
     strategy:

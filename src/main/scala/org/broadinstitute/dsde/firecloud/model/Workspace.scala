@@ -49,6 +49,12 @@ case class ImportServiceResponse(
   status: String,
   message: Option[String])
 
+case class ImportServiceListResponse(
+                                  jobId: String,
+                                  status: String,
+                                  filetype: String,
+                                  message: Option[String])
+
 case class MethodConfigurationId(
   name: Option[String] = None,
   namespace: Option[String] = None,

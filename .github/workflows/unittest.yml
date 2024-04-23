@@ -14,17 +14,18 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     # coursier cache action caches both coursier and sbt caches
     - name: coursier-cache-action
       uses: coursier/cache-action@v6
 
     - name: Set up JDK 17
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: 17
+        cache: 'sbt'
 
     - name: Run tests
       env:
@@ -34,5 +35,5 @@ jobs:
         FIRE_CLOUD_ID: 123
       run: sbt clean coverage test coverageReport
 
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v4
       if: ${{ always() }}

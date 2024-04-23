@@ -9,8 +9,8 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
-import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_RAWLS}
-import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_RAWLS
+import org.broadinstitute.dsde.firecloud.dataaccess.{CwdsDAO, GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -19,6 +19,7 @@ import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
+import org.databiosphere.workspacedata.client.ApiException
 import spray.json.DefaultJsonProtocol._
 
 import java.nio.channels.Channels
@@ -28,13 +29,12 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.language.postfixOps
-import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
 object EntityService {
 
   def constructor(app: Application)(modelSchema: ModelSchema)(implicit executionContext: ExecutionContext) =
-    new EntityService(app.rawlsDAO, app.importServiceDAO, app.googleServicesDAO, modelSchema)
+    new EntityService(app.rawlsDAO, app.importServiceDAO, app.cwdsDAO, app.googleServicesDAO, modelSchema)
 
   def colNamesToAttributeNames(headers: Seq[String], requiredAttributes: Map[String, String]): Seq[(String, Option[String])] = {
     headers.tail map { colName => (colName, requiredAttributes.get(colName))}
@@ -102,7 +102,7 @@ object EntityService {
 
 }
 
-class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, googleServicesDAO: GoogleServicesDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
+class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwdsDAO: CwdsDAO, googleServicesDAO: GoogleServicesDAO, modelSchema: ModelSchema)(implicit val executionContext: ExecutionContext)
   extends TSVFileSupport with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -370,7 +370,77 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, goog
     // validate that filetype exists in the importRequest
     if (importRequest.filetype.isEmpty)
       throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype must be specified"))
-    importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
+
+    // if cwds.enabled, for cwds filetypes send the request to cWDS instead of import service
+    if (cwdsDAO.isEnabled && cwdsDAO.getSupportedFormats.contains(importRequest.filetype.toLowerCase)) {
+      // translate the workspace namespace/name into an id
+      rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+        // create the job in cWDS
+        val cwdsJob = cwdsDAO.importV1(workspace.workspace.workspaceId, importRequest)(userInfo)
+        // massage the cWDS job into the response format Orch requires
+        val asyncImportResponse = AsyncImportResponse(url = importRequest.url,
+          jobId = cwdsJob.getJobId.toString,
+          workspace = WorkspaceName(workspaceNamespace, workspaceName))
+        RequestComplete(Accepted, asyncImportResponse)
+      }
+    } else {
+      importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
+    }
+
+
+  }
+
+  def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[ImportServiceListResponse]] = {
+
+    for {
+      // get jobs from Import Service
+      importServiceJobs <- importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
+      // get jobs from cWDS
+      cwdsJobs <- if (cwdsDAO.isEnabled) {
+        rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+          cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+        }
+      } else {
+        Future.successful(List.empty)
+      }
+    } yield {
+      // merge Import Service and cWDS results
+      importServiceJobs.concat(cwdsJobs)
+    }
+  }
+
+  def getJob(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[ImportServiceListResponse] = {
+    // there is no way to tell just from a jobId if the job exists in cWDS or Import Service. So, we have to try both.
+
+    // if cWDS is enabled, query cWDS for job
+    val cwdsFuture: Future[ImportServiceListResponse] = if (cwdsDAO.isEnabled) {
+      rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+        val cwdsResponse = cwdsDAO.getJobV1(workspace.workspace.workspaceId, jobId)(userInfo)
+        logger.info(s"Found job $jobId in cWDS")
+        cwdsResponse
+      }
+    } else {
+      // if cWDS is disabled, don't call cWDS or Rawls. Just return a 404 error; this error will be caught below
+      // and will trigger a request to Import Service to look for the job there. This is equivalent to making a call
+      // to cWDS but having cWDS return 404.
+      Future.failed(new ApiException(StatusCodes.NotFound.intValue, s"Import $jobId not found"))
+    }
+
+    val importServiceFuture: () => Future[ImportServiceListResponse] = () => importServiceDAO.getJob(workspaceNamespace, workspaceName, jobId)(userInfo) map { importServiceResponse =>
+      logger.info(s"Found job $jobId in Import Service")
+      importServiceResponse
+    } recover { importServiceError =>
+      logger.info(s"Job $jobId not returned successfully by either cWDS or Import Service")
+      importServiceError match {
+        case fex: FireCloudExceptionWithErrorReport => throw fex
+        case   t => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, t))
+      }
+    }
+
+    // if cWDS found the job, return it; else, try Import Service
+    cwdsFuture recoverWith {
+      case _ => importServiceFuture.apply()
+    }
   }
 
   def getEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {

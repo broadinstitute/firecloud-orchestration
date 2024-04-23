@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import javax.net.ssl.HttpsURLConnection
 import org.apache.commons.io.IOUtils
 import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -124,9 +124,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   val localShareLogDao: MockShareLogDAO = new WorkspaceApiServiceSpecShareLogDAO
 
+  // use a disabled cWDS for these tests; enabled cWDS has tests coverage elsewhere
+  val mockCwdsDao: MockCwdsDAO = new MockCwdsDAO(enabled = false)
+
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
-  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
+  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app.copy(cwdsDAO = mockCwdsDao))
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
@@ -1152,129 +1155,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             jobResponse.workspace should be (orchExpectedPayload.workspace)
             jobResponse.jobId  should not be empty
           }
-      }
-
-    }
-
-    "WorkspaceService importPFB job-status Tests" - {
-
-      List(importJobStatusPath, pfbImportPath) foreach { pathUnderTest =>
-        s"Successful passthrough should return OK with payload for $pathUnderTest" in {
-
-          val jobId = UUID.randomUUID().toString
-
-          val responsePayload = JsObject(
-            ("id", JsString(jobId)),
-            ("status", JsString("Running"))
-          )
-
-          importServiceServer
-            .when(request()
-              .withMethod("GET")
-              .withPath(s"/${workspace.namespace}/${workspace.name}/imports/$jobId"))
-            .respond(org.mockserver.model.HttpResponse.response()
-              .withStatusCode(OK.intValue)
-              .withBody(responsePayload.compactPrint)
-              .withHeader("Content-Type", "application/json"))
-
-          (Get(s"$pathUnderTest/$jobId")
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
-          }
-        }
-
-        s"Passthrough should not pass unrecognized HTTP verbs for $pathUnderTest" in {
-          (Delete(s"$pathUnderTest/dummyJobId")
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(MethodNotAllowed)
-          }
-        }
-      }
-    }
-
-    "WorkspaceService importPFB list-jobs tests" - {
-
-      List(pfbImportPath, importJobPath) foreach { pathUnderTest =>
-
-        s"for path $pathUnderTest" - {
-
-          "Successful passthrough should return OK with payload" in {
-            val responsePayload = JsArray(
-              JsObject(
-                ("id", JsString(UUID.randomUUID().toString)),
-                ("status", JsString("Running"))
-              ),
-              JsObject(
-                ("id", JsString(UUID.randomUUID().toString)),
-                ("status", JsString("Error"))
-              ),
-              JsObject(
-                ("id", JsString(UUID.randomUUID().toString)),
-                ("status", JsString("ImAUnitTest"))
-              )
-            )
-
-            importServiceServer
-              .when(request()
-                .withMethod("GET")
-                .withPath(s"/${workspace.namespace}/${workspace.name}/imports"))
-              .respond(org.mockserver.model.HttpResponse.response()
-                .withStatusCode(OK.intValue)
-                .withBody(responsePayload.compactPrint)
-                .withHeader("Content-Type", "application/json"))
-
-            (Get(pathUnderTest)
-              ~> dummyUserIdHeaders(dummyUserId)
-              ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(OK)
-              responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
-            }
-          }
-
-          "Passthrough should pass on querystrings" in {
-            val responsePayload = JsArray(
-              JsObject(
-                ("id", JsString(UUID.randomUUID().toString)),
-                ("status", JsString("Running"))
-              )
-            )
-
-            val k1 = UUID.randomUUID().toString
-            val v1 = UUID.randomUUID().toString
-            val k2 = UUID.randomUUID().toString
-            val v2 = UUID.randomUUID().toString
-
-            val queryString = s"$k1=$v1&$k2=$v2"
-
-            importServiceServer
-              .when(request()
-                .withMethod("GET")
-                .withPath(s"/${workspace.namespace}/${workspace.name}/imports")
-                .withQueryStringParameters(new Parameter(k1, v1), new Parameter(k2, v2)))
-              .respond(org.mockserver.model.HttpResponse.response()
-                .withStatusCode(OK.intValue)
-                .withBody(responsePayload.compactPrint)
-                .withHeader("Content-Type", "application/json"))
-
-            (Get(s"$pathUnderTest?$queryString")
-              ~> dummyUserIdHeaders(dummyUserId)
-              ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(OK)
-              responseAs[String].parseJson should be (responsePayload) // to address string-formatting issues
-            }
-          }
-
-          "Passthrough should not pass unrecognized HTTP verbs" in {
-            (Delete(s"$pathUnderTest")
-              ~> dummyUserIdHeaders(dummyUserId)
-              ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(MethodNotAllowed)
-            }
-          }
-        }
       }
 
     }

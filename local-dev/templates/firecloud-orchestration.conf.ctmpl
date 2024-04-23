@@ -98,6 +98,12 @@ thurloe {
 	baseUrl = "https://thurloe.dsde-dev.broadinstitute.org"
 }
 
+cwds {
+    baseUrl = "https://cwds.dsde-dev.broadinstitute.org"
+    enabled = true
+    supportedFormats = ["pfb","tdrexport"]
+}
+
 firecloud {
 	baseUrl = "https://firecloud-orchestration.dsde-dev.broadinstitute.org"
 	portalUrl = "https://firecloud.dsde-dev.broadinstitute.org"
@@ -139,6 +145,7 @@ staticNotebooks {
 importService {
   server = "https://terra-importservice-dev.appspot.com"
   bucketName = "import-service-batchupsert-dev"
+  enabled = true
 }
 
 
