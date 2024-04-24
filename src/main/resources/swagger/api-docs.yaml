@@ -6823,6 +6823,15 @@ components:
         managedResourceGroupId:
           type: string
           description: ID of the Azure managed resource group for this managed application deployment.
+    RawlsBillingProjectOrganization:
+      required:
+        - enterprise
+      type: object
+      description: Details about billing project's organization. Only present if billing project is backed by a billing profile.
+      properties:
+        enterprise:
+          type: boolean
+          description: whether this billing project is part of an enterprise organization i.e. they have a signed business associate agreement (BAA)
     CuratorStatus:
       required:
         - curator
@@ -7843,6 +7852,8 @@ components:
           type: string
           format: uuid
           description: the UUID of the landing zone associated with the project (cloudPlatform AZURE only)
+        organization:
+          $ref: '#/components/schemas/RawlsBillingProjectOrganization'
     RawlsGroupRef:
       type: object
       properties:
