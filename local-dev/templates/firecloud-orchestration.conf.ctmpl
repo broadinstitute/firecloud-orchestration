@@ -34,6 +34,7 @@ akka {
       request-timeout = infinite
       server-header = ""
       parsing {
+        max-uri-length = 16k
         max-content-length = 50m
       }
     }

@@ -117,7 +117,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
       // The request to rawls to completely overwrite the group
       // with the list of actively linked users on the whitelist
       _ <- samDao.overwriteGroupMembers(nihWhitelist.groupToSync, ManagedGroupRoles.Member, members)(getAdminAccessToken) recoverWith {
-        case _: Exception => throw new FireCloudException("Error synchronizing NIH whitelist")
+        case e: Exception => throw new FireCloudException(s"Error synchronizing NIH whitelist: ${e.getMessage}")
       }
     } yield ()
   }

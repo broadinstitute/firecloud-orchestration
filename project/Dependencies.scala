@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.13.5"
   val jacksonHotfixV = "2.13.5" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.108.Final"
+  val nettyV = "4.1.109.Final"
   val workbenchLibsHash = "5762674" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -39,8 +39,8 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.1",
-    "ch.qos.logback"                 % "logback-classic"     % "1.5.3",
-    "io.sentry"                      % "sentry-logback"      % "7.6.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.6",
+    "io.sentry"                      % "sentry-logback"      % "7.8.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -55,7 +55,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.7-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
-    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.118-SNAPSHOT",
+    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.119-SNAPSHOT",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -96,7 +96,7 @@ object Dependencies {
     // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
     "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.15" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.16" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
