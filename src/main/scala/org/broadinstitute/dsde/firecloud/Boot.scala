@@ -54,7 +54,7 @@ object Boot extends App with LazyLogging {
         FireCloudConfig.Auth.authorityEndpoint,
         ClientId(FireCloudConfig.Auth.oidcClientId),
         extraAuthParams = Some("prompt=login"),
-        b2cProfileWithGoogleBillingScope = FireCloudConfig.Auth.b2cProfileWithGoogleBillingScope
+        authorityEndpointWithGoogleBillingScope = FireCloudConfig.Auth.authorityEndpointWithGoogleBillingScope
       ).unsafeToFuture()(IORuntime.global)
 
       service <- Future {

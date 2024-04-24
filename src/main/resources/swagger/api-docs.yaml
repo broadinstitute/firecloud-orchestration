@@ -9771,22 +9771,10 @@ components:
             $ref: '#/components/schemas/ErrorReport'
   securitySchemes:
     oidc:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: /oauth2/authorize
-          tokenUrl: /oauth2/token
-          scopes:
-            openid: open id authorization
-            email: email authorization
-            profile: profile authorization
+      type: openIdConnect
+      openIdConnectUrl: OPEN_ID_CONNECT_URL
+      x-tokenName: id_token
     oidc_google_billing_scope:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: /oauth2/authorize?p=B2C_PROFILE_WITH_GOOGLE_BILLING_SCOPE
-          tokenUrl: /oauth2/token?p=B2C_PROFILE_WITH_GOOGLE_BILLING_SCOPE
-          scopes:
-            openid: open id authorization
-            email: email authorization
-            profile: profile authorization
+      type: openIdConnect
+      openIdConnectUrl: OPEN_ID_CONNECT_URL_WITH_GOOGLE_BILLING_SCOPE
+      x-tokenName: id_token

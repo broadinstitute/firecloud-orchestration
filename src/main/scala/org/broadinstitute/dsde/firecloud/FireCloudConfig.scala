@@ -18,7 +18,7 @@ object FireCloudConfig {
     // OIDC configuration using PKCE flow
     val authorityEndpoint = auth.getString("authorityEndpoint")
     val oidcClientId = auth.getString("oidcClientId")
-    val b2cProfileWithGoogleBillingScope = auth.optionalString("b2cProfileWithGoogleBillingScope")
+    val authorityEndpointWithGoogleBillingScope = auth.optionalString("authorityEndpointWithGoogleBillingScope")
 
     // credentials for orchestration's "firecloud" service account, used for admin duties
     // lazy - only required when google is enabled
