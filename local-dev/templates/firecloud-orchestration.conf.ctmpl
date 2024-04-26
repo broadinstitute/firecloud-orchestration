@@ -65,7 +65,7 @@ akka {
 auth {
 	authorityEndpoint = "https://terra{{ $b2cTenant }}b2c.b2clogin.com/terra{{ $b2cTenant }}b2c.onmicrosoft.com/v2.0?p=b2c_1a_signup_signin_{{ $b2cEnv }}"
 	oidcClientId = "{{ $b2cAppId }}"
-	legacyGoogleClientId = "{{ $refreshTokenCredential.web.client_id }}"
+	authorityEndpointWithGoogleBillingScope = "https://terra{{ $b2cTenant }}b2c.b2clogin.com/terra{{ $b2cTenant }}b2c.onmicrosoft.com/v2.0?p=b2c_1a_signup_signin_billing_{{ $b2cEnv }}"
 
 	pemFile = "/etc/firecloud-account.pem"
 	pemFileClientId = "{{ $firecloudSaKey.client_email }}"
