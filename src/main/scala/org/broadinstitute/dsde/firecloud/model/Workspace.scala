@@ -28,7 +28,7 @@ case class BagitImportRequest(bagitURL: String, format: String)
 case class PFBImportRequest(url: String)
 
 // additional import options
-case class ImportOptions(tdrSyncPermissions: Option[Boolean] = None)
+case class ImportOptions(tdrSyncPermissions: Option[Boolean] = None, isUpsert: Option[Boolean] = None)
 // the request payload sent by users to Orchestration for async PFB and TDR snapshot imports
 case class AsyncImportRequest(url: String, filetype: String, options: Option[ImportOptions] = None)
 

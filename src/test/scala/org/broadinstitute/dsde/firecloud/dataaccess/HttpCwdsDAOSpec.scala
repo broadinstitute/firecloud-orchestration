@@ -15,7 +15,7 @@ import scala.jdk.CollectionConverters._
 
 class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
 
-  private val supportedFormats: List[String] = List("pfb", "tdrexport")
+  private val supportedFormats: List[String] = List("pfb", "tdrexport", "rawlsjson")
 
   // a dao that can be reused in multiple tests below
   private val cwdsDao: HttpCwdsDAO = new HttpCwdsDAO(true, supportedFormats)
@@ -111,6 +111,9 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
       "input (tdrexport) should translate to TDRMANIFEST" in {
         cwdsDao.toCwdsImportType("tdrexport") shouldBe ImportRequest.TypeEnum.TDRMANIFEST
       }
+      "input (rawlsjson) should translate to RAWLSJSON" in {
+        cwdsDao.toCwdsImportType("rawlsjson") shouldBe ImportRequest.TypeEnum.RAWLSJSON
+      }
       "other input should throw" in {
         a [FireCloudException] should be thrownBy cwdsDao.toCwdsImportType("something-else")
       }
@@ -173,6 +176,21 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         expected.setUrl(testURI)
         expected.setType(ImportRequest.TypeEnum.PFB)
         expected.setOptions(Map[String,Object]("tdrSyncPermissions" -> false.asInstanceOf[Object]).asJava)
+
+        cwdsDao.toCwdsImportRequest(input) shouldBe expected
+      }
+
+      "should translate an import request with isUpsert=true" in {
+        val testURI: URI = URI.create("https://example.com/")
+
+        val input = AsyncImportRequest(url = testURI.toString,
+          filetype = "rawlsjson",
+          options = Some(ImportOptions(isUpsert = Some(true))))
+
+        val expected = new ImportRequest()
+        expected.setUrl(testURI)
+        expected.setType(ImportRequest.TypeEnum.RAWLSJSON)
+        expected.setOptions(Map[String,Object]("isUpsert" -> true.asInstanceOf[Object]).asJava)
 
         cwdsDao.toCwdsImportRequest(input) shouldBe expected
       }
