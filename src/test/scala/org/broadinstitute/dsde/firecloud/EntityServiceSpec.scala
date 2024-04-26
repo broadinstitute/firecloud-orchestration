@@ -228,49 +228,6 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
           }
     }
 
-//    "should send sample tsv to cWDS with appropriate options when cWDS is enabled and supports rawlsjson" in {
-//      // set up mocks
-//      val importServiceDAO = mockito[MockImportServiceDAO]
-//      val cwdsDAO = mockito[MockCwdsDAO]
-//      val rawlsDAO = mockito[MockRawlsDAO]
-//
-//      // inject mocks to entity service
-//      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO, rawlsDAO = rawlsDAO)
-//
-//      // set up behaviors
-//      val genericJob: GenericJob = new GenericJob
-//      genericJob.setJobId(UUID.randomUUID())
-//      // the "new MockRawlsDAO()" here is only to get access to a pre-canned WorkspaceResponse object
-//      val workspaceResponse = new MockRawlsDAO().rawlsWorkspaceResponseWithAttributes
-//
-//      when(cwdsDAO.isEnabled).thenReturn(true)
-//      when(cwdsDAO.getSupportedFormats).thenReturn(List("pfb","tdrexport", "rawlsjson"))
-//      when(importServiceDAO.importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo]))
-//        .thenReturn(Future.successful(RequestComplete(StatusCodes.Accepted, "")))
-//      when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo]))
-//        .thenReturn(Future.successful(workspaceResponse))
-//
-//      entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName", tsvParticipants, dummyUserInfo("token"), true).futureValue
-//
-//      val argumentCaptor = ArgumentCaptor.forClass(classTag[AsyncImportRequest].runtimeClass).asInstanceOf[ArgumentCaptor[AsyncImportRequest]]
-//
-//      //            verify(mockedRawlsDAO, times(1)).batchUpdateEntities(
-//      //              ArgumentMatchers.eq("workspaceNamespace"), ArgumentMatchers.eq("workspaceName"),
-//      //              ArgumentMatchers.eq(expectedEntityType), any[Seq[EntityUpdateDefinition]])(any[UserInfo])
-//
-//      //            verify(cwdsDAO, cwdsCallCount)
-//      //              .importV1(any[String], any[AsyncImportRequest])(any[UserInfo])
-//      verify(cwdsDAO, times(1))
-//        .importV1(any[String], argumentCaptor.capture())(any[UserInfo])
-//      val capturedRequest = argumentCaptor.getValue
-//      capturedRequest.options should be(Some(ImportOptions(None, Some(tsvType != "update"))))
-//      verify(importServiceDAO, never)
-//        .importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo])
-//      verify(rawlsDAO, times(1))
-//        .getWorkspace(any[String], any[String])(any[UserInfo])
-//
-//    }
-
     "should return error for (async=true) when failed to write to GCS" in {
       val testGoogleDAO = new ErroringGoogleServicesDAO
       val entityService = getEntityService(mockGoogleServicesDAO = testGoogleDAO)
