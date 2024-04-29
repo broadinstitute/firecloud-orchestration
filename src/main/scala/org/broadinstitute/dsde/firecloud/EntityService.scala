@@ -227,8 +227,22 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
     val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
     val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
 
-    val importRequest = AsyncImportRequest(gcsPath, FILETYPE_RAWLS)
-    importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert)(userInfo)
+    val importRequest = AsyncImportRequest(gcsPath, FILETYPE_RAWLS, Some(ImportOptions(None, Some(isUpsert))))
+
+    if (cwdsDAO.isEnabled && cwdsDAO.getSupportedFormats.contains(importRequest.filetype.toLowerCase)) {
+      // translate the workspace namespace/name into an id
+      rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
+        // create the job in cWDS
+      val cwdsJob = cwdsDAO.importV1(workspace.workspace.workspaceId, importRequest)(userInfo)
+        // massage the cWDS job into the response format Orch requires
+        val asyncImportResponse = AsyncImportResponse(url = importRequest.url,
+          jobId = cwdsJob.getJobId.toString,
+          workspace = WorkspaceName(workspaceNamespace, workspaceName))
+        RequestComplete(Accepted, asyncImportResponse)
+    }
+    } else {
+      importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert)(userInfo)
+    }
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {

@@ -37,7 +37,8 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
 
   private final val TYPE_TRANSLATION: Map[String, ImportRequest.TypeEnum] = Map(
     "pfb" -> ImportRequest.TypeEnum.PFB,
-    "tdrexport" -> ImportRequest.TypeEnum.TDRMANIFEST
+    "tdrexport" -> ImportRequest.TypeEnum.TDRMANIFEST,
+    "rawlsjson" -> ImportRequest.TypeEnum.RAWLSJSON
   )
 
   override def isEnabled: Boolean = enabled
@@ -85,6 +86,10 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     asyncImportRequest.options.map { opts =>
       opts.tdrSyncPermissions.map { tdrSyncPermissions =>
         importRequest.setOptions(Map[String, Object]("tdrSyncPermissions" -> tdrSyncPermissions.asInstanceOf[Object]).asJava)
+      }
+      opts.isUpsert.map { isUpsert =>
+        importRequest.setOptions(Map[String, Object]("isUpsert" -> isUpsert.asInstanceOf[Object]).asJava)
+
       }
     }
 

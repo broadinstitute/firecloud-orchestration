@@ -7,26 +7,26 @@ import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILET
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockImportServiceDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, EntityUpdateDefinition, FirecloudModelSchema, ImportOptions, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.databiosphere.workspacedata.client.ApiException
 import org.databiosphere.workspacedata.model.GenericJob
-import org.mockito.ArgumentMatchers
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{doThrow, never, times, verify, when}
 import org.parboiled.common.FileUtils
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Span}
 import org.scalatestplus.mockito.MockitoSugar.{mock => mockito}
 
 import java.util.UUID
 import java.util.zip.ZipFile
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
+import scala.reflect.classTag
 
 class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
@@ -190,6 +190,42 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
         }
 
+        s"should send $expectedEntityType tsv to cWDS with appropriate options when cWDS is enabled and supports rawlsjson" in {
+            // set up mocks
+            val importServiceDAO = mockito[MockImportServiceDAO]
+            val cwdsDAO = mockito[MockCwdsDAO]
+            val rawlsDAO = mockito[MockRawlsDAO]
+
+            // inject mocks to entity service
+            val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO, rawlsDAO = rawlsDAO)
+
+            // set up behaviors
+            val genericJob: GenericJob = new GenericJob
+            genericJob.setJobId(UUID.randomUUID())
+            // the "new MockRawlsDAO()" here is only to get access to a pre-canned WorkspaceResponse object
+            val workspaceResponse = new MockRawlsDAO().rawlsWorkspaceResponseWithAttributes
+
+            when(cwdsDAO.isEnabled).thenReturn(true)
+            when(cwdsDAO.getSupportedFormats).thenReturn(List("pfb","tdrexport", "rawlsjson"))
+            when(importServiceDAO.importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo]))
+              .thenReturn(Future.successful(RequestComplete(StatusCodes.Accepted, "")))
+            when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo]))
+              .thenReturn(Future.successful(workspaceResponse))
+
+            entityService.importEntitiesFromTSV("workspaceNamespace", "workspaceName", tsvData, dummyUserInfo("token"), true).futureValue
+
+          val argumentCaptor = ArgumentCaptor.forClass(classTag[AsyncImportRequest].runtimeClass).asInstanceOf[ArgumentCaptor[AsyncImportRequest]]
+
+          verify(cwdsDAO, times(1))
+            .importV1(any[String], argumentCaptor.capture())(any[UserInfo])
+          val capturedRequest = argumentCaptor.getValue
+          capturedRequest.options should be(Some(ImportOptions(None, Some(tsvType != "update"))))
+          verify(importServiceDAO, never)
+              .importJob(any[String], any[String], any[AsyncImportRequest], any[Boolean])(any[UserInfo])
+          verify(rawlsDAO, times(1))
+              .getWorkspace(any[String], any[String])(any[UserInfo])
+
+          }
     }
 
     "should return error for (async=true) when failed to write to GCS" in {
@@ -586,7 +622,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   private def getEntityService(mockGoogleServicesDAO: MockGoogleServicesDAO = new MockGoogleServicesDAO,
                                mockImportServiceDAO: MockImportServiceDAO = new MockImportServiceDAO,
                                rawlsDAO: MockRawlsDAO = new MockRawlsDAO,
-                               cwdsDAO: MockCwdsDAO = new MockCwdsDAO) = {
+                               cwdsDAO: MockCwdsDAO = new MockCwdsDAO(false)) = {
     val application = app.copy(googleServicesDAO = mockGoogleServicesDAO, rawlsDAO = rawlsDAO, importServiceDAO = mockImportServiceDAO, cwdsDAO = cwdsDAO)
 
     // instantiate an EntityService, specify importServiceDAO and googleServicesDAO

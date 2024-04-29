@@ -11,7 +11,7 @@ class MockCwdsDAO(enabled: Boolean = true) extends CwdsDAO {
 
   override def isEnabled: Boolean = enabled
 
-  override def getSupportedFormats: List[String] = List("pfb", "tdrexport")
+  override def getSupportedFormats: List[String] = List("pfb", "tdrexport", "rawlsjson")
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
   : List[ImportServiceListResponse] = List()
 
