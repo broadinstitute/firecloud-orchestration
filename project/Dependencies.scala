@@ -55,7 +55,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.7-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
-    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.119-SNAPSHOT",
+    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.140-SNAPSHOT",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
