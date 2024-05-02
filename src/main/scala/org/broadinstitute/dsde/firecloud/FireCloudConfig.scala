@@ -123,6 +123,7 @@ object FireCloudConfig {
     lazy val baseUrl: String = cwds.getString("baseUrl")
     lazy val enabled: Boolean = cwds.getBoolean("enabled")
     lazy val supportedFormats: List[String] = cwds.getStringList("supportedFormats").asScala.toList
+    lazy val bucket: String = cwds.getString("bucket")
   }
 
   object FireCloud {
