@@ -102,7 +102,7 @@ cwds {
     baseUrl = "https://cwds.dsde-dev.broadinstitute.org"
     enabled = true
     supportedFormats = ["pfb","tdrexport"]
-    bucket = "cwds-batchupsert-dev"
+    bucketName = "cwds-batchupsert-dev"
 }
 
 firecloud {
