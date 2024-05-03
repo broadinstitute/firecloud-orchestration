@@ -223,7 +223,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
     val dataBytes = rawlsCalls.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8)
 
     if (useCWDS) {
-      getWorkspaceId(workspaceNamespace, workspaceName, userInfo) flatMap { workspaceId =>
+      getWorkspaceId(workspaceNamespace, workspaceName, userInfo) map { workspaceId =>
         val bucketToWrite = GcsBucketName(FireCloudConfig.Cwds.bucket)
         val fileToWrite = GcsObjectName(s"to-cwds/${workspaceId}/${java.util.UUID.randomUUID()}.json")
         val gcsPath = writeDataToGcs(bucketToWrite, fileToWrite, dataBytes)
@@ -253,15 +253,14 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
   }
 
   private def importToCWDS(workspaceNamespace: String, workspaceName: String, workspaceId: String, userInfo: UserInfo, importRequest: AsyncImportRequest
-                          ): Future[PerRequestMessage] = {
+                          ): PerRequestMessage = {
     // create the job in cWDS
     val cwdsJob = cwdsDAO.importV1(workspaceId, importRequest)(userInfo)
     // massage the cWDS job into the response format Orch requires
-    Future.successful(
-      RequestComplete(Accepted, AsyncImportResponse(url = importRequest.url,
-        jobId = cwdsJob.getJobId.toString,
-        workspace = WorkspaceName(workspaceNamespace, workspaceName)))
-    )
+
+    RequestComplete(Accepted, AsyncImportResponse(url = importRequest.url,
+      jobId = cwdsJob.getJobId.toString,
+      workspace = WorkspaceName(workspaceNamespace, workspaceName)))
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
@@ -406,7 +405,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
 
     // if cwds.enabled, for cwds filetypes send the request to cWDS instead of import service
     if (cwdsDAO.isEnabled && cwdsDAO.getSupportedFormats.contains(importRequest.filetype.toLowerCase)) {
-      getWorkspaceId(workspaceNamespace, workspaceName, userInfo) flatMap { workspaceId =>
+      getWorkspaceId(workspaceNamespace, workspaceName, userInfo) map { workspaceId =>
         importToCWDS(workspaceNamespace, workspaceName, workspaceId, userInfo, importRequest)
       }
     } else {
