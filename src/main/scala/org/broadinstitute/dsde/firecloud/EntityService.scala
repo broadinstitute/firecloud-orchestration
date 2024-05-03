@@ -1,9 +1,5 @@
 package org.broadinstitute.dsde.firecloud
 
-import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
-import java.net.{HttpURLConnection, URL}
-import java.text.SimpleDateFormat
-import java.util.zip.{ZipEntry, ZipException, ZipFile}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
@@ -22,12 +18,16 @@ import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectN
 import org.databiosphere.workspacedata.client.ApiException
 import spray.json.DefaultJsonProtocol._
 
+import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
+import java.net.{HttpURLConnection, URL}
 import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
 import java.util.concurrent.atomic.AtomicLong
-import scala.jdk.CollectionConverters._
+import java.util.zip.{ZipEntry, ZipException, ZipFile}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -220,36 +220,47 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
 
     val useCWDS = cwdsDAO.isEnabled && cwdsDAO.getSupportedFormats.contains(FILETYPE_RAWLS)
 
-    // generate unique name for the file-to-upload
-    val fileToWrite = GcsObjectName(s"incoming/${java.util.UUID.randomUUID()}.json")
-    val bucketToWrite = if (useCWDS) GcsBucketName(FireCloudConfig.Cwds.bucket) else GcsBucketName(FireCloudConfig.ImportService.bucket)
-
-    // write rawlsCalls to import service's bucket
     val dataBytes = rawlsCalls.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8)
-    val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucketToWrite, fileToWrite, dataBytes)
-    val gcsPath = s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
-
-    val importRequest = AsyncImportRequest(gcsPath, FILETYPE_RAWLS, Some(ImportOptions(None, Some(isUpsert))))
 
     if (useCWDS) {
-      importToCWDS(workspaceNamespace, workspaceName, userInfo, importRequest)
+      getWorkspaceId(workspaceNamespace, workspaceName, userInfo) map { workspaceId =>
+        val bucketToWrite = GcsBucketName(FireCloudConfig.Cwds.bucket)
+        val fileToWrite = GcsObjectName(s"to-cwds/${workspaceId}/${java.util.UUID.randomUUID()}.json")
+        val gcsPath = writeDataToGcs(bucketToWrite, fileToWrite, dataBytes)
+        val importRequest = getRawlsJsonImportRequest(gcsPath, isUpsert)
+        importToCWDS(workspaceNamespace, workspaceName, workspaceId, userInfo, importRequest)
+      }
     } else {
+      val bucketToWrite = GcsBucketName(FireCloudConfig.ImportService.bucket)
+      val fileToWrite = GcsObjectName(s"incoming/${java.util.UUID.randomUUID()}.json")
+      val gcsPath = writeDataToGcs(bucketToWrite, fileToWrite, dataBytes)
+      val importRequest = getRawlsJsonImportRequest(gcsPath, isUpsert)
       importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert)(userInfo)
     }
   }
 
-  private def importToCWDS(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo, importRequest: AsyncImportRequest
-                          ): Future[PerRequestMessage] = {
-      // translate the workspace namespace/name into an id
-      rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
-      // create the job in cWDS
-      val cwdsJob = cwdsDAO.importV1(workspace.workspace.workspaceId, importRequest)(userInfo)
-      // massage the cWDS job into the response format Orch requires
-      val asyncImportResponse = AsyncImportResponse(url = importRequest.url,
-        jobId = cwdsJob.getJobId.toString,
-        workspace = WorkspaceName(workspaceNamespace, workspaceName))
-      RequestComplete(Accepted, asyncImportResponse)
-    }
+  private def writeDataToGcs(bucket: GcsBucketName, objectName: GcsObjectName, data: Array[Byte]): String = {
+    val insertedObject = googleServicesDAO.writeObjectAsRawlsSA(bucket, objectName, data)
+    s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
+  }
+
+  private def getRawlsJsonImportRequest(gcsPath: String, isUpsert: Boolean): AsyncImportRequest = {
+    AsyncImportRequest(gcsPath, FILETYPE_RAWLS, Some(ImportOptions(None, Some(isUpsert))))
+  }
+
+  private def getWorkspaceId(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[String] = {
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo).map(_.workspace.workspaceId)
+  }
+
+  private def importToCWDS(workspaceNamespace: String, workspaceName: String, workspaceId: String, userInfo: UserInfo, importRequest: AsyncImportRequest
+                          ): PerRequestMessage = {
+    // create the job in cWDS
+    val cwdsJob = cwdsDAO.importV1(workspaceId, importRequest)(userInfo)
+    // massage the cWDS job into the response format Orch requires
+
+    RequestComplete(Accepted, AsyncImportResponse(url = importRequest.url,
+      jobId = cwdsJob.getJobId.toString,
+      workspace = WorkspaceName(workspaceNamespace, workspaceName)))
   }
 
   private def handleBatchRawlsResponse(entityType: String, response: Future[HttpResponse]): Future[PerRequestMessage] = {
@@ -394,7 +405,9 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
 
     // if cwds.enabled, for cwds filetypes send the request to cWDS instead of import service
     if (cwdsDAO.isEnabled && cwdsDAO.getSupportedFormats.contains(importRequest.filetype.toLowerCase)) {
-      importToCWDS(workspaceNamespace, workspaceName, userInfo, importRequest)
+      getWorkspaceId(workspaceNamespace, workspaceName, userInfo) map { workspaceId =>
+        importToCWDS(workspaceNamespace, workspaceName, workspaceId, userInfo, importRequest)
+      }
     } else {
       importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert = true)(userInfo)
     }

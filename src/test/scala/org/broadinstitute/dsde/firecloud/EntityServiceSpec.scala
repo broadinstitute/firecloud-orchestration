@@ -14,9 +14,9 @@ import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.databiosphere.workspacedata.client.ApiException
 import org.databiosphere.workspacedata.model.GenericJob
-import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{doThrow, never, times, verify, when}
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.parboiled.common.FileUtils
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
