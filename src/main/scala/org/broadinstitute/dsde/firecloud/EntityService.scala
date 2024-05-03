@@ -1,9 +1,5 @@
 package org.broadinstitute.dsde.firecloud
 
-import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
-import java.net.{HttpURLConnection, URL}
-import java.text.SimpleDateFormat
-import java.util.zip.{ZipEntry, ZipException, ZipFile}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
@@ -22,12 +18,16 @@ import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectN
 import org.databiosphere.workspacedata.client.ApiException
 import spray.json.DefaultJsonProtocol._
 
+import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
+import java.net.{HttpURLConnection, URL}
 import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
 import java.util.concurrent.atomic.AtomicLong
-import scala.jdk.CollectionConverters._
+import java.util.zip.{ZipEntry, ZipException, ZipFile}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
