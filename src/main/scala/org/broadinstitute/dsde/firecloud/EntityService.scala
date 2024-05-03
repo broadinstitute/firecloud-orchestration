@@ -227,14 +227,14 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
         val bucketToWrite = GcsBucketName(FireCloudConfig.Cwds.bucket)
         val fileToWrite = GcsObjectName(s"to-cwds/${workspaceId}/${java.util.UUID.randomUUID()}.json")
         val gcsPath = writeDataToGcs(bucketToWrite, fileToWrite, dataBytes)
-        val importRequest = getImportRequest(gcsPath, isUpsert)
+        val importRequest = getRawlsJsonImportRequest(gcsPath, isUpsert)
         importToCWDS(workspaceNamespace, workspaceName, workspaceId, userInfo, importRequest)
       }
     } else {
       val bucketToWrite = GcsBucketName(FireCloudConfig.ImportService.bucket)
       val fileToWrite = GcsObjectName(s"incoming/${java.util.UUID.randomUUID()}.json")
       val gcsPath = writeDataToGcs(bucketToWrite, fileToWrite, dataBytes)
-      val importRequest = getImportRequest(gcsPath, isUpsert)
+      val importRequest = getRawlsJsonImportRequest(gcsPath, isUpsert)
       importServiceDAO.importJob(workspaceNamespace, workspaceName, importRequest, isUpsert)(userInfo)
     }
   }
@@ -244,7 +244,7 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
     s"gs://${insertedObject.bucketName.value}/${insertedObject.objectName.value}"
   }
 
-  private def getImportRequest(gcsPath: String, isUpsert: Boolean): AsyncImportRequest = {
+  private def getRawlsJsonImportRequest(gcsPath: String, isUpsert: Boolean): AsyncImportRequest = {
     AsyncImportRequest(gcsPath, FILETYPE_RAWLS, Some(ImportOptions(None, Some(isUpsert))))
   }
 
