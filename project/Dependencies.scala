@@ -34,7 +34,7 @@ object Dependencies {
     // TODO: can these move to sbt's dependencyOverrides?
     "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "33.1.0-jre",
+    "com.google.guava"               % "guava"               % "33.2.0-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
@@ -80,9 +80,9 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240319-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240304-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240429-2.0.0"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "10.0.0",
+    "com.github.jwt-scala"          %% "jwt-core"            % "10.0.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
