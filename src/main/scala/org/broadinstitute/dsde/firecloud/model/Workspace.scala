@@ -22,8 +22,6 @@ case class EntityCopyWithoutDestinationDefinition(
 
 case class EntityId(entityType: String, entityName: String)
 
-case class BagitImportRequest(bagitURL: String, format: String)
-
 // legacy class specific to PFB import; prefer AsyncImportRequest instead
 case class PFBImportRequest(url: String)
 

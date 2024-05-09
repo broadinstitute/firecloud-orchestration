@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.StatusCodes.{Accepted, OK}
+import akka.http.scaladsl.model.StatusCodes.OK
 
 import java.text.SimpleDateFormat
 import akka.http.scaladsl.model.Uri.Query
@@ -22,7 +22,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
-import scala.util.Try
 
 trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
@@ -142,15 +141,6 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                             entityServiceConstructor(FirecloudModelSchema).importEntitiesFromTSV(workspaceNamespace, workspaceName, entitiesTSV, userInfo, deleteEmptyValues = deleteEmptyValues)
                           }
                         }
-                      }
-                    }
-                  }
-                } ~
-                path("importBagit"){
-                  post {
-                    requireUserInfo() { userInfo =>
-                      entity(as[BagitImportRequest]) { bagitRq =>
-                        complete { entityServiceConstructor(FirecloudModelSchema).importBagit(workspaceNamespace, workspaceName, bagitRq, userInfo) }
                       }
                     }
                   }

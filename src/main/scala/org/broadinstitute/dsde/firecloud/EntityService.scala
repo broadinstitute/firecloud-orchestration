@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.EntityService._
-import org.broadinstitute.dsde.firecloud.FireCloudConfig.Rawls
 import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_RAWLS
 import org.broadinstitute.dsde.firecloud.dataaccess.{CwdsDAO, GoogleServicesDAO, ImportServiceDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -18,16 +17,9 @@ import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectN
 import org.databiosphere.workspacedata.client.ApiException
 import spray.json.DefaultJsonProtocol._
 
-import java.io.{File, FileNotFoundException, FileOutputStream, InputStream}
-import java.net.{HttpURLConnection, URL}
-import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
-import java.util.concurrent.atomic.AtomicLong
-import java.util.zip.{ZipEntry, ZipException, ZipFile}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
-import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -54,50 +46,6 @@ object EntityService {
         }
         tsvLoadFile.copy(headers = newHeaders)
     }
-  }
-
-  //returns (contents of participants.tsv, contents of samples.tsv)
-  def unzipTSVs(bagName: String, zipFile: ZipFile)(op: (Option[String], Option[String]) => Future[PerRequestMessage]): Future[PerRequestMessage] = {
-    val zipEntries = zipFile.entries.asScala
-
-    val rand = java.util.UUID.randomUUID.toString.take(8)
-    val participantsTmp = File.createTempFile(s"$rand-participants", ".tsv")
-    val samplesTmp = File.createTempFile(s"$rand-samples", ".tsv")
-
-    val unzippedFiles = zipEntries.foldLeft((None: Option[String], None: Option[String])){ (acc: (Option[String], Option[String]), ent: ZipEntry) =>
-      if(!ent.isDirectory && (ent.getName.contains("/participants.tsv") || ent.getName.equals("participants.tsv"))) {
-        acc._1 match {
-          case Some(_) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one participants.tsv file found in bagit $bagName"))
-          case None =>
-            unzipSingleFile(zipFile.getInputStream(ent), participantsTmp)
-            (Some(participantsTmp.getPath), acc._2)
-        }
-      } else if(!ent.isDirectory && (ent.getName.contains("/samples.tsv") || ent.getName.equals("samples.tsv"))) {
-        acc._2 match {
-          case Some(_) => throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.BadRequest, s"More than one samples.tsv file found in bagit $bagName"))
-          case None =>
-              unzipSingleFile (zipFile.getInputStream (ent), samplesTmp)
-              (acc._1, Some (samplesTmp.getPath) )
-        }
-      } else {
-        acc
-      }
-    }
-
-    try {
-      op(unzippedFiles._1.map(f => Source.fromFile(f).mkString), unzippedFiles._2.map(f => Source.fromFile(f).mkString))
-    } catch {
-      case e: Exception => throw e
-    } finally {
-      participantsTmp.delete
-      samplesTmp.delete
-    }
-  }
-
-  private def unzipSingleFile(zis: InputStream, fileTarget: File): Unit = {
-    val fout = new FileOutputStream(fileTarget)
-    val buffer = new Array[Byte](1024)
-    LazyList.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
   }
 
 }
@@ -317,84 +265,6 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
           tsv
         }
       importEntitiesFromTSVLoadFile(workspaceNamespace, workspaceName, strippedTsv, tsvType, entityType, userInfo, isAsync, deleteEmptyValues)
-    }
-  }
-
-  def importBagit(workspaceNamespace: String, workspaceName: String, bagitRq: BagitImportRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
-    if(bagitRq.format != "TSV") {
-      Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid format; for now, you must place the string \"TSV\" here"))
-    } else {
-
-      //Java URL handles http, https, ftp, file, and jar protocols.
-      //We're only OK with https to avoid MITM attacks.
-      val bagitURL = new URL(bagitRq.bagitURL.replace(" ", "%20"))
-      val acceptableProtocols = Seq("https") //for when we inevitably change our mind and need to support others
-      if (!acceptableProtocols.contains(bagitURL.getProtocol)) {
-        Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "Invalid bagitURL protocol: must be https only"))
-      } else {
-
-        val rand = java.util.UUID.randomUUID.toString.take(8)
-        val bagItFile = File.createTempFile(s"$rand-samples", ".tsv")
-        var bytesDownloaded = new AtomicLong(-1) // careful, this is a var
-
-        try {
-          val conn = bagitURL.openConnection()
-          val length = conn.getContentLength
-          conn.asInstanceOf[HttpURLConnection].disconnect()
-
-          if (length == 0) {
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag has content-length 0"))
-          } else if (length > Rawls.entityBagitMaximumSize) {
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag size is too large."))
-          } else {
-            // download the file
-            val readFromBagit = Channels.newChannel(bagitURL.openStream())
-            val writeToTemp = new FileOutputStream(bagItFile)
-            try {
-              bytesDownloaded.set(writeToTemp.getChannel.transferFrom(readFromBagit, 0, length))
-            } finally {
-              readFromBagit.close()
-              writeToTemp.close()
-            }
-
-            val zipFile = new ZipFile(bagItFile.getAbsolutePath)
-            if (!zipFile.entries().hasMoreElements) {
-              Future(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"BDBag has no entries."))
-            } else {
-              //make two big strings containing the participants and samples TSVs
-              //if i could turn back time this would use streams to save memory, but hopefully this will all go away when entity service comes along
-              unzipTSVs(bagitRq.bagitURL, zipFile) { (participantsStr, samplesStr) =>
-                (participantsStr, samplesStr) match {
-                  case (None, None) =>
-                    Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, "You must have either (or both) participants.tsv and samples.tsv in the zip file"))
-                  case _ =>
-                    for {
-                      // This should vomit back errors from rawls.
-                      participantResult <- participantsStr.map(ps => importEntitiesFromTSV(workspaceNamespace, workspaceName, ps, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
-                      sampleResult <- samplesStr.map(ss => importEntitiesFromTSV(workspaceNamespace, workspaceName, ss, userInfo)).getOrElse(Future.successful(RequestComplete(OK)))
-                    } yield {
-                      participantResult match {
-                        case RequestComplete((OK, _)) => sampleResult
-                        case _ => participantResult
-                      }
-                    }
-                }
-              }
-            }
-          }
-        } catch {
-          case _:FileNotFoundException =>
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.NotFound, s"BDBag ${bagitRq.bagitURL} was not found."))
-          case ze:ZipException =>
-            logger.info(s"ZipException: ${ze.getMessage} - ${bagItFile.getAbsolutePath} has length ${bagItFile.length}. " +
-              s"We originally downloaded $bytesDownloaded bytes.")
-            Future.successful(RequestCompleteWithErrorReport(StatusCodes.BadRequest, s"Problem with BDBag: ${ze.getMessage}"))
-          case e: Exception =>
-            throw e
-        } finally {
-          bagItFile.delete()
-        }
-      }
     }
   }
 
