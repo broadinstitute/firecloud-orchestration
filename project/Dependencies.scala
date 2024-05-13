@@ -40,7 +40,7 @@ object Dependencies {
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.1",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.6",
-    "io.sentry"                      % "sentry-logback"      % "7.8.0",
+    "io.sentry"                      % "sentry-logback"      % "7.9.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -55,7 +55,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.7-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
-    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.140-SNAPSHOT",
+    "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -79,8 +79,8 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240319-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240429-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240430-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240509-2.0.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
@@ -94,7 +94,7 @@ object Dependencies {
     "org.scalatest"                 %% "scalatest"           % "3.2.18"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "5.15.0"  % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.16" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.17" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
