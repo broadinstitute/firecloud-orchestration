@@ -18,10 +18,12 @@ import spray.json.DefaultJsonProtocol._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
+class HttpImportServiceDAO(enabled: Boolean = true)(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext)
   extends ImportServiceDAO with RestJsonClient with SprayJsonSupport {
 
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource("FireCloud")
+
+  override def isEnabled: Boolean = enabled
 
   override def importJob(workspaceNamespace: String, workspaceName: String, importRequest: AsyncImportRequest, isUpsert: Boolean)(implicit userInfo: UserInfo): Future[PerRequestMessage] = {
     doImport(workspaceNamespace, workspaceName, isUpsert, importRequest)
@@ -104,6 +106,5 @@ class HttpImportServiceDAO(implicit val system: ActorSystem, implicit val materi
         nonStrictEntity.toStrict(10.seconds).map(_.data.utf8String)
     }
   }
-
 
 }

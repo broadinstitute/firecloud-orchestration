@@ -287,7 +287,11 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
 
     for {
       // get jobs from Import Service
-      importServiceJobs <- importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
+      importServiceJobs <- if (importServiceDAO.isEnabled) {
+        importServiceDAO.listJobs(workspaceNamespace, workspaceName, runningOnly)(userInfo)
+      } else {
+        Future.successful(List.empty)
+      }
       // get jobs from cWDS
       cwdsJobs <- if (cwdsDAO.isEnabled) {
         rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>

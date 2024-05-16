@@ -60,6 +60,7 @@ class WorkspaceApiServiceJobSpec extends BaseServiceSpec with WorkspaceApiServic
           s"should call ImportServiceDAO.listJobs with running_only=$runningOnly" in {
             // reset mock invocation counts and configure its return value
             clearInvocations(mockitoImportServiceDAO)
+            when(mockitoImportServiceDAO.isEnabled).thenReturn(true)
             when(mockitoImportServiceDAO.listJobs(any[String], any[String], any[Boolean])(any[UserInfo])).thenReturn(
               Future.successful(importList))
             // execute the route

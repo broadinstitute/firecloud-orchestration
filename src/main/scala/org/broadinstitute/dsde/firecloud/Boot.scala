@@ -98,7 +98,7 @@ object Boot extends App with LazyLogging {
     // can be disabled
     val agoraDAO: AgoraDAO = whenEnabled[AgoraDAO](FireCloudConfig.Agora.enabled, new HttpAgoraDAO(FireCloudConfig.Agora))
     val googleServicesDAO: GoogleServicesDAO = whenEnabled[GoogleServicesDAO](FireCloudConfig.GoogleCloud.enabled, new HttpGoogleServicesDAO(FireCloudConfig.GoogleCloud.priceListUrl, GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList, UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)), "v1", "1")))
-    val importServiceDAO: ImportServiceDAO = whenEnabled[ImportServiceDAO](FireCloudConfig.ImportService.enabled, new HttpImportServiceDAO)
+    val importServiceDAO: ImportServiceDAO = whenEnabled[ImportServiceDAO](FireCloudConfig.ImportService.enabled, new HttpImportServiceDAO(FireCloudConfig.ImportService.enabled))
     val shibbolethDAO: ShibbolethDAO = whenEnabled[ShibbolethDAO](FireCloudConfig.Shibboleth.enabled, new HttpShibbolethDAO)
     val cwdsDAO: CwdsDAO = whenEnabled[CwdsDAO](FireCloudConfig.Cwds.enabled, new HttpCwdsDAO(FireCloudConfig.Cwds.enabled, FireCloudConfig.Cwds.supportedFormats))
 

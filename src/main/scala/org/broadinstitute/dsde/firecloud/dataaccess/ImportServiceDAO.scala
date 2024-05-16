@@ -13,6 +13,8 @@ object ImportServiceFiletypes {
 
 trait ImportServiceDAO {
 
+  def isEnabled: Boolean
+
   def importJob(workspaceNamespace: String,
                 workspaceName: String,
                 importRequest: AsyncImportRequest,
