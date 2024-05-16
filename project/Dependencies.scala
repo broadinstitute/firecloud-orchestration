@@ -93,8 +93,6 @@ object Dependencies {
 
     "org.scalatest"                 %% "scalatest"           % "3.2.18"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "5.15.0"  % "test",
-    // jaxb-api needed by WorkspaceApiServiceSpec.bagitService() method
-    "javax.xml.bind"                 % "jaxb-api"            % "2.3.1"   % "test",
     // provides testing mocks
     "com.google.cloud"               % "google-cloud-nio"    % "0.127.17" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
