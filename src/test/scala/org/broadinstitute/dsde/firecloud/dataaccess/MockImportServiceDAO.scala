@@ -49,4 +49,6 @@ class MockImportServiceDAO extends ImportServiceDAO {
   : Future[ImportServiceListResponse] = {
     Future.successful(ImportServiceListResponse(jobId, "status", "filetype", None))
   }
+
+  override def isEnabled: Boolean = true
 }

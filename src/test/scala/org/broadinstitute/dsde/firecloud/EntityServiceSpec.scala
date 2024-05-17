@@ -238,6 +238,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       )
 
       when(importServiceDAO.listJobs(any[String], any[String], any[Boolean])(any[UserInfo])).thenReturn(Future.successful(importServiceResponse))
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(cwdsDAO.listJobsV1(any[String], any[Boolean])(any[UserInfo])).thenReturn(cwdsResponse)
       when(cwdsDAO.isEnabled).thenReturn(false)
 
@@ -256,12 +257,46 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       actual should contain theSameElementsAs importServiceResponse
     }
 
+    "should not call Import Service if Import Service is not enabled" in {
+      // set up mocks
+      val importServiceDAO = mockito[MockImportServiceDAO]
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val rawlsDAO = mockito[MockRawlsDAO]
+
+      val importServiceResponse = List(
+        ImportServiceListResponse("jobId1", "status1", "filetype1", None),
+        ImportServiceListResponse("jobId2", "status2", "filetype2", None)
+      )
+      val cwdsResponse = List(
+        ImportServiceListResponse("jobId3", "status3", "filetype3", None),
+        ImportServiceListResponse("jobId4", "status4", "filetype4", None)
+      )
+
+      when(importServiceDAO.listJobs(any[String], any[String], any[Boolean])(any[UserInfo])).thenReturn(Future.successful(importServiceResponse))
+      when(importServiceDAO.isEnabled).thenReturn(false)
+      when(cwdsDAO.listJobsV1(any[String], any[Boolean])(any[UserInfo])).thenReturn(cwdsResponse)
+      when(cwdsDAO.isEnabled).thenReturn(true)
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // list jobs via entity service
+      val actual = entityService.listJobs("workspaceNamespace", "workspaceName", runningOnly = true, dummyUserInfo("mytoken")).futureValue
+
+      // verify Import Service list-jobs was NOT called
+      verify(importServiceDAO, never).listJobs(any[String], any[String], any[Boolean])(any[UserInfo])
+
+      // verify the response only contains cWDS jobs
+      actual should contain theSameElementsAs cwdsResponse
+    }
+
     def listJobsTestImpl(importServiceResponse: List[ImportServiceListResponse], cwdsResponse: List[ImportServiceListResponse]) = {
       // set up mocks
       val importServiceDAO = mockito[MockImportServiceDAO]
       val cwdsDAO = mockito[MockCwdsDAO]
 
       when(importServiceDAO.listJobs(any[String], any[String], any[Boolean])(any[UserInfo])).thenReturn(Future.successful(importServiceResponse))
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(cwdsDAO.listJobsV1(any[String], any[Boolean])(any[UserInfo])).thenReturn(cwdsResponse)
       when(cwdsDAO.isEnabled).thenReturn(true)
 
