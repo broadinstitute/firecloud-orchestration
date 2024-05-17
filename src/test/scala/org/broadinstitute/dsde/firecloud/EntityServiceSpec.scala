@@ -592,16 +592,18 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
       when(cwdsDAO.isEnabled).thenReturn(true)
       when(cwdsDAO.getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
-        .thenReturn(importServiceResponse)
+        .thenThrow(new ApiException(404, "unit test intentional error"))
       when(importServiceDAO.isEnabled).thenReturn(false)
 
       // inject mocks to entity service
       val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
 
       // get job via entity service
-      val actual = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken")).futureValue
+      val getJobFuture = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken"))
+      val actual = getJobFuture.failed.futureValue
+      actual shouldBe a[FireCloudExceptionWithErrorReport]
+      actual.asInstanceOf[FireCloudExceptionWithErrorReport].errorReport.statusCode should contain(StatusCodes.NotFound)
 
-      actual shouldBe importServiceResponse
       verify(importServiceDAO, never).getJob(any[String], any[String], any[String])(any[UserInfo])
     }
   }
