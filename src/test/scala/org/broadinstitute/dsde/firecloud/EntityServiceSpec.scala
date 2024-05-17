@@ -404,6 +404,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       when(cwdsDAO.isEnabled).thenReturn(true)
       when(cwdsDAO.getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(cwdsResponse)
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(Future.failed(importServiceNotFound))
 
@@ -428,6 +429,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       when(cwdsDAO.isEnabled).thenReturn(true)
       doThrow(new ApiException(404, "unit test intentional error"))
         .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(Future.successful(importServiceResponse))
 
@@ -451,6 +453,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       when(cwdsDAO.isEnabled).thenReturn(true)
       doThrow(new ApiException(500, "unit test intentional error"))
         .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(Future.successful(importServiceResponse))
 
@@ -472,6 +475,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       when(cwdsDAO.isEnabled).thenReturn(true)
       doThrow(new ApiException(404, "cWDS unit test intentional error"))
         .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(Future.failed(importServiceNotFound))
 
@@ -497,6 +501,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       when(cwdsDAO.isEnabled).thenReturn(true)
       doThrow(new ApiException(404, "cWDS unit test intentional error"))
         .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(Future.failed(
           new FireCloudExceptionWithErrorReport(
@@ -528,6 +533,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       when(cwdsDAO.isEnabled).thenReturn(true)
       doThrow(new ApiException(500, "cWDS unit test intentional error"))
         .when(cwdsDAO).getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo])
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(Future.failed(
           new FireCloudExceptionWithErrorReport(
@@ -560,6 +566,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val mockRawlsDAO = mockito[MockRawlsDAO]
 
       when(cwdsDAO.isEnabled).thenReturn(false)
+      when(importServiceDAO.isEnabled).thenReturn(true)
       when(importServiceDAO.getJob(any[String], any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
         .thenReturn(Future.successful(importServiceResponse))
 
@@ -572,6 +579,30 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       actual shouldBe importServiceResponse
       verify(cwdsDAO, never).getJobV1(any[String], any[String])(any[UserInfo])
       verify(mockRawlsDAO, never).getWorkspace(any[String], any[String])(any[UserInfo])
+    }
+
+    "should not call Import Service if it is not enabled" in {
+      val jobId = UUID.randomUUID().toString
+
+      val importServiceResponse = ImportServiceListResponse(jobId, "status1", "filename1", None)
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+      val importServiceDAO = mockito[MockImportServiceDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      when(cwdsDAO.getJobV1(any[String], ArgumentMatchers.eq(jobId))(any[UserInfo]))
+        .thenReturn(importServiceResponse)
+      when(importServiceDAO.isEnabled).thenReturn(false)
+
+      // inject mocks to entity service
+      val entityService = getEntityService(mockImportServiceDAO = importServiceDAO, cwdsDAO = cwdsDAO)
+
+      // get job via entity service
+      val actual = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken")).futureValue
+
+      actual shouldBe importServiceResponse
+      verify(importServiceDAO, never).getJob(any[String], any[String], any[String])(any[UserInfo])
     }
   }
 

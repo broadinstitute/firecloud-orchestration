@@ -323,15 +323,19 @@ class EntityService(rawlsDAO: RawlsDAO, importServiceDAO: ImportServiceDAO, cwds
       Future.failed(new ApiException(StatusCodes.NotFound.intValue, s"Import $jobId not found"))
     }
 
-    val importServiceFuture: () => Future[ImportServiceListResponse] = () => importServiceDAO.getJob(workspaceNamespace, workspaceName, jobId)(userInfo) map { importServiceResponse =>
-      logger.info(s"Found job $jobId in Import Service")
-      importServiceResponse
-    } recover { importServiceError =>
-      logger.info(s"Job $jobId not returned successfully by either cWDS or Import Service")
-      importServiceError match {
-        case fex: FireCloudExceptionWithErrorReport => throw fex
-        case   t => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, t))
+    val importServiceFuture: () => Future[ImportServiceListResponse] = () => if (importServiceDAO.isEnabled) {
+      importServiceDAO.getJob(workspaceNamespace, workspaceName, jobId)(userInfo) map { importServiceResponse =>
+        logger.info(s"Found job $jobId in Import Service")
+        importServiceResponse
+      } recover { importServiceError =>
+        logger.info(s"Job $jobId not returned successfully by either cWDS or Import Service")
+        importServiceError match {
+          case fex: FireCloudExceptionWithErrorReport => throw fex
+          case   t => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, t))
+        }
       }
+    } else {
+      Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, s"Import $jobId not found")))
     }
 
     // if cWDS found the job, return it; else, try Import Service
