@@ -214,13 +214,6 @@ object FireCloudConfig {
     val baseUrl: String = staticNotebooks.getString("baseUrl")
   }
 
-  object ImportService {
-    // lazy - only required when import service is enabled
-    lazy val server: String = config.getString("importService.server")
-    lazy val bucket: String = config.getString("importService.bucketName")
-    val enabled: Boolean = config.optionalBoolean("importService.enabled").getOrElse(true)
-  }
-
   implicit class RichConfig(val config: Config) {
     private def getOptional[T](path: String, get: String => T): Option[T] = {
       if (config.hasPath(path)) {

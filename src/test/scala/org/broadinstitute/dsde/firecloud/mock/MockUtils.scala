@@ -19,7 +19,6 @@ object MockUtils {
   val ontologyServerPort = 8993
   val samServerPort = 8994
   val cromiamServerPort = 8995
-  val importServiceServerPort = 9394
 
    def randomPositiveInt(): Int = {
      scala.util.Random.nextInt(9) + 1

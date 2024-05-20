@@ -101,7 +101,7 @@ thurloe {
 cwds {
     baseUrl = "https://cwds.dsde-dev.broadinstitute.org"
     enabled = true
-    supportedFormats = ["pfb","tdrexport"]
+    supportedFormats = ["pfb","tdrexport","rawlsjson"]
     bucketName = "cwds-batchupsert-dev"
 }
 
@@ -142,11 +142,4 @@ notification {
 staticNotebooks {
   baseUrl = "https://calhoun.dsde-dev.broadinstitute.org"
 }
-
-importService {
-  server = "https://terra-importservice-dev.appspot.com"
-  bucketName = "import-service-batchupsert-dev"
-  enabled = true
-}
-
 
