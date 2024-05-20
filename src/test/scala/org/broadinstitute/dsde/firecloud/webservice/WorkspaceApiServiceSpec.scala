@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
-import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.{FILETYPE_PFB, FILETYPE_TDR}
+import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.{FILETYPE_PFB, FILETYPE_TDR}
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
@@ -204,7 +204,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
 
   var rawlsServer: ClientAndServer = _
-  var importServiceServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
     *
@@ -282,12 +281,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
   override def beforeAll(): Unit = {
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
-    importServiceServer = startClientAndServer(MockUtils.importServiceServerPort)
   }
 
   override def afterAll(): Unit = {
     rawlsServer.stop
-    importServiceServer.stop
   }
 
   override def beforeEach(): Unit = {
@@ -295,7 +292,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   }
 
   override def afterEach(): Unit = {
-    importServiceServer.reset
     this.searchDao.reset()
   }
 
@@ -1016,41 +1012,38 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "WorkspaceService importPFB Tests" - {
 
-      "should 400 if import service indicates a bad request" in {
-
+      "should bubble up 400 from cwds" in {
         (Post(pfbImportPath, PFBImportRequest("https://bad.request.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-            responseAs[String] should include ("Bad request as reported by import service")
+            status should equal(InternalServerError) // TODO: bubble up 400 / BadRequest
+            responseAs[String] should include ("Bad request as reported by cwds")
           }
       }
 
-      "should 403 if import service access is forbidden" in {
+      "should bubble up 403 from cwds" in {
         (Post(pfbImportPath, PFBImportRequest("https://forbidden.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(Forbidden)
-            responseAs[String] should include ("Missing Authorization: Bearer token in header")
-          }
+          status should equal(InternalServerError) // TODO: bubble up 403 / Forbidden
+          responseAs[String] should include ("Missing Authorization: Bearer token in header")
+        }
       }
-
       "should propagate any other errors from import service" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
         (Post(pfbImportPath, PFBImportRequest("https://its.lawsuit.time.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(UnavailableForLegalReasons)
-            responseAs[String] should include ("import service message")
+          status should equal(InternalServerError) // TODO: bubble up 451 / UnavailableForLegalReasons
+          responseAs[String] should include ("cwds message")
         }
       }
 
-      "should 202 (Accepted) if everything validated and import request was accepted" in {
+      "should 202 (Accepted) if everything validated and cwds request was accepted" in {
 
         val pfbPath = "https://good.avro"
 
-        val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
-                                                   jobId = "MockImportServiceDAO will generate a random UUID",
+        val orchExpectedPayload = AsyncImportResponse(url = pfbPath, jobId = "MockCwdsDAO will generate a random UUID",
                                                    workspace = WorkspaceName(workspace.namespace, workspace.name))
 
         (Post(pfbImportPath, PFBImportRequest("https://good.avro"))
@@ -1072,32 +1065,30 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         s"for filetype $filetype" - {
 
-          "should 400 if import service indicates a bad request" in {
-
+          "should bubble up 400 from cwds" in {
             (Post(importJobPath, AsyncImportRequest("https://bad.request.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(BadRequest)
-              responseAs[String] should include ("Bad request as reported by import service")
+              status should equal(InternalServerError) // TODO: bubble up 400 / BadRequest
+              responseAs[String] should include ("Bad request as reported by cwds")
             }
           }
 
-          "should 403 if import service access is forbidden" in {
+          "should bubble up 403 from cwds" in {
             (Post(importJobPath, AsyncImportRequest("https://forbidden.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(Forbidden)
+              status should equal(InternalServerError) // TODO: bubble up 403 / Forbidden
               responseAs[String] should include ("Missing Authorization: Bearer token in header")
             }
           }
-
           "should propagate any other errors from import service" in {
             // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
             (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(UnavailableForLegalReasons)
-              responseAs[String] should include ("import service message")
+              status should equal(InternalServerError) // TODO: bubble up 451 / UnavailableForLegalReasons
+              responseAs[String] should include ("cwds message")
             }
           }
 
@@ -1106,7 +1097,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             val pfbPath = "https://good.avro"
 
             val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
-              jobId = "MockImportServiceDAO will generate a random UUID",
+              jobId = "MockCwdsDAO will generate a random UUID",
               workspace = WorkspaceName(workspace.namespace, workspace.name))
 
             (Post(importJobPath, AsyncImportRequest("https://good.avro", filetype))

@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpMethods, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.dataaccess.ImportServiceFiletypes.FILETYPE_PFB
+import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.FILETYPE_PFB
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
