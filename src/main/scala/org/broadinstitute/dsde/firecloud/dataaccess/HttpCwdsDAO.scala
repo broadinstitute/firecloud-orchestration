@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import okhttp3.Protocol
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpCwdsDAO.commonHttpClient
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, ImportServiceListResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, CwdsListResponse, UserInfo}
 import org.databiosphere.workspacedata.api.{ImportApi, JobApi}
 import org.databiosphere.workspacedata.client.ApiClient
 import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
@@ -46,7 +46,7 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
   override def getSupportedFormats: List[String] = supportedFormats
 
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
-  : scala.collection.immutable.List[ImportServiceListResponse] = {
+  : scala.collection.immutable.List[CwdsListResponse] = {
     // determine the proper cWDS statuses based on the runningOnly argument
     // the Java API expects null when not specifying statuses
     val statuses = if (runningOnly) RUNNING_STATUSES else null
@@ -54,18 +54,18 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     val jobApi: JobApi = new JobApi()
     jobApi.setApiClient(getApiClient(userInfo.accessToken.token))
 
-    // query cWDS for its jobs, and translate the response to ImportServiceListResponse format
+    // query cWDS for its jobs, and translate the response to CwdsListResponse format
     jobApi.jobsInInstanceV1(UUID.fromString(workspaceId), statuses)
       .asScala
-      .map(toImportServiceListResponse)
+      .map(toCwdsListResponse)
       .toList
   }
 
-  override def getJobV1(workspaceId: String, jobId: String)(implicit userInfo: UserInfo): ImportServiceListResponse = {
+  override def getJobV1(workspaceId: String, jobId: String)(implicit userInfo: UserInfo): CwdsListResponse = {
     val jobApi: JobApi = new JobApi()
     jobApi.setApiClient(getApiClient(userInfo.accessToken.token))
 
-    toImportServiceListResponse(jobApi.jobStatusV1(UUID.fromString(jobId)))
+    toCwdsListResponse(jobApi.jobStatusV1(UUID.fromString(jobId)))
   }
 
   override def importV1(workspaceId: String,
@@ -101,14 +101,14 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
       throw new FireCloudException("Import type unknown; possible values are: " + TYPE_TRANSLATION.keys.mkString))
   }
 
-  protected[dataaccess] def toImportServiceListResponse(cwdsJob: GenericJob): ImportServiceListResponse = {
-    ImportServiceListResponse(jobId = cwdsJob.getJobId.toString,
-      status = toImportServiceStatus(cwdsJob.getStatus),
+  protected[dataaccess] def toCwdsListResponse(cwdsJob: GenericJob): CwdsListResponse = {
+    CwdsListResponse(jobId = cwdsJob.getJobId.toString,
+      status = toCwdsStatus(cwdsJob.getStatus),
       filetype = cwdsJob.getJobType.getValue,
       message = Option(cwdsJob.getErrorMessage))
   }
 
-  protected[dataaccess] def toImportServiceStatus(cwdsStatus: GenericJob.StatusEnum): String = {
+  protected[dataaccess] def toCwdsStatus(cwdsStatus: GenericJob.StatusEnum): String = {
     // don't fail status translation if status somehow could not be found
     STATUS_TRANSLATION.getOrElse(cwdsStatus, "Unknown")
   }

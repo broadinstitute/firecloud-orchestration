@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, EnhanceYourCalm, Forbidden, UnavailableForLegalReasons}
 import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.{FILETYPE_PFB, FILETYPE_RAWLS, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, ImportServiceListResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, CwdsListResponse, UserInfo}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.databiosphere.workspacedata.client.ApiException
 import org.databiosphere.workspacedata.model.GenericJob
@@ -20,12 +20,12 @@ class MockCwdsDAO(
   )
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit
                                                                      userInfo: UserInfo
-  ): List[ImportServiceListResponse] = List()
+  ): List[CwdsListResponse] = List()
 
   override def getJobV1(workspaceId: String, jobId: String)(implicit
                                                             userInfo: UserInfo
-  ): ImportServiceListResponse =
-    ImportServiceListResponse(jobId, "ReadyForUpsert", "pfb", None)
+  ): CwdsListResponse =
+    CwdsListResponse(jobId, "ReadyForUpsert", "pfb", None)
 
   override def importV1(
                          workspaceId: String,

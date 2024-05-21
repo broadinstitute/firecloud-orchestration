@@ -265,13 +265,13 @@ class EntityService(rawlsDAO: RawlsDAO, cwdsDAO: CwdsDAO, googleServicesDAO: Goo
     }
   }
 
-  def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[ImportServiceListResponse]] = {
+  def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[CwdsListResponse]] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
       cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
     }
   }
 
-  def getJob(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[ImportServiceListResponse] = {
+  def getJob(workspaceNamespace: String, workspaceName: String, jobId: String, userInfo: UserInfo): Future[CwdsListResponse] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
       val cwdsResponse = cwdsDAO.getJobV1(workspace.workspace.workspaceId, jobId)(userInfo)
       logger.info(s"Found job $jobId in cWDS")

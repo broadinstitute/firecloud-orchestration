@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.FILETYPE_RAW
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, EntityUpdateDefinition, FirecloudModelSchema, ImportOptions, ImportServiceListResponse, ImportServiceResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, AsyncImportResponse, EntityUpdateDefinition, FirecloudModelSchema, ImportOptions, CwdsListResponse, CwdsResponse, ModelSchema, RequestCompleteWithErrorReport, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource, WorkspaceName}
@@ -173,7 +173,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       }
     }
 
-    "should return error for (async=true) when import service returns sync error" in {
+    "should return error for (async=true) when cWDS returns sync error" in {
       val testCwdsDao = new ErroringCwdsDao
       val entityService = getEntityService(cwdsDAO = testCwdsDao)
       val response =
@@ -210,14 +210,14 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
     "should return cWDS results" in {
       val cwdsResponse = List(
-        ImportServiceListResponse("jobId1", "status1", "filetype1", None),
-        ImportServiceListResponse("jobId2", "status2", "filetype2", None)
+        CwdsListResponse("jobId1", "status1", "filetype1", None),
+        CwdsListResponse("jobId2", "status2", "filetype2", None)
       )
 
       listJobsTestImpl(cwdsResponse)
     }
 
-    def listJobsTestImpl(cwdsResponse: List[ImportServiceListResponse]) = {
+    def listJobsTestImpl(cwdsResponse: List[CwdsListResponse]) = {
       // set up mock
       val cwdsDAO = mockito[MockCwdsDAO]
 
@@ -283,7 +283,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     "should return correctly if job found in cWDS" in {
       val jobId = UUID.randomUUID().toString
 
-      val cwdsResponse = ImportServiceListResponse(jobId, "status1", "filename1", None)
+      val cwdsResponse = CwdsListResponse(jobId, "status1", "filename1", None)
 
       // set up mocks
       val cwdsDAO = mockito[MockCwdsDAO]

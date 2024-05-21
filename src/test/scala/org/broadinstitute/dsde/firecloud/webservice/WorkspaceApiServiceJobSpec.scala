@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.webservice
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Route.seal
 import org.broadinstitute.dsde.firecloud.dataaccess.{CwdsDAO, MockRawlsDAO}
-import org.broadinstitute.dsde.firecloud.model.{ImportServiceListResponse, ModelSchema, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{CwdsListResponse, ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PermissionReportService, WorkspaceService}
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model._
@@ -39,9 +39,9 @@ class WorkspaceApiServiceJobSpec extends BaseServiceSpec with WorkspaceApiServic
     WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some
     (RawlsBillingAccountName("billingAccount")), None, None, Option(DateTime.now()), None, None, WorkspaceState.Ready)
   private val importList = List(
-    ImportServiceListResponse(UUID.randomUUID().toString, "running", "filetype1", None),
-    ImportServiceListResponse(UUID.randomUUID().toString, "error", "filetype2", Some("my error message")),
-    ImportServiceListResponse(UUID.randomUUID().toString, "success", "filetype3", None)
+    CwdsListResponse(UUID.randomUUID().toString, "running", "filetype1", None),
+    CwdsListResponse(UUID.randomUUID().toString, "error", "filetype2", Some("my error message")),
+    CwdsListResponse(UUID.randomUUID().toString, "success", "filetype3", None)
   )
 
   // a few shortcuts for accessing the routes

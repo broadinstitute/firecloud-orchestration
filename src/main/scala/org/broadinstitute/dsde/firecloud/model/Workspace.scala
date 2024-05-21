@@ -35,17 +35,16 @@ case class AsyncImportResponse(url: String,
                                jobId: String,
                                workspace: WorkspaceName)
 
-// the response payload received by Orchestration from Import Service
-case class ImportServiceResponse(
+// the response payload received by Orchestration from cWDS
+case class CwdsResponse(
   jobId: String,
   status: String,
   message: Option[String])
 
-case class ImportServiceListResponse(
-                                  jobId: String,
-                                  status: String,
-                                  filetype: String,
-                                  message: Option[String])
+case class CwdsListResponse(jobId: String,
+                            status: String,
+                            filetype: String,
+                            message: Option[String])
 
 case class MethodConfigurationId(
   name: Option[String] = None,

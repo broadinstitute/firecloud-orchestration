@@ -1029,7 +1029,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           responseAs[String] should include ("Missing Authorization: Bearer token in header")
         }
       }
-      "should propagate any other errors from import service" in {
+      "should propagate any other errors from cWDS" in {
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
         (Post(pfbImportPath, PFBImportRequest("https://its.lawsuit.time.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -1082,7 +1082,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               responseAs[String] should include ("Missing Authorization: Bearer token in header")
             }
           }
-          "should propagate any other errors from import service" in {
+          "should propagate any other errors from cWDS" in {
             // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
             (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
