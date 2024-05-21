@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
-  val jacksonV = "2.13.5"
-  val jacksonHotfixV = "2.13.5" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.17.1"
+  val jacksonHotfixV = "2.17.1" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.109.Final"
   val workbenchLibsHash = "5762674" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
