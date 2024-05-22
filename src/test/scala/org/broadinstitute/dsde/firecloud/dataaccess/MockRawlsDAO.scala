@@ -15,12 +15,13 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.joda.time.DateTime
 
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 // Common things that can be accessed from tests
 object MockRawlsDAO {
-
+  val mockWorkspaceId = UUID.randomUUID().toString
   val sampleAtts: Map[AttributeName, AttributeListElementable with Product with Serializable] = {
     Map(
       AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
@@ -271,7 +272,7 @@ class MockRawlsDAO extends RawlsDAO {
     WorkspaceDetails(
       namespace = "namespace",
       name = "name",
-      workspaceId = "workspaceId",
+      workspaceId = mockWorkspaceId,
       bucketName = "bucketName",
       workflowCollectionName = Some("wf-collection"),
       createdDate = DateTime.now(),

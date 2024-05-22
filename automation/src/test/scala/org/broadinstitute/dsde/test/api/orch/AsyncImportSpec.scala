@@ -51,7 +51,7 @@ class AsyncImportSpec
 // These tests were consistently failing in Jenkins, and we need to reevaluate their utility in general, thus they are 'ignored' for now.
   "Orchestration" - {
 
-    "should import a PFB file via import service" - {
+    "should import a PFB file via cWDS" - {
       "for the owner of a workspace" ignore {
         implicit val token: AuthToken = ownerAuthToken
 
@@ -128,7 +128,7 @@ class AsyncImportSpec
       }
     }
 
-    "should asynchronously result in an error when attempting to import a PFB file via import service" - {
+    "should asynchronously result in an error when attempting to import a PFB file via cWDS" - {
       "if the file to be imported is invalid" ignore {
         implicit val token: AuthToken = ownerAuthToken
 
@@ -157,7 +157,7 @@ class AsyncImportSpec
       }
     }
 
-    "should synchronously return an error when attempting to import a PFB file via import service" - {
+    "should synchronously return an error when attempting to import a PFB file via cWDS" - {
 
       "for readers of a workspace" ignore {
         val reader = UserPool.chooseStudent
@@ -256,7 +256,7 @@ class AsyncImportSpec
         logger.info(s"[$requestId] HTTP response status for import job $importJobId status request is [${respStatus.intValue()}]. Elapsed: ${humanReadableMillis(System.currentTimeMillis() - startTime)}")
         respStatus shouldBe StatusCodes.OK
         val importStatus = blockForStringBody(resp).parseJson.asJsObject.fields.get("status").value
-        logger.info(s"[$requestId] Import Service job status for import job $importJobId is [$importStatus]")
+        logger.info(s"[$requestId] cWDS job status for import job $importJobId is [$importStatus]")
         assertWithEscape(importStatus shouldBe JsString("Done"), importStatus should not equal JsString("Error"), "Import error occurred, failing test")
       }
     }

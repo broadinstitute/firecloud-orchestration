@@ -38,7 +38,7 @@ TODO: update `render-local-env.sh` so it doesn't require manual code changes
 
 ##### Testing against your own FiaB
 
-TODO: Import Service-related tests (`AsyncImportSpec`) are nonfunctional against FiaBs without additional manual configuration
+TODO: cWDS-related tests (`AsyncImportSpec`) are nonfunctional against FiaBs without additional manual configuration
 
 To render configs to test against your own FiaB, accept all defaults: `./render-local-env.sh`
 

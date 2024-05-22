@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, ImportOptions, ImportServiceListResponse}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, ImportOptions, CwdsListResponse}
 import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
 import org.databiosphere.workspacedata.model.GenericJob.{JobTypeEnum, StatusEnum}
 import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
@@ -31,7 +31,7 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
       }
     }
 
-    "toImportServiceStatus" - {
+    "toCwdsStatus" - {
       val statusTranslations = Map(
         // there is no effective difference between Translating and ReadyForUpsert for our purposes
         CREATED -> "Translating",
@@ -45,18 +45,18 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
 
       statusTranslations.foreach { case (input, expected) =>
         s"input ($input) should translate to $expected" in {
-          cwdsDao.toImportServiceStatus(input) shouldBe expected
+          cwdsDao.toCwdsStatus(input) shouldBe expected
         }
       }
 
       "should cover all possible statuses" in {
         GenericJob.StatusEnum.values().foreach { enumValue =>
-          cwdsDao.toImportServiceStatus(enumValue) should not be "Unknown" // and should not throw
+          cwdsDao.toCwdsStatus(enumValue) should not be "Unknown" // and should not throw
         }
       }
     }
 
-    "toImportServiceListResponse" - {
+    "toCwdsListResponse" - {
 
       "should translate a job without an error message" in {
         val jobId: UUID = UUID.randomUUID()
@@ -69,14 +69,14 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         input.setCreated(OffsetDateTime.now())
         input.setUpdated(OffsetDateTime.now())
 
-        val expected = ImportServiceListResponse(
+        val expected = CwdsListResponse(
           jobId = jobId.toString,
           status = "ReadyForUpsert",
           filetype = "DATA_IMPORT",
           message = None
         )
 
-        cwdsDao.toImportServiceListResponse(input) shouldBe expected
+        cwdsDao.toCwdsListResponse(input) shouldBe expected
       }
 
       "should translate a job with an error message" in {
@@ -92,14 +92,14 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         input.setUpdated(OffsetDateTime.now())
         input.setErrorMessage(errMsg)
 
-        val expected = ImportServiceListResponse(
+        val expected = CwdsListResponse(
           jobId = jobId.toString,
           status = "Error",
           filetype = "DATA_IMPORT",
           message = Some(errMsg)
         )
 
-        cwdsDao.toImportServiceListResponse(input) shouldBe expected
+        cwdsDao.toCwdsListResponse(input) shouldBe expected
       }
 
     }

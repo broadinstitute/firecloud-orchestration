@@ -98,7 +98,6 @@ object Boot extends App with LazyLogging {
     // can be disabled
     val agoraDAO: AgoraDAO = whenEnabled[AgoraDAO](FireCloudConfig.Agora.enabled, new HttpAgoraDAO(FireCloudConfig.Agora))
     val googleServicesDAO: GoogleServicesDAO = whenEnabled[GoogleServicesDAO](FireCloudConfig.GoogleCloud.enabled, new HttpGoogleServicesDAO(FireCloudConfig.GoogleCloud.priceListUrl, GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList, UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)), "v1", "1")))
-    val importServiceDAO: ImportServiceDAO = whenEnabled[ImportServiceDAO](FireCloudConfig.ImportService.enabled, new HttpImportServiceDAO(FireCloudConfig.ImportService.enabled))
     val shibbolethDAO: ShibbolethDAO = whenEnabled[ShibbolethDAO](FireCloudConfig.Shibboleth.enabled, new HttpShibbolethDAO)
     val cwdsDAO: CwdsDAO = whenEnabled[CwdsDAO](FireCloudConfig.Cwds.enabled, new HttpCwdsDAO(FireCloudConfig.Cwds.enabled, FireCloudConfig.Cwds.supportedFormats))
 
@@ -111,7 +110,7 @@ object Boot extends App with LazyLogging {
     val searchDAO: SearchDAO = elasticSearchClient.map(new ElasticSearchDAO(_, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport)).getOrElse(DisabledServiceFactory.newDisabledService[SearchDAO])
     val shareLogDAO: ShareLogDAO = elasticSearchClient.map(new ElasticSearchShareLogDAO(_, FireCloudConfig.ElasticSearch.shareLogIndexName)).getOrElse(DisabledServiceFactory.newDisabledService[ShareLogDAO])
 
-    Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, importServiceDAO, shibbolethDAO, cwdsDAO)
+    Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, shibbolethDAO, cwdsDAO)
   }
 
   private def whenEnabled[T : ClassTag](enabled: Boolean, realService: => T): T = {

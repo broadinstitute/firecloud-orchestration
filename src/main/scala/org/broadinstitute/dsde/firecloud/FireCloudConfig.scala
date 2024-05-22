@@ -24,7 +24,7 @@ object FireCloudConfig {
     // lazy - only required when google is enabled
     lazy val firecloudAdminSAJsonFile = auth.getString("firecloudAdminSA")
     // credentials for the rawls service account, used for writing files to buckets for import
-    // lazy - only required when import service is enabled
+    // lazy - only required when cWDS is enabled
     lazy val rawlsSAJsonFile = auth.getString("rawlsSA")
   }
 
@@ -212,13 +212,6 @@ object FireCloudConfig {
   object StaticNotebooks {
     private val staticNotebooks = config.getConfig("staticNotebooks")
     val baseUrl: String = staticNotebooks.getString("baseUrl")
-  }
-
-  object ImportService {
-    // lazy - only required when import service is enabled
-    lazy val server: String = config.getString("importService.server")
-    lazy val bucket: String = config.getString("importService.bucketName")
-    val enabled: Boolean = config.optionalBoolean("importService.enabled").getOrElse(true)
   }
 
   implicit class RichConfig(val config: Config) {
