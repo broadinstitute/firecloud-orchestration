@@ -317,9 +317,9 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val getJobFuture = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken"))
 
       ScalaFutures.whenReady(getJobFuture.failed) { actual =>
-        actual shouldBe a [ApiException]
-        val apiEx = actual.asInstanceOf[ApiException]
-        apiEx.getCode shouldEqual StatusCodes.NotFound.intValue
+        actual shouldBe a [FireCloudExceptionWithErrorReport]
+        val apiEx = actual.asInstanceOf[FireCloudExceptionWithErrorReport]
+        apiEx.errorReport.statusCode should contain(StatusCodes.NotFound)
       }
     }
     "should escalate cWDS's error" in {
@@ -339,9 +339,9 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       val getJobFuture = entityService.getJob("workspaceNamespace", "workspaceName", jobId, dummyUserInfo("mytoken"))
 
       ScalaFutures.whenReady(getJobFuture.failed) { actual =>
-        actual shouldBe a [ApiException]
-        val apiEx = actual.asInstanceOf[ApiException]
-        apiEx.getCode shouldBe StatusCodes.ImATeapot.intValue
+        actual shouldBe a [FireCloudExceptionWithErrorReport]
+        val apiEx = actual.asInstanceOf[FireCloudExceptionWithErrorReport]
+        apiEx.errorReport.statusCode should contain (StatusCodes.ImATeapot)
         apiEx.getMessage should(include("cWDS unit test intentional error"))
       }
     }
