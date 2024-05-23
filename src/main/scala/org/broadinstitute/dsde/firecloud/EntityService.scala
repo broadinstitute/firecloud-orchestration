@@ -14,6 +14,7 @@ import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
 import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
+import org.databiosphere.workspacedata.client.ApiException
 import spray.json.DefaultJsonProtocol._
 
 import java.nio.charset.StandardCharsets
@@ -262,12 +263,16 @@ class EntityService(rawlsDAO: RawlsDAO, cwdsDAO: CwdsDAO, googleServicesDAO: Goo
 
     getWorkspaceId(workspaceNamespace, workspaceName, userInfo) map { workspaceId =>
       importToCWDS(workspaceNamespace, workspaceName, workspaceId, userInfo, importRequest)
+    } recover {
+      case apiEx:ApiException => throw wrapCwdsException(apiEx)
     }
   }
 
   def listJobs(workspaceNamespace: String, workspaceName: String, runningOnly: Boolean, userInfo: UserInfo): Future[List[CwdsListResponse]] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
       cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+    } recover {
+      case apiEx:ApiException => throw wrapCwdsException(apiEx)
     }
   }
 
@@ -276,7 +281,23 @@ class EntityService(rawlsDAO: RawlsDAO, cwdsDAO: CwdsDAO, googleServicesDAO: Goo
       val cwdsResponse = cwdsDAO.getJobV1(workspace.workspace.workspaceId, jobId)(userInfo)
       logger.info(s"Found job $jobId in cWDS")
       cwdsResponse
+    } recover {
+      case apiEx:ApiException => throw wrapCwdsException(apiEx)
     }
+  }
+
+  private def wrapCwdsException(apiEx:ApiException) = {
+    def extractMessage(responseBody: String) = {
+      // attempt to extract a human-readable message from the API response. The API response is itself a json object
+      import spray.json._
+      responseBody.parseJson.asJsObject.fields("message") match {
+        case jss:JsString => jss.value
+        case jsv:JsValue => jsv.prettyPrint
+      }
+    }
+    // if human-readable message extraction fails, just default to the ApiException message
+    val errMsg = Try(extractMessage(apiEx.getResponseBody)).toOption.getOrElse(apiEx.getMessage)
+    new FireCloudExceptionWithErrorReport(ErrorReport(apiEx.getCode, errMsg))
   }
 
   def getEntitiesWithType(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] = {

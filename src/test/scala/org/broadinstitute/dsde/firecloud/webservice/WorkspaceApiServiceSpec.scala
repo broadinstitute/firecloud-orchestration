@@ -1016,7 +1016,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         (Post(pfbImportPath, PFBImportRequest("https://bad.request.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(InternalServerError) // TODO: bubble up 400 / BadRequest
+            status should equal(BadRequest)
             responseAs[String] should include ("Bad request as reported by cwds")
           }
       }
@@ -1025,7 +1025,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         (Post(pfbImportPath, PFBImportRequest("https://forbidden.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(InternalServerError) // TODO: bubble up 403 / Forbidden
+          status should equal(Forbidden)
           responseAs[String] should include ("Missing Authorization: Bearer token in header")
         }
       }
@@ -1034,7 +1034,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         (Post(pfbImportPath, PFBImportRequest("https://its.lawsuit.time.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-          status should equal(InternalServerError) // TODO: bubble up 451 / UnavailableForLegalReasons
+          status should equal(UnavailableForLegalReasons)
           responseAs[String] should include ("cwds message")
         }
       }
@@ -1069,7 +1069,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             (Post(importJobPath, AsyncImportRequest("https://bad.request.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(InternalServerError) // TODO: bubble up 400 / BadRequest
+              status should equal(BadRequest)
               responseAs[String] should include ("Bad request as reported by cwds")
             }
           }
@@ -1078,7 +1078,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             (Post(importJobPath, AsyncImportRequest("https://forbidden.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(InternalServerError) // TODO: bubble up 403 / Forbidden
+              status should equal(Forbidden)
               responseAs[String] should include ("Missing Authorization: Bearer token in header")
             }
           }
@@ -1087,7 +1087,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
-              status should equal(InternalServerError) // TODO: bubble up 451 / UnavailableForLegalReasons
+              status should equal(UnavailableForLegalReasons)
               responseAs[String] should include ("cwds message")
             }
           }
