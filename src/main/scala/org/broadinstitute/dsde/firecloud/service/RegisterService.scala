@@ -33,18 +33,18 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       registerResult <- registerUser(userInfo, registerRequest.acceptsTermsOfService)
       // We are using the equivalent value from sam registration to force the order of operations for the thurloe calls
       registrationResultUserInfo  = userInfo.copy(userEmail = registerResult.email.value)
-      _ <- thurloeDao.saveProfile(registrationResultUserInfo, registerRequest.profile)
-      _ <- thurloeDao.saveKeyValues(registrationResultUserInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString, "email" -> userInfo.userEmail))
+      //_ <- thurloeDao.saveProfile(registrationResultUserInfo, registerRequest.profile)
+      //_ <- thurloeDao.saveKeyValues(registrationResultUserInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString, "email" -> userInfo.userEmail))
     } yield RequestComplete(StatusCodes.OK, registerResult)
 
   def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
-      _ <- thurloeDao.saveProfile(userInfo, basicProfile)
-      _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
+      //_ <- thurloeDao.saveProfile(userInfo, basicProfile)
+      //_ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
       isRegistered <- isRegistered(userInfo)
       userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
         for {
-          _ <- thurloeDao.saveKeyValues(userInfo,  Map("email" -> userInfo.userEmail))
+          //_ <- thurloeDao.saveKeyValues(userInfo,  Map("email" -> userInfo.userEmail))
           registerResult <- registerUser(userInfo, basicProfile.termsOfService)
         } yield registerResult
       } else {
