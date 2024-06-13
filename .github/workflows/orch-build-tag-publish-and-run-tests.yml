@@ -9,6 +9,11 @@ on:
     branches:
       - develop
     paths-ignore: ['**.md']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 env:
   GCR_REGISTRY: gcr.io/broad-dsp-gcr-public/firecloud-orchestration
   # Region-specific Google Docker repository where GOOGLE_PROJECT/REPOSITORY_NAME can be found
