@@ -5,13 +5,9 @@ name: orch-build-tag-publish-and-run-tests
 on:
   pull_request:
     paths-ignore: ['**.md']
-  push:
-    branches:
-      - develop
-    paths-ignore: ['**.md']
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
 env:
