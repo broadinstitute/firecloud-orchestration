@@ -1,6 +1,10 @@
 name: Elasticsearch Integration Tests
 
 on:
+  push:
+    branches: [ develop ]
+    paths-ignore:
+      - 'README.md'
   pull_request:
     branches: [ develop ]
   workflow_dispatch:
