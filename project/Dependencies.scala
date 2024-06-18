@@ -6,7 +6,7 @@ object Dependencies {
   val jacksonV = "2.17.1"
   val jacksonHotfixV = "2.17.1" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.111.Final"
-  val workbenchLibsHash = "5762674" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val workbenchLibsHash = "a6ad7dc" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -23,9 +23,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "org.yaml" % "snakeyaml" % "1.33",
-    "io.grpc" % "grpc-xds" % "1.56.1",
-    // workbench-google2 has bouncycastle as a dependency; directly updating to a non-vulnerable version until workbench-google2 updates
-    "org.bouncycastle" % "bcprov-jdk18on" % "1.78.1"
+    "io.grpc" % "grpc-xds" % "1.56.1"
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(

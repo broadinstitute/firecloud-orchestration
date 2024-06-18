@@ -35,10 +35,7 @@ tags:
   - name: Womtool
   - name: Workspaces
 security:
-  - oidc:
-      - openid
-      - email
-      - profile
+  - oidc: []
 paths:
   /api/billing/v2/{projectId}/spendReportConfiguration:
     get:
@@ -203,10 +200,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
       security:
-        - oidc_google_billing_scope:
-            - openid
-            - email
-            - profile
+        - oidc_google_billing_scope: []
       x-codegen-request-body-name: createProjectRequest
   /api/billing/v2/{projectId}:
     get:
@@ -297,10 +291,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorReport'
       security:
-        - oidc_google_billing_scope:
-            - openid
-            - email
-            - profile
+        - oidc_google_billing_scope: []
       x-passthrough: true
       x-passthrough-target: rawls
     delete:
@@ -2579,10 +2570,7 @@ paths:
           description: Internal Server Error
           content: {}
       security:
-        - oidc_google_billing_scope:
-            - openid
-            - email
-            - profile
+        - oidc_google_billing_scope: []
       x-passthrough: true
       x-passthrough-target: rawls
   /api/profile/importstatus:
@@ -9735,10 +9723,18 @@ components:
             $ref: '#/components/schemas/ErrorReport'
   securitySchemes:
     oidc:
-      type: openIdConnect
-      openIdConnectUrl: OPEN_ID_CONNECT_URL
+      type: oauth2
       x-tokenName: id_token
+      flows:
+        authorizationCode:
+          authorizationUrl: OAUTH_AUTHORIZATION_URL
+          scopes: {}
+          tokenUrl: OAUTH_TOKEN_URL
     oidc_google_billing_scope:
-      type: openIdConnect
-      openIdConnectUrl: OPEN_ID_CONNECT_URL_WITH_GOOGLE_BILLING_SCOPE
+      type: oauth2
       x-tokenName: id_token
+      flows:
+        authorizationCode:
+          authorizationUrl: OAUTH_AUTHORIZATION_URL_WITH_GOOGLE_BILLING_SCOPE
+          scopes: {}
+          tokenUrl: OAUTH_TOKEN_URL_WITH_GOOGLE_BILLING_SCOPE
