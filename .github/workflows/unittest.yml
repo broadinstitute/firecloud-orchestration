@@ -1,11 +1,16 @@
 name: Scala CI
 
 on:
+  pull_request:
+    branches: [ develop ]
   push:
     paths-ignore:
       - 'README.md'
-  pull_request:
     branches: [ develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

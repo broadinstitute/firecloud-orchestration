@@ -2,11 +2,16 @@ name: Elasticsearch Integration Tests
 
 on:
   push:
+    branches: [ develop ]
     paths-ignore:
       - 'README.md'
   pull_request:
     branches: [ develop ]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   es-integration-tests:
