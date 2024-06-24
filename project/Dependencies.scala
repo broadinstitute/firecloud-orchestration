@@ -89,7 +89,7 @@ object Dependencies {
     "com.github.erosb"               % "everit-json-schema"  % "1.14.4",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
-    "org.scalatest"                 %% "scalatest"           % "3.2.18"   % "test",
+    "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
     "org.mock-server"                % "mockserver-netty"    % "5.15.0"  % "test",
     // provides testing mocks
     "com.google.cloud"               % "google-cloud-nio"    % "0.127.19" % "test",
