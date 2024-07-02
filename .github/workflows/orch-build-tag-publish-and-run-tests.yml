@@ -169,7 +169,7 @@ jobs:
         with:
           workflow: orch-swat-tests
           repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
+          ref: refs/heads/revert-195-revert-194-da_AJ-268_trialBillingSA
           token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
           # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
           inputs: '{
