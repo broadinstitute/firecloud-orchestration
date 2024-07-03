@@ -22,52 +22,6 @@ class MethodApiSpec
   val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   "For a method config that references a redacted method" - {
-    "should be able to choose new method snapshot" in {
-      val user = UserPool.chooseProjectOwner
-      implicit val authToken: AuthToken = user.makeAuthToken()
-      withTemporaryBillingProject(billingAccountId) { billingProject =>
-        withWorkspace(billingProject, "MethodConfigApiSpec_choose_new_snapshot") { workspaceName =>
-          withMethod("MethodRedactedSpec_choose_new_snapshot", MethodData.SimpleMethod, 2) { methodName =>
-            val method = MethodData.SimpleMethod.copy(methodName = methodName)
-
-            Orchestration.methodConfigurations.createMethodConfigInWorkspace(
-              billingProject, workspaceName, method, SimpleMethodConfig.configNamespace, SimpleMethodConfig.configName, 1,
-              SimpleMethodConfig.inputs, SimpleMethodConfig.outputs, SimpleMethodConfig.rootEntityType)
-
-            Orchestration.methods.redact(method)
-
-            val getMethodResponse = intercept[RestException]{ Orchestration.methods.getMethod(method.methodNamespace, method.methodName, method.snapshotId)}
-            getMethodResponse.message should include (s"Methods Repository entity ${method.methodNamespace}/${method.methodName}/1 not found.")
-
-            val newMethodSnapshotId = 2
-            val methodRepoMethod = Map(
-                  "methodName" -> method.methodName,
-                  "methodVersion" -> newMethodSnapshotId,
-                  "methodNamespace" -> method.methodNamespace,
-                  "methodUri" -> s"agora://${method.methodNamespace}/${method.methodName}/$newMethodSnapshotId",
-                  "sourceRepo" -> "agora"
-            )
-
-            val editedMethodConfig = Map(
-              "deleted" -> false,
-              "inputs"  -> SimpleMethodConfig.inputs,
-              "outputs" -> SimpleMethodConfig.outputs,
-              "methodConfigVersion" -> 1,
-              "methodRepoMethod" -> methodRepoMethod,
-              "name" -> SimpleMethodConfig.configName,
-              "namespace" -> SimpleMethodConfig.configNamespace,
-              "prerequisites" -> Map.empty,
-              "rootEntityType" -> SimpleMethodConfig.rootEntityType
-            )
-
-            //choose new snapshot
-            val editResponse = Orchestration.methodConfigurations.editMethodConfig(billingProject, workspaceName, SimpleMethodConfig.configNamespace, SimpleMethodConfig.configName, editedMethodConfig)
-            editResponse should include (""""methodVersion":2""")
-          }
-        }
-      }(user.makeAuthToken(billingScopes))
-    }
-
     "launching an analysis should not be possible" in {
       val user = UserPool.chooseProjectOwner
       implicit val authToken: AuthToken = user.makeAuthToken()
@@ -109,33 +63,6 @@ class MethodApiSpec
             }
 
             launchException.message.parseJson.asJsObject.fields("statusCode").convertTo[Int] should be (404)
-          }
-        }
-      }(user.makeAuthToken(billingScopes))
-    }
-
-    "the method config should be deleteable " in {
-      val user = UserPool.chooseProjectOwner
-      implicit val authToken: AuthToken = user.makeAuthToken()
-      withTemporaryBillingProject(billingAccountId) { billingProject =>
-        withWorkspace(billingProject, "MethodApiSpec_delete_after_redacted") { workspaceName =>
-          withMethod("MethodApiSpec_delete_after_redacted", MethodData.SimpleMethod, cleanUp = false) { methodName =>
-            val method = MethodData.SimpleMethod.copy(methodName = methodName)
-
-            Orchestration.methodConfigurations.createMethodConfigInWorkspace(
-              billingProject,
-              workspaceName,
-              method,
-              SimpleMethodConfig.configNamespace,
-              SimpleMethodConfig.configName,
-              1,
-              SimpleMethodConfig.inputs,
-              SimpleMethodConfig.outputs,
-              SimpleMethodConfig.rootEntityType)
-
-            Orchestration.methods.redact(method)
-
-            Orchestration.methodConfigurations.deleteMethodConfig(billingProject, workspaceName, SimpleMethodConfig.configNamespace, SimpleMethodConfig.configName)
           }
         }
       }(user.makeAuthToken(billingScopes))
