@@ -13,7 +13,8 @@ object Settings {
   val commonResolvers = List(
     "artifactory-releases" at artifactory + "libs-release",
     "artifactory-snapshots" at artifactory + "libs-snapshot",
-    "jitpack.io" at "https://jitpack.io"
+    "jitpack.io" at "https://jitpack.io",
+    "Akka library repository" at "https://repo.akka.io/maven"
   )
 
   val proxyResolvers = List(

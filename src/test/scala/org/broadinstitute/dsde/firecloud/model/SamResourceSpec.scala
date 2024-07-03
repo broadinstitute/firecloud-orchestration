@@ -7,7 +7,6 @@ import spray.json._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import spray.json.DefaultJsonProtocol._
 
-import scala.util.parsing.json.JSONFormat
 
 class SamResourceSpec extends AnyFreeSpec with Matchers {
 
