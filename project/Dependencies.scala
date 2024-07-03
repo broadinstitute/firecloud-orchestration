@@ -22,7 +22,8 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "org.yaml" % "snakeyaml" % "1.33"
+    "org.yaml" % "snakeyaml" % "1.33",
+    "org.apache.commons" % "commons-compress" % "1.26.2" // workbench-libs libraries pull this in
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
