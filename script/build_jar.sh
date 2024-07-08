@@ -12,7 +12,7 @@ docker run --rm -e GIT_MODEL_HASH=${GIT_MODEL_HASH} \
   -v $PWD:/working \
   -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 \
   -w /working \
-  hseeberger/scala-sbt:eclipse-temurin-17.0.2_1.6.2_2.13.8 /working/src/docker/clean_install.sh /working
+  sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.10_7_1.10.0_2.13.14 /working/src/docker/clean_install.sh /working
 
 EXIT_CODE=$?
 
