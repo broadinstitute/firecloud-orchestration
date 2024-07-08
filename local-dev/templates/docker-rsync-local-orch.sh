@@ -111,7 +111,7 @@ start_server () {
     -p 5051:5051 \
     --network=fc-orch \
     -e JAVA_OPTS="$DOCKER_JAVA_OPTS" \
-    hseeberger/scala-sbt:eclipse-temurin-17.0.2_1.6.2_2.13.8 \
+    sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.10_7_1.10.0_2.13.14 \
     sbt \~reStart
 
     docker cp config/firecloud-account.pem orch-sbt:/etc/firecloud-account.pem
