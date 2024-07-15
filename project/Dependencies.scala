@@ -77,7 +77,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-core"),
 
     excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240702-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240618-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240709-2.0.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
