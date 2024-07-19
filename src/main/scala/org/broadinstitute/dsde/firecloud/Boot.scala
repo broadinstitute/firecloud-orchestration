@@ -100,6 +100,7 @@ object Boot extends App with LazyLogging {
     val googleServicesDAO: GoogleServicesDAO = whenEnabled[GoogleServicesDAO](FireCloudConfig.GoogleCloud.enabled, new HttpGoogleServicesDAO(FireCloudConfig.GoogleCloud.priceListUrl, GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList, UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)), "v1", "1")))
     val shibbolethDAO: ShibbolethDAO = whenEnabled[ShibbolethDAO](FireCloudConfig.Shibboleth.enabled, new HttpShibbolethDAO)
     val cwdsDAO: CwdsDAO = whenEnabled[CwdsDAO](FireCloudConfig.Cwds.enabled, new HttpCwdsDAO(FireCloudConfig.Cwds.enabled, FireCloudConfig.Cwds.supportedFormats))
+    val ecmDAO: ExternalCredsDAO = whenEnabled[ExternalCredsDAO](FireCloudConfig.ExternalCreds.enabled, new HttpExternalCredsDAO(FireCloudConfig.ExternalCreds.enabled))
 
     val elasticSearchClient: Option[TransportClient] = Option.when(FireCloudConfig.ElasticSearch.enabled) {
       ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
@@ -110,7 +111,7 @@ object Boot extends App with LazyLogging {
     val searchDAO: SearchDAO = elasticSearchClient.map(new ElasticSearchDAO(_, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport)).getOrElse(DisabledServiceFactory.newDisabledService[SearchDAO])
     val shareLogDAO: ShareLogDAO = elasticSearchClient.map(new ElasticSearchShareLogDAO(_, FireCloudConfig.ElasticSearch.shareLogIndexName)).getOrElse(DisabledServiceFactory.newDisabledService[ShareLogDAO])
 
-    Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, shibbolethDAO, cwdsDAO)
+    Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, shibbolethDAO, cwdsDAO, ecmDAO)
   }
 
   private def whenEnabled[T : ClassTag](enabled: Boolean, realService: => T): T = {

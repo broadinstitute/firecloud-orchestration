@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, SamDAO, ShibbolethDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ExternalCredsDAO, GoogleServicesDAO, SamDAO, ShibbolethDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -19,7 +19,6 @@ import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.reflect.runtime.universe.{MethodSymbol, typeOf}
 import scala.util.{Failure, Try}
 
 
@@ -42,10 +41,10 @@ object NihStatus {
 
 object NihService {
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.shibbolethDAO)
+    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.shibbolethDAO, app.ecmDAO)
 }
 
-class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO, val shibbolethDao: ShibbolethDAO)
+class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO, val shibbolethDao: ShibbolethDAO, val ecmDao: ExternalCredsDAO)
                 (implicit val executionContext: ExecutionContext) extends LazyLogging with SprayJsonSupport {
 
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -53,8 +52,22 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
 
   val nihWhitelists: Set[NihWhitelist] = FireCloudConfig.Nih.whitelists
+  val nihAllowlistGroups: Set[WorkbenchGroupName] = nihWhitelists.map(_.groupToSync)
 
-  def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
+  def getNihStatusFromEcm(userInfo: UserInfo): Future[Option[NihStatus]] = {
+    Future(ecmDao.getLinkedAccount(userInfo)).flatMap {
+      case Some(linkedAccount) =>
+        val groupMemberships = samDao.listGroups(userInfo)
+        groupMemberships.map { groups =>
+          val samGroupNames = groups.map(g => WorkbenchGroupName(g.groupName)).toSet
+          val allowlistGroupMemberships = samGroupNames.intersect(nihAllowlistGroups).map(group => NihDatasetPermission(group.value, authorized = true))
+          Some(NihStatus(Some(linkedAccount.linkedExternalId), allowlistGroupMemberships, Some(linkedAccount.linkExpireTime.getMillis)))
+        }
+      case None => Future.successful(None)
+    }
+  }
+
+  def getNihStatusFromThurloe(userInfo: UserInfo): Future[Option[NihStatus]] = {
     thurloeDao.getAllKVPs(userInfo.id, userInfo) flatMap {
       case Some(profileWrapper) =>
         ProfileUtils.getString("linkedNihUsername", profileWrapper) match {
@@ -63,13 +76,21 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
               samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
             }.map { whitelistMembership =>
               val linkExpireTime = ProfileUtils.getLong("linkExpireTime", profileWrapper)
-              RequestComplete(NihStatus(Some(linkedNihUsername), whitelistMembership, linkExpireTime))
+              Some(NihStatus(Some(linkedNihUsername), whitelistMembership, linkExpireTime))
             }
-          case None => Future.successful(RequestComplete(NotFound))
+          case None => Future.successful(None)
         }
-      case None => Future.successful(RequestComplete(NotFound))
-    } recover {
-      case e:Exception => RequestCompleteWithErrorReport(InternalServerError, e.getMessage, e)
+      case None => Future.successful(None)
+    }
+  }
+
+  def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
+    getNihStatusFromThurloe(userInfo).flatMap {
+      case Some(nihStatus) => Future.successful(RequestComplete(nihStatus))
+      case None => getNihStatusFromEcm(userInfo).map {
+        case Some(nihStatus) => RequestComplete(nihStatus)
+        case None => RequestComplete(NotFound)
+      }
     }
   }
 

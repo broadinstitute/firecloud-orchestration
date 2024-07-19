@@ -53,6 +53,8 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "sam-client"       % "0.1-ef83073",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
+    "bio.terra" % "externalcreds-client-resttemplate" % "1.42.0-20240719.134755-1",
+    "org.springframework" % "spring-web" % "6.1.11",
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
