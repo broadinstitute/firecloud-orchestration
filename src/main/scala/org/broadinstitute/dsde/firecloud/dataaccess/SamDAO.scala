@@ -6,10 +6,10 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamUserResponse, UserIdInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, RegistrationInfo, RegistrationInfoV2, SamUserResponse, UserIdInfo, UserInfo, WithAccessToken, WorkbenchUserInfo}
 import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsUserEmail}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems
 
 import scala.concurrent.Future
@@ -35,6 +35,7 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val samGetUserIdsUrl = FireCloudConfig.Sam.baseUrl + "/api/users/v1/%s"
   val samArbitraryPetTokenUrl = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/token"
   val samPetKeyForProject = FireCloudConfig.Sam.baseUrl + "/api/google/v1/user/petServiceAccount/%s/key"
+  val samAdminGetUsersForIdsUrl = FireCloudConfig.Sam.baseUrl + "/api/admin/v2/users"
 
   val samManagedGroupsBase: String = FireCloudConfig.Sam.baseUrl + "/api/groups"
   val samManagedGroupBase: String = FireCloudConfig.Sam.baseUrl + "/api/group"
@@ -60,6 +61,8 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
 
   def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo]
+
+  def getUsersForIds(samUserIds: Seq[WorkbenchUserId])(implicit userInfo: WithAccessToken): Future[Seq[WorkbenchUserInfo]]
 
   def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]]
 

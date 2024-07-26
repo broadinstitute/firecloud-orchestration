@@ -142,4 +142,6 @@ class MockSamDAO extends SamDAO {
       Future.failed(new FireCloudExceptionWithErrorReport(new ErrorReport("sam", "invalid", Some(StatusCodes.BadRequest), Seq.empty, Seq.empty, None)))
     }
   }
+
+  override def getUsersForIds(samUserIds: Seq[WorkbenchUserId])(implicit userInfo: WithAccessToken): Future[Seq[WorkbenchUserInfo]] = Future.successful(Seq())
 }

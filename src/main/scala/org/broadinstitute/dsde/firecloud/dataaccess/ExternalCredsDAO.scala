@@ -1,22 +1,28 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.UserInfo
+import org.broadinstitute.dsde.firecloud.model.{LinkedEraAccount, UserInfo, WithAccessToken}
 import org.databiosphere.workspacedata.client.ApiException
-import org.joda.time.DateTime
+
+import scala.concurrent.Future
 
 trait ExternalCredsDAO {
 
   def isEnabled: Boolean
 
-  case class LinkedEraAccount(userId: String, linkedExternalId: String, linkExpireTime: DateTime)
+  @throws(classOf[ApiException])
+  def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]]
 
   @throws(classOf[ApiException])
-  def getLinkedAccount(implicit userInfo: UserInfo): Option[LinkedEraAccount]
+  def putLinkedEraAccount(linkedEraAccount: LinkedEraAccount)(implicit orchInfo: WithAccessToken): Future[Unit]
 
   @throws(classOf[ApiException])
-  def getLinkedEraAccountForUsername(username: String)(implicit orchInfo: UserInfo): Option[LinkedEraAccount]
+  def deleteLinkedEraAccount(userInfo: UserInfo)(implicit orchInfo: WithAccessToken): Future[Unit]
+
 
   @throws(classOf[ApiException])
-  def getActiveLinkedEraAccounts(implicit orchInfo: UserInfo): Seq[LinkedEraAccount]
+  def getLinkedEraAccountForUsername(username: String)(implicit orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]]
+
+  @throws(classOf[ApiException])
+  def getActiveLinkedEraAccounts(implicit orchInfo: WithAccessToken): Future[Seq[LinkedEraAccount]]
 
 }
