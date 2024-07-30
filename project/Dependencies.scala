@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.17.1"
   val jacksonHotfixV = "2.17.1" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.111.Final"
+  val nettyV = "4.1.112.Final"
   val workbenchLibsHash = "9138393" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -44,7 +44,7 @@ object Dependencies {
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.1",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.6",
-    "io.sentry"                      % "sentry-logback"      % "7.11.0",
+    "io.sentry"                      % "sentry-logback"      % "7.12.1",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -84,7 +84,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240618-2.0.0"),
+    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240702-2.0.0"),
     excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240709-2.0.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.1",
