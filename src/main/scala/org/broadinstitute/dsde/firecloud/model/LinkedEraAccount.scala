@@ -13,7 +13,10 @@ object LinkedEraAccount {
   }
 
   def unapply(linkedEraAccount: LinkedEraAccount): AdminLinkInfo = {
-    new AdminLinkInfo().userId(linkedEraAccount.userId).linkedExternalId(linkedEraAccount.linkedExternalId).linkExpireTime(linkedEraAccount.linkExpireTime.toDate)
+    new AdminLinkInfo()
+      .userId(linkedEraAccount.userId)
+      .linkedExternalId(linkedEraAccount.linkedExternalId)
+      .linkExpireTime(linkedEraAccount.linkExpireTime.toDate)
   }
 }
 

@@ -68,7 +68,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     }
   }
 
-  def getNihStatusFromEcm(userInfo: UserInfo): Future[Option[NihStatus]] = {
+  private def getNihStatusFromEcm(userInfo: UserInfo): Future[Option[NihStatus]] = {
     ecmDao.getLinkedAccount(userInfo).flatMap {
       case Some(linkedAccount) =>
         val groupMemberships = samDao.listGroups(userInfo)
@@ -81,7 +81,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     }
   }
 
-  def getNihStatusFromThurloe(userInfo: UserInfo): Future[Option[NihStatus]] = {
+  private def getNihStatusFromThurloe(userInfo: UserInfo): Future[Option[NihStatus]] = {
     thurloeDao.getAllKVPs(userInfo.id, userInfo) flatMap {
       case Some(profileWrapper) =>
         ProfileUtils.getString("linkedNihUsername", profileWrapper) match {
@@ -123,7 +123,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     whitelistSyncResults map { _ => RequestComplete(NoContent) }
   }
 
-  def getNihAllowlistTerraEmailsFromEcm(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
+  private def getNihAllowlistTerraEmailsFromEcm(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
     for {
       // The list of users that, according to ECM, have active links
       allLinkedAccounts <- ecmDao.getActiveLinkedEraAccounts(getAdminAccessToken)
@@ -133,7 +133,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
       users <- samDao.getUsersForIds(allowlistLinkedAccounts.map(la => WorkbenchUserId(la.userId)))(getAdminAccessToken)
     } yield users.map(user => WorkbenchEmail(user.userEmail)).toSet
 
-  def getNihAllowlistTerraEmailsFromThurloe(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
+  private def getNihAllowlistTerraEmailsFromThurloe(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
     for {
       // The list of users that, according to Thurloe, have active links and are
       // on the specified whitelist
@@ -148,7 +148,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     } yield members.toSet
 
   // This syncs the specified whitelist in full
-  def syncNihAllowlistAllUsers(nihAllowlist: NihWhitelist): Future[Unit] = {
+  private def syncNihAllowlistAllUsers(nihAllowlist: NihWhitelist): Future[Unit] = {
     val whitelistUsers = downloadNihAllowlist(nihAllowlist)
 
     for {
