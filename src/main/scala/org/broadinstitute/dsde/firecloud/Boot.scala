@@ -94,13 +94,13 @@ object Boot extends App with LazyLogging {
     val rawlsDAO: RawlsDAO = new HttpRawlsDAO
     val samDAO: SamDAO = new HttpSamDAO
     val thurloeDAO: ThurloeDAO = new HttpThurloeDAO
+    val ecmDAO: ExternalCredsDAO = new HttpExternalCredsDAO
 
     // can be disabled
     val agoraDAO: AgoraDAO = whenEnabled[AgoraDAO](FireCloudConfig.Agora.enabled, new HttpAgoraDAO(FireCloudConfig.Agora))
     val googleServicesDAO: GoogleServicesDAO = whenEnabled[GoogleServicesDAO](FireCloudConfig.GoogleCloud.enabled, new HttpGoogleServicesDAO(FireCloudConfig.GoogleCloud.priceListUrl, GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList, UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)), "v1", "1")))
     val shibbolethDAO: ShibbolethDAO = whenEnabled[ShibbolethDAO](FireCloudConfig.Shibboleth.enabled, new HttpShibbolethDAO)
     val cwdsDAO: CwdsDAO = whenEnabled[CwdsDAO](FireCloudConfig.Cwds.enabled, new HttpCwdsDAO(FireCloudConfig.Cwds.enabled, FireCloudConfig.Cwds.supportedFormats))
-    val ecmDAO: ExternalCredsDAO = whenEnabled[ExternalCredsDAO](FireCloudConfig.ExternalCreds.enabled, new HttpExternalCredsDAO(FireCloudConfig.ExternalCreds.enabled))
 
     val elasticSearchClient: Option[TransportClient] = Option.when(FireCloudConfig.ElasticSearch.enabled) {
       ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)

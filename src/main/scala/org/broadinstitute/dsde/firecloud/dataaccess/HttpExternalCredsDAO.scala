@@ -14,9 +14,7 @@ import org.springframework.web.client.RestTemplate
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
-class HttpExternalCredsDAO(enabled: Boolean)(implicit val executionContext: ExecutionContext) extends ExternalCredsDAO {
-
-  override def isEnabled: Boolean = enabled
+class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) extends ExternalCredsDAO {
 
   override def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]] = Future {
     val oauthApi: OauthApi = getOauthApi(userInfo.accessToken.token)

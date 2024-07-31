@@ -107,7 +107,10 @@ cwds {
 
 externalCreds {
   baseUrl = "https://externalcreds.dsde-dev.broadinstitute.org"
-  enabled = true
+}
+
+foo {
+  bar = "baz"
 }
 
 firecloud {

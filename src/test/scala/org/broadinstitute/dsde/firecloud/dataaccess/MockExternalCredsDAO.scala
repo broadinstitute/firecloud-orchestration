@@ -4,13 +4,9 @@ import org.broadinstitute.dsde.firecloud.model.{LinkedEraAccount, UserInfo, With
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MockExternalCredsDAO(enabled: Boolean = true)(implicit executionContext: ExecutionContext)
-  extends HttpExternalCredsDAO(enabled) {
-
-  override def isEnabled: Boolean = super.isEnabled
+class MockExternalCredsDAO(implicit executionContext: ExecutionContext) extends HttpExternalCredsDAO{
 
   override def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]] = Future(None)
-
 
   override def putLinkedEraAccount(linkedEraAccount: LinkedEraAccount)(implicit orchInfo: WithAccessToken): Future[Unit] = Future()
 

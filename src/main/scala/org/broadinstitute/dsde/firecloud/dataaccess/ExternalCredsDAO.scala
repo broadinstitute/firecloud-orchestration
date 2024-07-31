@@ -7,8 +7,6 @@ import scala.concurrent.Future
 
 trait ExternalCredsDAO {
 
-  def isEnabled: Boolean
-
   @throws(classOf[ApiException])
   def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]]
 
