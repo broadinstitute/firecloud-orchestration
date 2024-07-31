@@ -109,10 +109,6 @@ externalCreds {
   baseUrl = "https://externalcreds.dsde-dev.broadinstitute.org"
 }
 
-foo {
-  bar = "baz"
-}
-
 firecloud {
 	baseUrl = "https://firecloud-orchestration.dsde-dev.broadinstitute.org"
 	portalUrl = "https://firecloud.dsde-dev.broadinstitute.org"
