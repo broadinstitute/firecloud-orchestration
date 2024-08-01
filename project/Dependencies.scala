@@ -18,7 +18,6 @@ object Dependencies {
   val excludeSpringBoot = ExclusionRule(organization = "org.springframework.boot")
   val excludeSpringBeans = ExclusionRule(organization = "org.springframework", name = "spring-beans")
   val excludeSpringJcl = ExclusionRule(organization = "org.springframework", name = "spring-jcl")
-  val excludeSpringCore = ExclusionRule(organization = "org.springframework", name = "spring-core")
 
   // Overrides for transitive dependencies. These apply - via Settings.scala - to all projects in this codebase.
   // These are overrides only; if the direct dependencies stop including any of these, they will not be included
@@ -60,7 +59,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.44.0-20240725.201427-1" excludeAll(excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.1.11" excludeAll(excludeSpringBoot, excludeSpringBeans, excludeSpringJcl, excludeSpringCore),
+    "org.springframework" % "spring-web" % "6.1.11" excludeAll(excludeSpringBoot, excludeSpringBeans, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
