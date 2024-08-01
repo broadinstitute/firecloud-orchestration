@@ -324,7 +324,7 @@ class MockRawlsDAO extends RawlsDAO {
       WorkspaceListResponse(WorkspaceAccessLevels.Read, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
       WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(true), Some(true), rawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
       WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(true), Some(true), publishedRawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-      WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)))
+      WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(true), Some(true), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)))
   }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
