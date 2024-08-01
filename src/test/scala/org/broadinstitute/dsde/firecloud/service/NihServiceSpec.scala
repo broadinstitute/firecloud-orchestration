@@ -29,7 +29,7 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
   val thurloeDao = new MockThurloeDAO
   val googleDao = new MockGoogleServicesDAO
   val shibbolethDao = new MockShibbolethDAO
-  val ecmDao = new MockExternalCredsDAO
+  val ecmDao = new DisabledExternalCredsDAO
 
   // build the service instance we'll use for tests
   val nihService = new NihService(samDao, thurloeDao, googleDao, shibbolethDao, ecmDao)

@@ -94,7 +94,7 @@ object Boot extends App with LazyLogging {
     val rawlsDAO: RawlsDAO = new HttpRawlsDAO
     val samDAO: SamDAO = new HttpSamDAO
     val thurloeDAO: ThurloeDAO = new HttpThurloeDAO
-    val ecmDAO: ExternalCredsDAO = new HttpExternalCredsDAO
+    val ecmDAO: ExternalCredsDAO = if (FireCloudConfig.ExternalCreds.enabled) new HttpExternalCredsDAO else new DisabledExternalCredsDAO
 
     // can be disabled
     val agoraDAO: AgoraDAO = whenEnabled[AgoraDAO](FireCloudConfig.Agora.enabled, new HttpAgoraDAO(FireCloudConfig.Agora))

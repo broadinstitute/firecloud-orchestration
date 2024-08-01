@@ -36,7 +36,7 @@ trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest w
     val shareLogDao: MockShareLogDAO
     val shibbolethDao: ShibbolethDAO
     val cwdsDao: CwdsDAO
-    val ecmDao: MockExternalCredsDAO
+    val ecmDao: ExternalCredsDAO
 
     def actorRefFactory = system
 
