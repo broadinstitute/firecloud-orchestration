@@ -320,11 +320,11 @@ class MockRawlsDAO extends RawlsDAO {
   }
 
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] = {
-    Future.successful(Seq(WorkspaceListResponse(WorkspaceAccessLevels.ProjectOwner, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-      WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-      WorkspaceListResponse(WorkspaceAccessLevels.Owner, rawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-      WorkspaceListResponse(WorkspaceAccessLevels.Owner, publishedRawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-      WorkspaceListResponse(WorkspaceAccessLevels.Owner, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)))
+    Future.successful(Seq(WorkspaceListResponse(WorkspaceAccessLevels.ProjectOwner, Some(true), Some(true), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+      WorkspaceListResponse(WorkspaceAccessLevels.Read, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+      WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(true), Some(true), rawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+      WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(true), Some(true), publishedRawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+      WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(true), Some(true), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)))
   }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {

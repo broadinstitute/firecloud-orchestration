@@ -1,17 +1,17 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import org.broadinstitute.dsde.firecloud.{FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
-import org.broadinstitute.dsde.firecloud.model.{Project, UserImportPermission, UserInfo, WithAccessToken}
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
-import org.broadinstitute.dsde.firecloud.model.Project.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
-import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, UserService}
-import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes.{InternalServerError, OK}
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
+import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
+import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impUserImportPermission
+import org.broadinstitute.dsde.firecloud.model.Project.{CreationStatuses, ProjectRoles, RawlsBillingProjectMembership}
+import org.broadinstitute.dsde.firecloud.model.{Project, UserImportPermission, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, UserService}
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
+import org.broadinstitute.dsde.rawls.model._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -130,16 +130,16 @@ class ImportPermissionMockRawlsDAO extends MockRawlsDAO {
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] = {
     parseTestToken(userInfo)._1 match {
       case "hasWorkspaces" => Future.successful(Seq(
-        WorkspaceListResponse(WorkspaceAccessLevels.ProjectOwner, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-        WorkspaceListResponse(WorkspaceAccessLevels.Owner, publishedRawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)
+        WorkspaceListResponse(WorkspaceAccessLevels.ProjectOwner, Some(true), Some(true), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Owner, Some(true), Some(true), publishedRawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)
       ))
       case "onlyReadableWorkspaces" => Future.successful(Seq(
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-        WorkspaceListResponse(WorkspaceAccessLevels.Read, publishedRawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
-        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.Read, Some(false), Some(false), publishedRawlsWorkspaceWithAttributes, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false),
+        WorkspaceListResponse(WorkspaceAccessLevels.NoAccess, Some(false), Some(false), newWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), false)
       ))
       case "noWorkspaces" => Future.successful(Seq.empty[WorkspaceListResponse])
       case _ => Future.failed(new FireCloudException("intentional exception for getWorkspaces catchall case"))
