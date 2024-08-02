@@ -8928,6 +8928,12 @@ components:
           $ref: '#/components/schemas/WorkspaceAccessLevel'
         public:
           type: boolean
+        canShare:
+          type: boolean
+          description: True if the user can share the workspace with others, false otherwise
+        canCompute:
+          type: boolean
+          description: True if the user can launch compute in this workspace, false otherwise
         workspace:
           $ref: '#/components/schemas/WorkspaceDetails'
         workspaceSubmissionStats:
@@ -9004,10 +9010,12 @@ components:
           $ref: '#/components/schemas/WorkspaceAccessLevel'
         bucketOptions:
           $ref: '#/components/schemas/WorkspaceBucketOptions'
-        canCompute:
-          type: boolean
         canShare:
           type: boolean
+          description: True if the user can share the workspace with others, false otherwise
+        canCompute:
+          type: boolean
+          description: True if the user can launch compute in this workspace, false otherwise
         catalog:
           type: boolean
         owners:
