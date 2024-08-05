@@ -12,9 +12,8 @@ import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
 import org.broadinstitute.dsde.workbench.model.WorkbenchUserId
 
-import scala.concurrent.impl.Promise
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.Success
 
 object RegisterService {
   val samTosTextUrl = s"${Sam.baseUrl}/tos/text"
@@ -34,22 +33,18 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     for {
       registerResult <- registerUser(userInfo, registerRequest.acceptsTermsOfService)
       // We are using the equivalent value from sam registration to force the order of operations for the thurloe calls
-      registrationResultUserInfo  = userInfo.copy(userEmail = registerResult.email.value)
-      _ <- thurloeDao.saveProfile(registrationResultUserInfo, registerRequest.profile)
-      thurloeResponse <- thurloeDao.saveKeyValues(registrationResultUserInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString, "email" -> userInfo.userEmail))
-      _ <- sendRegistrationEmail(thurloeResponse, userInfo)
+      registrationResultUserInfo  = userInfo.copy(userEmail = registerResult.email.value, id = registerResult.id.value)
+      _ <- saveProfileInThurloeAndSendRegistrationEmail(registrationResultUserInfo, registerRequest.profile)
     } yield RequestComplete(StatusCodes.OK, registerResult)
 
   def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
     for {
-      _ <- thurloeDao.saveProfile(userInfo, basicProfile)
-      _ <- thurloeDao.saveKeyValues(userInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString))
       isRegistered <- isRegistered(userInfo)
       userStatus <- if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
         for {
-          _ <- thurloeDao.saveKeyValues(userInfo,  Map("email" -> userInfo.userEmail))
           registerResult <- registerUser(userInfo, basicProfile.termsOfService)
-          _ <- sendRegistrationEmail(Success(registerResult), userInfo)
+          registrationResultUserInfo  = userInfo.copy(userEmail = registerResult.userInfo.userEmail, id = registerResult.userInfo.userSubjectId)
+          _ <- saveProfileInThurloeAndSendRegistrationEmail(registrationResultUserInfo, basicProfile)
         } yield registerResult
       } else {
         Future.successful(isRegistered)
@@ -59,10 +54,13 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
     }
   }
 
-  // We need to make the calling of this method dependent on the completion of the user being fully registered in bot Sam AND Thurloe.
-  private def sendRegistrationEmail(userIsRegistered: Try[Any], userInfo: UserInfo): Future[Unit] = userIsRegistered match {
-    case Failure(_) => Future.unit
-    case Success(_) => googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
+  private def saveProfileInThurloeAndSendRegistrationEmail(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
+    val otherValues = Map("isRegistrationComplete" -> Profile.currentVersion.toString, "email" -> userInfo.userEmail)
+    thurloeDao.saveProfile(userInfo, profile).andThen {
+      case Success(_) => thurloeDao.saveKeyValues(userInfo, otherValues) andThen {
+        case Success(_) => googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
+      }
+    }
   }
 
   private def isRegistered(userInfo: UserInfo): Future[RegistrationInfo] = {
