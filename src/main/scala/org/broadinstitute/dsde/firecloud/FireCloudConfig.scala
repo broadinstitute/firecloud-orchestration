@@ -125,13 +125,6 @@ object FireCloudConfig {
     lazy val bucket: String = cwds.getString("bucketName")
   }
 
-  object ExternalCreds {
-    // lazy - only required when External Credentials is enabled
-    private lazy val externalCreds = config.getConfig("externalCreds")
-    lazy val baseUrl: String = externalCreds.getString("baseUrl")
-    lazy val enabled: Boolean = externalCreds.getBoolean("enabled")
-  }
-
   object FireCloud {
     private val firecloud = config.getConfig("firecloud")
     val fireCloudId = firecloud.getString("fireCloudId")

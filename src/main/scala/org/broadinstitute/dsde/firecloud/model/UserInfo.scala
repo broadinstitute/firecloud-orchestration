@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.model
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
-import java.time.OffsetDateTime
 import scala.util.Try
 
 /**

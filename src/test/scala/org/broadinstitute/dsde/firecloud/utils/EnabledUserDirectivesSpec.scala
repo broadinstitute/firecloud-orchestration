@@ -158,7 +158,7 @@ class EnabledUserDirectivesSpec
       Get() ~> userEnabledRoute(samApiExceptionUser) ~> check {
         status shouldBe StatusCodes.ImATeapot
         val err = responseAs[ErrorReport]
-        err.message should include(s"Client Error (${StatusCodes.ImATeapot.intValue})")
+        err.message shouldBe s"Client Error (${StatusCodes.ImATeapot.intValue})"
       }
     }
   }

@@ -29,10 +29,9 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
   val thurloeDao = new MockThurloeDAO
   val googleDao = new MockGoogleServicesDAO
   val shibbolethDao = new MockShibbolethDAO
-  val ecmDao = new DisabledExternalCredsDAO
 
   // build the service instance we'll use for tests
-  val nihService = new NihService(samDao, thurloeDao, googleDao, shibbolethDao, ecmDao)
+  val nihService = new NihService(samDao, thurloeDao, googleDao, shibbolethDao)
 
   val usernames = Map("fcSubjectId1" -> "nihUsername1", "fcSubjectId2" -> "nihUsername2")
 
@@ -72,7 +71,7 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
 
     val mockShibboleth = mock[ShibbolethDAO]
     when(mockShibboleth.getPublicKey()).thenReturn(Future.successful(pubKey))
-    val nihServiceMock = new NihService(samDao, thurloeDao, googleDao, mockShibboleth, ecmDao)
+    val nihServiceMock = new NihService(samDao, thurloeDao, googleDao, mockShibboleth)
 
     // expires in 15 minutes
     val expiresInTheFuture: Long = Instant.ofEpochMilli(System.currentTimeMillis() + (15 * 60 * 1000)).getEpochSecond // 15 minutes * 60 seconds * 1000 milliseconds

@@ -107,10 +107,6 @@ object Profile {
 
 }
 
-object NihLink {
-  def apply(linkedEraAccount: LinkedEraAccount): NihLink = NihLink(linkedEraAccount.linkedExternalId, linkedEraAccount.linkExpireTime.getMillis / 1000)
-}
-
 case class NihLink(linkedNihUsername: String, linkExpireTime: Long) extends mappedPropVals {
   require(ProfileValidator.nonEmpty(linkedNihUsername), "linkedNihUsername must be non-empty")
 }

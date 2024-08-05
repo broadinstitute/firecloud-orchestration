@@ -94,7 +94,6 @@ object Boot extends App with LazyLogging {
     val rawlsDAO: RawlsDAO = new HttpRawlsDAO
     val samDAO: SamDAO = new HttpSamDAO
     val thurloeDAO: ThurloeDAO = new HttpThurloeDAO
-    val ecmDAO: ExternalCredsDAO = if (FireCloudConfig.ExternalCreds.enabled) new HttpExternalCredsDAO else new DisabledExternalCredsDAO
 
     // can be disabled
     val agoraDAO: AgoraDAO = whenEnabled[AgoraDAO](FireCloudConfig.Agora.enabled, new HttpAgoraDAO(FireCloudConfig.Agora))
@@ -111,7 +110,7 @@ object Boot extends App with LazyLogging {
     val searchDAO: SearchDAO = elasticSearchClient.map(new ElasticSearchDAO(_, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport)).getOrElse(DisabledServiceFactory.newDisabledService[SearchDAO])
     val shareLogDAO: ShareLogDAO = elasticSearchClient.map(new ElasticSearchShareLogDAO(_, FireCloudConfig.ElasticSearch.shareLogIndexName)).getOrElse(DisabledServiceFactory.newDisabledService[ShareLogDAO])
 
-    Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, shibbolethDAO, cwdsDAO, ecmDAO)
+    Application(agoraDAO, googleServicesDAO, ontologyDAO, rawlsDAO, samDAO, searchDAO, researchPurposeSupport, thurloeDAO, shareLogDAO, shibbolethDAO, cwdsDAO)
   }
 
   private def whenEnabled[T : ClassTag](enabled: Boolean, realService: => T): T = {
