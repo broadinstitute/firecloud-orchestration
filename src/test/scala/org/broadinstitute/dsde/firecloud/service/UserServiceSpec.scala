@@ -1,8 +1,9 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.testkit.TestActorRef
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.{DisabledExternalCredsDAO, MockCwdsDAO, MockResearchPurposeSupport, MockShareLogDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockResearchPurposeSupport, MockShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
@@ -14,7 +15,7 @@ import scala.concurrent.duration._
 
 class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
 
-  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockShareLogDAO, shibbolethDao, new MockCwdsDAO, new DisabledExternalCredsDAO)
+  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockShareLogDAO, shibbolethDao, new MockCwdsDAO)
 
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(customApp)
 

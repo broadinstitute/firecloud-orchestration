@@ -4,14 +4,14 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.{ExternalCredsDAO, GoogleServicesDAO, SamDAO, ShibbolethDAO, ThurloeDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, SamDAO, ShibbolethDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.slf4j.LoggerFactory
 import pdi.jwt.{Jwt, JwtAlgorithm}
 import spray.json.DefaultJsonProtocol._
@@ -19,7 +19,8 @@ import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.reflect.runtime.universe.{MethodSymbol, typeOf}
+import scala.util.{Failure, Try}
 
 
 case class NihStatus(
@@ -41,10 +42,10 @@ object NihStatus {
 
 object NihService {
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.shibbolethDAO, app.ecmDAO)
+    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.shibbolethDAO)
 }
 
-class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO, val shibbolethDao: ShibbolethDAO, val ecmDao: ExternalCredsDAO)
+class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: GoogleServicesDAO, val shibbolethDao: ShibbolethDAO)
                 (implicit val executionContext: ExecutionContext) extends LazyLogging with SprayJsonSupport {
 
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -52,36 +53,8 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
 
   val nihWhitelists: Set[NihWhitelist] = FireCloudConfig.Nih.whitelists
-  val nihAllowlistGroups: Set[WorkbenchGroupName] = nihWhitelists.map(_.groupToSync)
 
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
-    getNihStatusFromEcm(userInfo).flatMap {
-      case Some(nihStatus) =>
-        logger.info("Found eRA Commons link in ECM for user " + userInfo.id)
-        Future.successful(RequestComplete(nihStatus))
-      case None => getNihStatusFromThurloe(userInfo).map {
-        case Some(nihStatus) =>
-          logger.info("Found eRA Commons link in Thurloe for user " + userInfo.id)
-          RequestComplete(nihStatus)
-        case None => RequestComplete(NotFound)
-      }
-    }
-  }
-
-  private def getNihStatusFromEcm(userInfo: UserInfo): Future[Option[NihStatus]] = {
-    ecmDao.getLinkedAccount(userInfo).flatMap {
-      case Some(linkedAccount) =>
-        val groupMemberships = samDao.listGroups(userInfo)
-        groupMemberships.map { groups =>
-          val samGroupNames = groups.map(g => WorkbenchGroupName(g.groupName)).toSet
-          val allowlistGroupMemberships = samGroupNames.intersect(nihAllowlistGroups).map(group => NihDatasetPermission(group.value, authorized = true))
-          Some(NihStatus(Some(linkedAccount.linkedExternalId), allowlistGroupMemberships, Some(linkedAccount.linkExpireTime.getMillis)))
-        }
-      case None => Future.successful(None)
-    }
-  }
-
-  private def getNihStatusFromThurloe(userInfo: UserInfo): Future[Option[NihStatus]] = {
     thurloeDao.getAllKVPs(userInfo.id, userInfo) flatMap {
       case Some(profileWrapper) =>
         ProfileUtils.getString("linkedNihUsername", profileWrapper) match {
@@ -90,25 +63,26 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
               samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
             }.map { whitelistMembership =>
               val linkExpireTime = ProfileUtils.getLong("linkExpireTime", profileWrapper)
-              Some(NihStatus(Some(linkedNihUsername), whitelistMembership, linkExpireTime))
+              RequestComplete(NihStatus(Some(linkedNihUsername), whitelistMembership, linkExpireTime))
             }
-          case None => Future.successful(None)
+          case None => Future.successful(RequestComplete(NotFound))
         }
-      case None => Future.successful(None)
+      case None => Future.successful(RequestComplete(NotFound))
+    } recover {
+      case e:Exception => RequestCompleteWithErrorReport(InternalServerError, e.getMessage, e)
     }
   }
 
-  private def downloadNihAllowlist(allowlist: NihWhitelist): Set[String] = {
-    val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, allowlist.fileName))
+  private def downloadNihWhitelist(whitelist: NihWhitelist): Set[String] = {
+    val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, whitelist.fileName))
 
     usersList.getLines().toSet
   }
 
   def syncWhitelistAllUsers(whitelistName: String): Future[PerRequestMessage] = {
-    logger.info("Synchronizing allowlist '" + whitelistName + "' for all users")
     nihWhitelists.find(_.name.equals(whitelistName)) match {
       case Some(whitelist) =>
-        val whitelistSyncResults = syncNihAllowlistAllUsers(whitelist)
+        val whitelistSyncResults = syncNihWhitelistAllUsers(whitelist)
         whitelistSyncResults map { _ => RequestComplete(NoContent) }
 
       case None => Future.successful(RequestComplete(NotFound))
@@ -117,82 +91,44 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
 
   // This syncs all of the whitelists for all of the users
   def syncAllNihWhitelistsAllUsers(): Future[PerRequestMessage] = {
-    logger.info("Synchronizing all allowlists for all users")
-    val whitelistSyncResults = Future.traverse(nihWhitelists)(syncNihAllowlistAllUsers)
+    val whitelistSyncResults = Future.traverse(nihWhitelists)(syncNihWhitelistAllUsers)
 
     whitelistSyncResults map { _ => RequestComplete(NoContent) }
   }
 
-  private def getNihAllowlistTerraEmailsFromEcm(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
-    for {
-      // The list of users that, according to ECM, have active links
-      allLinkedAccounts <- ecmDao.getActiveLinkedEraAccounts(getAdminAccessToken)
-      // The list of linked accounts which for which the user appears in the allowlist
-      allowlistLinkedAccounts = allLinkedAccounts.filter(linkedAccount => allowlistEraUsernames.contains(linkedAccount.linkedExternalId))
-      // The users from Sam for the linked accounts on the allowlist
-      users <- samDao.getUsersForIds(allowlistLinkedAccounts.map(la => WorkbenchUserId(la.userId)))(getAdminAccessToken)
-    } yield users.map(user => WorkbenchEmail(user.userEmail)).toSet
+  // This syncs the specified whitelist in full
+  def syncNihWhitelistAllUsers(nihWhitelist: NihWhitelist): Future[Unit] = {
+    val whitelistUsers = downloadNihWhitelist(nihWhitelist)
 
-  private def getNihAllowlistTerraEmailsFromThurloe(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
     for {
       // The list of users that, according to Thurloe, have active links and are
       // on the specified whitelist
       subjectIds <- getCurrentNihUsernameMap(thurloeDao) map { mapping =>
-        mapping.collect { case (fcUser, nihUser) if allowlistEraUsernames contains nihUser => fcUser }.toSeq
+        mapping.collect { case (fcUser, nihUser) if whitelistUsers contains nihUser => fcUser }.toSeq
       }
 
       //Sam APIs don't consume subject IDs. Now we must look up the emails in Thurloe...
       members <- thurloeDao.getAllUserValuesForKey("email").map { keyValues =>
         keyValues.view.filterKeys(subjectId => subjectIds.contains(subjectId)).values.map(WorkbenchEmail).toList
       }
-    } yield members.toSet
 
-  // This syncs the specified whitelist in full
-  private def syncNihAllowlistAllUsers(nihAllowlist: NihWhitelist): Future[Unit] = {
-    val whitelistUsers = downloadNihAllowlist(nihAllowlist)
+      _ <- ensureWhitelistGroupsExists()
 
-    for {
-      ecmEmails <- getNihAllowlistTerraEmailsFromEcm(whitelistUsers)
-      thurloeEmails <- getNihAllowlistTerraEmailsFromThurloe(whitelistUsers)
-      members = ecmEmails ++ thurloeEmails
-      _ <- ensureAllowlistGroupsExists()
-      // The request to Sam to completely overwrite the group with the list of actively linked users on the allowlist
-      _ <- samDao.overwriteGroupMembers(nihAllowlist.groupToSync, ManagedGroupRoles.Member, members.toList)(getAdminAccessToken) recoverWith {
+      // The request to rawls to completely overwrite the group
+      // with the list of actively linked users on the whitelist
+      _ <- samDao.overwriteGroupMembers(nihWhitelist.groupToSync, ManagedGroupRoles.Member, members)(getAdminAccessToken) recoverWith {
         case e: Exception => throw new FireCloudException(s"Error synchronizing NIH whitelist: ${e.getMessage}")
       }
     } yield ()
   }
 
-  private def linkNihAccountEcm(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] = {
-    ecmDao.putLinkedEraAccount(LinkedEraAccount(userInfo.id, nihLink))(getAdminAccessToken)
-    .flatMap(_ => {
-      logger.info("Successfully linked NIH account in ECM for user " + userInfo.id)
-      Future.successful(Success())
-    }).recoverWith {
-      case e =>
-        logger.warn("Failed to link NIH account in ECM for user" + userInfo.id)
-        Future.successful(Failure(e))
-    }
-  }
-
-  private def linkNihAccountThurloe(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] = {
+  private def linkNihAccount(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] = {
     val profilePropertyMap = nihLink.propertyValueMap
 
     thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
   }
 
   private def unlinkNihAccount(userInfo: UserInfo): Future[Unit] = {
-    for {
-      _ <- unlinkNihAccountEcm(userInfo)
-      _ <- unlinkNihAccountThurloe(userInfo)
-    } yield ()
-  }
-
-  private def unlinkNihAccountEcm(userInfo: UserInfo): Future[Unit] = {
-    ecmDao.deleteLinkedEraAccount(userInfo)(getAdminAccessToken)
-  }
-
-  private def unlinkNihAccountThurloe(userInfo: UserInfo): Future[Unit] = {
     val nihKeys = Set("linkedNihUsername", "linkExpireTime")
 
     Future.traverse(nihKeys) { nihKey =>
@@ -211,7 +147,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   def unlinkNihAccountAndSyncSelf(userInfo: UserInfo): Future[Unit] = {
     for {
       _ <- unlinkNihAccount(userInfo)
-      _ <- ensureAllowlistGroupsExists()
+      _ <- ensureWhitelistGroupsExists()
       _ <- Future.traverse(nihWhitelists) {
         whitelist => removeUserFromNihWhitelistGroup(WorkbenchEmail(userInfo.userEmail), whitelist).recoverWith {
           case _: Exception => throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, "Unable to unlink NIH account"))
@@ -233,23 +169,16 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
         case (_, rawTokenFromShibboleth, _) =>
           rawTokenFromShibboleth.parseJson.convertTo[ShibbolethToken].toNihLink
       }
-      thurloeLinkResult <- linkNihAccountThurloe(userInfo, nihLink)
-      ecmLinkResult <- linkNihAccountEcm(userInfo, nihLink)
-
-      _ <- ensureAllowlistGroupsExists()
+      linkResult <- linkNihAccount(userInfo, nihLink)
+      _ <- ensureWhitelistGroupsExists()
       whitelistSyncResults <- Future.traverse(nihWhitelists) {
         whitelist => syncNihWhitelistForUser(WorkbenchEmail(userInfo.userEmail), nihLink.linkedNihUsername, whitelist)
           .map(NihDatasetPermission(whitelist.name, _))
       }
     } yield {
-      if (thurloeLinkResult.isSuccess && ecmLinkResult.isSuccess) {
+      if (linkResult.isSuccess) {
         RequestComplete(OK, NihStatus(Option(nihLink.linkedNihUsername), whitelistSyncResults, Option(nihLink.linkExpireTime)))
       } else {
-        (thurloeLinkResult, ecmLinkResult) match {
-          case (Failure(t), Success(_)) => logger.error("Failed to link NIH Account in Thurloe", t)
-          case (Success(_), Failure(t)) => logger.error("Failed to link NIH Account in ECM", t)
-          case (Failure(t1), Failure(t2)) => logger.error("Failed to link NIH Account in Thurloe and ECM", t1, t2)
-        }
         RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link")
       }
     }
@@ -261,7 +190,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   }
 
   private def syncNihWhitelistForUser(userEmail: WorkbenchEmail, linkedNihUserName: String, nihWhitelist: NihWhitelist): Future[Boolean] = {
-    val whitelistUsers = downloadNihAllowlist(nihWhitelist)
+    val whitelistUsers = downloadNihWhitelist(nihWhitelist)
 
     if(whitelistUsers contains linkedNihUserName) {
       for {
@@ -278,7 +207,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     samDao.removeGroupMember(nihWhitelist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
   }
 
-  private def ensureAllowlistGroupsExists(): Future[Unit] = {
+  private def ensureWhitelistGroupsExists(): Future[Unit] = {
     samDao.listGroups(getAdminAccessToken).flatMap { groups =>
       val missingGroupNames = nihWhitelists.map(_.groupToSync.value.toLowerCase()) -- groups.map(_.groupName.toLowerCase).toSet
       if (missingGroupNames.isEmpty) {
@@ -304,7 +233,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   }
 
   // get a mapping of FireCloud user name to NIH User name, for only those Thurloe users with a non-expired NIH link
-  private def getCurrentNihUsernameMap(thurloeDAO: ThurloeDAO): Future[Map[String, String]] = {
+  def getCurrentNihUsernameMap(thurloeDAO: ThurloeDAO): Future[Map[String, String]] = {
     val nihUsernames = thurloeDAO.getAllUserValuesForKey("linkedNihUsername")
     val nihExpireTimes = thurloeDAO.getAllUserValuesForKey("linkExpireTime")
 
