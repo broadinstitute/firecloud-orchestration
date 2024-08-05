@@ -70,12 +70,8 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
 
   private def getNihStatusFromEcm(userInfo: UserInfo): Future[Option[NihStatus]] = {
     ecmDao.getLinkedAccount(userInfo).flatMap {
-      case Some(linkedAccount) =>
-        val groupMemberships = samDao.listGroups(userInfo)
-        groupMemberships.map { groups =>
-          val samGroupNames = groups.map(g => WorkbenchGroupName(g.groupName)).toSet
-          val allowlistGroupMemberships = samGroupNames.intersect(nihAllowlistGroups).map(group => NihDatasetPermission(group.value, authorized = true))
-          Some(NihStatus(Some(linkedAccount.linkedExternalId), allowlistGroupMemberships, Some(linkedAccount.linkExpireTime.getMillis)))
+      case Some(linkedAccount) => getAllAllowlistGroupMemberships(userInfo).map { whitelistMembership =>
+          Some(NihStatus(Some(linkedAccount.linkedExternalId), whitelistMembership, Some(linkedAccount.linkExpireTime.getMillis / 1000L)))
         }
       case None => Future.successful(None)
     }
@@ -85,16 +81,19 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     thurloeDao.getAllKVPs(userInfo.id, userInfo) flatMap {
       case Some(profileWrapper) =>
         ProfileUtils.getString("linkedNihUsername", profileWrapper) match {
-          case Some(linkedNihUsername) =>
-            Future.traverse(nihWhitelists) { whitelistDef =>
-              samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
-            }.map { whitelistMembership =>
+          case Some(linkedNihUsername) => getAllAllowlistGroupMemberships(userInfo).map { whitelistMembership =>
               val linkExpireTime = ProfileUtils.getLong("linkExpireTime", profileWrapper)
               Some(NihStatus(Some(linkedNihUsername), whitelistMembership, linkExpireTime))
             }
           case None => Future.successful(None)
         }
       case None => Future.successful(None)
+    }
+  }
+
+  private def getAllAllowlistGroupMemberships(userInfo: UserInfo): Future[Set[NihDatasetPermission]] = {
+    Future.traverse(nihWhitelists) { whitelistDef =>
+      samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
     }
   }
 
