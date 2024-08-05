@@ -35,6 +35,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
       registrationResultUserInfo  = userInfo.copy(userEmail = registerResult.email.value)
       _ <- thurloeDao.saveProfile(registrationResultUserInfo, registerRequest.profile)
       _ <- thurloeDao.saveKeyValues(registrationResultUserInfo, Map("isRegistrationComplete" -> Profile.currentVersion.toString, "email" -> userInfo.userEmail))
+      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
     } yield RequestComplete(StatusCodes.OK, registerResult)
 
   def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
@@ -46,6 +47,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
         for {
           _ <- thurloeDao.saveKeyValues(userInfo,  Map("email" -> userInfo.userEmail))
           registerResult <- registerUser(userInfo, basicProfile.termsOfService)
+          _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
         } yield registerResult
       } else {
         Future.successful(isRegistered)
@@ -73,7 +75,6 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def registerUser(userInfo: UserInfo, termsOfService: Option[String]): Future[RegistrationInfo] = {
     for {
       registrationInfo <- samDao.registerUser(termsOfService)(userInfo)
-      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
     } yield {
       registrationInfo
     }
@@ -82,7 +83,6 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
   private def registerUser(userInfo: UserInfo, acceptsTermsOfService: Boolean): Future[SamUserResponse] = {
     for {
       userResponse <- samDao.registerUserSelf(acceptsTermsOfService)(userInfo)
-      _ <- googleServicesDAO.publishMessages(FireCloudConfig.Notification.fullyQualifiedNotificationTopic, Seq(NotificationFormat.write(generateWelcomeEmail(userInfo)).compactPrint))
     } yield userResponse
   }
 
