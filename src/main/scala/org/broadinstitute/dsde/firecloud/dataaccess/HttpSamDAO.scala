@@ -54,7 +54,7 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
 
   // Sam's API only allows for 1000 user to be fetched at one time
   override def getUsersForIds(samUserIds: Seq[WorkbenchUserId])(implicit userInfo: WithAccessToken): Future[Seq[WorkbenchUserInfo]] = Future.sequence {
-      samUserIds.sliding(1000).toSeq.map { batch =>
+      samUserIds.sliding(1000, 1000).toSeq.map { batch =>
         adminAuthedRequestToObject[Seq[SamUserResponse]](Post(samAdminGetUsersForIdsUrl, batch))
           .map(_.map(user => WorkbenchUserInfo(user.id.value, user.email.value)))
       }
