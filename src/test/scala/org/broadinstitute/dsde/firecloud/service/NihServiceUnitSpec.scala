@@ -71,11 +71,11 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
 
   val samUserToGroups = {
     Map(
-      userNoLinkedAccount.id -> Set(),
-      userNoAllowlists.id -> Set(),
-      userTcgaAndTarget.id -> Set("TCGA-dbGaP-Authorized", "TARGET-dbGaP-Authorized"),
-      userTcgaOnly.id -> Set("TCGA-dbGaP-Authorized"),
-      userTargetOnly.id -> Set("TARGET-dbGaP-Authorized")
+      userNoLinkedAccount.id -> Set("other-group"),
+      userNoAllowlists.id -> Set("other-group"),
+      userTcgaAndTarget.id -> Set("TCGA-dbGaP-Authorized", "TARGET-dbGaP-Authorized", "other-group"),
+      userTcgaOnly.id -> Set("TCGA-dbGaP-Authorized", "other-group"),
+      userTargetOnly.id -> Set("TARGET-dbGaP-Authorized", "other-group")
     )
   }
 
@@ -154,6 +154,10 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "target-whitelist.txt")
     verify(samDao, times(1)).overwriteGroupMembers(
       ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+    verify(samDao, never()).overwriteGroupMembers(
+      ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
       ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }

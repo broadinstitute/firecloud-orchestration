@@ -51,9 +51,14 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
     authedRequestToObject[UserIdInfo](Get(samGetUserIdsUrl.format(URLEncoder.encode(email.value, UTF_8.name))))
   }
 
-  override def getUsersForIds(samUserIds: Seq[WorkbenchUserId])(implicit userInfo: WithAccessToken): Future[Seq[WorkbenchUserInfo]] = {
-    adminAuthedRequestToObject[Seq[SamUserResponse]](Post(samAdminGetUsersForIdsUrl, samUserIds)).map(_.map(user => WorkbenchUserInfo(user.id.value, user.email.value)))
-  }
+
+  // Sam's API only allows for 1000 user to be fetched at one time
+  override def getUsersForIds(samUserIds: Seq[WorkbenchUserId])(implicit userInfo: WithAccessToken): Future[Seq[WorkbenchUserInfo]] = Future.sequence {
+      samUserIds.sliding(1000).toSeq.map { batch =>
+        adminAuthedRequestToObject[Seq[SamUserResponse]](Post(samAdminGetUsersForIdsUrl, batch))
+          .map(_.map(user => WorkbenchUserInfo(user.id.value, user.email.value)))
+      }
+    }.map(_.flatten)
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
     implicit val accessToken = userInfo
