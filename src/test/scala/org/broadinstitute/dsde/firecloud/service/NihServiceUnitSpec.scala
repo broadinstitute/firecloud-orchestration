@@ -272,6 +272,10 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
       ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+    verify(samDao, never()).addGroupMember(
+      ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
   it should "continue, but return an error of ECM returns an error" in {
