@@ -4,12 +4,14 @@ import bio.terra.externalcreds.api.OauthApi
 import bio.terra.externalcreds.api.AdminApi
 import bio.terra.externalcreds.client.ApiClient
 import bio.terra.externalcreds.model.Provider
+import com.google.api.client.http.HttpStatusCodes
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.LinkedEraAccount.unapply
 import org.broadinstitute.dsde.firecloud.model.{LinkedEraAccount, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.workbench.model.WorkbenchException
 import org.joda.time.DateTime
-import org.springframework.http.HttpStatusCode
-import org.springframework.web.client.RestTemplate
+import org.springframework.http.{HttpStatus, HttpStatusCode}
+import org.springframework.web.client.{HttpClientErrorException, RestTemplate}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -18,38 +20,39 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
 
   override def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]] = Future {
     val oauthApi: OauthApi = getOauthApi(userInfo.accessToken.token)
-    val linkInfoWithHttpInfo = oauthApi.getLinkWithHttpInfo(Provider.ERA_COMMONS)
-    if (linkInfoWithHttpInfo.getStatusCode.isSameCodeAs(HttpStatusCode.valueOf(404))) {
-      Option.empty
-    } else {
-      val linkInfo = linkInfoWithHttpInfo.getBody
+    try {
+      val linkInfo = oauthApi.getLink(Provider.ERA_COMMONS)
       Some(LinkedEraAccount(userInfo.id, linkInfo.getExternalUserId, new DateTime(linkInfo.getExpirationTimestamp)))
+    } catch {
+      case e: HttpClientErrorException =>
+        e.getStatusCode.value() match {
+          case HttpStatusCodes.STATUS_CODE_NOT_FOUND => None
+          case _ => throw new WorkbenchException(s"Failed to GET eRA Linked Account: ${e.getMessage}")
+        }
     }
   }
 
   override def putLinkedEraAccount(linkedEraAccount: LinkedEraAccount)(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
-    val resultWithHttpInfo = adminApi.putLinkedAccountWithFakeTokenWithHttpInfo(unapply(linkedEraAccount), Provider.ERA_COMMONS)
-    if (!resultWithHttpInfo.getStatusCode.is2xxSuccessful) {
-      throw new RuntimeException(s"Failed to PUT eRA Linked Account: ${resultWithHttpInfo.getBody}")
-    }
+    adminApi.putLinkedAccountWithFakeToken(unapply(linkedEraAccount), Provider.ERA_COMMONS)
   }
 
   override def deleteLinkedEraAccount(userInfo: UserInfo)(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
-    val resultWithHttpInfo = adminApi.adminDeleteLinkedAccountWithHttpInfo(userInfo.id, Provider.ERA_COMMONS)
-    if (!resultWithHttpInfo.getStatusCode.is2xxSuccessful) {
-      throw new RuntimeException(s"Failed to DELETE  eRA Linked Account: ${resultWithHttpInfo.getBody}")
-    }
+    adminApi.adminDeleteLinkedAccount(userInfo.id, Provider.ERA_COMMONS)
   }
 
   override def getLinkedEraAccountForUsername(username: String)(implicit orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]] =  Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
-    val adminLinkInfoWithHttpInfo = adminApi.getLinkedAccountForExternalIdWithHttpInfo(Provider.ERA_COMMONS, username)
-    if (adminLinkInfoWithHttpInfo.getStatusCode.isSameCodeAs(HttpStatusCode.valueOf(404))) {
-      Option.empty
-    } else {
-      Some(LinkedEraAccount(adminLinkInfoWithHttpInfo.getBody))
+    try {
+      val adminLinkInfo = adminApi.getLinkedAccountForExternalId(Provider.ERA_COMMONS, username)
+      Some(LinkedEraAccount(adminLinkInfo))
+    } catch {
+      case e: HttpClientErrorException =>
+        e.getStatusCode.value() match {
+          case HttpStatusCodes.STATUS_CODE_NOT_FOUND => None
+          case _ => throw new WorkbenchException(s"Failed to GET eRA Linked Account for username: ${e.getMessage}")
+        }
     }
   }
 
