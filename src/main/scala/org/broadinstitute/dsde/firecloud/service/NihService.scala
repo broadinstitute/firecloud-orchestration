@@ -52,7 +52,6 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
 
   val nihWhitelists: Set[NihWhitelist] = FireCloudConfig.Nih.whitelists
-  val nihAllowlistGroups: Set[WorkbenchGroupName] = nihWhitelists.map(_.groupToSync)
 
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] = {
     getNihStatusFromEcm(userInfo).flatMap {
@@ -91,13 +90,10 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     }
   }
 
-  private def getAllAllowlistGroupMemberships(userInfo: UserInfo): Future[Set[NihDatasetPermission]] = {
-    val groupMemberships = samDao.listGroups(userInfo)
-    groupMemberships.map { groups =>
-      val samGroupNames = groups.map(g => WorkbenchGroupName(g.groupName)).toSet
-      samGroupNames.intersect(nihAllowlistGroups).map(group => NihDatasetPermission(group.value, authorized = true))
+  private def getAllAllowlistGroupMemberships(userInfo: UserInfo): Future[Set[NihDatasetPermission]] =
+    Future.traverse(nihWhitelists) { whitelistDef =>
+      samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
     }
-  }
 
   private def downloadNihAllowlist(allowlist: NihWhitelist): Set[String] = {
     val usersList = Source.fromInputStream(googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, allowlist.fileName))
