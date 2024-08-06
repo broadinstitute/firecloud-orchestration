@@ -92,8 +92,10 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
   }
 
   private def getAllAllowlistGroupMemberships(userInfo: UserInfo): Future[Set[NihDatasetPermission]] = {
-    Future.traverse(nihWhitelists) { whitelistDef =>
-      samDao.isGroupMember(whitelistDef.groupToSync, userInfo).map(isMember => NihDatasetPermission(whitelistDef.name, isMember))
+    val groupMemberships = samDao.listGroups(userInfo)
+    groupMemberships.map { groups =>
+      val samGroupNames = groups.map(g => WorkbenchGroupName(g.groupName)).toSet
+      samGroupNames.intersect(nihAllowlistGroups).map(group => NihDatasetPermission(group.value, authorized = true))
     }
   }
 
