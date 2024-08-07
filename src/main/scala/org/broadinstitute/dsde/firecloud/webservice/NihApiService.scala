@@ -21,11 +21,11 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
   val syncRoute: Route =
     path("sync_whitelist" / Segment) { whitelistName =>
       post {
-        complete { nihServiceConstructor().syncWhitelistAllUsers(whitelistName) }
+        complete { nihServiceConstructor().syncAllowlistAllUsers(whitelistName) }
       }
     } ~ path("sync_whitelist") {
       post {
-        complete { nihServiceConstructor().syncAllNihWhitelistsAllUsers() }
+        complete { nihServiceConstructor().syncAllNihAllowlistsAllUsers() }
       }
     }
 

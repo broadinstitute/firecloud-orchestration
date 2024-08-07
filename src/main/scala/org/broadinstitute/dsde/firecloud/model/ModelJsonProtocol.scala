@@ -234,7 +234,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   implicit val impRegistrationInfo: RootJsonFormat[RegistrationInfo] = jsonFormat3(RegistrationInfo)
   implicit val impRegistrationInfoV2: RootJsonFormat[RegistrationInfoV2] = jsonFormat3(RegistrationInfoV2)
   implicit val impSamUserResponse: RootJsonFormat[SamUserResponse] = jsonFormat8(SamUserResponse)
-  implicit val impSamUser: RootJsonFormat[SamUser] = jsonFormat9(SamUser)
+  implicit val impSamUser: RootJsonFormat[SamUser] = jsonFormat8(SamUser)
   implicit val impUserIdInfo: RootJsonFormat[UserIdInfo] = jsonFormat3(UserIdInfo)
   implicit val impCurator: RootJsonFormat[Curator] = jsonFormat1(Curator)
   implicit val impUserImportPermission: RootJsonFormat[UserImportPermission] = jsonFormat2(UserImportPermission)

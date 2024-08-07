@@ -6,7 +6,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{ExternalCredsDAO, GoogleServicesDAO, SamDAO, ShibbolethDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.{FireCloudKeyValue, FireCloudManagedGroupMembership, JWTWrapper, LinkedEraAccount, ManagedGroupRoles, NihLink, ProfileWrapper, SamUser, UserInfo, WithAccessToken, WorkbenchUserInfo}
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
+import org.broadinstitute.dsde.workbench.model.{AzureB2CId, GoogleSubjectId, WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.joda.time.DateTime
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -45,10 +45,10 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
 
-  var userNoAllowlistsLinkedAccount = LinkedEraAccount(userNoAllowlists.id, "nihUsername1", new DateTime().plusDays(30))
-  var userTcgaAndTargetLinkedAccount = LinkedEraAccount(userTcgaAndTarget.id, "nihUsername2", new DateTime().plusDays(30))
-  var userTcgaOnlyLinkedAccount = LinkedEraAccount(userTcgaOnly.id, "nihUsername3", new DateTime().plusDays(30))
-  var userTargetOnlyLinkedAccount = LinkedEraAccount(userTargetOnly.id, "nihUsername4", new DateTime().plusDays(30))
+  var userNoAllowlistsLinkedAccount = LinkedEraAccount(userNoAllowlists.id.value, "nihUsername1", new DateTime().plusDays(30))
+  var userTcgaAndTargetLinkedAccount = LinkedEraAccount(userTcgaAndTarget.id.value, "nihUsername2", new DateTime().plusDays(30))
+  var userTcgaOnlyLinkedAccount = LinkedEraAccount(userTcgaOnly.id.value, "nihUsername3", new DateTime().plusDays(30))
+  var userTargetOnlyLinkedAccount = LinkedEraAccount(userTargetOnly.id.value, "nihUsername4", new DateTime().plusDays(30))
 
   val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly)
   val linkedAccounts = Seq(userNoAllowlistsLinkedAccount, userTcgaAndTargetLinkedAccount, userTcgaOnlyLinkedAccount, userTargetOnlyLinkedAccount)
@@ -109,9 +109,9 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   "getNihStatus" should "prefer ECM over Thurloe" in {
     mockEcmUsers()
     val user = userTcgaAndTarget
-    val userInfo = UserInfo(userToAccessToken(user.id), userTcgaAndTarget.id)
+    val userInfo = UserInfo(userToAccessToken(user.id), userTcgaAndTarget.id.value)
     val nihStatus = Await.result(nihService.getNihStatus(userInfo), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[NihStatus]].response
-    nihStatus.linkedNihUsername shouldBe Some(linkedAccountsBySamUserId(userInfo.id).linkedExternalId)
+    nihStatus.linkedNihUsername shouldBe Some(linkedAccountsBySamUserId(WorkbenchUserId(userInfo.id)).linkedExternalId)
     verifyNoInteractions(thurloeDao)
     verify(ecmDao).getLinkedAccount(userInfo)
   }
@@ -120,34 +120,34 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     mockThurloeUsers()
     when(ecmDao.getLinkedAccount(any[UserInfo])).thenReturn(Future.successful(None))
     val user = userTcgaAndTarget
-    val userInfo = UserInfo(userToAccessToken(user.id), userTcgaAndTarget.id)
+    val userInfo = UserInfo(userToAccessToken(user.id), userTcgaAndTarget.id.value)
     val nihStatus = Await.result(nihService.getNihStatus(userInfo), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[NihStatus]].response
-    nihStatus.linkedNihUsername shouldBe Some(linkedAccountsBySamUserId(userInfo.id).linkedExternalId)
-    verify(thurloeDao).getAllKVPs(user.id, userInfo)
+    nihStatus.linkedNihUsername shouldBe Some(linkedAccountsBySamUserId(WorkbenchUserId(userInfo.id)).linkedExternalId)
+    verify(thurloeDao).getAllKVPs(user.id.value, userInfo)
   }
 
   it should "return None if no linked account is found" in {
     when(thurloeDao.getAllKVPs(any[String], any[WithAccessToken])).thenReturn(Future.successful(None))
     when(ecmDao.getLinkedAccount(any[UserInfo])).thenReturn(Future.successful(None))
     val user = userNoLinkedAccount
-    val userInfo = UserInfo(userToAccessToken(user.id), userNoLinkedAccount.id)
+    val userInfo = UserInfo(userToAccessToken(user.id), userNoLinkedAccount.id.value)
     val nihStatus = Await.result(nihService.getNihStatus(userInfo), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
     nihStatus should be(StatusCodes.NotFound)
   }
 
   it should "return None if a user if found in Thurloe, but no linkedNihUsername exists" in {
     when(thurloeDao.getAllKVPs(any[String], any[WithAccessToken]))
-      .thenReturn(Future.successful(Some(ProfileWrapper(userNoLinkedAccount.id, List(FireCloudKeyValue(Some("email"), Some(userNoLinkedAccount.email)))))))
+      .thenReturn(Future.successful(Some(ProfileWrapper(userNoLinkedAccount.id.value, List(FireCloudKeyValue(Some("email"), Some(userNoLinkedAccount.email.value)))))))
     when(ecmDao.getLinkedAccount(any[UserInfo])).thenReturn(Future.successful(None))
     val user = userNoLinkedAccount
-    val userInfo = UserInfo(userToAccessToken(user.id), userNoLinkedAccount.id)
+    val userInfo = UserInfo(userToAccessToken(user.id), userNoLinkedAccount.id.value)
     val nihStatus = Await.result(nihService.getNihStatus(userInfo), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
     nihStatus should be(StatusCodes.NotFound)
   }
 
   private def verifyTargetGroupSynced(): Unit = {
-    val emailsToSync = Set(WorkbenchEmail(userTcgaAndTarget.email), WorkbenchEmail(userTargetOnly.email))
-    val nihStatus = Await.result(nihService.syncWhitelistAllUsers("TARGET"), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
+    val emailsToSync = Set(WorkbenchEmail(userTcgaAndTarget.email.value), WorkbenchEmail(userTargetOnly.email.value))
+    val nihStatus = Await.result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
 
     nihStatus should be(StatusCodes.NoContent)
     verify(googleDao, never()).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
@@ -186,15 +186,17 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   it should "sync all users by combining responses from ECM and Thurloe if they contain different users" in {
     when(ecmDao.getActiveLinkedEraAccounts(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful(Seq(userTargetOnlyLinkedAccount)))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("email")))
-      .thenReturn(Future.successful(samUsers.filter(u => u.id != userTargetOnly.id).map(user => user.id -> user.email).toMap))
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername"))).thenReturn(Future.successful(linkedAccountsBySamUserId.removed(userTargetOnlyLinkedAccount.userId).view.mapValues(_.linkedExternalId).toMap))
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime"))).thenReturn(Future.successful(linkedAccountsBySamUserId.removed(userTargetOnlyLinkedAccount.userId).view.mapValues(_.linkExpireTime.getMillis.toString).toMap))
+      .thenReturn(Future.successful(samUsers.filter(u => !u.id.equals(userTargetOnly.id)).map(user => user.id.value -> user.email.value).toMap))
+    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
+      .thenReturn(Future.successful(linkedAccountsBySamUserId.removed(WorkbenchUserId(userTargetOnlyLinkedAccount.userId)).map(tup => (tup._1.value, tup._2.linkedExternalId))))
+    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime")))
+      .thenReturn(Future.successful(linkedAccountsBySamUserId.removed(WorkbenchUserId(userTargetOnlyLinkedAccount.userId)).map(tup => (tup._1.value, (tup._2.linkExpireTime.getMillis / 1000L).toString))))
 
     verifyTargetGroupSynced()
   }
 
   it should "respond with NOT FOUND if no allowlist is found" in {
-    val nihStatus = Await.result(nihService.syncWhitelistAllUsers("NOT_FOUND"), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
+    val nihStatus = Await.result(nihService.syncAllowlistAllUsers("NOT_FOUND"), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
 
     nihStatus should be(StatusCodes.NotFound)
 
@@ -207,14 +209,14 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
      mockThurloeUsers()
      when(samDao.getUsersForIds(any[Seq[WorkbenchUserId]])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenAnswer(args => {
        val userIds = args.getArgument(0).asInstanceOf[Seq[WorkbenchUserId]]
-       Future.successful(samUsers.filter(user => userIds.contains(WorkbenchUserId(user.id))).map(user => WorkbenchUserInfo(user.id, user.email)))
+       Future.successful(samUsers.filter(user => userIds.contains(WorkbenchUserId(user.id.value))).map(user => WorkbenchUserInfo(user.id.value, user.email.value)))
      })
      when(samDao.overwriteGroupMembers(any(), any(), any())(any())).thenReturn(Future.failed(new RuntimeException(errorMessage)))
      when(samDao.listGroups(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful(samGroupMemberships.keys.map(groupName => FireCloudManagedGroupMembership(groupName, groupName + "@firecloud.org", "member")).toList))
      when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
 
      val ex = intercept[FireCloudException] {
-       Await.result(nihService.syncWhitelistAllUsers("TARGET"), Duration.Inf)
+       Await.result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf)
      }
      ex.getMessage should include(errorMessage)
    }
@@ -223,9 +225,9 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     mockEcmUsers()
     when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
 
-    val targetEmailsToSync = Set(WorkbenchEmail(userTcgaAndTarget.email), WorkbenchEmail(userTargetOnly.email))
-    val tcgaUsersToSync = Set(WorkbenchEmail(userTcgaAndTarget.email), WorkbenchEmail(userTcgaOnly.email))
-    val nihStatus = Await.result(nihService.syncAllNihWhitelistsAllUsers(), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
+    val targetEmailsToSync = Set(WorkbenchEmail(userTcgaAndTarget.email.value), WorkbenchEmail(userTargetOnly.email.value))
+    val tcgaUsersToSync = Set(WorkbenchEmail(userTcgaAndTarget.email.value), WorkbenchEmail(userTcgaOnly.email.value))
+    val nihStatus = Await.result(nihService.syncAllNihAllowlistsAllUsers(), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[StatusCode]].response
 
     nihStatus should be(StatusCodes.NoContent)
     verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
@@ -245,7 +247,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     mockEcmUsers()
     mockThurloeUsers()
     val user = userTcgaOnly
-    val userInfo = UserInfo(user.email, OAuth2BearerToken(user.id), Instant.now().plusSeconds(60).getEpochSecond, user.id)
+    val userInfo = UserInfo(user.email.value, OAuth2BearerToken(user.id.value), Instant.now().plusSeconds(60).getEpochSecond, user.id.value)
     val linkedAccount = userTcgaOnlyLinkedAccount
     val jwt = jwtForUser(linkedAccount)
     val (statusCode, nihStatus) = Await.result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[(StatusCode, NihStatus)]].response
@@ -263,19 +265,19 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     verify(samDao, times(1)).removeGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, times(1)).addGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, never()).addGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, never()).addGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
   it should "continue, but return an error of ECM returns an error" in {
@@ -284,7 +286,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount])(any[WithAccessToken])).thenReturn(Future.failed(new RuntimeException("ECM is down")))
 
     val user = userTcgaOnly
-    val userInfo = UserInfo(user.email, OAuth2BearerToken(user.id), Instant.now().plusSeconds(60).getEpochSecond, user.id)
+    val userInfo = UserInfo(user.email.value, OAuth2BearerToken(user.id.value), Instant.now().plusSeconds(60).getEpochSecond, user.id.value)
     val linkedAccount = userTcgaOnlyLinkedAccount
     val jwt = jwtForUser(linkedAccount)
     val (statusCode, errorReport) = Await.result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[(StatusCode, ErrorReport)]].response
@@ -298,15 +300,15 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     verify(samDao, times(1)).removeGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, times(1)).addGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, never()).addGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
   it should "continue, but return an error of Thurloe returns an error" in {
@@ -315,7 +317,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     when(thurloeDao.saveKeyValues(any[UserInfo], any[Map[String, String]])).thenReturn(Future.successful(Failure(new RuntimeException("Thurloe is down"))))
 
     val user = userTcgaOnly
-    val userInfo = UserInfo(user.email, OAuth2BearerToken(user.id), Instant.now().plusSeconds(60).getEpochSecond, user.id)
+    val userInfo = UserInfo(user.email.value, OAuth2BearerToken(user.id.value), Instant.now().plusSeconds(60).getEpochSecond, user.id.value)
     val linkedAccount = userTcgaOnlyLinkedAccount
     val jwt = jwtForUser(linkedAccount)
     val (statusCode, errorReport) = Await.result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf).asInstanceOf[PerRequest.RequestComplete[(StatusCode, ErrorReport)]].response
@@ -332,15 +334,15 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     verify(samDao, times(1)).removeGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, times(1)).addGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, never()).addGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
   "unlinkNihAccountAndSyncSelf" should "remove links from ECM and Thurloe, and sync allowlists" in {
@@ -348,16 +350,16 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     mockThurloeUsers()
 
     val user = userTcgaOnly
-    val userInfo = UserInfo(user.email, OAuth2BearerToken(user.id), Instant.now().plusSeconds(60).getEpochSecond, user.id)
+    val userInfo = UserInfo(user.email.value, OAuth2BearerToken(user.id.value), Instant.now().plusSeconds(60).getEpochSecond, user.id.value)
     Await.result(nihService.unlinkNihAccountAndSyncSelf(userInfo), Duration.Inf)
 
     verify(samDao, times(1)).removeGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value)))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(ecmDao, times(1)).deleteLinkedEraAccount(ArgumentMatchers.eq(userInfo))(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(thurloeDao, times(1)).deleteKeyValue(user.id, "linkedNihUsername", userInfo)
-    verify(thurloeDao, times(1)).deleteKeyValue(user.id, "linkExpireTime", userInfo)
+    verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkedNihUsername", userInfo)
+    verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkExpireTime", userInfo)
 
   }
 
@@ -379,12 +381,12 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     when(samDao.isGroupMember(any[WorkbenchGroupName], any[UserInfo])).thenAnswer(args => Future {
       val groupName = args.getArgument(0).asInstanceOf[WorkbenchGroupName]
       val userInfo = args.getArgument(1).asInstanceOf[UserInfo]
-      samGroupMemberships.get(groupName.value).exists(_.exists(_ == userInfo.id))
+      samGroupMemberships.get(groupName.value).exists(_.exists(_.value == userInfo.id))
     })
     when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
     when(samDao.getUsersForIds(any[Seq[WorkbenchUserId]])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenAnswer(args => {
       val userIds = args.getArgument(0).asInstanceOf[Seq[WorkbenchUserId]]
-      Future.successful(samUsers.filter(user => userIds.contains(WorkbenchUserId(user.id))).map(user => WorkbenchUserInfo(user.id, user.email)))
+      Future.successful(samUsers.filter(user => userIds.contains(WorkbenchUserId(user.id.value))).map(user => WorkbenchUserInfo(user.id.value, user.email.value)))
     })
 
   }
@@ -392,7 +394,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   private def mockEcmUsers(): Unit = {
     when(ecmDao.getLinkedAccount(any[UserInfo])).thenAnswer(args => {
       val userInfo = args.getArgument(0).asInstanceOf[UserInfo]
-      Future.successful(linkedAccountsBySamUserId.get(userInfo.id))
+      Future.successful(linkedAccountsBySamUserId.get(WorkbenchUserId(userInfo.id)))
     })
     when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
     when(ecmDao.deleteLinkedEraAccount(any[UserInfo])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
@@ -407,19 +409,19 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
 
   private def mockThurloeUsers(): Unit = {
     when(thurloeDao.getAllKVPs(any[String], any[WithAccessToken])).thenAnswer(args => Future {
-      val userId = args.getArgument(0).asInstanceOf[String]
+      val userId = WorkbenchUserId(args.getArgument(0).asInstanceOf[String])
       val user = idToSamUser(userId)
       val linkedEraAccount = linkedAccountsBySamUserId.get(userId)
-      Some(ProfileWrapper(userId, List(
-        FireCloudKeyValue(Some("contactEmail"), Some(user.email)),
+      Some(ProfileWrapper(userId.value, List(
+        FireCloudKeyValue(Some("contactEmail"), Some(user.email.value)),
         FireCloudKeyValue(Some("linkedNihUsername"), linkedEraAccount.map(_.linkedExternalId)),
         FireCloudKeyValue(Some("linkExpireTime"), linkedEraAccount.map(_.linkExpireTime.getMillis.toString))
       )))
     })
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("email")))
-      .thenReturn(Future.successful(samUsers.map(user => user.id -> user.email).toMap))
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername"))).thenReturn(Future.successful(linkedAccountsBySamUserId.view.mapValues(_.linkedExternalId).toMap))
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime"))).thenReturn(Future.successful(linkedAccountsBySamUserId.view.mapValues(_.linkExpireTime.getMillis.toString).toMap))
+      .thenReturn(Future.successful(samUsers.map(user => user.id.value -> user.email.value).toMap))
+    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername"))).thenReturn(Future.successful(linkedAccountsBySamUserId.map(tup => (tup._1.value, tup._2.linkedExternalId))))
+    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime"))).thenReturn(Future.successful(linkedAccountsBySamUserId.map(tup => (tup._1.value, (tup._2.linkExpireTime.getMillis / 1000).toString))))
     when(thurloeDao.saveKeyValues(any[UserInfo], any[Map[String, String]])).thenReturn(Future.successful(Success()))
     when(thurloeDao.saveKeyValues(any[String], any[WithAccessToken], any[Map[String, String]])).thenReturn(Future.successful(Success()))
     when(thurloeDao.deleteKeyValue(any[String], any[String], any[WithAccessToken])).thenReturn(Future.successful(Success()))
@@ -460,7 +462,15 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   }
 
   private def genSamUser(): SamUser = {
-    SamUser(Random.nextInt().toString, Random.nextInt().toString, UUID.randomUUID().toString + "@email.com", UUID.randomUUID().toString, true, "1", Instant.now(), Some(Instant.now()), Instant.now())
+    SamUser(
+      WorkbenchUserId(Random.nextInt().toString),
+      Some(GoogleSubjectId(Random.nextInt().toString)),
+      WorkbenchEmail( UUID.randomUUID().toString + "@email.com"),
+      Some(AzureB2CId(UUID.randomUUID().toString)),
+      enabled = true,
+      Instant.now(),
+      Some(Instant.now()),
+      Instant.now())
   }
 
 

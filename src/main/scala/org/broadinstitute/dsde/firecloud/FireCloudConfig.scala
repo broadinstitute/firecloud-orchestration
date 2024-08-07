@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Authority, Host, Query}
 import com.typesafe.config.{Config, ConfigFactory, ConfigObject}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihWhitelist}
+import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihAllowlist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 
@@ -154,7 +154,7 @@ object FireCloudConfig {
     // lazy - only required when nih is enabled
     private lazy val nih = config.getConfig("nih")
     lazy val whitelistBucket = nih.getString("whitelistBucket")
-    lazy val whitelists: Set[NihWhitelist] = {
+    lazy val whitelists: Set[NihAllowlist] = {
       val whitelistConfigs = nih.getConfig("whitelists")
 
       whitelistConfigs.root.asScala.collect { case (name, configObject:ConfigObject) =>
@@ -162,7 +162,7 @@ object FireCloudConfig {
         val rawlsGroup = config.getString("rawlsGroup")
         val fileName = config.getString("fileName")
 
-        NihWhitelist(name, WorkbenchGroupName(rawlsGroup), fileName)
+        NihAllowlist(name, WorkbenchGroupName(rawlsGroup), fileName)
       }
     }.toSet
     val enabled = nih.optionalBoolean("enabled").getOrElse(true)

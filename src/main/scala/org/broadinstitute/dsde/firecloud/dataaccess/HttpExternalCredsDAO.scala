@@ -43,7 +43,11 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
 
   override def deleteLinkedEraAccount(userInfo: UserInfo)(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
-    adminApi.adminDeleteLinkedAccount(userInfo.id, Provider.ERA_COMMONS)
+    try {
+      adminApi.adminDeleteLinkedAccount(userInfo.id, Provider.ERA_COMMONS)
+    } catch {
+      case e: HttpClientErrorException => handleError(e, "DELETE eRA Linked Account")
+    }
   }
 
   override def getLinkedEraAccountForUsername(username: String)(implicit orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]] =  Future {
