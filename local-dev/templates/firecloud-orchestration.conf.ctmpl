@@ -105,6 +105,11 @@ cwds {
     bucketName = "cwds-batchupsert-dev"
 }
 
+externalCreds {
+  baseUrl = "https://externalcreds.dsde-dev.broadinstitute.org"
+  enabled = true
+}
+
 firecloud {
 	baseUrl = "https://firecloud-orchestration.dsde-dev.broadinstitute.org"
 	portalUrl = "https://firecloud.dsde-dev.broadinstitute.org"

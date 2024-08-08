@@ -12,12 +12,12 @@ import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorRepo
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.SamResource.UserPolicy
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, RegistrationInfoV2, SamUserAttributesRequest, SamUserRegistrationRequest, SamUserResponse, UserIdInfo, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, FireCloudManagedGroupMembership, ManagedGroupRoles, RegistrationInfo, SamUser, SamUserAttributesRequest, SamUserRegistrationRequest, SamUserResponse, UserIdInfo, UserInfo, WithAccessToken, WorkbenchUserInfo}
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsValue, JsonFormat, RootJsonFormat}
@@ -49,6 +49,14 @@ class HttpSamDAO( implicit val system: ActorSystem, val materializer: Materializ
   override def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo] = {
     authedRequestToObject[UserIdInfo](Get(samGetUserIdsUrl.format(URLEncoder.encode(email.value, UTF_8.name))))
   }
+
+  // Sam's API only allows for 1000 user to be fetched at one time
+  override def getUsersForIds(samUserIds: Seq[WorkbenchUserId])(implicit userInfo: WithAccessToken): Future[Seq[WorkbenchUserInfo]] = Future.sequence {
+      samUserIds.sliding(1000, 1000).toSeq.map { batch =>
+        adminAuthedRequestToObject[Seq[SamUser]](Post(samAdminGetUsersForIdsUrl, batch))
+          .map(_.map(user => WorkbenchUserInfo(user.id.value, user.email.value)))
+      }
+    }.map(_.flatten)
 
   override def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean] = {
     implicit val accessToken = userInfo

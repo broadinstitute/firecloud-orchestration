@@ -24,6 +24,7 @@ object Merging {
     // Error: /home/sbtuser/.cache/coursier/v1/https/repo1.maven.org/maven2/com/typesafe/akka/akka-protobuf-v3_2.13/2.6.19/akka-protobuf-v3_2.13-2.6.19.jar:google/protobuf/struct.proto
     case PathList("google", "protobuf", _ @ _*) => MergeStrategy.first
     case PathList("META-INF", "versions", "9", "OSGI-INF", "MANIFEST.MF") => MergeStrategy.first
+    case PathList("META-INF", "spring", "aot.factories") => MergeStrategy.first
     case x => oldStrategy(x)
   }
 }
