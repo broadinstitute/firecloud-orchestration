@@ -1,25 +1,14 @@
-[![Build Status](https://travis-ci.org/broadinstitute/firecloud-orchestration.svg?branch=develop)](https://travis-ci.org/broadinstitute/firecloud-orchestration?branch=develop)
-[![Coverage Status](https://coveralls.io/repos/broadinstitute/firecloud-orchestration/badge.svg?branch=develop&service=github)](https://coveralls.io/github/broadinstitute/firecloud-orchestration?branch=develop)
-
 # FireCloud-Orchestration
 FireCloud Orchestration Service
 
 * URL: https://firecloud-orchestration.dsde-dev.broadinstitute.org/
-* Documentation: [https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team](https://broadinstitute.atlassian.net/wiki/display/DSDE/Silver+Team)
 * Github Repository: [https://github.com/broadinstitute/firecloud-orchestration/](https://github.com/broadinstitute/firecloud-orchestration/)
 
 ## IntelliJ Setup
 * IntelliJ IDEA can be downloaded here : https://www.jetbrains.com/idea/ . It is an 'Intelligent Java IDE'
 * Configure the SBT plugin.  "IntelliJ IDEA" -> "Preferences" -> "Plugins" can be used to do so (download, install)
 * After running IntelliJ, open this source directory with File -> Open
-* In the Import Project dialog, check "Create directories for empty content roots automatically" and set your Project SDK to 11
-
-## Plugins
-* spray-routing
-* spray-json
-* sbt-assembly
-* sbt-revolver
-* mock-server
+* In the Import Project dialog, check "Create directories for empty content roots automatically" and set your Project SDK to 17
 
 ## Running Locally
 
@@ -48,7 +37,7 @@ After satisfying the above requirements, execute the following command from the 
 If Orch successfully starts up, you can now access the Orch Swagger page: https://local.broadinstitute.org:10443/
 
 ## Development Notes
-* We push new features to a feature-branch and make pull requests against master.
+* We push new features to a feature-branch and make pull requests against develop.
 
 ## Building
 
