@@ -23,11 +23,13 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
-    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
-    "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "org.yaml" % "snakeyaml" % "1.33",
-    "org.apache.commons" % "commons-compress" % "1.26.2" // workbench-libs libraries pull this in
+    "com.fasterxml.jackson.core" % "jackson-annotations"        % jacksonV,
+    "com.fasterxml.jackson.core" % "jackson-databind"           % jacksonHotfixV,
+    "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
+    "org.yaml"                   % "snakeyaml"                  % "1.33",
+    "org.apache.commons"         % "commons-compress"           % "1.26.2", // workbench-libs libraries pull this in
+    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20240730-2.0.0", // from workbench-google2
+    "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20240709-2.0.0" // from workbench-google2
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -81,9 +83,6 @@ object Dependencies {
       exclude("com.fasterxml.jackson.dataformat", "jackson-dataformat-cbor")
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
-
-    excludeGuava("com.google.apis"     % "google-api-services-pubsub"       % "v1-rev20240702-2.0.0"),
-    excludeGuava("com.google.apis"     % "google-api-services-admin-directory"  % "directory_v1-rev20240709-2.0.0"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.1",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
