@@ -43,7 +43,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.23.1",
-    "ch.qos.logback"                 % "logback-classic"     % "1.5.6",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.7",
     "io.sentry"                      % "sentry-logback"      % "7.14.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
@@ -56,7 +56,7 @@ object Dependencies {
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.36-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.7-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.267",
+    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.271",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.44.0-20240725.201427-1" excludeAll(excludeSpring, excludeSpringBoot),
