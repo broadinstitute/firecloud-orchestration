@@ -60,7 +60,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.6-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.44.0-20240725.201427-1" excludeAll(excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.1.11" excludeAll(excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.1.12" excludeAll(excludeSpringBoot, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
