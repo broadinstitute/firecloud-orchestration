@@ -34,6 +34,7 @@ tags:
   - name: Version
   - name: Womtool
   - name: Workspaces
+  - name: WorkspacesV2
 security:
   - oidc: []
 paths:
@@ -5238,6 +5239,84 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
+  /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/settings:
+    get:
+      tags:
+        - WorkspacesV2
+      summary: Get workspace settings
+      description: Get the settings for a workspace
+      operationId: getWorkspaceSettings
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceSetting'
+        403:
+          description: User does not have access to requested workspace
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+    put:
+      tags:
+        - WorkspacesV2
+      summary: Update workspace settings
+      description: Update the settings for a workspace. Unspecified setting types will be left unchanged.
+      operationId: updateWorkspaceSettings
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      requestBody:
+        description: New settings for the workspace
+        content:
+          'application/json':
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkspaceSetting'
+        required: true
+      responses:
+        200:
+          description: Success
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/WorkspaceSettingsResponse'
+        400:
+          description: Invalid settings
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: User must be an owner of the workspace to overwrite settings
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
@@ -9029,6 +9108,91 @@ components:
         workspaceSubmissionStats:
           $ref: '#/components/schemas/WorkspaceSubmissionStats'
       description: ""
+    WorkspaceSettingsResponse:
+      required:
+        - successes
+        - failures
+      type: object
+      properties:
+        successes:
+          type: array
+          description: The settings that were successfully applied
+          items:
+            $ref: '#/components/schemas/WorkspaceSetting'
+        failures:
+          $ref: '#/components/schemas/FailedWorkspaceSettingsResponse'
+    FailedWorkspaceSettingsResponse:
+      type: object
+      description: The settings that failed to apply. The key is the setting type that failed.
+      additionalProperties:
+        $ref: '#/components/schemas/ErrorReport'
+    WorkspaceSetting:
+      required:
+        - settingType
+        - config
+      type: object
+      properties:
+        settingType:
+          type: string
+          description: The type of the workspace setting
+          enum:
+            - GcpBucketLifecycle
+            - GcpBucketSoftDelete
+        config:
+          description: The configuration of the workspace setting
+          oneOf:
+            - $ref: '#/components/schemas/WorkspaceSettingGcpBucketLifecycleConfig'
+            - $ref: '#/components/schemas/WorkspaceSettingGcpBucketSoftDeleteConfig'
+    WorkspaceSettingGcpBucketLifecycleConfig:
+      required:
+        - rules
+      type: object
+      properties:
+        rules:
+          type: array
+          description: The lifecycle rules for the workspace bucket
+          items:
+            $ref: '#/components/schemas/GcpBucketLifecycleRule'
+    GcpBucketLifecycleRule:
+      required:
+        - action
+        - conditions
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/GcpBucketLifecycleAction'
+        conditions:
+          $ref: '#/components/schemas/GcpBucketLifecycleCondition'
+    GcpBucketLifecycleAction:
+      required:
+        - actionType
+      type: object
+      properties:
+        actionType:
+          type: string
+          description: The type of the lifecycle action
+          enum:
+            - Delete
+    GcpBucketLifecycleCondition:
+      type: object
+      minProperties: 1
+      properties:
+        age:
+          type: integer
+          description: The age of the object in days
+        matchesPrefix:
+          type: array
+          description: Object name prefixes that this rule applies to
+          items:
+            type: string
+    WorkspaceSettingGcpBucketSoftDeleteConfig:
+      required:
+        - retentionDurationInSeconds
+      type: object
+      properties:
+        retentionDurationInSeconds:
+          type: integer
+          description: The length of time to retain soft-deleted objects for, in seconds
     WorkspaceSubmissionStats:
       required:
         - runningSubmissionsCount
