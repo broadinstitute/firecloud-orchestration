@@ -5239,6 +5239,304 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
+  /api/workspaces/v2/{workspaceNamespace}/{workspaceName}:
+    delete:
+      tags:
+        - WorkspacesV2
+      summary: Delete workspace
+      description: Starts a job to delete a workspace and all of its contents.
+      operationId: deleteWorkspaceV2
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        202:
+          description: Delete request accepted. Workspace bucket will be deleted within
+            24 hours.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/WorkspaceDeletionResult'
+        400:
+          description: Workspace is not in a deletable state.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: Insufficient permissions to delete workspace (must be owner)
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        409:
+          description: Workspace is already being deleted.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+  /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/clone:
+    post:
+      tags:
+        - WorkspacesV2
+      summary: Clone workspace
+      description: Clone a workspace, asynchronously if possible
+      operationId: cloneWorkspace
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      requestBody:
+        description: Request for new workspace
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/WorkspaceRequestClone'
+        required: true
+      responses:
+        201:
+          description: Successful Request
+          headers:
+            Location:
+              description: The path to the newly cloned workspace
+              schema:
+                type: string
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/WorkspaceDetails'
+        400:
+          description: Workspace namespace is not ready
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: User does not have access to create workspace in namespace
+            or user does not have permission to set attributes in the namespace
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Source workspace not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        409:
+          description: Destination workspace already exists
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        422:
+          description: Destination workspace must match source's authorization domain,
+            if the dest has one
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+      x-codegen-request-body-name: workspaceRequest
+
+  /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/bucketMigration:
+    get:
+      tags:
+        - WorkspacesV2
+      summary: list bucket migration attempts for workspace. empty list for workspaces that have not been migrated before
+      description: list bucket migration attempts for workspace. empty list for workspaces that have not been migrated before
+      operationId: listBucketMigrationsForWorkspace
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceMigrationMetadata'
+        403:
+          description: You must be an owner to list migration attempts
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found or you do not have access to it
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+    post:
+      tags:
+        - WorkspacesV2
+      summary: start bucket migration attempt for Google workspace or restart failed past attempt
+      description: start bucket migration attempt for Google workspace or restart failed past attempt
+      operationId: startBucketMigrationForWorkspace
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        201:
+          description: Workspace scheduled for migration
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/WorkspaceMigrationMetadata'
+        400:
+          description: This workspace is ineligible for migration.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: You must be an owner to start migration attempts
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found or you do not have access to it
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+  /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/bucketMigration/progress:
+    get:
+      tags:
+        - WorkspacesV2
+      summary: get bucket migration progress for workspace
+      description: get bucket migration progress for workspace
+      operationId: getBucketMigrationProgressForWorkspace
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MultiregionalBucketMigrationProgress'
+        403:
+          description: You must be an owner to get migration progress
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found, you do not have access to it, or it has not been migrated before
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+  /api/workspaces/v2/bucketMigration:
+    post:
+      tags:
+        - WorkspacesV2
+      summary: batch start Google workspace bucket migrations or restart failed past attempts
+      description: batch start bucket migration attempts for Google workspaces or restart failed past attempts
+      operationId: batchStartBucketMigrationForWorkspaces
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/BatchMigrateRequestBody'
+      responses:
+        201:
+          description: Workspaces scheduled for migration
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceMigrationMetadata'
+        400:
+          description: Some or all workspaces in billing project were ineligible for migration. Eligible workspaces are scheduled for migration and ineligible workspaces will be included in error message.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: You must be an owner to start migration attempts
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+    get:
+      tags:
+        - WorkspacesV2
+      summary: get workspaces eligible for bucket migration and their migration progress if it exists
+      description: get workspaces eligible for bucket migration and their migration progress if it exists
+      operationId: getEligibleWorkspacesForBucketMigrationWithProgress
+      responses:
+        200:
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  type: object
+                  description: Returns metadata in the shape workspaceNamespace/workspaceName -> bucket migration progress where the progress is null for workspaces that have not been scheduled for migration before.
+                  additionalProperties:
+                    $ref: '#/components/schemas/MultiregionalBucketMigrationProgress'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
+  /api/workspaces/v2/bucketMigration/getProgress:
+    post:
+      tags:
+        - WorkspacesV2
+      summary: fetch bucket migration progress for multiple Google workspaces
+      description: fetch bucket migration progress for multiple Google workspaces
+      operationId: getBucketMigrationProgressForWorkspaceList
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/BatchMigrateRequestBody'
+      responses:
+        200:
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  type: object
+                  description: Returns metadata in the shape workspaceNamespace/workspaceName -> bucket migration progress where the progress is null for workspaces that have not been scheduled for migration before.
+                  additionalProperties:
+                    $ref: '#/components/schemas/MultiregionalBucketMigrationProgress'
+        403:
+          description: You must be an owner of all requested workspaces
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          $ref: '#/components/responses/RawlsInternalError'
   /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/settings:
     get:
       tags:
@@ -8906,6 +9204,22 @@ components:
           items:
             type: string
       description: ""
+    WorkspaceDeletionResult:
+      type: object
+      description: Workspace deletion metadata
+      properties:
+        gcpContext:
+          $ref: '#/components/schemas/GcpWorkspaceDeletionContext'
+        jobId:
+          type: string
+          description: Deletion job ID
+    GcpWorkspaceDeletionContext:
+      type: object
+      description: Workspace deletion context information for a GCP workspace
+      properties:
+        bucketName:
+          type: string
+          description: Name of the workspace's GCP bucket, if present
     WorkspaceDetails:
       required:
         - bucketName
@@ -9018,6 +9332,19 @@ components:
         workspaceSubmissionStats:
           description: GCP workspace submission statistics, deprecated as part of the list response due to slow performance. This field will continue to be supported on individual workspace details.
           deprecated: true
+      description: ""
+    WorkspaceName:
+      required:
+        - name
+        - namespace
+      type: object
+      properties:
+        namespace:
+          type: string
+          description: The namespace (billing project) the workspace belongs to
+        name:
+          type: string
+          description: The name of the workspace
       description: ""
     WorkspaceRequest:
       required:
@@ -9225,6 +9552,101 @@ components:
           description: number of usages of the tag
           format: int32
           example: 5
+    WorkspaceMigrationMetadata:
+      description: Represents the status of a workspace migration
+      type: object
+      required:
+        - id
+        - created
+        - updated
+      properties:
+        id:
+          type: integer
+          description: migration attempt number for this workspace
+        created:
+          type: string
+          format: date-time
+          description: when the migration was scheduled
+        started:
+          type: string
+          format: date-time
+          description: when the system started the migration
+        updated:
+          type: string
+          format: date-time
+          description: when the system last updated the migration
+        finished:
+          type: string
+          format: date-time
+          description: when the system finished executing the migration
+        outcome:
+          $ref: '#/components/schemas/WorkspaceMigrationOutcome'
+    WorkspaceMigrationOutcome:
+      description: Represents the result of a workspace migration attempt
+      oneOf:
+        - $ref: '#/components/schemas/WorkspaceMigrationSuccess'
+        - $ref: '#/components/schemas/WorkspaceMigrationFailure'
+    WorkspaceMigrationSuccess:
+      type: string
+      enum:
+        - success
+    WorkspaceMigrationFailure:
+      type: object
+      required:
+        - failure
+      properties:
+        failure:
+          description: Supplementary failure information
+          type: string
+    BatchMigrateRequestBody:
+      description: List of workspace names
+      type: array
+      items:
+        $ref: '#/components/schemas/WorkspaceName'
+    MultiregionalBucketMigrationProgress:
+      description: Represents the progress of a workspace bucket through the multiregional bucket migration pipeline
+      type: object
+      required:
+        - migrationStep
+      properties:
+        migrationStep:
+          description: User facing step of migration
+          type: string
+          enum:
+            - ScheduledForMigration
+            - PreparingTransferToTempBucket
+            - TransferringToTempBucket
+            - PreparingTransferToFinalBucket
+            - TransferringToFinalBucket
+            - FinishingUp
+            - Finished
+        outcome:
+          $ref: '#/components/schemas/WorkspaceMigrationOutcome'
+        tempBucketTransferProgress:
+          $ref: '#/components/schemas/StorageTransferJobProgress'
+        finalBucketTransferProgress:
+          $ref: '#/components/schemas/StorageTransferJobProgress'
+    StorageTransferJobProgress:
+      description: Represents the progress of a single Storage Transfer Service job to move a bucket
+      type: object
+      required:
+        - totalBytesToTransfer
+        - bytesTransferred
+        - totalObjectsToTransfer
+        - objectsTransferred
+      properties:
+        totalBytesToTransfer:
+          description: total bytes that this job will transfer
+          type: integer
+        bytesTransferred:
+          description: bytes that this job has transferred so far
+          type: integer
+        totalObjectsToTransfer:
+          description: total objects that this job will transfer
+          type: integer
+        objectsTransferred:
+          description: objects that this job has transferred so far
+          type: integer
     ConfigurationPayload:
       type: object
       properties:
