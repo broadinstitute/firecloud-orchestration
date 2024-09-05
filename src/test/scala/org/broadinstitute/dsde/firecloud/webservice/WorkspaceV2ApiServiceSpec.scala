@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.StatusCodes.{MethodNotAllowed, OK}
+import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.{HttpMethod, HttpMethods, StatusCode}
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
@@ -14,7 +14,11 @@ import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.ExecutionContext
 
-class WorkspaceV2ApiServiceSpec extends BaseServiceSpec with WorkspaceV2ApiService with BeforeAndAfterEach with SprayJsonSupport {
+class WorkspaceV2ApiServiceSpec
+    extends BaseServiceSpec
+    with WorkspaceV2ApiService
+    with BeforeAndAfterEach
+    with SprayJsonSupport {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -29,17 +33,23 @@ class WorkspaceV2ApiServiceSpec extends BaseServiceSpec with WorkspaceV2ApiServi
   var rawlsServer: ClientAndServer = _
 
   /** Stubs the mock Rawls service to respond to a request. Used for testing passthroughs.
-   *
-   * @param method HTTP method to respond to
-   * @param path   request path
-   * @param status status for the response
-   */
-  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
+    *
+    * @param method HTTP method to respond to
+    * @param path   request path
+    * @param status status for the response
+    */
+  def stubRawlsService(method: HttpMethod,
+                       path: String,
+                       status: StatusCode,
+                       body: Option[String] = None,
+                       query: Option[(String, String)] = None,
+                       requestBody: Option[String] = None): Unit = {
     rawlsServer.reset()
     val request = org.mockserver.model.HttpRequest.request()
       .withMethod(method.name)
       .withPath(path)
-    if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
+    if (query.isDefined)
+      request.withQueryStringParameter(query.get._1, query.get._2)
     requestBody.foreach(request.withBody)
     val response = org.mockserver.model.HttpResponse.response()
       .withHeaders(MockUtils.header).withStatusCode(status.intValue)
