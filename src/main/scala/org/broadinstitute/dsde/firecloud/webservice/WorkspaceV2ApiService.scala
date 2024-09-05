@@ -1,15 +1,18 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
-import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.server.Route
 
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, FireCloudRequestBuilding}
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{StandardUserInfoDirectives, StreamingPassthrough}
 
 import scala.concurrent.ExecutionContext
 
-trait WorkspaceV2ApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
+trait WorkspaceV2ApiService
+    extends FireCloudRequestBuilding
+    with FireCloudDirectives
+    with StandardUserInfoDirectives
+    with StreamingPassthrough {
 
   implicit val executionContext: ExecutionContext
 
@@ -21,15 +24,8 @@ trait WorkspaceV2ApiService extends FireCloudRequestBuilding with FireCloudDirec
         (workspaceNamespace, workspaceName) => {
           val workspaceV2Path = encodeUri(rawlsWorkspacesV2Root + "/%s/%s".format(workspaceNamespace, workspaceName))
           path("settings") {
-            get {
-              requireUserInfo() { _ =>
-                passthrough(workspaceV2Path + "/settings", HttpMethods.GET)
-              }
-            } ~
-            put {
-              requireUserInfo() { _ =>
-                passthrough(workspaceV2Path + "/settings", HttpMethods.PUT)
-              }
+            requireUserInfo() { _ =>
+              streamingPassthrough(workspaceV2Path + "/settings")
             }
           }
         }
