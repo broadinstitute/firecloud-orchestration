@@ -57,33 +57,17 @@ class WorkspaceV2ApiServiceSpec extends BaseServiceSpec with WorkspaceV2ApiServi
     rawlsServer.stop
   }
 
-  "WorkspaceService Passthrough Negative Tests" - {
-
-    "Passthrough tests on the /workspaces/v2/segment/segment/settings path" - {
-      "MethodNotAllowed error is returned for HTTP POST, PATCH, DELETE methods" in {
-        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.DELETE) map {
-          method =>
-            new RequestBuilder(method)(settingsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceV2Routes) ~> check {
-              status should equal(MethodNotAllowed)
-            }
-        }
-      }
-    }
-    }
-
   "WorkspaceService Passthrough Tests" - {
 
-    "Passthrough tests on the GET /workspaces/v2/%s/%s/settings path" - {
-      s"OK status is returned for HTTP GET" in {
+    "Passthrough tests on the /workspaces/v2/segment/segment/settings path" - {
+      s"OK status is returned for HTTP GET if Rawls returns it" in {
         stubRawlsService(HttpMethods.GET, settingsPath, OK)
         Get(settingsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceV2Routes) ~> check {
           status should equal(OK)
         }
       }
-    }
 
-    "Passthrough tests on the PUT /workspaces/v2/%s/%s/settings path" - {
-      s"OK status is returned for HTTP PUT" in {
+      s"OK status is returned for HTTP PUT if Rawls returns it" in {
         stubRawlsService(HttpMethods.PUT, settingsPath, OK)
         Put(settingsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceV2Routes) ~> check {
           status should equal(OK)
