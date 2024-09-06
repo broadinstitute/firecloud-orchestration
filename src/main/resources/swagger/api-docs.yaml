@@ -5289,7 +5289,7 @@ paths:
         - WorkspacesV2
       summary: Clone workspace
       description: Clone a workspace, asynchronously if possible
-      operationId: cloneWorkspace
+      operationId: cloneWorkspaceV2
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
         - $ref: '#/components/parameters/workspaceNameParam'
