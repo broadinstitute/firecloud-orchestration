@@ -47,6 +47,8 @@ object FireCloudConfig {
     val authUrl = baseUrl + authPrefix
     val workspacesPath = workspace.getString("workspacesPath")
     val workspacesUrl = authUrl + workspacesPath
+    val workspacesV2Path = workspace.getString("workspacesV2Path")
+    val workspacesV2Url = authUrl + workspacesV2Path
     val entitiesPath = workspace.getString("entitiesPath")
     val entityQueryPath = workspace.getString("entityQueryPath")
     val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")

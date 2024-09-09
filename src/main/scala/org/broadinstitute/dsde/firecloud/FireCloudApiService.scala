@@ -67,6 +67,7 @@ trait FireCloudApiService extends CookieAuthedApiService
   with OauthApiService
   with RegisterApiService
   with WorkspaceApiService
+  with WorkspaceV2ApiService
   with NotificationsApiService
   with MethodConfigurationApiService
   with BillingApiService
@@ -214,6 +215,7 @@ trait FireCloudApiService extends CookieAuthedApiService
       userServiceRoutes ~
       managedGroupServiceRoutes ~
       workspaceRoutes ~
+      workspaceV2Routes ~
       notificationsRoutes ~
       statusRoutes ~
       ga4ghRoutes ~
