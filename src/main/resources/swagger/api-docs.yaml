@@ -9465,11 +9465,13 @@ components:
           enum:
             - GcpBucketLifecycle
             - GcpBucketSoftDelete
+            - GcpBucketRequesterPays
         config:
           description: The configuration of the workspace setting
           oneOf:
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketLifecycleConfig'
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketSoftDeleteConfig'
+            - $ref: '#/components/schemas/WorkspaceSettingGcpBucketRequesterPaysConfig'
     WorkspaceSettingGcpBucketLifecycleConfig:
       required:
         - rules
@@ -9520,6 +9522,14 @@ components:
         retentionDurationInSeconds:
           type: integer
           description: The length of time to retain soft-deleted objects for, in seconds
+    WorkspaceSettingGcpBucketRequesterPaysConfig:
+      required:
+        - enabled
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Enabled status to set for requester pays
     WorkspaceSubmissionStats:
       required:
         - runningSubmissionsCount
