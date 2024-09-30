@@ -1,29 +1,26 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.ContentDispositionTypes
-import akka.stream.ActorMaterializer
-import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
-import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
-import akka.http.scaladsl.model.{ContentType, ContentTypes, FormData, HttpCharsets, HttpEntity, HttpMethods, MediaTypes, Uri}
-import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.{Connection, `Content-Disposition`}
+import akka.http.scaladsl.model.headers.{Connection, ContentDispositionTypes, `Content-Disposition`}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import better.files.File
+import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
-import org.broadinstitute.dsde.workbench.model.ErrorReport
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, spy, times, verify}
 import org.scalatest.BeforeAndAfterEach
 
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 
 class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService with BeforeAndAfterEach {
 

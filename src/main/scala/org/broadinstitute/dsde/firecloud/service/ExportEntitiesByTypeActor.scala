@@ -1,29 +1,16 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.io
-import akka.{Done, NotUsed}
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharsets, HttpEntity, HttpResponse, MediaTypes, StatusCodes}
-import akka.http.scaladsl.server.RequestContext
-import akka.pattern.pipe
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.stream.scaladsl.{Source => AkkaSource}
-
-import scala.io.Source
-import akka.http.scaladsl.model.HttpEntity.{ChunkStreamPart, Chunked}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{Connection, ContentDispositionTypes, `Content-Disposition`}
-import akka.http.scaladsl.model.{ContentTypes, HttpResponse}
+import akka.http.scaladsl.model._
+import akka.stream._
+import akka.stream.scaladsl.{Source => AkkaSource, _}
 import akka.util.{ByteString, Timeout}
 import better.files.File
-import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import fs2.Stream
-import fs2.io.file.{Files, Path}
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
-import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
