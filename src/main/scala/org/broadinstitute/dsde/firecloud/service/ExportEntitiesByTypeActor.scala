@@ -16,16 +16,21 @@ import akka.http.scaladsl.model.headers.{Connection, ContentDispositionTypes, `C
 import akka.http.scaladsl.model.{ContentTypes, HttpResponse}
 import akka.util.{ByteString, Timeout}
 import better.files.File
+import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import fs2.Stream
+import fs2.io.file.{Files, Path}
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import spray.json._
 
+import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
@@ -44,9 +49,10 @@ object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
   case object ExportEntities extends ExportEntitiesByTypeMessage
 
-  def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
-    new ExportEntitiesByTypeActor(app.rawlsDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
+  def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) = {
+    new ExportEntitiesByTypeActor(app.rawlsDAO, app.googleServicesDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
       exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, system)
+  }
 }
 
 /**
@@ -59,6 +65,7 @@ object ExportEntitiesByTypeActor {
   * and backpressure considerations between upstream producers and downstream consumers.
   */
 class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
+                                googleServicesDao: GoogleServicesDAO,
                                 argUserInfo: UserInfo,
                                 workspaceNamespace: String,
                                 workspaceName: String,
@@ -120,6 +127,48 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   }.recoverWith {
     // Standard exceptions have to be handled as a completed request
     case t: Throwable => handleStandardException(t)
+  }
+
+  /**
+    * Writes TSVs to a temp file, then uploads from that temp file to the workspace's bucket.
+    *
+    * see also streamEntities()
+    *
+    */
+  def streamEntitiesToWorkspaceBucket(): Future[GcsPath] = {
+    // retrieve workspace so we can get its bucket
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) flatMap { workspaceResponse =>
+
+      val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
+      val now = Instant.now()
+
+      val fileNameBase = s"tsvexport/$entityType/$entityType-${now.toEpochMilli}"
+
+      entityTypeMetadata flatMap { metadata =>
+        val entityQueries = getEntityQueries(metadata, entityType)
+        if (modelSchema.isCollectionType(entityType)) {
+          val fileName = s"$fileNameBase.zip"
+
+          streamCollectionType(entityQueries, metadata).map { tempFile =>
+            val objectKey: GcsObjectName = GcsObjectName(fileName, now)
+            googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
+          }
+        } else {
+          val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
+          val fileName = s"$fileNameBase.tsv"
+
+          streamSingularType(entityQueries, metadata, headers).map { tempFile =>
+            val objectKey: GcsObjectName = GcsObjectName(fileName, now)
+            googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
+          }
+        }
+      }
+    }
+  }.recover {
+    case f: FireCloudExceptionWithErrorReport => throw f // re-throw as-is
+    case t =>
+      // wrap in FireCloudExceptionWithErrorReport
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, s"FireCloudException: Error generating entity download: ${t.getMessage}"))
   }
 
 

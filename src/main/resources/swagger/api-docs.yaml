@@ -3644,6 +3644,48 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv/save:
+    post:
+      tags:
+        - Entities
+      summary: |
+        Write TSV file containing workspace entities of the specified type to the workspace bucket.
+      operationId: bucketWriteEntitiesTSV
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+        - name: attributeNames
+          in: query
+          description: comma separated list of ordered attribute names to be in downloaded
+            tsv
+          schema:
+            type: string
+        - name: model
+          in: query
+          description: firecloud (default) or flexible
+          schema:
+            type: string
+      responses:
+        200:
+          description: URL to saved file
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Workspace or entity type does not exist
+          content: {}
+        414:
+          description: |
+            URI length exceeds the configured limit of 2048 characters.
+            Please use the POST endpoint when it's necessary to supply a large number of attribute names.
+          content: {}
+        500:
+          description: Internal Server Error
+          content: {}
+      x-passthrough: false
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
       tags:
