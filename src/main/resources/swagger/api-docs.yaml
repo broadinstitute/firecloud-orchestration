@@ -3650,6 +3650,8 @@ paths:
         - Entities
       summary: |
         Write TSV file containing workspace entities of the specified type to the workspace bucket.
+      description: |
+        Requires write access to the workspace.
       operationId: bucketWriteEntitiesTSV
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
@@ -3680,7 +3682,6 @@ paths:
         414:
           description: |
             URI length exceeds the configured limit of 2048 characters.
-            Please use the POST endpoint when it's necessary to supply a large number of attribute names.
           content: {}
         500:
           description: Internal Server Error
