@@ -13,6 +13,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import spray.json._
@@ -108,6 +109,15 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // retrieve workspace so we can get its bucket
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) flatMap { workspaceResponse =>
       val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
+
+      // verify write permissions
+      val isPermitted = workspaceResponse.accessLevel match {
+        case Some(accessLevel) => accessLevel >= WorkspaceAccessLevels.Write
+        case None => false
+      }
+      if (!isPermitted)
+        throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must have at least write access."))
+
       val now = Instant.now()
       val fileNameBase = s"tsvexport/$entityType/$entityType-${now.toEpochMilli}"
 
