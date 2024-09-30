@@ -88,41 +88,22 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   def ExportEntities = streamEntities()
 
   /**
-    * Two basic code paths
+    * Calls entitiesToTempFile() to write entity TSV to a temp file,
+    * then creates an HttpResponse containing that temp file's contents as an attachment.
     *
-    * For Collection types, write the content to temp files, zip and return.
-    *
-    * For Singular types, pipe the content from `Source` -> `Flow` -> `Sink`
-    * Source generates the entity queries
-    * Flow executes the queries and sends formatted content to chunked response handler
-    * Sink finishes the execution pipeline
-    *
-    * Handle exceptions directly by completing the request.
+    * @see [[entitiesToTempFile()]]
     */
   def streamEntities(): Future[HttpResponse] = {
     val keepAlive = Connection("Keep-Alive")
 
-    entityTypeMetadata flatMap { metadata =>
-      val entityQueries = getEntityQueries(metadata, entityType)
-      if (modelSchema.isCollectionType(entityType)) {
-        val contentType = ContentTypes.`application/octet-stream`
-        val fileName = entityType + ".zip"
-        val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
-
-        streamCollectionType(entityQueries, metadata).map { source =>
-          HttpResponse(entity = HttpEntity.fromFile(contentType, source.toJava), headers = List(keepAlive, disposition))
-        }
+    entitiesToTempFile() map { tempFile =>
+      val (contentType, fileName) = if (modelSchema.isCollectionType(entityType)) {
+        (ContentTypes.`application/octet-stream`, s"$entityType.zip")
       } else {
-        val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-
-        val contentType = ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-        val fileName = entityType + ".tsv"
-        val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
-
-        streamSingularType(entityQueries, metadata, headers).map { source =>
-          HttpResponse(entity = HttpEntity.fromFile(contentType, source.toJava), headers = List(keepAlive, disposition))
-        }
+        (ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`), s"$entityType.tsv")
       }
+      val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
+      HttpResponse(entity = HttpEntity.fromFile(contentType, tempFile.toJava), headers = List(keepAlive, disposition))
     }
   }.recoverWith {
     // Standard exceptions have to be handled as a completed request
@@ -130,37 +111,26 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   }
 
   /**
-    * Writes TSVs to a temp file, then uploads from that temp file to the workspace's bucket.
+    * Calls entitiesToTempFile() to write entity TSV to a temp file,
+    * then uploads from that temp file to the workspace's bucket.
     *
-    * see also streamEntities()
+    * @see [[entitiesToTempFile()]]
     *
     */
   def streamEntitiesToWorkspaceBucket(): Future[GcsPath] = {
     // retrieve workspace so we can get its bucket
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) flatMap { workspaceResponse =>
-
       val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
       val now = Instant.now()
-
       val fileNameBase = s"tsvexport/$entityType/$entityType-${now.toEpochMilli}"
 
-      entityTypeMetadata flatMap { metadata =>
-        val entityQueries = getEntityQueries(metadata, entityType)
+      entitiesToTempFile() map { tempFile =>
         if (modelSchema.isCollectionType(entityType)) {
-          val fileName = s"$fileNameBase.zip"
-
-          streamCollectionType(entityQueries, metadata).map { tempFile =>
-            val objectKey: GcsObjectName = GcsObjectName(fileName, now)
-            googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
-          }
+          val objectKey: GcsObjectName = GcsObjectName(s"$fileNameBase.zip", now)
+          googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
         } else {
-          val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-          val fileName = s"$fileNameBase.tsv"
-
-          streamSingularType(entityQueries, metadata, headers).map { tempFile =>
-            val objectKey: GcsObjectName = GcsObjectName(fileName, now)
-            googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
-          }
+          val objectKey: GcsObjectName = GcsObjectName(s"$fileNameBase.tsv", now)
+          googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
         }
       }
     }
@@ -169,6 +139,24 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     case t =>
       // wrap in FireCloudExceptionWithErrorReport
       throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, s"FireCloudException: Error generating entity download: ${t.getMessage}"))
+  }
+
+  /**
+    * Writes TSVs to a temp file. Called by streamEntities() and streamEntitiesToWorkspaceBucket()
+    *
+    * @see [[streamEntities()]]
+    * @see [[streamEntitiesToWorkspaceBucket()]]
+    */
+  private def entitiesToTempFile(): Future[File] = {
+    entityTypeMetadata flatMap { metadata =>
+      val entityQueries = getEntityQueries(metadata, entityType)
+      if (modelSchema.isCollectionType(entityType)) {
+        streamCollectionType(entityQueries, metadata)
+      } else {
+        val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
+        streamSingularType(entityQueries, metadata, headers)
+      }
+    }
   }
 
 

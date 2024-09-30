@@ -13,12 +13,19 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{Connection, `Content-Disposition`}
 import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import better.files.File
+import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.workbench.model.ErrorReport
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.{reset, spy, times, verify}
+import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
-class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService {
+class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitiesApiService with CookieAuthedApiService with BeforeAndAfterEach {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -27,7 +34,12 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
   def actorRefFactory: ActorSystem = system
 
-  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor = ExportEntitiesByTypeActor.constructor(app, actorRefFactory)
+  // spy on the MockGoogleServicesDAO. Note MockGoogleServicesDAO is a (non-mockito) concrete implementation, so this is
+  // adding a mockito layer on top of that.
+  val mockitoGoogleServicesDao = spy(classOf[MockGoogleServicesDAO])
+
+  val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor =
+    ExportEntitiesByTypeActor.constructor(app.copy(googleServicesDAO = mockitoGoogleServicesDao), actorRefFactory)
 
   val largeFireCloudEntitiesSampleTSVPath = "/api/workspaces/broad-dsde-dev/large/entities/sample/tsv"
   val largeFireCloudEntitiesSampleSetTSVPath = "/api/workspaces/broad-dsde-dev/largeSampleSet/entities/sample_set/tsv"
@@ -45,6 +57,11 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
   val filterProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.take(5).map(_.name)
   // Grab the rest so we can double check the returned content to make sure the ignored ones aren't in the response.
   val missingProps: Seq[String] = MockRawlsDAO.largeSampleHeaders.drop(5).map(_.name)
+
+  override protected def beforeEach(): Unit = {
+    reset(mockitoGoogleServicesDao)
+    super.beforeEach()
+  }
 
   "ExportEntitiesApiService-ExportEntitiesByType" - {
 
@@ -192,6 +209,39 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
           handled should be(true)
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
+        }
+      }
+    }
+
+  }
+
+  // TSV save-to-bucket shares a lot of code with TSV download. Therefore, most functionality is tested in the
+  // "ExportEntitiesApiService-ExportEntitiesByType" tests just above. Here, we add some additional tests that are
+  // specific to save-to-bucket.
+  "ExportEntitiesApiService-save to bucket" - {
+
+    "when calling GET on exporting a valid collection type" - {
+      "OK response is returned" in {
+        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv/save") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          verify(mockitoGoogleServicesDao, times(1)).writeObjectAsRawlsSA(any[GcsBucketName], any[GcsObjectName], any[File])
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          // gs://bucketName/tsvexport/sample_set/sample_set-1727724455587.zip
+          result should fullyMatch regex """gs:\/\/bucketName\/tsvexport\/sample_set\/sample_set-[0-9]{13}.zip"""
+        }
+      }
+    }
+
+    "when calling GET on exporting a valid entity type" - {
+      "OK response is returned" in {
+        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample/tsv/save") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          verify(mockitoGoogleServicesDao, times(1)).writeObjectAsRawlsSA(any[GcsBucketName], any[GcsObjectName], any[File])
+          val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
+          // gs://bucketName/tsvexport/sample/sample-1727724455587.tsv
+          result should fullyMatch regex """gs:\/\/bucketName\/tsvexport\/sample\/sample-[0-9]{13}.tsv"""
         }
       }
     }

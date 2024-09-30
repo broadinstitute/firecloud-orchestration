@@ -150,35 +150,21 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     */
   override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
     // call the upload implementation
-    streamUploadObject(getStorageResource(), bucketName, objectKey, objectContents)
+    val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
+    streamUploadObject(getStorageResource, bucketName, objectKey, dataStream)
   }
 
+  /**
+    * Uploads the supplied data to GCS, using the Rawls service account credentials
+    * @param bucketName target bucket name for upload
+    * @param objectKey target object name for upload
+    * @param tempFile local temp file to upload
+    * @return path to the uploaded GCS object
+    */
   override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath = {
     // call the upload implementation
-    streamUploadObject(getStorageResource(), bucketName, objectKey, tempFile)
-  }
-
-  // separate method to perform the upload, to ease unit testing
-  protected[dataaccess] def streamUploadObject(storageResource: Resource[IO, GoogleStorageService[IO]], bucketName: GcsBucketName,
-                                   objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
-    val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
-    streamUploadObject(storageResource, bucketName, objectKey, dataStream)
-  }
-
-  private def getStorageResource() = {
-    implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
-
-    // create the storage service, using the Rawls SA credentials
-    // the Rawls SA json creds do not contain a project, so also specify the project explicitly
-    GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, Option.empty[Semaphore[IO]],
-      project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
-  }
-
-  // separate method to perform the upload, to ease unit testing
-  protected[dataaccess] def streamUploadObject(storageResource: Resource[IO, GoogleStorageService[IO]], bucketName: GcsBucketName,
-                                               objectKey: GcsObjectName, tempFile: File): GcsPath = {
     val dataStream: Stream[IO, Byte] = Files[IO].readAll(Path.fromNioPath(tempFile.path))
-    streamUploadObject(storageResource, bucketName, objectKey, dataStream)
+    streamUploadObject(getStorageResource, bucketName, objectKey, dataStream)
   }
 
   // separate method to perform the upload, to ease unit testing
@@ -197,6 +183,15 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
     // finally, return a GcsPath
     GcsPath(bucketName, objectKey)
+  }
+
+  private def getStorageResource = {
+    implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+    // create the storage service, using the Rawls SA credentials
+    // the Rawls SA json creds do not contain a project, so also specify the project explicitly
+    GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, Option.empty[Semaphore[IO]],
+      project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

@@ -29,6 +29,7 @@ import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.Duration
 import cats.effect.Temporal
 import cats.effect.std.Semaphore
+import fs2.Stream
 
 class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
 
@@ -63,7 +64,7 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
     val objectContents = "Hello world".getBytes(StandardCharsets.UTF_8)
 
     assertResult(GcsPath(bucketName, objectName)) {
-      gcsDAO.streamUploadObject(localStorage, bucketName, objectName, objectContents)
+      gcsDAO.streamUploadObject(localStorage, bucketName, objectName, Stream.emits(objectContents).covary[IO])
     }
   }
 
@@ -82,7 +83,7 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
     val objectContents = "Hello world".getBytes(StandardCharsets.UTF_8)
 
     val caught = intercept[StorageException] {
-      gcsDAO.streamUploadObject(localStorage, bucketName, objectName, objectContents)
+      gcsDAO.streamUploadObject(localStorage, bucketName, objectName, Stream.emits(objectContents).covary[IO])
     }
 
     assertResult(mockedException) {

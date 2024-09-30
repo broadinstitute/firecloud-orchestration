@@ -32,11 +32,11 @@ trait ExportEntitiesApiService extends Directives with RequestBuilding with Stan
           } ~
           path("save") {
             post {
-               complete {
-                 exportEntitiesByTypeConstructor(exportArgs).streamEntitiesToWorkspaceBucket() map { gcsPath =>
-                   RequestComplete(OK, s"gs://${gcsPath.bucketName}/${gcsPath.objectName.value}")
-                 }
+             complete {
+               exportEntitiesByTypeConstructor(exportArgs).streamEntitiesToWorkspaceBucket() map { gcsPath =>
+                 RequestComplete(OK, s"gs://${gcsPath.bucketName}/${gcsPath.objectName.value}")
                }
+             }
             }
           }
         }
