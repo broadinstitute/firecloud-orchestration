@@ -219,7 +219,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling GET on exporting a valid collection type" - {
       "OK response is returned" in {
-        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv/save") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
           verify(mockitoGoogleServicesDao, times(1)).writeObjectAsRawlsSA(any[GcsBucketName], any[GcsObjectName], any[File])
@@ -232,7 +232,7 @@ class ExportEntitiesByTypeServiceSpec extends BaseServiceSpec with ExportEntitie
 
     "when calling GET on exporting a valid entity type" - {
       "OK response is returned" in {
-        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample/tsv/save") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
+        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample/tsv") ~> dummyUserIdHeaders("1234") ~> sealRoute(exportEntitiesRoutes) ~> check {
           handled should be(true)
           status should be(OK)
           verify(mockitoGoogleServicesDao, times(1)).writeObjectAsRawlsSA(any[GcsBucketName], any[GcsObjectName], any[File])

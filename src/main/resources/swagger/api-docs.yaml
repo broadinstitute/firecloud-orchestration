@@ -3607,7 +3607,7 @@ paths:
       tags:
         - Entities
       summary: |
-        TSV file containing workspace entities of the specified type
+        Download a TSV file containing workspace entities
       operationId: downloadEntitiesTSV
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
@@ -3638,18 +3638,19 @@ paths:
         414:
           description: |
             URI length exceeds the configured limit of 2048 characters.
-            Please use the POST endpoint when it's necessary to supply a large number of attribute names.
+            When necessary to supply a large number of attribute names, please use one of:
+            * POST /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv
+            * POST /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv
           content: {}
         500:
           description: Internal Server Error
           content: {}
       x-passthrough: false
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv/save:
     post:
       tags:
         - Entities
       summary: |
-        Write TSV file containing workspace entities of the specified type to the workspace bucket.
+        Save TSV file containing workspace entities to the workspace bucket.
       description: |
         Requires write access to the workspace.
       operationId: bucketWriteEntitiesTSV
@@ -3657,17 +3658,21 @@ paths:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
         - $ref: '#/components/parameters/workspaceNameParam'
         - $ref: '#/components/parameters/entityTypeParam'
-        - name: attributeNames
-          in: query
-          description: comma separated list of ordered attribute names to be in downloaded
-            tsv
-          schema:
-            type: string
-        - name: model
-          in: query
-          description: firecloud (default) or flexible
-          schema:
-            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                attributeNames:
+                  type: string
+                  description: comma separated list of ordered attribute names to
+                    be in downloaded tsv
+                model:
+                  type: string
+                  description: flexible or firecloud (firecloud model will be used
+                    by default)
+        required: true
       responses:
         200:
           description: URL to saved file
@@ -3678,10 +3683,6 @@ paths:
                 format: binary
         404:
           description: Workspace or entity type does not exist
-          content: {}
-        414:
-          description: |
-            URI length exceeds the configured limit of 2048 characters.
           content: {}
         500:
           description: Internal Server Error

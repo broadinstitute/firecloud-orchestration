@@ -4,6 +4,7 @@ import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.commons.lang3.StringUtils
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{ExportEntitiesByTypeActor, ExportEntitiesByTypeArguments}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -20,23 +21,26 @@ trait ExportEntitiesApiService extends Directives with RequestBuilding with Stan
   val exportEntitiesRoutes: Route =
 
     // Note that this endpoint works in the same way as CookieAuthedApiService tsv download.
-    pathPrefix( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
-      parameters(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
-        requireUserInfo() { userInfo =>
-          val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
-          val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
-          pathEnd {
-            get {
-              complete { exportEntitiesByTypeConstructor(exportArgs).ExportEntities }
+    path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" ) { (workspaceNamespace, workspaceName, entityType) =>
+      requireUserInfo() { userInfo =>
+        get {
+          parameters(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
+            val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+            val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, modelString)
+            complete {
+              exportEntitiesByTypeConstructor(exportArgs).ExportEntities
             }
-          } ~
-          path("save") {
-            post {
-             complete {
-               exportEntitiesByTypeConstructor(exportArgs).streamEntitiesToWorkspaceBucket() map { gcsPath =>
-                 RequestComplete(OK, s"gs://${gcsPath.bucketName}/${gcsPath.objectName.value}")
-               }
-             }
+          }
+        } ~
+        post {
+          formFields(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
+            val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+            val model = if (modelString.nonEmpty && StringUtils.isBlank(modelString.get)) None else modelString
+            val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, model)
+            complete {
+              exportEntitiesByTypeConstructor(exportArgs).streamEntitiesToWorkspaceBucket() map { gcsPath =>
+                RequestComplete(OK, s"gs://${gcsPath.bucketName}/${gcsPath.objectName.value}")
+              }
             }
           }
         }
