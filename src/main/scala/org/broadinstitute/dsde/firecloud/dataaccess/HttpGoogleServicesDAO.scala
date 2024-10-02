@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpResponse
 import akka.stream.Materializer
+import better.files.File
 import cats.effect.std.Semaphore
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Resource}
@@ -22,6 +23,7 @@ import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
+import fs2.io.file.{Files, Path}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
@@ -147,25 +149,27 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     * @return path to the uploaded GCS object
     */
   override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
-    // if other methods in this class use google2/need these implicits, consider moving to the class level
-    // instead of here at the method level
-    implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
-
-    // create the storage service, using the Rawls SA credentials
-    // the Rawls SA json creds do not contain a project, so also specify the project explicitly
-    val storageResource = GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, Option.empty[Semaphore[IO]],
-       project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
-
     // call the upload implementation
-    streamUploadObject(storageResource, bucketName, objectKey, objectContents)
+    val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
+    streamUploadObject(getStorageResource, bucketName, objectKey, dataStream)
+  }
+
+  /**
+    * Uploads the supplied data to GCS, using the Rawls service account credentials
+    * @param bucketName target bucket name for upload
+    * @param objectKey target object name for upload
+    * @param tempFile local temp file to upload
+    * @return path to the uploaded GCS object
+    */
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath = {
+    // call the upload implementation
+    val dataStream: Stream[IO, Byte] = Files[IO].readAll(Path.fromNioPath(tempFile.path))
+    streamUploadObject(getStorageResource, bucketName, objectKey, dataStream)
   }
 
   // separate method to perform the upload, to ease unit testing
   protected[dataaccess] def streamUploadObject(storageResource: Resource[IO, GoogleStorageService[IO]], bucketName: GcsBucketName,
-                                   objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
-    // create the stream of data to upload
-    val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
-
+                                               objectKey: GcsObjectName, dataStream: Stream[IO, Byte]): GcsPath = {
     val uploadAttempt = storageResource.use { storageService =>
       // create the destination pipe to which we will write the file
       // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
@@ -179,6 +183,15 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
     // finally, return a GcsPath
     GcsPath(bucketName, objectKey)
+  }
+
+  private def getStorageResource = {
+    implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+    // create the storage service, using the Rawls SA credentials
+    // the Rawls SA json creds do not contain a project, so also specify the project explicitly
+    GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, Option.empty[Semaphore[IO]],
+      project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {

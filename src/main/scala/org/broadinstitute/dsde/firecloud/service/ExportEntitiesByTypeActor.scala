@@ -1,31 +1,24 @@
 package org.broadinstitute.dsde.firecloud.service
 
-import java.io
-import akka.{Done, NotUsed}
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharsets, HttpEntity, HttpResponse, MediaTypes, StatusCodes}
-import akka.http.scaladsl.server.RequestContext
-import akka.pattern.pipe
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.stream.scaladsl.{Source => AkkaSource}
-
-import scala.io.Source
-import akka.http.scaladsl.model.HttpEntity.{ChunkStreamPart, Chunked}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{Connection, ContentDispositionTypes, `Content-Disposition`}
-import akka.http.scaladsl.model.{ContentTypes, HttpResponse}
+import akka.http.scaladsl.model._
+import akka.stream._
+import akka.stream.scaladsl.{Source => AkkaSource, _}
 import akka.util.{ByteString, Timeout}
 import better.files.File
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.RawlsDAO
+import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
-import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.ExportEntities
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import spray.json._
 
+import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
@@ -44,9 +37,10 @@ object ExportEntitiesByTypeActor {
   sealed trait ExportEntitiesByTypeMessage
   case object ExportEntities extends ExportEntitiesByTypeMessage
 
-  def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) =
-    new ExportEntitiesByTypeActor(app.rawlsDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
+  def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit executionContext: ExecutionContext) = {
+    new ExportEntitiesByTypeActor(app.rawlsDAO, app.googleServicesDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
       exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, system)
+  }
 }
 
 /**
@@ -59,6 +53,7 @@ object ExportEntitiesByTypeActor {
   * and backpressure considerations between upstream producers and downstream consumers.
   */
 class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
+                                googleServicesDao: GoogleServicesDAO,
                                 argUserInfo: UserInfo,
                                 workspaceNamespace: String,
                                 workspaceName: String,
@@ -81,45 +76,84 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   def ExportEntities = streamEntities()
 
   /**
-    * Two basic code paths
+    * Calls entitiesToTempFile() to write entity TSV to a temp file,
+    * then creates an HttpResponse containing that temp file's contents as an attachment.
     *
-    * For Collection types, write the content to temp files, zip and return.
-    *
-    * For Singular types, pipe the content from `Source` -> `Flow` -> `Sink`
-    * Source generates the entity queries
-    * Flow executes the queries and sends formatted content to chunked response handler
-    * Sink finishes the execution pipeline
-    *
-    * Handle exceptions directly by completing the request.
+    * @see [[entitiesToTempFile()]]
     */
   def streamEntities(): Future[HttpResponse] = {
     val keepAlive = Connection("Keep-Alive")
 
-    entityTypeMetadata flatMap { metadata =>
-      val entityQueries = getEntityQueries(metadata, entityType)
-      if (modelSchema.isCollectionType(entityType)) {
-        val contentType = ContentTypes.`application/octet-stream`
-        val fileName = entityType + ".zip"
-        val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
-
-        streamCollectionType(entityQueries, metadata).map { source =>
-          HttpResponse(entity = HttpEntity.fromFile(contentType, source.toJava), headers = List(keepAlive, disposition))
-        }
+    entitiesToTempFile() map { tempFile =>
+      val (contentType, fileName) = if (modelSchema.isCollectionType(entityType)) {
+        (ContentTypes.`application/octet-stream`, s"$entityType.zip")
       } else {
-        val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-
-        val contentType = ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-        val fileName = entityType + ".tsv"
-        val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
-
-        streamSingularType(entityQueries, metadata, headers).map { source =>
-          HttpResponse(entity = HttpEntity.fromFile(contentType, source.toJava), headers = List(keepAlive, disposition))
-        }
+        (ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`), s"$entityType.tsv")
       }
+      val disposition = `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> fileName))
+      HttpResponse(entity = HttpEntity.fromFile(contentType, tempFile.toJava), headers = List(keepAlive, disposition))
     }
   }.recoverWith {
     // Standard exceptions have to be handled as a completed request
     case t: Throwable => handleStandardException(t)
+  }
+
+  /**
+    * Calls entitiesToTempFile() to write entity TSV to a temp file,
+    * then uploads from that temp file to the workspace's bucket.
+    *
+    * @see [[entitiesToTempFile()]]
+    *
+    */
+  def streamEntitiesToWorkspaceBucket(): Future[GcsPath] = {
+    // retrieve workspace so we can get its bucket
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) flatMap { workspaceResponse =>
+      val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
+
+      // verify write permissions
+      val isPermitted = workspaceResponse.accessLevel match {
+        case Some(accessLevel) => accessLevel >= WorkspaceAccessLevels.Write
+        case None => false
+      }
+      if (!isPermitted)
+        throw new FireCloudExceptionWithErrorReport(errorReport = ErrorReport(StatusCodes.Forbidden, s"You must have at least write access."))
+
+      val now = Instant.now()
+      val fileNameBase = s"tsvexport/$entityType/$entityType-${now.toEpochMilli}"
+
+      entitiesToTempFile() map { tempFile =>
+        if (modelSchema.isCollectionType(entityType)) {
+          val objectKey: GcsObjectName = GcsObjectName(s"$fileNameBase.zip", now)
+          googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
+        } else {
+          val objectKey: GcsObjectName = GcsObjectName(s"$fileNameBase.tsv", now)
+          googleServicesDao.writeObjectAsRawlsSA(workspaceBucket, objectKey, tempFile)
+        }
+      }
+    }
+  }.recover {
+    case f: FireCloudExceptionWithErrorReport => throw f // re-throw as-is
+    case t =>
+      // wrap in FireCloudExceptionWithErrorReport
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, s"FireCloudException: Error generating entity download: ${t.getMessage}"))
+  }
+
+  /**
+    * Writes TSVs to a temp file. Called by streamEntities() and streamEntitiesToWorkspaceBucket()
+    *
+    * @see [[streamEntities()]]
+    * @see [[streamEntitiesToWorkspaceBucket()]]
+    */
+  private def entitiesToTempFile(): Future[File] = {
+    entityTypeMetadata flatMap { metadata =>
+      val entityQueries = getEntityQueries(metadata, entityType)
+      if (modelSchema.isCollectionType(entityType)) {
+        streamCollectionType(entityQueries, metadata)
+      } else {
+        val headers = TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
+        streamSingularType(entityQueries, metadata, headers)
+      }
+    }
   }
 
 

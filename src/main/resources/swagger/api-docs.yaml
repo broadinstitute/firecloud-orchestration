@@ -3607,7 +3607,7 @@ paths:
       tags:
         - Entities
       summary: |
-        TSV file containing workspace entities of the specified type
+        Download a TSV file containing workspace entities
       operationId: downloadEntitiesTSV
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
@@ -3638,7 +3638,51 @@ paths:
         414:
           description: |
             URI length exceeds the configured limit of 2048 characters.
-            Please use the POST endpoint when it's necessary to supply a large number of attribute names.
+            When necessary to supply a large number of attribute names, please use one of:
+            * POST /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv
+            * POST /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv
+          content: {}
+        500:
+          description: Internal Server Error
+          content: {}
+      x-passthrough: false
+    post:
+      tags:
+        - Entities
+      summary: |
+        Save TSV file containing workspace entities to the workspace bucket.
+      description: |
+        Requires write access to the workspace.
+      operationId: bucketWriteEntitiesTSV
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                attributeNames:
+                  type: string
+                  description: comma separated list of ordered attribute names to
+                    be in downloaded tsv
+                model:
+                  type: string
+                  description: flexible or firecloud (firecloud model will be used
+                    by default)
+        required: true
+      responses:
+        200:
+          description: URL to saved file
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Workspace or entity type does not exist
           content: {}
         500:
           description: Internal Server Error
