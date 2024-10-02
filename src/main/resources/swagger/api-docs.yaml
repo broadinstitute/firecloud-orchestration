@@ -9510,12 +9510,14 @@ components:
             - GcpBucketLifecycle
             - GcpBucketSoftDelete
             - GcpBucketRequesterPays
+            - SeparateSubmissionFinalOutputs
         config:
           description: The configuration of the workspace setting
           oneOf:
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketLifecycleConfig'
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketSoftDeleteConfig'
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketRequesterPaysConfig'
+            - $ref: '#/components/schemas/WorkspaceSettingSeparateSubmissionFinalOutputs'
     WorkspaceSettingGcpBucketLifecycleConfig:
       required:
         - rules
@@ -9574,6 +9576,14 @@ components:
         enabled:
           type: boolean
           description: Enabled status to set for requester pays
+    WorkspaceSettingSeparateSubmissionFinalOutputs:
+      required:
+        - enabled
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Whether submission final outputs should be separated from intermediate outputs
     WorkspaceSubmissionStats:
       required:
         - runningSubmissionsCount
