@@ -7,13 +7,13 @@ object Dependencies {
   val jacksonHotfixV = "2.17.1" // for when only some of the Jackson libs have hotfix releases
   val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
-  val workbenchLibsHash = "9138393"
+  val workbenchLibsHash = "3e0cf25"
 
   val workbenchModelV  = s"0.20-$workbenchLibsHash"
   val workbenchModel: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-model" % workbenchModelV
   val excludeWorkbenchModel = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-model_" + scalaV)
 
-  val workbenchGoogleV = s"0.32-$workbenchLibsHash"
+  val workbenchGoogleV = s"0.33-$workbenchLibsHash"
   val workbenchGoogle: ModuleID = "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogleV excludeAll excludeWorkbenchModel
   val excludeWorkbenchGoogle = ExclusionRule(organization = "org.broadinstitute.dsde.workbench", name = "workbench-google_" + scalaV)
 

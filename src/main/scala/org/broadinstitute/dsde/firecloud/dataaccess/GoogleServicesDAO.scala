@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.http.scaladsl.model.HttpResponse
+import better.files.File
 import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
@@ -28,6 +29,7 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   val fetchPriceList: Future[GooglePriceList]
   
   def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath
+  def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath
 
   def deleteGoogleGroup(groupEmail: String) : Unit
   def createGoogleGroup(groupName: String): Option[String]
