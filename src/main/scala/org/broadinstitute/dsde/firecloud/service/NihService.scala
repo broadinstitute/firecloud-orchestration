@@ -167,7 +167,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
     ecmDao.putLinkedEraAccount(LinkedEraAccount(userInfo.id, nihLink))(getAdminAccessToken)
     .flatMap(_ => {
       logger.info("Successfully linked NIH account in ECM for user " + userInfo.id)
-      Future.successful(Success())
+      Future.successful(Success(()))
     }).recoverWith {
       case e =>
         logger.warn("Failed to link NIH account in ECM for user" + userInfo.id)

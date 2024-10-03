@@ -213,7 +213,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
      })
      when(samDao.overwriteGroupMembers(any(), any(), any())(any())).thenReturn(Future.failed(new RuntimeException(errorMessage)))
      when(samDao.listGroups(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful(samGroupMemberships.keys.map(groupName => FireCloudManagedGroupMembership(groupName, groupName + "@firecloud.org", "member")).toList))
-     when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
+     when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful((): Unit))
 
      val ex = intercept[FireCloudException] {
        Await.result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf)
@@ -364,7 +364,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   }
 
   private def mockSamUsers(): Unit = {
-    when(samDao.overwriteGroupMembers(any(), any(), any())(any())).thenReturn(Future.successful())
+    when(samDao.overwriteGroupMembers(any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
     when(samDao.listGroups(any[WithAccessToken])).thenAnswer(args => {
       Future {
         val userInfo = args.getArgument(0).asInstanceOf[WithAccessToken]
@@ -376,14 +376,14 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
           .getOrElse(List.empty)
       }
     })
-    when(samDao.addGroupMember(any(), any(), any())(any())).thenReturn(Future.successful())
-    when(samDao.removeGroupMember(any(), any(), any())(any())).thenReturn(Future.successful())
+    when(samDao.addGroupMember(any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
+    when(samDao.removeGroupMember(any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
     when(samDao.isGroupMember(any[WorkbenchGroupName], any[UserInfo])).thenAnswer(args => Future {
       val groupName = args.getArgument(0).asInstanceOf[WorkbenchGroupName]
       val userInfo = args.getArgument(1).asInstanceOf[UserInfo]
       samGroupMemberships.get(groupName.value).exists(_.exists(_.value == userInfo.id))
     })
-    when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
+    when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful((): Unit))
     when(samDao.getUsersForIds(any[Seq[WorkbenchUserId]])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenAnswer(args => {
       val userIds = args.getArgument(0).asInstanceOf[Seq[WorkbenchUserId]]
       Future.successful(samUsers.filter(user => userIds.contains(WorkbenchUserId(user.id.value))).map(user => WorkbenchUserInfo(user.id.value, user.email.value)))
@@ -396,8 +396,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       val userInfo = args.getArgument(0).asInstanceOf[UserInfo]
       Future.successful(linkedAccountsBySamUserId.get(WorkbenchUserId(userInfo.id)))
     })
-    when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
-    when(ecmDao.deleteLinkedEraAccount(any[UserInfo])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful())
+    when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful((): Unit))
+    when(ecmDao.deleteLinkedEraAccount(any[UserInfo])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenReturn(Future.successful((): Unit))
 
     when(ecmDao.getLinkedEraAccountForUsername(any[String])(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))).thenAnswer(args => {
       val externalId = args.getArgument(0).asInstanceOf[String]
@@ -422,9 +422,9 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       .thenReturn(Future.successful(samUsers.map(user => user.id.value -> user.email.value).toMap))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername"))).thenReturn(Future.successful(linkedAccountsBySamUserId.map(tup => (tup._1.value, tup._2.linkedExternalId))))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime"))).thenReturn(Future.successful(linkedAccountsBySamUserId.map(tup => (tup._1.value, (tup._2.linkExpireTime.getMillis / 1000).toString))))
-    when(thurloeDao.saveKeyValues(any[UserInfo], any[Map[String, String]])).thenReturn(Future.successful(Success()))
-    when(thurloeDao.saveKeyValues(any[String], any[WithAccessToken], any[Map[String, String]])).thenReturn(Future.successful(Success()))
-    when(thurloeDao.deleteKeyValue(any[String], any[String], any[WithAccessToken])).thenReturn(Future.successful(Success()))
+    when(thurloeDao.saveKeyValues(any[UserInfo], any[Map[String, String]])).thenReturn(Future.successful(Success((): Unit)))
+    when(thurloeDao.saveKeyValues(any[String], any[WithAccessToken], any[Map[String, String]])).thenReturn(Future.successful(Success((): Unit)))
+    when(thurloeDao.deleteKeyValue(any[String], any[String], any[WithAccessToken])).thenReturn(Future.successful(Success((): Unit)))
   }
 
   private def mockGoogleServicesDAO(): Unit = {
