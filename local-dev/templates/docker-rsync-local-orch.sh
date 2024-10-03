@@ -111,7 +111,7 @@ start_server () {
     -p 5051:5051 \
     --network=fc-orch \
     -e JAVA_OPTS="$DOCKER_JAVA_OPTS" \
-    sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.10_7_1.10.1_2.13.14 \
+    sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.10_7_1.10.2_2.13.15 \
     bash -c "git config --global --add safe.directory /app && sbt \~reStart"
 
     docker cp config/firecloud-account.pem orch-sbt:/etc/firecloud-account.pem
