@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.mock
 
 import akka.http.scaladsl.model.HttpResponse
+import better.files.File
 import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
@@ -79,6 +80,7 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
 
   override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = GcsPath(bucketName, objectKey)
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath = GcsPath(bucketName, objectKey)
 
   override def getUserProfile(accessToken: WithAccessToken)
                              (implicit executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
