@@ -249,6 +249,7 @@ class NihService(val samDao: SamDAO, val thurloeDao: ThurloeDAO, val googleDao: 
           case (Failure(t), Success(_)) => logger.error("Failed to link NIH Account in Thurloe", t)
           case (Success(_), Failure(t)) => logger.error("Failed to link NIH Account in ECM", t)
           case (Failure(t1), Failure(t2)) => logger.error("Failed to link NIH Account in Thurloe and ECM", t1, t2)
+          case _ => // unreachable case due to the if-condition above, but this case avoids compile warnings
         }
         RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link")
       }
