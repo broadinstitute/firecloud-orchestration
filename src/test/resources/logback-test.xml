@@ -8,11 +8,11 @@
         </encoder>
     </appender>
 
-    <logger name="PerformanceLogging" level="warn" additivity="false">
+    <logger name="PerformanceLogging" level="off" additivity="false">
         <appender-ref ref="console"/>
     </logger>
 
-    <logger name="org.broadinstitute.dsde" level="error" additivity="false">
+    <logger name="org.broadinstitute.dsde" level="off" additivity="false">
         <appender-ref ref="console"/>
     </logger>
 
