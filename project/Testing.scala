@@ -10,6 +10,7 @@ object Testing {
   val commonTestSettings: Seq[Setting[_]] = List(
 
     Test / testOptions ++= Seq(Tests.Filter(s => !isIntegrationTest(s))),
+    Test / testOptions += Tests.Argument("-oD"), // D = individual test durations
     IntegrationTest / testOptions := Seq(Tests.Filter(s => isIntegrationTest(s))),
 
     // ES client attempts to set the number of processors that Netty should use.
