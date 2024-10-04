@@ -107,7 +107,7 @@ start_server () {
     -v sbt-cache:/root/.sbt \
     -v jar-cache:/root/.ivy2 \
     -v coursier-cache:/root/.cache/coursier \
-    --add-host local.broadinstitute.org:$DOCKERHOST \
+    --add-host local.dsde-dev.broadinstitute.org:$DOCKERHOST \
     -p 5051:5051 \
     --network=fc-orch \
     -e JAVA_OPTS="$DOCKER_JAVA_OPTS" \
@@ -132,11 +132,11 @@ start_server () {
     -e APACHE_HTTPD_KEEPALIVETIMEOUT='650' \
     -e APACHE_HTTPD_MAXKEEPALIVEREQUESTS='500' \
     -e APACHE_HTTPD_PROXYTIMEOUT='650' \
-    -e CALLBACK_URI='https://local.broadinstitute.org/oauth2callback' \
+    -e CALLBACK_URI='https://local.dsde-dev.broadinstitute.org/oauth2callback' \
     -e LOG_LEVEL='warn' \
     -e PROXY_PATH:='/' \
     -e PROXY_PATH2='/api' \
-    -e SERVER_NAME='local.broadinstitute.org' \
+    -e SERVER_NAME='local.dsde-dev.broadinstitute.org' \
     -e REMOTE_USER_CLAIM='sub' \
     -e FILTER2='AddOutputFilterByType DEFLATE application/json text/plain text/html application/javascript application/x-javascript' \
     us.gcr.io/broad-dsp-gcr-public/httpd-terra-proxy:v0.1.16
