@@ -165,6 +165,7 @@ jobs:
       id-token: 'write'
     steps:
       - name: dispatch to terra-github-workflows
+        # for testing!
         uses: broadinstitute/workflow-dispatch@v4
         with:
           workflow: orch-swat-tests
