@@ -23,7 +23,7 @@ FireCloud Orchestration Service
 
 *  The `/etc/hosts` file on your machine must contain this entry (for calling Orch endpoints):
 ```sh
-127.0.0.1	local.broadinstitute.org
+127.0.0.1	local.dsde-dev.broadinstitute.org
 ```
 
 ### Running:
@@ -34,7 +34,7 @@ After satisfying the above requirements, execute the following command from the 
 ./config/docker-rsync-local-orch.sh
 ```
 
-If Orch successfully starts up, you can now access the Orch Swagger page: https://local.broadinstitute.org:10443/
+If Orch successfully starts up, you can now access the Orch Swagger page: https://local.dsde-dev.broadinstitute.org:10443/
 
 ## Development Notes
 * We push new features to a feature-branch and make pull requests against develop.
