@@ -1,6 +1,7 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
@@ -12,7 +13,7 @@ import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
 
-trait ExportEntitiesApiService extends Directives with RequestBuilding with StandardUserInfoDirectives with LazyLogging {
+trait ExportEntitiesApiService extends Directives with RequestBuilding with StandardUserInfoDirectives with LazyLogging with SprayJsonSupport {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
@@ -45,5 +46,30 @@ trait ExportEntitiesApiService extends Directives with RequestBuilding with Stan
           }
         }
       }
+    } ~
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025
+  // *******************************************************************************************************************
+  // TODO: add swagger definition
+  path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" / "frombucket") { (workspaceNamespace, workspaceName, entityType) =>
+    requireUserInfo() { userInfo =>
+      post {
+        import ExportEntitiesByTypeActor._
+        entity(as[FileMatchingOptions]) { matchingOptions =>
+          val attributeNames = None
+          val model = None
+          val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, model)
+
+          val pairs = exportEntitiesByTypeConstructor(exportArgs).matchBucketFiles(matchingOptions)
+          complete {
+            RequestComplete(OK, "done")
+          }
+        }
+      }
     }
+  }
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025
+  // *******************************************************************************************************************
+
 }

@@ -105,4 +105,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
     pubsubMessages.addAll(messages.asJava)
     Future.successful(())
   }
+
+  override def listBucket(bucketName: GcsBucketName, prefix: Option[String]): List[GcsObjectName] = ???
 }

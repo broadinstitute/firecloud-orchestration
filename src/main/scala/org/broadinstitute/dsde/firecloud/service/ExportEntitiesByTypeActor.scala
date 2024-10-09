@@ -11,7 +11,8 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
+import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.FileMatchingOptions
+import org.broadinstitute.dsde.firecloud.utils.{FileMatcher, PairMatch, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
@@ -22,6 +23,9 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
+
+
+
 
 case class ExportEntitiesByTypeArguments (
                                            userInfo: UserInfo,
@@ -41,6 +45,22 @@ object ExportEntitiesByTypeActor {
     new ExportEntitiesByTypeActor(app.rawlsDAO, app.googleServicesDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
       exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, system)
   }
+
+
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025
+  // *******************************************************************************************************************
+  import spray.json.DefaultJsonProtocol._
+
+  case class FileMatchingOptions(prefix: String)
+
+  implicit val fileMatchingOptionsFormat: RootJsonFormat[FileMatchingOptions] = jsonFormat1(FileMatchingOptions)
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025:
+  // *******************************************************************************************************************
+
+
+
 }
 
 /**
@@ -317,5 +337,21 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       response => response.results
     }
   }
+
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025:
+  // Given a workspace and bucket prefix, list all files in the workspace's bucket that match the prefix. Then, pair
+  // those files based on Illumina single end and paired end read patterns
+  // *******************************************************************************************************************
+
+
+  def matchBucketFiles(matchingOptions: FileMatchingOptions): List[PairMatch] = {
+    // list all files in bucket which match matchingOptions.prefix
+    val fileList = googleServicesDao.listBucket(GcsBucketName(""), Option(matchingOptions.prefix))
+    // perform the pairing
+    new FileMatcher().pairFilePaths(fileList)
+    // TODO: transform the List[PairMatch] into a TSV
+  }
+
 
 }
