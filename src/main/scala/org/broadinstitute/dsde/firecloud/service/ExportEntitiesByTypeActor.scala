@@ -350,7 +350,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
       val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
       // list all files in bucket which match matchingOptions.prefix
-      val fileList = googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix), userInfo)
+      val fileList = googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix))
 
       // generate a map of filename-with-no-directories -> absolute gs:// url to filename
       val urlmap: Map[String, String] = fileList.map { file =>
