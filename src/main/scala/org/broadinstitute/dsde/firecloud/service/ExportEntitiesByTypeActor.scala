@@ -345,12 +345,44 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   // *******************************************************************************************************************
 
 
-  def matchBucketFiles(matchingOptions: FileMatchingOptions): List[PairMatch] = {
-    // list all files in bucket which match matchingOptions.prefix
-    val fileList = googleServicesDao.listBucket(GcsBucketName(""), Option(matchingOptions.prefix))
-    // perform the pairing
-    new FileMatcher().pairFilePaths(fileList)
-    // TODO: transform the List[PairMatch] into a TSV
+  def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] = {
+    // retrieve workspace so we can get its bucket
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
+      val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
+      // list all files in bucket which match matchingOptions.prefix
+      val fileList = googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix), userInfo)
+
+      // generate a map of filename-with-no-directories -> absolute gs:// url to filename
+      val urlmap: Map[String, String] = fileList.map { file =>
+        file.value.split('/').reverse.head -> s"gs://${workspaceBucket.value}/${file.value}"
+      }.toMap
+
+      val filenames = urlmap.keys.toList
+
+      // perform the pairing
+      val pairs: List[PairMatch] = new FileMatcher().pairFiles(filenames)
+
+      // TSV headers
+      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "detectedType", "file1", "file2")
+
+      // transform the matched pairs into entities
+      val entities: List[Entity] = pairs.map { pair =>
+        val attributes = Map(
+          AttributeName.withDefaultNS("file1") -> AttributeString(urlmap(pair.mainFile)),
+          AttributeName.withDefaultNS("file2") -> AttributeString(pair.matchedFile.map{f => urlmap(f)}.getOrElse("")),
+          AttributeName.withDefaultNS("detectedType") -> AttributeString(pair.baseName.getOrElse("")),
+        )
+        Entity(pair.id.getOrElse(pair.mainFile), entityType, attributes)
+      }
+
+      val headerString = entityHeaders.mkString("\t") + "\n"
+
+      // transform the entities into a TSV
+      val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
+      val rowString = rows.map { _.mkString("\t")}.mkString("\n") + "\n"
+
+      headerString + rowString
+    }
   }
 
 

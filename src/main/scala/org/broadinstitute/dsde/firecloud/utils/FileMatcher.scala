@@ -1,7 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.workbench.model.google.GcsObjectName
 
 import scala.annotation.tailrec
 import scala.util.matching.Regex
@@ -28,17 +27,13 @@ class FileMatcher extends LazyLogging {
 
   val patterns = List(
     // Sample1_01.fastq.gz, Sample1_02.fastq.gz
-    PairPattern("([a-zA-Z_]+)(\\d+)_01.fastq.gz".r, baseName => s"${baseName}_02.fastq.gz".r)
+    PairPattern("(?<basetype>[a-zA-Z_]+)(?<id>\\d+)_01.fastq.gz".r, baseName => s"${baseName}_02.fastq.gz".r)
   )
-
-
-  def pairFilePaths(fileList: List[GcsObjectName]): List[PairMatch] = {
-    pairFiles(fileList.map(_.value))
-  }
 
   def pairFiles(fileList: List[String]): List[PairMatch] = {
     // sort the incoming list for better performance (???)
     val files = fileList.sorted
+
     pairNextFile(files, List())
   }
 
@@ -78,17 +73,18 @@ class FileMatcher extends LazyLogging {
             PairMatch(mainFile, None, None, None)
           case Some(matchResult) =>
             // extract the base type and id. Use Option to handle nulls.
-            val baseType = Option(matchResult.group(1))
-            val id = Option(matchResult.group(2))
+            val baseType = Option(matchResult.group("basetype"))
+            val id = Option(matchResult.group("id"))
             // build the base name and paired regex
             val baseName = baseType.getOrElse("") + id.getOrElse("")
             val pairedRegex = pairPattern.pairedFile(baseName)
             // search in all remaining files for a match on the pairedRegex
             val maybePair = remainingFileList.find(file => pairedRegex.matches(file))
+
             maybePair match {
               case Some(pairedFile) =>
-                PairMatch(mainFile, Option(pairedFile), baseType, id)
-              case None => PairMatch(mainFile, None, baseType, id)
+                PairMatch(mainFile, Option(pairedFile), baseType.map(_.toLowerCase), id)
+              case None => PairMatch(mainFile, None, baseType.map(_.toLowerCase), id)
             }
         }
     }

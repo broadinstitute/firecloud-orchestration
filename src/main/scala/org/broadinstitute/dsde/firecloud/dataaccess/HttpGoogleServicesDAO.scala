@@ -372,10 +372,11 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
   override def listBucket(bucketName: GcsBucketName, prefix: Option[String]): List[GcsObjectName] = {
     val listAttempt = getStorageResource.use { storageService =>
-      storageService.listObjectsWithPrefix(GcsBucketName(""), prefix.getOrElse(""), maxPageSize = 5000).compile.toList
+      storageService.listObjectsWithPrefix(bucketName, prefix.getOrElse(""), maxPageSize = 5000, isRecursive = true).compile.toList
     }
 
-    // TODO: recurse if there are more files in the bucket and we need to paginate
+    // TODO: recurse if there are more files in the bucket and we need to paginate? Does
+    //  listObjectsWithPrefix handle that internally?
 
     // execute the upload
     listAttempt.unsafeRunSync()
