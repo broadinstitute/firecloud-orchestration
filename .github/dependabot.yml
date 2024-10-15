@@ -4,7 +4,7 @@ updates:
     directory: "/"
     open-pull-requests-limit: 10
     reviewers:
-      - "@DataBiosphere/broad-core-services"
+      - "@broadinstitute/broad-core-services"
     commit-message:
       prefix: "[CORE-72]"
     schedule:
