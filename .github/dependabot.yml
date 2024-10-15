@@ -4,9 +4,9 @@ updates:
     directory: "/"
     open-pull-requests-limit: 10
     reviewers:
-      - "@broadinstitute/dsp-analysis-journeys"
+      - "@DataBiosphere/broad-core-services"
     commit-message:
-      prefix: "[AJ-1784]"
+      prefix: "[CORE-72]"
     schedule:
       interval: "weekly"
       day: "monday"
