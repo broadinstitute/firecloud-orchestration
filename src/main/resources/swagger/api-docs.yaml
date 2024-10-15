@@ -3688,6 +3688,44 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv/frombucket:
+    post:
+      tags:
+        - Entities
+      summary: |
+        Generate TSV of paired files in the workspace's bucket
+      operationId: bucketPairedTSV
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              type: object
+              required:
+                - prefix
+              properties:
+                prefix:
+                  type: string
+                  description: bucket prefix in which to look
+        required: true
+      responses:
+        200:
+          description: URL to saved file
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Workspace or entity type does not exist
+          content: {}
+        500:
+          description: Internal Server Error
+          content: {}
+      x-passthrough: false
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
       tags:

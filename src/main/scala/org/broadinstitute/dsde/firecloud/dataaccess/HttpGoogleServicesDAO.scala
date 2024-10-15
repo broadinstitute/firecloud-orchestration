@@ -369,4 +369,16 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
       .refreshAccessToken().getTokenValue
   }
+
+  override def listBucket(bucketName: GcsBucketName, prefix: Option[String]): List[GcsObjectName] = {
+    val listAttempt = getStorageResource.use { storageService =>
+      storageService.listObjectsWithPrefix(bucketName, prefix.getOrElse(""), maxPageSize = 5000, isRecursive = true).compile.toList
+    }
+
+    // TODO: recurse if there are more files in the bucket and we need to paginate? Does
+    //  listObjectsWithPrefix handle that internally?
+
+    // execute the upload
+    listAttempt.unsafeRunSync()
+  }
 }
