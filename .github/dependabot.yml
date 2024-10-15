@@ -6,7 +6,7 @@ updates:
     reviewers:
       - "@broadinstitute/broad-core-services"
     commit-message:
-      prefix: "[CORE-72]"
+      prefix: "[CORE-69]"
     schedule:
       interval: "weekly"
       day: "monday"
