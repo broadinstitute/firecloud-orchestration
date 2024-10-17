@@ -4646,6 +4646,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
         - $ref: '#/components/parameters/workspaceNameParam'
+        - name: userProject
+          in: path
+          description: google project to bill request to
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Successful Request

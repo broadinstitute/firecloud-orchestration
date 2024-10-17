@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import cats.implicits.catsSyntaxOptionId
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -34,10 +35,11 @@ class WorkspaceService(protected val argUserToken: WithAccessToken, val rawlsDAO
 
   implicit val userToken: WithAccessToken = argUserToken
 
-  def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
+  def getStorageCostEstimate(workspaceNamespace: String, workspaceName: String, userProject: Option[GoogleProjectId]): Future[RequestComplete[WorkspaceStorageCostEstimate]] = {
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-      samDao.getPetServiceAccountKeyForUser(userToken, GoogleProject(workspaceResponse.workspace.googleProject.value)) flatMap { petKey =>
-        googleServicesDAO.getBucket(workspaceResponse.workspace.bucketName, petKey) match {
+      val workspaceProjectId = workspaceResponse.workspace.googleProject.value
+      samDao.getPetServiceAccountKeyForUser(userToken, GoogleProject(workspaceProjectId)) flatMap { petKey =>
+        googleServicesDAO.getBucket(workspaceResponse.workspace.bucketName, petKey, userProject.getOrElse(GoogleProjectId(workspaceProjectId)).some) match {
           case Some(bucket) =>
             rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
              case (usage, priceList) =>

@@ -29,6 +29,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.rawls.model.GoogleProjectId
 import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath, GoogleProject}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
@@ -199,20 +200,21 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
-  def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
+  def getBucket(bucketName: String, petKey: String, userProject: Option[GoogleProjectId]): Option[Bucket] = {
     val keyStream = new ByteArrayInputStream(petKey.getBytes)
     val credential = getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
 
     val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential)).setApplicationName(appName).build()
-
-    Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
+    val request = storage.buckets().get(bucketName)
+    userProject.map(id => request.setUserProject(id.value))
+    Try(executeGoogleRequest[Bucket](request)) match {
       case Failure(ex) =>
         // handle this case so we can give a good log message. In the future we may handle this
         // differently, such as returning an empty list.
         logger.warn(s"could not get $bucketName", ex)
         throw ex
       case Success(response) =>
-        return Option(response)
+        Option(response)
     }
   }
 
