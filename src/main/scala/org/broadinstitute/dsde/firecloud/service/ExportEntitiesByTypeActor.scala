@@ -11,7 +11,8 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
-import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
+import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.FileMatchingOptions
+import org.broadinstitute.dsde.firecloud.utils.{FileMatcher, PairMatch, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
@@ -22,6 +23,9 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
+
+
+
 
 case class ExportEntitiesByTypeArguments (
                                            userInfo: UserInfo,
@@ -41,6 +45,22 @@ object ExportEntitiesByTypeActor {
     new ExportEntitiesByTypeActor(app.rawlsDAO, app.googleServicesDAO, exportArgs.userInfo, exportArgs.workspaceNamespace,
       exportArgs.workspaceName, exportArgs.entityType, exportArgs.attributeNames, exportArgs.model, system)
   }
+
+
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025
+  // *******************************************************************************************************************
+  import spray.json.DefaultJsonProtocol._
+
+  case class FileMatchingOptions(prefix: String)
+
+  implicit val fileMatchingOptionsFormat: RootJsonFormat[FileMatchingOptions] = jsonFormat1(FileMatchingOptions)
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025:
+  // *******************************************************************************************************************
+
+
+
 }
 
 /**
@@ -317,5 +337,53 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       response => response.results
     }
   }
+
+  // *******************************************************************************************************************
+  // POC of file-matching for AJ-2025:
+  // Given a workspace and bucket prefix, list all files in the workspace's bucket that match the prefix. Then, pair
+  // those files based on Illumina single end and paired end read patterns
+  // *******************************************************************************************************************
+
+
+  def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] = {
+    // retrieve workspace so we can get its bucket
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
+      val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
+      // list all files in bucket which match matchingOptions.prefix
+      val fileList = googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix))
+
+      // generate a map of filename-with-no-directories -> absolute gs:// url to filename
+      val urlmap: Map[String, String] = fileList.map { file =>
+        file.value.split('/').reverse.head -> s"gs://${workspaceBucket.value}/${file.value}"
+      }.toMap
+
+      val filenames = urlmap.keys.toList
+
+      // perform the pairing
+      val pairs: List[PairMatch] = new FileMatcher().pairFiles(filenames)
+
+      // TSV headers
+      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "detectedType", "read1", "read2")
+
+      // transform the matched pairs into entities
+      val entities: List[Entity] = pairs.map { pair =>
+        val attributes = Map(
+          AttributeName.withDefaultNS("read1") -> AttributeString(urlmap(pair.mainFile)),
+          AttributeName.withDefaultNS("read2") -> AttributeString(pair.matchedFile.map{f => urlmap(f)}.getOrElse("")),
+          AttributeName.withDefaultNS("detectedType") -> AttributeString(pair.baseName.getOrElse("")),
+        )
+        Entity(pair.id.getOrElse(pair.mainFile), entityType, attributes)
+      }
+
+      val headerString = entityHeaders.mkString("\t") + "\n"
+
+      // transform the entities into a TSV
+      val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
+      val rowString = rows.map { _.mkString("\t")}.mkString("\n") + "\n"
+
+      headerString + rowString
+    }
+  }
+
 
 }
