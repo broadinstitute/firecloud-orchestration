@@ -363,13 +363,13 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       val pairs: List[PairMatch] = new FileMatcher().pairFiles(filenames)
 
       // TSV headers
-      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "detectedType", "file1", "file2")
+      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "detectedType", "read1", "read2")
 
       // transform the matched pairs into entities
       val entities: List[Entity] = pairs.map { pair =>
         val attributes = Map(
-          AttributeName.withDefaultNS("file1") -> AttributeString(urlmap(pair.mainFile)),
-          AttributeName.withDefaultNS("file2") -> AttributeString(pair.matchedFile.map{f => urlmap(f)}.getOrElse("")),
+          AttributeName.withDefaultNS("read1") -> AttributeString(urlmap(pair.mainFile)),
+          AttributeName.withDefaultNS("read2") -> AttributeString(pair.matchedFile.map{f => urlmap(f)}.getOrElse("")),
           AttributeName.withDefaultNS("detectedType") -> AttributeString(pair.baseName.getOrElse("")),
         )
         Entity(pair.id.getOrElse(pair.mainFile), entityType, attributes)
