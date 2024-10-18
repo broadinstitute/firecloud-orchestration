@@ -4,7 +4,7 @@ import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.headers.{Authorization, `Content-Type`}
 import akka.http.scaladsl.model.{HttpMethod, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
-import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StreamingPassthrough}
 import org.parboiled.common.FileUtils
 
 import scala.util.Try
@@ -38,29 +38,33 @@ object FireCloudDirectiveUtils {
 
 }
 
-trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
+trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient with StreamingPassthrough {
 
+  /**
+    * Deprecated; use streamingPassthrough instead
+    *
+    * @see [[StreamingPassthrough]]
+    * @param unencodedPath url to which to pass through
+    * @param methods ignored
+    * @return
+    */
+  @deprecated(message = "Use streamingPassthrough instead", since = "FireCloudDirectives 2024-10-18")
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route = {
     passthrough(Uri(unencodedPath), methods: _*)
   }
 
-  // Danger: it is a common mistake to pass in a URI that omits the query parameters included in the original request to Orch.
-  // To preserve the query, extract it and attach it to the passthrough URI using `.withQuery(query)`.
-  def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
-    generateExternalHttpRequestForMethod(uri, inMethod)
-  } reduce (_ ~ _)
+  /**
+    * Deprecated; use streamingPassthrough instead
+    *
+    * @see [[StreamingPassthrough]]
+    * @param uri uri to which to pass through
+    * @param methods ignored
+    * @return
+    */
+  @deprecated(message = "Use streamingPassthrough instead", since = "FireCloudDirectives 2024-10-18")
+  def passthrough(uri: Uri, methods: HttpMethod*): Route = streamingPassthrough(uri)
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
-
-  private def generateExternalHttpRequestForMethod(uri: Uri, inMethod: HttpMethod) = {
-    method(inMethod) { requestContext =>
-      val outgoingRequest = requestContext.request
-        .withUri(uri)
-        .withHeaders(requestContext.request.headers.filter(
-          hdr => FireCloudDirectiveUtils.allowedPassthroughHeaders.contains(hdr.lowercaseName())))
-      requestContext.complete(unAuthedRequest(outgoingRequest)) //NOTE: This is actually AUTHED because we pass through the Authorization header
-    }
-  }
 
   def withResourceFileContents(path: String)(innerRoute: String => Route): Route =
     innerRoute( FileUtils.readAllTextFromResource(path) )
