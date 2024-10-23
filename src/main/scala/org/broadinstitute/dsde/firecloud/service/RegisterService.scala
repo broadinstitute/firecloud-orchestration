@@ -47,7 +47,7 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
           _ <- saveProfileInThurloeAndSendRegistrationEmail(registrationResultUserInfo, basicProfile)
         } yield registerResult
       } else {
-        Future.successful(isRegistered)
+        thurloeDao.saveProfile(userInfo, basicProfile) map (_ => isRegistered)
       }
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)
