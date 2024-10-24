@@ -56,6 +56,7 @@ class MockThurloeDAO extends ThurloeDAO {
   var mockKeyValues: Map[String, Set[FireCloudKeyValue]] =
     Map(
       NORMAL_USER -> baseProfile,
+      "foo" -> baseProfile, // to match registeredUser, enabledUserInfo, unknownUserInfo from MockSamDao
       //TCGA users
       TCGA_LINKED -> baseProfile.++(Set(
         FireCloudKeyValue(Some("email"), Some(TCGA_LINKED)),

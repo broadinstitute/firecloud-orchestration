@@ -47,7 +47,14 @@ class RegisterService(val rawlsDao: RawlsDAO, val samDao: SamDAO, val thurloeDao
           _ <- saveProfileInThurloeAndSendRegistrationEmail(registrationResultUserInfo, basicProfile)
         } yield registerResult
       } else {
-        Future.successful(isRegistered)
+        /* when updating the profile in Thurloe, make sure to send the update under the same user id as the profile
+           was originally created with. A given use can have a Sam id, a Google subject id, and a b2c Azure id; if we
+           send profile updates under a different id, Thurloe will create duplicate keys for the user.
+
+           Because the original profile was created during registration using `userInfo.userSubjectId` (see
+           `registrationResultUserInfo` above), we use that same id here.
+         */
+        thurloeDao.saveProfile(userInfo.copy(id = isRegistered.userInfo.userSubjectId), basicProfile) map (_ => isRegistered)
       }
     } yield {
       RequestComplete(StatusCodes.OK, userStatus)
