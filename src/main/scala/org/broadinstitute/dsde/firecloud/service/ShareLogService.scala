@@ -15,9 +15,12 @@ object ShareLogService {
     () => new ShareLogService(app.shareLogDAO)
 }
 
-class ShareLogService(val shareLogDAO: ShareLogDAO)(implicit protected val executionContext: ExecutionContext) extends SprayJsonSupport {
+class ShareLogService(val shareLogDAO: ShareLogDAO)(implicit protected val executionContext: ExecutionContext)
+    extends SprayJsonSupport {
 
   implicit val impAttributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
-  def getSharees(userId: String, shareType: Option[ShareType.Value] = None) = Future(RequestComplete(shareLogDAO.getShares(userId, shareType).map(_.sharee)))
+  def getSharees(userId: String, shareType: Option[ShareType.Value] = None) = Future(
+    RequestComplete(shareLogDAO.getShares(userId, shareType).map(_.sharee))
+  )
 }

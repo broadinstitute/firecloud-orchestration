@@ -11,7 +11,6 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsValue, JsonParser}
 import spray.json.lenses.JsonLenses._
 
-
 class OntologyServiceSpec extends AnyFreeSpec with Matchers with ScalaFutures {
 
   val ontologyDao = new MockOntologyDAO()
@@ -21,14 +20,15 @@ class OntologyServiceSpec extends AnyFreeSpec with Matchers with ScalaFutures {
 
   val ontologyService = new OntologyService(ontologyDao, researchPurposeSupport)
 
-  final implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
+  implicit final override val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = scaled(Span(300, Seconds)), interval = scaled(Span(2, Seconds)))
 
   private def jsonFromResearchPurposeRequest(rpRequest: ResearchPurposeRequest): JsValue = {
     val result = ontologyService.buildResearchPurposeQuery(rpRequest).futureValue
 
     val resultString = result match {
       case RequestComplete(response) => response.toString
-      case _ => fail("expected a RequestComplete")
+      case _                         => fail("expected a RequestComplete")
     }
 
     JsonParser(resultString)
@@ -62,7 +62,9 @@ class OntologyServiceSpec extends AnyFreeSpec with Matchers with ScalaFutures {
 
       // Specifying specific diseases implies General Research Use (GRU) and Health/Medical/Biomedical (HMB)
       Seq("GRU", "HMB") foreach { code =>
-        json.extract[Boolean](termsPath / s"abc:structuredUseRestriction.$code".? / Symbol("value")) should contain theSameElementsAs Seq(true)
+        json.extract[Boolean](
+          termsPath / s"abc:structuredUseRestriction.$code".? / Symbol("value")
+        ) should contain theSameElementsAs Seq(true)
       }
     }
 

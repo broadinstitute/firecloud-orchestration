@@ -3,8 +3,17 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO, SamDAO, ThurloeDAO}
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, RegistrationInfo, UserInfo, WorkbenchEnabled, WorkbenchUserInfo}
-import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, AzurePreviewActivationNotification}
+import org.broadinstitute.dsde.firecloud.model.{
+  BasicProfile,
+  RegistrationInfo,
+  UserInfo,
+  WorkbenchEnabled,
+  WorkbenchUserInfo
+}
+import org.broadinstitute.dsde.workbench.model.Notifications.{
+  ActivationNotification,
+  AzurePreviewActivationNotification
+}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -28,9 +37,16 @@ class RegisterServiceSpec extends AnyFlatSpec with Matchers with BeforeAndAfterE
 
   val registerService = new RegisterService(rawlsDAO, samDAO, thurloeDAO, googleServicesDAO)
 
-  val azureB2CUserInfo: UserInfo = UserInfo("azure-b2c@example.com", OAuth2BearerToken("token"), 1, "0f3cd8e4-59c2-4bce-9c24-98c5a0c308c1", None)
-  val googleB2CUserInfo: UserInfo = UserInfo("google-b2c@example.com", OAuth2BearerToken("token"), 1, "0617047d-a81f-4724-b783-b5af51af9a70", Some(OAuth2BearerToken("some-google-token")))
-  val googleLegacyUserInfo: UserInfo = UserInfo("google-legacy@example.com", OAuth2BearerToken("token"), 1, "111111111111", None)
+  val azureB2CUserInfo: UserInfo =
+    UserInfo("azure-b2c@example.com", OAuth2BearerToken("token"), 1, "0f3cd8e4-59c2-4bce-9c24-98c5a0c308c1", None)
+  val googleB2CUserInfo: UserInfo = UserInfo("google-b2c@example.com",
+                                             OAuth2BearerToken("token"),
+                                             1,
+                                             "0617047d-a81f-4724-b783-b5af51af9a70",
+                                             Some(OAuth2BearerToken("some-google-token"))
+  )
+  val googleLegacyUserInfo: UserInfo =
+    UserInfo("google-legacy@example.com", OAuth2BearerToken("token"), 1, "111111111111", None)
 
   val profile: BasicProfile = BasicProfile(
     firstName = "first",
@@ -76,16 +92,21 @@ class RegisterServiceSpec extends AnyFlatSpec with Matchers with BeforeAndAfterE
       // user is not registered; registration check returns google=false and ldap=false
       when(samDAO.getRegistrationStatus(userInfo)).thenReturn(
         Future.successful(
-          RegistrationInfo(
-            WorkbenchUserInfo(userInfo.id, userInfo.userEmail),
-            WorkbenchEnabled(google = false, ldap = false, allUsersGroup = false),
-            None)))
+          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail),
+                           WorkbenchEnabled(google = false, ldap = false, allUsersGroup = false),
+                           None
+          )
+        )
+      )
       // registering this user returns successfully
-      when(samDAO.registerUser(any())(ArgumentMatchers.eq(userInfo))).thenReturn(Future.successful(
-        RegistrationInfo(
-          WorkbenchUserInfo(userInfo.id, userInfo.userEmail),
-          WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true),
-          None)))
+      when(samDAO.registerUser(any())(ArgumentMatchers.eq(userInfo))).thenReturn(
+        Future.successful(
+          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail),
+                           WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true),
+                           None
+          )
+        )
+      )
       // saving to Thurloe returns successfully
       when(thurloeDAO.saveProfile(userInfo, profile)).thenReturn(Future.successful(()))
       when(thurloeDAO.saveKeyValues(ArgumentMatchers.eq(userInfo), any())).thenReturn(Future.successful(Success(())))
@@ -105,10 +126,12 @@ class RegisterServiceSpec extends AnyFlatSpec with Matchers with BeforeAndAfterE
       // user is already registered; registration check returns google=true and ldap=true
       when(samDAO.getRegistrationStatus(userInfo)).thenReturn(
         Future.successful(
-          RegistrationInfo(
-            WorkbenchUserInfo(userInfo.id, userInfo.userEmail),
-            WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true),
-            None)))
+          RegistrationInfo(WorkbenchUserInfo(userInfo.id, userInfo.userEmail),
+                           WorkbenchEnabled(google = true, ldap = true, allUsersGroup = true),
+                           None
+          )
+        )
+      )
       // saving to Thurloe returns successfully
       when(thurloeDAO.saveProfile(userInfo, profile)).thenReturn(Future.successful(()))
       when(thurloeDAO.saveKeyValues(ArgumentMatchers.eq(userInfo), any())).thenReturn(Future.successful(Success(())))

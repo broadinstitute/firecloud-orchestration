@@ -7,7 +7,12 @@ import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiService
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
+  AddListMember,
+  AddUpdateAttribute,
+  AttributeUpdateOperation,
+  RemoveListMember
+}
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 import org.scalatest.{Assertions, BeforeAndAfterEach}
@@ -23,19 +28,25 @@ import scala.concurrent.{ExecutionContext, Future}
   * Remember that the responses from the tag apis are sorted, so the expected values in unit
   * tests may look funny - it's the sorting.
   */
-class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
+class WorkspaceTagsServiceSpec
+    extends BaseServiceSpec
+    with WorkspaceApiService
+    with BeforeAndAfterEach
+    with SprayJsonSupport {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   // Mock remote endpoints
-  private final val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
+  final private val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
 
-  def workspaceTagsPath(ns: String = "namespace", name: String = "name") = workspacesRoot + "/%s/%s/tags".format(ns, name)
+  def workspaceTagsPath(ns: String = "namespace", name: String = "name") =
+    workspacesRoot + "/%s/%s/tags".format(ns, name)
 
   // use the MockTagsRawlsDao for these tests.
   val testApp = app.copy(rawlsDAO = new MockTagsRawlsDao)
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(testApp)
-  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(testApp)
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService =
+    PermissionReportService.constructor(testApp)
   val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
   private def randUUID = java.util.UUID.randomUUID.toString
@@ -246,42 +257,59 @@ class WorkspaceTagsServiceSpec extends BaseServiceSpec with WorkspaceApiService 
   // ==========================================================================
   // helpers for tests
   // ==========================================================================
-  private def testPut(tags: List[String], expected: List[String]) = {
+  private def testPut(tags: List[String], expected: List[String]) =
     singlepassTest(tags, expected, Put)
-  }
-  private def testPut(firstTags: List[String], firstExpected: List[String], secondTags: List[String], secondExpected: List[String]) = {
+  private def testPut(firstTags: List[String],
+                      firstExpected: List[String],
+                      secondTags: List[String],
+                      secondExpected: List[String]
+  ) =
     multipassTest(firstTags, firstExpected, Put, secondTags, secondExpected)
-  }
 
-  private def testPatch(tags: List[String], expected: List[String]) = {
+  private def testPatch(tags: List[String], expected: List[String]) =
     singlepassTest(tags, expected, Patch)
-  }
-  private def testPatch(firstTags: List[String], firstExpected: List[String], secondTags: List[String], secondExpected: List[String]) = {
+  private def testPatch(firstTags: List[String],
+                        firstExpected: List[String],
+                        secondTags: List[String],
+                        secondExpected: List[String]
+  ) =
     multipassTest(firstTags, firstExpected, Patch, secondTags, secondExpected)
-  }
 
-  private def testDelete(tags: List[String], expected: List[String]) = {
+  private def testDelete(tags: List[String], expected: List[String]) =
     singlepassTest(tags, expected, Delete)
-  }
-  private def testDelete(firstTags: List[String], firstExpected: List[String], secondTags: List[String], secondExpected: List[String]) = {
+  private def testDelete(firstTags: List[String],
+                         firstExpected: List[String],
+                         secondTags: List[String],
+                         secondExpected: List[String]
+  ) =
     multipassTest(firstTags, firstExpected, Delete, secondTags, secondExpected)
-  }
 
   private def singlepassTest(tags: List[String], expected: List[String], method: RequestBuilder) = {
     val name = randUUID
-    method(workspaceTagsPath(method.method.value.toLowerCase, name), tags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+    method(workspaceTagsPath(method.method.value.toLowerCase, name), tags) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+      workspaceRoutes
+    ) ~> check {
       status should be(OK)
       responseAs[List[String]] should be(expected)
     }
   }
 
-  private def multipassTest(firstTags: List[String], firstExpected: List[String], secondMethod: RequestBuilder, secondTags: List[String], secondExpected: List[String]) = {
+  private def multipassTest(firstTags: List[String],
+                            firstExpected: List[String],
+                            secondMethod: RequestBuilder,
+                            secondTags: List[String],
+                            secondExpected: List[String]
+  ) = {
     val name = randUUID
-    Put(workspaceTagsPath("put", name), firstTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+    Put(workspaceTagsPath("put", name), firstTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+      workspaceRoutes
+    ) ~> check {
       status should be(OK)
       responseAs[List[String]] should be(firstExpected)
 
-      secondMethod(workspaceTagsPath(secondMethod.method.value.toLowerCase, name), secondTags) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
+      secondMethod(workspaceTagsPath(secondMethod.method.value.toLowerCase, name), secondTags) ~> dummyUserIdHeaders(
+        "1234"
+      ) ~> sealRoute(workspaceRoutes) ~> check {
         status should be(OK)
         responseAs[List[String]] should be(secondExpected)
       }
@@ -310,9 +338,9 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Some(Map()), //attributes
-    false, //locked
-    Some(Set.empty), //authdomain
+    Some(Map()), // attributes
+    false, // locked
+    Some(Set.empty), // authdomain
     WorkspaceVersions.V2,
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
@@ -325,7 +353,7 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     WorkspaceState.Ready
   )
 
-  private def workspaceResponse(ws:WorkspaceDetails=workspace) = WorkspaceResponse(
+  private def workspaceResponse(ws: WorkspaceDetails = workspace) = WorkspaceResponse(
     Some(WorkspaceAccessLevels.ProjectOwner),
     canShare = Some(false),
     canCompute = Some(true),
@@ -337,60 +365,98 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
     None
   )
 
-
   private def workspaceFromState(ns: String, name: String) = {
     val tags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
     val tagAttrs = (tags map AttributeString).toSeq
-    workspace.copy(attributes = Option(Map(
-      AttributeName.withTagsNS() -> AttributeValueList(tagAttrs)
-    )))
+    workspace.copy(attributes =
+      Option(
+        Map(
+          AttributeName.withTagsNS() -> AttributeValueList(tagAttrs)
+        )
+      )
+    )
   }
 
-  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] = {
+  override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     // AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("foo"),AttributeString("bar")))
     ns match {
       case "notags" => Future.successful(workspaceResponse())
-      case "onetag" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
-        AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("wibble")))
-      )))))
-      case "threetags" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
-        AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("foo"),AttributeString("bar"),AttributeString("baz")))
-      )))))
-      case "mixedattrs" => Future.successful(workspaceResponse(workspace.copy(attributes = Option(Map(
-        AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("boop"),AttributeString("blep"))),
-        AttributeName.withDefaultNS("someDefault") -> AttributeNumber(123),
-        AttributeName.withLibraryNS("someLibrary") -> AttributeBoolean(true)
-      )))))
+      case "onetag" =>
+        Future.successful(
+          workspaceResponse(
+            workspace.copy(attributes =
+              Option(
+                Map(
+                  AttributeName.withTagsNS() -> AttributeValueList(Seq(AttributeString("wibble")))
+                )
+              )
+            )
+          )
+        )
+      case "threetags" =>
+        Future.successful(
+          workspaceResponse(
+            workspace.copy(attributes =
+              Option(
+                Map(
+                  AttributeName.withTagsNS() -> AttributeValueList(
+                    Seq(AttributeString("foo"), AttributeString("bar"), AttributeString("baz"))
+                  )
+                )
+              )
+            )
+          )
+        )
+      case "mixedattrs" =>
+        Future.successful(
+          workspaceResponse(
+            workspace.copy(attributes =
+              Option(
+                Map(
+                  AttributeName.withTagsNS() -> AttributeValueList(
+                    Seq(AttributeString("boop"), AttributeString("blep"))
+                  ),
+                  AttributeName.withDefaultNS("someDefault") -> AttributeNumber(123),
+                  AttributeName.withLibraryNS("someLibrary") -> AttributeBoolean(true)
+                )
+              )
+            )
+          )
+        )
       case "put" | "patch" | "delete" =>
         Future.successful(workspaceResponse(workspaceFromState(ns, name)))
       case _ =>
         Future.successful(workspaceResponse())
     }
-  }
 
-  override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit userToken: WithAccessToken): Future[WorkspaceDetails] = {
+  override def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit
+    userToken: WithAccessToken
+  ): Future[WorkspaceDetails] = {
     ns match {
       // unsafe casts throughout here - we want to throw exceptions if anything is the wrong type
       case "put" =>
         attributes match {
-          case Seq(op:AddUpdateAttribute) =>
+          case Seq(op: AddUpdateAttribute) =>
             val tags = op.addUpdateAttribute.asInstanceOf[AttributeValueList].list map {
               _.asInstanceOf[AttributeString].value
             }
-            statefulTagMap.put(name, ListBuffer( tags:_* ))
+            statefulTagMap.put(name, ListBuffer(tags: _*))
           case _ => fail("Put operation should consist of one AddUpdateAttribute operation")
         }
       case "patch" =>
-        assert( attributes.forall(_.isInstanceOf[AddListMember]),
-          "Patch operation should consist of only AddListMember operations" )
+        assert(attributes.forall(_.isInstanceOf[AddListMember]),
+               "Patch operation should consist of only AddListMember operations"
+        )
         val newTags = attributes.map(_.asInstanceOf[AddListMember].newMember.asInstanceOf[AttributeString].value)
         val currentTags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
         val finalTags = currentTags ++ newTags
         statefulTagMap.put(name, finalTags)
       case "delete" =>
-        assert( attributes.forall(_.isInstanceOf[RemoveListMember]),
-          "Delete operation should consist of only AddListMember operations" )
-        val removeTags = attributes.map(_.asInstanceOf[RemoveListMember].removeMember.asInstanceOf[AttributeString].value)
+        assert(attributes.forall(_.isInstanceOf[RemoveListMember]),
+               "Delete operation should consist of only AddListMember operations"
+        )
+        val removeTags =
+          attributes.map(_.asInstanceOf[RemoveListMember].removeMember.asInstanceOf[AttributeString].value)
         val currentTags = statefulTagMap.getOrElse(name, ListBuffer.empty[String])
         val finalTags = currentTags --= removeTags
         statefulTagMap.put(name, finalTags)
@@ -399,6 +465,5 @@ class MockTagsRawlsDao extends MockRawlsDAO with Assertions {
 
     Future.successful(workspaceFromState(ns, name))
   }
-
 
 }

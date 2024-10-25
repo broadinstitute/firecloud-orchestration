@@ -5,9 +5,9 @@ import scala.jdk.CollectionConverters._
 import com.univocity.parsers.csv.{CsvParser, CsvParserSettings}
 
 case class TSVLoadFile(
-  firstColumnHeader:String, //The first header column, used to determine the type of entities being imported
-  headers:Seq[String], //All the headers
-  tsvData:Seq[Seq[String]] //List of rows of the TSV, broken out into fields
+  firstColumnHeader: String, // The first header column, used to determine the type of entities being imported
+  headers: Seq[String], // All the headers
+  tsvData: Seq[Seq[String]] // List of rows of the TSV, broken out into fields
 )
 
 object TSVParser {
@@ -21,7 +21,7 @@ object TSVParser {
     // Automatically detect what the line separator is (e.g. \n for Unix, \r\n for Windows).
     settings.setLineSeparatorDetectionEnabled(true)
     settings.setMaxColumns(1024)
-    //64 mb in bytes/4 (assumes 4 bytes per character)
+    // 64 mb in bytes/4 (assumes 4 bytes per character)
     settings.setMaxCharsPerColumn(16777216)
     settings.getFormat.setDelimiter(DELIMITER)
     settings.setErrorContentLength(16384)
@@ -39,7 +39,7 @@ object TSVParser {
     tsvLine.toList
   }
 
-  def parse(tsvString: String): TSVLoadFile = {
+  def parse(tsvString: String): TSVLoadFile =
     makeParser.parseAll(new StringReader(tsvString)).asScala.toList match {
       case h :: t =>
         val tsvData = t.zipWithIndex.map { case (line, idx) => parseLine(line, idx, h.length) }
@@ -49,11 +49,10 @@ object TSVParser {
         // consists only of delimiters, all values will be empty.
         // NB: CsvParserSettings.setSkipEmptyLines, setIgnoreTrailingWhitespaces, and setIgnoreLeadingWhitespaces
         // do not help with this use case, so we write our own implementation.
-        val validData =  tsvData.collect {
+        val validData = tsvData.collect {
           case hasValues if hasValues.exists(_.nonEmpty) => hasValues
         }
         TSVLoadFile(h.head, h.toList, validData)
       case _ => throw new RuntimeException("TSV parsing error: no header")
     }
-  }
 }

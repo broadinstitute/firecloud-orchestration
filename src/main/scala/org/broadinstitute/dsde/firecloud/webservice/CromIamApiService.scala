@@ -6,9 +6,11 @@ import org.broadinstitute.dsde.firecloud.utils.{StandardUserInfoDirectives, Stre
 import akka.http.scaladsl.model.{HttpMethods, Uri}
 import akka.http.scaladsl.server.Route
 
-trait CromIamApiService extends FireCloudRequestBuilding
-  with FireCloudDirectives with StandardUserInfoDirectives
-  with StreamingPassthrough {
+trait CromIamApiService
+    extends FireCloudRequestBuilding
+    with FireCloudDirectives
+    with StandardUserInfoDirectives
+    with StreamingPassthrough {
 
   lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
   lazy val womtoolRoute: String = FireCloudConfig.CromIAM.authUrl + "/womtool/v1"
@@ -29,13 +31,15 @@ trait CromIamApiService extends FireCloudRequestBuilding
          defined as /workflows/{id}/genomics/{operation}, meaning that path reconstruction is necessary
     Since there's only one such route, it was simpler to have an explicit route defined for his edge case and have it evaluated
     before the rest of the workflow routes.
-  */
-  val rawlsServiceRoute: Route = {
-    pathPrefix("workflows" / Segment / Segment / "backend" / "metadata" / Segments) { (version, workflowId, operationSegments) =>
-      val suffix = operationSegments.mkString("/")
-      streamingPassthroughWithPathRedirect(Uri.Path(localBase) -> Uri(rawlsWorkflowRoot), s"/${workflowId}/genomics/${suffix}")
+   */
+  val rawlsServiceRoute: Route =
+    pathPrefix("workflows" / Segment / Segment / "backend" / "metadata" / Segments) {
+      (version, workflowId, operationSegments) =>
+        val suffix = operationSegments.mkString("/")
+        streamingPassthroughWithPathRedirect(Uri.Path(localBase) -> Uri(rawlsWorkflowRoot),
+                                             s"/${workflowId}/genomics/${suffix}"
+        )
     }
-  }
 
   val cromIamServiceRoutes: Route =
     pathPrefix("workflows" / Segment) { _ =>
@@ -53,14 +57,11 @@ trait CromIamApiService extends FireCloudRequestBuilding
       }
     }
 
-
   val cromIamApiServiceRoutes = rawlsServiceRoute ~ cromIamServiceRoutes ~ womToolRoute
 
-  val cromIamEngineRoutes: Route = {
-    pathPrefix( "engine" / Segment ) { _ =>
+  val cromIamEngineRoutes: Route =
+    pathPrefix("engine" / Segment) { _ =>
       streamingPassthrough(Uri.Path("/engine/v1") -> Uri(engineRoot))
     }
-  }
-
 
 }

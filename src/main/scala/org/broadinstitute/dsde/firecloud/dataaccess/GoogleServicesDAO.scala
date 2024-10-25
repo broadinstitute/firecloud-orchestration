@@ -23,15 +23,14 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getAdminUserAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
-  def getUserProfile(accessToken: WithAccessToken)
-                    (implicit executionContext: ExecutionContext): Future[HttpResponse]
+  def getUserProfile(accessToken: WithAccessToken)(implicit executionContext: ExecutionContext): Future[HttpResponse]
 
   val fetchPriceList: Future[GooglePriceList]
-  
+
   def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath
   def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath
 
-  def deleteGoogleGroup(groupEmail: String) : Unit
+  def deleteGoogleGroup(groupEmail: String): Unit
   def createGoogleGroup(groupName: String): Option[String]
   def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String]
 

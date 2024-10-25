@@ -5,7 +5,7 @@ import akka.event.Logging.LogLevel
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.headers.CacheDirectives.{`no-cache`, `no-store`}
-import akka.http.scaladsl.model.headers.{RawHeader, `Cache-Control`}
+import akka.http.scaladsl.model.headers.{`Cache-Control`, RawHeader}
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
@@ -31,7 +31,9 @@ object FireCloudApiService extends LazyLogging {
 
     import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport._
 
-    implicit val errorReportSource: ErrorReportSource = ErrorReportSource("FireCloud") //TODO make sure this doesn't clobber source names globally
+    implicit val errorReportSource: ErrorReportSource = ErrorReportSource(
+      "FireCloud"
+    ) // TODO make sure this doesn't clobber source names globally
 
     ExceptionHandler {
       case withErrorReport: FireCloudExceptionWithErrorReport =>
@@ -53,36 +55,36 @@ object FireCloudApiService extends LazyLogging {
           logger.error(e.toString)
         }
         // ErrorReport.apply with "message" kwarg. is specifically used to mute Stack Trace output in HTTP Error Responses
-        complete(StatusCodes.InternalServerError -> ErrorReport(message=e.getMessage))
+        complete(StatusCodes.InternalServerError -> ErrorReport(message = e.getMessage))
     }
   }
 }
 
-trait FireCloudApiService extends CookieAuthedApiService
-  with EntityApiService
-  with ExportEntitiesApiService
-  with LibraryApiService
-  with NamespaceApiService
-  with NihApiService
-  with OauthApiService
-  with RegisterApiService
-  with WorkspaceApiService
-  with WorkspaceV2ApiService
-  with NotificationsApiService
-  with MethodConfigurationApiService
-  with BillingApiService
-  with SubmissionApiService
-  with StatusApiService
-  with MethodsApiService
-  with Ga4ghApiService
-  with UserApiService
-  with ShareLogApiService
-  with ManagedGroupApiService
-  with CromIamApiService
-  with HealthApiService
-  with StaticNotebooksApiService
-  with PerimeterApiService
-{
+trait FireCloudApiService
+    extends CookieAuthedApiService
+    with EntityApiService
+    with ExportEntitiesApiService
+    with LibraryApiService
+    with NamespaceApiService
+    with NihApiService
+    with OauthApiService
+    with RegisterApiService
+    with WorkspaceApiService
+    with WorkspaceV2ApiService
+    with NotificationsApiService
+    with MethodConfigurationApiService
+    with BillingApiService
+    with SubmissionApiService
+    with StatusApiService
+    with MethodsApiService
+    with Ga4ghApiService
+    with UserApiService
+    with ShareLogApiService
+    with ManagedGroupApiService
+    with CromIamApiService
+    with HealthApiService
+    with StaticNotebooksApiService
+    with PerimeterApiService {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -125,7 +127,7 @@ trait FireCloudApiService extends CookieAuthedApiService
                 None
             }
           } catch {
-            case e:Exception =>
+            case e: Exception =>
               // error when extracting the response, likely in decoding the raw bytes
               None
           }
@@ -168,16 +170,15 @@ trait FireCloudApiService extends CookieAuthedApiService
   // Note that many Orch APIs are passthroughs, and if the underlying
   // service (Rawls, Sam, etc) already returns these headers, Orch
   // will not overwrite them.
-  private val noCacheNoStore: Directive0 = respondWithDefaultHeaders(
-    `Cache-Control`(`no-store`),
-    RawHeader("Pragma", `no-cache`.value))
+  private val noCacheNoStore: Directive0 =
+    respondWithDefaultHeaders(`Cache-Control`(`no-store`), RawHeader("Pragma", `no-cache`.value))
 
   // routes under /api
   def apiRoutes: server.Route =
-    options { complete(StatusCodes.OK) } ~
+    options(complete(StatusCodes.OK)) ~
       withExecutionContext(ExecutionContext.global) {
         v1RegisterRoutes ~
-        methodsApiServiceRoutes ~
+          methodsApiServiceRoutes ~
           profileRoutes ~
           cromIamApiServiceRoutes ~
           methodConfigurationRoutes ~
@@ -190,13 +191,13 @@ trait FireCloudApiService extends CookieAuthedApiService
       }
 
   val routeWrappers: Directive[Unit] =
-   handleRejections(org.broadinstitute.dsde.firecloud.model.defaultErrorReportRejectionHandler) &
+    handleRejections(org.broadinstitute.dsde.firecloud.model.defaultErrorReportRejectionHandler) &
       handleExceptions(FireCloudApiService.exceptionHandler) &
       appendTimestampOnFailure &
       logRequests &
       noCacheNoStore
 
-  def route: server.Route = (routeWrappers) {
+  def route: server.Route = routeWrappers {
     cromIamEngineRoutes ~
       tosRoutes ~
       exportEntitiesRoutes ~
@@ -228,23 +229,26 @@ trait FireCloudApiService extends CookieAuthedApiService
 
 }
 
-class FireCloudApiServiceImpl(val agoraPermissionService: (UserInfo) => AgoraPermissionService,
-                              val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor,
-                              val entityServiceConstructor: (ModelSchema) => EntityService,
-                              val libraryServiceConstructor: (UserInfo) => LibraryService,
-                              val ontologyServiceConstructor: () => OntologyService,
-                              val namespaceServiceConstructor: (UserInfo) => NamespaceService,
-                              val nihServiceConstructor: () => NihService,
-                              val registerServiceConstructor: () => RegisterService,
-                              val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService,
-                              val statusServiceConstructor: () => StatusService,
-                              val permissionReportServiceConstructor: (UserInfo) => PermissionReportService,
-                              val userServiceConstructor: (UserInfo) => UserService,
-                              val shareLogServiceConstructor: () => ShareLogService,
-                              val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService,
-                              val oidcConfig: OpenIDConnectConfiguration)
-                             (implicit val actorRefFactory: ActorRefFactory,
-                              val executionContext: ExecutionContext,
-                              val materializer: Materializer,
-                              val system: ActorSystem
-                             ) extends FireCloudApiService with StandardUserInfoDirectives
+class FireCloudApiServiceImpl(
+  val agoraPermissionService: (UserInfo) => AgoraPermissionService,
+  val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor,
+  val entityServiceConstructor: (ModelSchema) => EntityService,
+  val libraryServiceConstructor: (UserInfo) => LibraryService,
+  val ontologyServiceConstructor: () => OntologyService,
+  val namespaceServiceConstructor: (UserInfo) => NamespaceService,
+  val nihServiceConstructor: () => NihService,
+  val registerServiceConstructor: () => RegisterService,
+  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService,
+  val statusServiceConstructor: () => StatusService,
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService,
+  val userServiceConstructor: (UserInfo) => UserService,
+  val shareLogServiceConstructor: () => ShareLogService,
+  val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService,
+  val oidcConfig: OpenIDConnectConfiguration
+)(implicit
+  val actorRefFactory: ActorRefFactory,
+  val executionContext: ExecutionContext,
+  val materializer: Materializer,
+  val system: ActorSystem
+) extends FireCloudApiService
+    with StandardUserInfoDirectives

@@ -19,12 +19,11 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
 
   private lazy val restTemplate = new RestTemplate
 
-  private def handleError[A](e: HttpClientErrorException, operation: String): Option[A] = {
+  private def handleError[A](e: HttpClientErrorException, operation: String): Option[A] =
     e.getStatusCode.value() match {
       case HttpStatusCodes.STATUS_CODE_NOT_FOUND => None
       case _ => throw new WorkbenchException(s"Failed to $operation: ${e.getMessage}")
     }
-  }
 
   override def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]] = Future {
     val oauthApi: OauthApi = getOauthApi(userInfo.accessToken.token)
@@ -36,21 +35,25 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
     }
   }
 
-  override def putLinkedEraAccount(linkedEraAccount: LinkedEraAccount)(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
+  override def putLinkedEraAccount(
+    linkedEraAccount: LinkedEraAccount
+  )(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
     adminApi.putLinkedAccountWithFakeToken(unapply(linkedEraAccount), Provider.ERA_COMMONS)
   }
 
   override def deleteLinkedEraAccount(userInfo: UserInfo)(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
-    try {
+    try
       adminApi.adminDeleteLinkedAccount(userInfo.id, Provider.ERA_COMMONS)
-    } catch {
+    catch {
       case e: HttpClientErrorException => handleError(e, "DELETE eRA Linked Account")
     }
   }
 
-  override def getLinkedEraAccountForUsername(username: String)(implicit orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]] =  Future {
+  override def getLinkedEraAccountForUsername(
+    username: String
+  )(implicit orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
     try {
       val adminLinkInfo = adminApi.getLinkedAccountForExternalId(Provider.ERA_COMMONS, username)

@@ -35,7 +35,11 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
 
   val testProject = "broad-dsde-dev"
   val priceListUrl = ConfigFactory.load().getString("googlecloud.priceListUrl")
-  val defaultPriceList = GooglePriceList(GooglePrices(Map("us" -> BigDecimal(-0.11)), UsTieredPriceItem(Map(1L -> BigDecimal(-0.22)))), "v1", "1")
+  val defaultPriceList = GooglePriceList(
+    GooglePrices(Map("us" -> BigDecimal(-0.11)), UsTieredPriceItem(Map(1L -> BigDecimal(-0.22)))),
+    "v1",
+    "1"
+  )
   implicit val system: ActorSystem = ActorSystem("HttpGoogleCloudStorageDAOSpec")
   import system.dispatcher
   val gcsDAO = new HttpGoogleServicesDAO(priceListUrl, defaultPriceList)
@@ -47,7 +51,7 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
 
     val priceList: GooglePriceList = Await.result(errorGcsDAO.fetchPriceList, Duration.Inf)
 
-    priceList.version should startWith ("v")
+    priceList.version should startWith("v")
     priceList.updated should not be empty
     priceList.prices.cpBigstoreStorage("us") shouldBe BigDecimal(-0.11)
     priceList.prices.cpComputeengineInternetEgressNA.tiers.size shouldBe 1

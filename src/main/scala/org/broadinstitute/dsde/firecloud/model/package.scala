@@ -17,8 +17,7 @@ package object model {
     Rejection handler: if the response from the rejection is not already json, make it json.
    */
   implicit val defaultErrorReportRejectionHandler: RejectionHandler = RejectionHandler.default.mapRejectionResponse {
-    case resp@HttpResponse(statusCode, _, ent: HttpEntity.Strict, _) => {
-
+    case resp @ HttpResponse(statusCode, _, ent: HttpEntity.Strict, _) =>
       // since all Akka default rejection responses are Strict this will handle all rejections
       val entityString = ent.data.utf8String
       Try(entityString.parseJson) match {
@@ -27,9 +26,10 @@ package object model {
         case Failure(_) =>
           // N.B. this handler previously manually escaped double quotes in the entityString. We don't need to do that,
           // since the .toJson below handles escaping internally.
-          resp.withEntity(HttpEntity(ContentTypes.`application/json`, ErrorReport(statusCode, entityString).toJson.prettyPrint))
+          resp.withEntity(
+            HttpEntity(ContentTypes.`application/json`, ErrorReport(statusCode, entityString).toJson.prettyPrint)
+          )
       }
-    }
   }
 
   /*

@@ -12,54 +12,54 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 class MockCwdsDAO(
-                   enabled: Boolean = true,
-                   supportedFormats: List[String] = List("pfb", "tdrexport", "rawlsjson")
-                 ) extends HttpCwdsDAO(enabled, supportedFormats) {
+  enabled: Boolean = true,
+  supportedFormats: List[String] = List("pfb", "tdrexport", "rawlsjson")
+) extends HttpCwdsDAO(enabled, supportedFormats) {
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource(
     "MockCWDS"
   )
   override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit
-                                                                     userInfo: UserInfo
+    userInfo: UserInfo
   ): List[CwdsListResponse] = List()
 
   override def getJobV1(workspaceId: String, jobId: String)(implicit
-                                                            userInfo: UserInfo
+    userInfo: UserInfo
   ): CwdsListResponse =
     CwdsListResponse(jobId, "ReadyForUpsert", "pfb", None)
 
   override def importV1(
-                         workspaceId: String,
-                         importRequest: AsyncImportRequest
-                       )(implicit userInfo: UserInfo): GenericJob = {
-    importRequest.filetype match { case FILETYPE_PFB | FILETYPE_TDR | FILETYPE_RAWLS =>
-      if (importRequest.url.contains("forbidden"))
-        throw new ApiException(
-          Forbidden.intValue,
-          "Missing Authorization: Bearer token in header"
-        )
-      else if (importRequest.url.contains("bad.request"))
-        throw new ApiException(
-          BadRequest.intValue,
-          "Bad request as reported by cwds"
-        )
-      else if (importRequest.url.contains("its.lawsuit.time"))
-        throw new ApiException(
-          UnavailableForLegalReasons.intValue,
-          "cwds message"
-        )
-      else if (importRequest.url.contains("good")) makeJob(workspaceId)
-      else
-        throw new ApiException(
-          EnhanceYourCalm.intValue,
-          "enhance your calm"
-        )
-    case _ => ???
+    workspaceId: String,
+    importRequest: AsyncImportRequest
+  )(implicit userInfo: UserInfo): GenericJob =
+    importRequest.filetype match {
+      case FILETYPE_PFB | FILETYPE_TDR | FILETYPE_RAWLS =>
+        if (importRequest.url.contains("forbidden"))
+          throw new ApiException(
+            Forbidden.intValue,
+            "Missing Authorization: Bearer token in header"
+          )
+        else if (importRequest.url.contains("bad.request"))
+          throw new ApiException(
+            BadRequest.intValue,
+            "Bad request as reported by cwds"
+          )
+        else if (importRequest.url.contains("its.lawsuit.time"))
+          throw new ApiException(
+            UnavailableForLegalReasons.intValue,
+            "cwds message"
+          )
+        else if (importRequest.url.contains("good")) makeJob(workspaceId)
+        else
+          throw new ApiException(
+            EnhanceYourCalm.intValue,
+            "enhance your calm"
+          )
+      case _ => ???
     }
-  }
 
   private def makeJob(
-                       workspaceId: String
-                     ) = {
+    workspaceId: String
+  ) = {
     val genericJob: GenericJob = new GenericJob
     genericJob.setJobId(UUID.randomUUID())
     genericJob.setStatus(StatusEnum.RUNNING)

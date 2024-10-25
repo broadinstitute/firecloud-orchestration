@@ -47,8 +47,7 @@ import scala.util.{Failure, Success, Try}
 case class GooglePriceList(prices: GooglePrices, version: String, updated: String)
 
 /** Partial price list. Attributes can be added as needed to import prices for more products. */
-case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal],
-                        cpComputeengineInternetEgressNA: UsTieredPriceItem)
+case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal], cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
 /** Tiered price item containing only US currency.
  *
@@ -62,12 +61,20 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSup
   implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
     override def write(value: UsTieredPriceItem): JsValue = ???
     override def read(json: JsValue): UsTieredPriceItem = json match {
-      case JsObject(values) => UsTieredPriceItem(values("tiers").asJsObject.fields.map{ case (name, value) => name.toLong -> BigDecimal(value.toString)})
+      case JsObject(values) =>
+        UsTieredPriceItem(values("tiers").asJsObject.fields.map { case (name, value) =>
+          name.toLong -> BigDecimal(value.toString)
+        })
       case x => throw new DeserializationException("invalid value: " + x)
     }
   }
-  implicit val GooglePricesFormat: RootJsonFormat[GooglePrices] = jsonFormat(GooglePrices, FireCloudConfig.GoogleCloud.priceListStorageKey, FireCloudConfig.GoogleCloud.priceListEgressKey)
-  implicit val GooglePriceListFormat: RootJsonFormat[GooglePriceList] = jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
+  implicit val GooglePricesFormat: RootJsonFormat[GooglePrices] = jsonFormat(
+    GooglePrices,
+    FireCloudConfig.GoogleCloud.priceListStorageKey,
+    FireCloudConfig.GoogleCloud.priceListEgressKey
+  )
+  implicit val GooglePriceListFormat: RootJsonFormat[GooglePriceList] =
+    jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
@@ -81,31 +88,39 @@ object HttpGoogleServicesDAO {
   // the scope we want is not defined in CloudbillingScopes, so we hardcode it here
   val billingScope = Seq("https://www.googleapis.com/auth/cloud-billing")
 
-  private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials = {
+  private def getScopedCredentials(baseCreds: GoogleCredentials, scopes: Seq[String]): GoogleCredentials =
     baseCreds.createScoped(scopes.asJava)
-  }
 
-  private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials, scopes: Seq[String]): ServiceAccountCredentials = {
+  private def getScopedServiceAccountCredentials(baseCreds: ServiceAccountCredentials,
+                                                 scopes: Seq[String]
+  ): ServiceAccountCredentials =
     getScopedCredentials(baseCreds, scopes) match {
-      case sa:ServiceAccountCredentials => sa
+      case sa: ServiceAccountCredentials => sa
       case ex => throw new Exception(s"Excpected a ServiceAccountCredentials instance, got a ${ex.getClass.getName}")
     }
-  }
 
   // credentials for orchestration's "firecloud" service account, used for admin duties
-  lazy private val firecloudAdminSACreds = ServiceAccountCredentials
+  private lazy val firecloudAdminSACreds = ServiceAccountCredentials
     .fromStream(new FileInputStream(FireCloudConfig.Auth.firecloudAdminSAJsonFile))
 
-  def getAdminUserAccessToken = {
+  def getAdminUserAccessToken =
     getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
-      .refreshAccessToken().getTokenValue
-  }
+      .refreshAccessToken()
+      .getTokenValue
 }
 
-class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceList)(implicit val system: ActorSystem, implicit val materializer: Materializer, implicit val executionContext: ExecutionContext) extends GoogleServicesDAO with FireCloudRequestBuilding with LazyLogging with RestJsonClient with SprayJsonSupport {
+class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceList)(
+  implicit val system: ActorSystem,
+  implicit val materializer: Materializer,
+  implicit val executionContext: ExecutionContext
+) extends GoogleServicesDAO
+    with FireCloudRequestBuilding
+    with LazyLogging
+    with RestJsonClient
+    with SprayJsonSupport {
 
   // application name to use within Google api libraries
-  private final val appName = "firecloud:orchestration"
+  final private val appName = "firecloud:orchestration"
 
   val httpTransport = GoogleNetHttpTransport.newTrustedTransport
   val jsonFactory = GsonFactory.getDefaultInstance
@@ -116,30 +131,28 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   val anonymizedGroupRole = "MEMBER"
   val anonymizedGroupDeliverySettings = "ALL_MAIL"
 
-  private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials= {
+  private def getDelegatedCredentials(baseCreds: GoogleCredentials, user: String): GoogleCredentials =
     baseCreds.createDelegated(user)
-  }
 
-  def getDirectoryManager(credential: GoogleCredentials): Directory = {
-    new Directory.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential.createScoped(directoryScope.asJava))).setApplicationName(appName).build()
-  }
+  def getDirectoryManager(credential: GoogleCredentials): Directory =
+    new Directory.Builder(httpTransport,
+                          jsonFactory,
+                          new HttpCredentialsAdapter(credential.createScoped(directoryScope.asJava))
+    ).setApplicationName(appName).build()
 
-  private lazy val pubSub = {
-    new Pubsub.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getPubSubServiceAccountCredential)).setApplicationName(appName).build()
-  }
+  private lazy val pubSub =
+    new Pubsub.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getPubSubServiceAccountCredential))
+      .setApplicationName(appName)
+      .build()
 
-  private def getDelegatedCredentialForAdminUser: GoogleCredentials = {
+  private def getDelegatedCredentialForAdminUser: GoogleCredentials =
     getDelegatedCredentials(firecloudAdminSACreds, userAdminAccount)
-  }
 
-  private def getBucketServiceAccountCredential = {
+  private def getBucketServiceAccountCredential =
     getScopedServiceAccountCredentials(firecloudAdminSACreds, storageReadOnly)
-  }
 
-  private def getPubSubServiceAccountCredential = {
+  private def getPubSubServiceAccountCredential =
     getScopedServiceAccountCredentials(firecloudAdminSACreds, Seq(PubsubScopes.PUBSUB))
-  }
-
 
   /**
     * Uploads the supplied data to GCS, using the Rawls service account credentials
@@ -148,7 +161,10 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     * @param objectContents byte array of the data to upload
     * @return path to the uploaded GCS object
     */
-  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = {
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName,
+                                    objectKey: GcsObjectName,
+                                    objectContents: Array[Byte]
+  ): GcsPath = {
     // call the upload implementation
     val dataStream: Stream[IO, Byte] = Stream.emits(objectContents).covary[IO]
     streamUploadObject(getStorageResource, bucketName, objectKey, dataStream)
@@ -168,8 +184,11 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   }
 
   // separate method to perform the upload, to ease unit testing
-  protected[dataaccess] def streamUploadObject(storageResource: Resource[IO, GoogleStorageService[IO]], bucketName: GcsBucketName,
-                                               objectKey: GcsObjectName, dataStream: Stream[IO, Byte]): GcsPath = {
+  protected[dataaccess] def streamUploadObject(storageResource: Resource[IO, GoogleStorageService[IO]],
+                                               bucketName: GcsBucketName,
+                                               objectKey: GcsObjectName,
+                                               dataStream: Stream[IO, Byte]
+  ): GcsPath = {
     val uploadAttempt = storageResource.use { storageService =>
       // create the destination pipe to which we will write the file
       // N.B. workbench-libs' streamUploadBlob does not allow setting the Content-Type, so we don't set it
@@ -190,20 +209,28 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
     // create the storage service, using the Rawls SA credentials
     // the Rawls SA json creds do not contain a project, so also specify the project explicitly
-    GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile, Option.empty[Semaphore[IO]],
-      project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject)))
+    GoogleStorageService.resource(FireCloudConfig.Auth.rawlsSAJsonFile,
+                                  Option.empty[Semaphore[IO]],
+                                  project = Some(GoogleProject(FireCloudConfig.FireCloud.serviceProject))
+    )
   }
 
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String) = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
+    val storage = new Storage.Builder(httpTransport,
+                                      jsonFactory,
+                                      new HttpCredentialsAdapter(getBucketServiceAccountCredential)
+    ).setApplicationName(appName).build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
   def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
     val keyStream = new ByteArrayInputStream(petKey.getBytes)
-    val credential = getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
+    val credential =
+      getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
 
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential)).setApplicationName(appName).build()
+    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential))
+      .setApplicationName(appName)
+      .build()
 
     Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
       case Failure(ex) =>
@@ -218,29 +245,31 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
-    gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey,"UTF-8"))
+    gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey, "UTF-8"))
   }
 
-  def getUserProfile(accessToken: WithAccessToken)
-                    (implicit executionContext: ExecutionContext): Future[HttpResponse] = {
-    val profileRequest = Get( "https://www.googleapis.com/oauth2/v3/userinfo" )
+  def getUserProfile(
+    accessToken: WithAccessToken
+  )(implicit executionContext: ExecutionContext): Future[HttpResponse] = {
+    val profileRequest = Get("https://www.googleapis.com/oauth2/v3/userinfo")
 
     userAuthedRequest(profileRequest)(accessToken)
   }
 
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
-  //Why is this a val? Because the price lists do not change very often. This prevents making an HTTP call to Google
-  //every time we want to calculate a cost estimate (which happens extremely often in the Terra UI)
-  //Because the price list is brittle and Google sometimes changes the names of keys in the JSON, there is a
-  //default cached value in configuration to use as a backup. If we fallback to it, the error will be logged
-  //but users will probably not notice a difference. They're cost *estimates*, after all.
+  // Why is this a val? Because the price lists do not change very often. This prevents making an HTTP call to Google
+  // every time we want to calculate a cost estimate (which happens extremely often in the Terra UI)
+  // Because the price list is brittle and Google sometimes changes the names of keys in the JSON, there is a
+  // default cached value in configuration to use as a backup. If we fallback to it, the error will be logged
+  // but users will probably not notice a difference. They're cost *estimates*, after all.
   lazy val fetchPriceList: Future[GooglePriceList] = {
     val httpReq = Get(priceListUrl)
 
-    unAuthedRequestToObject[GooglePriceList](httpReq).recover {
-      case t: Throwable =>
-        logger.error(s"Unable to fetch/parse latest Google price list. A cached (possibly outdated) value will be used instead. Error: ${t.getMessage}")
-        defaultPriceList
+    unAuthedRequestToObject[GooglePriceList](httpReq).recover { case t: Throwable =>
+      logger.error(
+        s"Unable to fetch/parse latest Google price list. A cached (possibly outdated) value will be used instead. Error: ${t.getMessage}"
+      )
+      defaultPriceList
     }
   }
 
@@ -265,19 +294,16 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
 
     val insertRequest = directoryService.groups.insert(newGroup)
     Try(executeGoogleRequest[Group](insertRequest)) match {
-      case Failure(response: GoogleJsonResponseException) => {
+      case Failure(response: GoogleJsonResponseException) =>
         val errorCode = response.getDetails.getCode
         val message = response.getDetails.getMessage
         logger.warn(s"Error $errorCode: Could not create new group $groupEmail; $message")
         Option.empty
-      }
-      case Failure(f) => {
+      case Failure(f) =>
         logger.warn(s"Error: Could not create new group $groupEmail: $f")
         Option.empty
-      }
-      case Success(newGroupInfo) => {
+      case Success(newGroupInfo) =>
         Option(newGroupInfo.getEmail())
-      }
     }
   }
 
@@ -293,25 +319,25 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     val directoryService = getDirectoryManager(getDelegatedCredentialForAdminUser)
 
     // add targetUserEmail as member of google group - modeled after `override def addMemberToGroup` in workbench-libs HttpGoogleDirectoryDAO.scala
-    val member = new Member().setEmail(targetUserEmail).setRole(anonymizedGroupRole).setDeliverySettings(anonymizedGroupDeliverySettings)
+    val member = new Member()
+      .setEmail(targetUserEmail)
+      .setRole(anonymizedGroupRole)
+      .setDeliverySettings(anonymizedGroupDeliverySettings)
     val memberInsertRequest = directoryService.members.insert(groupEmail, member)
 
     Try(executeGoogleRequest(memberInsertRequest)) match {
-      case Failure(response: GoogleJsonResponseException) => {
+      case Failure(response: GoogleJsonResponseException) =>
         val errorCode = response.getDetails.getCode
         val message = response.getDetails.getMessage
         logger.warn(s"Error $errorCode: Could not add new member $targetUserEmail to group $groupEmail; $message")
         deleteGoogleGroup(groupEmail) // try to clean up after yourself
         Option.empty
-      }
-      case Failure(f) => {
+      case Failure(f) =>
         logger.warn(s"Error: Could not add new member $targetUserEmail to group $groupEmail; $f")
         deleteGoogleGroup(groupEmail)
         Option.empty
-      }
-      case Success(_) => {
+      case Success(_) =>
         Option(targetUserEmail) // return email address of added user (string)
-      }
     }
   }
 
@@ -319,54 +345,59 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   // following two methods borrowed from rawls. I'd much prefer to just import workbench-google
   // from workbench-libs, but that has spray vs. akka-http conflicts. So this will do for now.
   // ====================================================================================
-  protected def executeGoogleRequest[T](request: AbstractGoogleClientRequest[T]): T = {
+  protected def executeGoogleRequest[T](request: AbstractGoogleClientRequest[T]): T =
     executeGoogleCall(request) { response =>
       response.parseAs(request.getResponseClass)
     }
-  }
-  protected def executeGoogleCall[A,B](request: AbstractGoogleClientRequest[A])(processResponse: (com.google.api.client.http.HttpResponse) => B): B = {
+  protected def executeGoogleCall[A, B](
+    request: AbstractGoogleClientRequest[A]
+  )(processResponse: (com.google.api.client.http.HttpResponse) => B): B =
     Try {
       request.executeUnparsed()
     } match {
       case Success(response) =>
-        try {
+        try
           processResponse(response)
-        } finally {
+        finally
           response.disconnect()
-        }
       case Failure(httpRegrets: HttpResponseException) =>
         throw httpRegrets
       case Failure(regrets) =>
         throw regrets
     }
-  }
   // ====================================================================================
   // END methods borrowed from rawls
   // ====================================================================================
 
   def status: Future[SubsystemStatus] = {
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(getBucketServiceAccountCredential)).setApplicationName(appName).build()
+    val storage = new Storage.Builder(httpTransport,
+                                      jsonFactory,
+                                      new HttpCredentialsAdapter(getBucketServiceAccountCredential)
+    ).setApplicationName(appName).build()
     val bucketResponseTry = Try(storage.buckets().list(FireCloudConfig.FireCloud.serviceProject).executeUsingHead())
     bucketResponseTry match {
-      case scala.util.Success(bucketResponse) => bucketResponse.getStatusCode match {
-        case x if x == 200 => Future(SubsystemStatus(ok = true, messages = None))
-        case _ => Future(SubsystemStatus(ok = false, messages = Some(List(bucketResponse.parseAsString()))))
-      }
+      case scala.util.Success(bucketResponse) =>
+        bucketResponse.getStatusCode match {
+          case x if x == 200 => Future(SubsystemStatus(ok = true, messages = None))
+          case _ => Future(SubsystemStatus(ok = false, messages = Some(List(bucketResponse.parseAsString()))))
+        }
       case Failure(ex) => Future(SubsystemStatus(ok = false, messages = Some(List(ex.getMessage))))
     }
   }
 
   override def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit] = {
     logger.debug(s"publishing to google pubsub topic $fullyQualifiedTopic, messages [${messages.mkString(", ")}]")
-    Future.traverse(messages.grouped(1000)) { messageBatch =>
-      val pubsubMessages = messageBatch.map(text => new PubsubMessage().encodeData(text.getBytes("UTF-8")))
-      val pubsubRequest = new PublishRequest().setMessages(pubsubMessages.asJava)
-      Future(executeGoogleRequest(pubSub.projects().topics().publish(fullyQualifiedTopic, pubsubRequest)))
-    }.map(_ => ())
+    Future
+      .traverse(messages.grouped(1000)) { messageBatch =>
+        val pubsubMessages = messageBatch.map(text => new PubsubMessage().encodeData(text.getBytes("UTF-8")))
+        val pubsubRequest = new PublishRequest().setMessages(pubsubMessages.asJava)
+        Future(executeGoogleRequest(pubSub.projects().topics().publish(fullyQualifiedTopic, pubsubRequest)))
+      }
+      .map(_ => ())
   }
 
-  override def getAdminUserAccessToken = {
+  override def getAdminUserAccessToken =
     getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
-      .refreshAccessToken().getTokenValue
-  }
+      .refreshAccessToken()
+      .getTokenValue
 }

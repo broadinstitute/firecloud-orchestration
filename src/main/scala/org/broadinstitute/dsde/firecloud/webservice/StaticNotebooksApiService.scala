@@ -14,20 +14,18 @@ trait StaticNotebooksApiService extends FireCloudDirectives with StandardUserInf
   val calhounStaticNotebooksRoot: String = FireCloudConfig.StaticNotebooks.baseUrl
   val calhounStaticNotebooksURL: String = s"$calhounStaticNotebooksRoot/api/convert"
 
-  val staticNotebooksRoutes: Route = {
+  val staticNotebooksRoutes: Route =
     path("staticNotebooks" / "convert") {
       requireUserInfo() { userInfo =>
-        post {
-          requestContext =>
-            // call Calhoun and pass its response back to our own caller
-            // can't use passthrough() here because that demands a JSON response
-            // and we expect this to return text/html
-            val extReq = Post(calhounStaticNotebooksURL, requestContext.request.entity)
-            userAuthedRequest(extReq)(userInfo).flatMap { resp =>
-              requestContext.complete(resp)
-            }
+        post { requestContext =>
+          // call Calhoun and pass its response back to our own caller
+          // can't use passthrough() here because that demands a JSON response
+          // and we expect this to return text/html
+          val extReq = Post(calhounStaticNotebooksURL, requestContext.request.entity)
+          userAuthedRequest(extReq)(userInfo).flatMap { resp =>
+            requestContext.complete(resp)
+          }
         }
       }
     }
-  }
 }

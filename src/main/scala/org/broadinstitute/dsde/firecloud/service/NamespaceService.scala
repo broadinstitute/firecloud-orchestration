@@ -17,8 +17,9 @@ object NamespaceService {
     new NamespaceService(userInfo, app.agoraDAO)
 }
 
-class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit protected val executionContext: ExecutionContext)
-  extends SprayJsonSupport {
+class NamespaceService(protected val argUserInfo: UserInfo, val agoraDAO: AgoraDAO)(implicit
+  protected val executionContext: ExecutionContext
+) extends SprayJsonSupport {
 
   implicit val userInfo: UserInfo = argUserInfo
 
@@ -27,16 +28,18 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
     delegatePermissionsResponse(agoraPermissions)
   }
 
-  def postFireCloudPermissions(ns: String, entity: String, permissions: List[FireCloudPermission]): Future[PerRequestMessage] = {
+  def postFireCloudPermissions(ns: String,
+                               entity: String,
+                               permissions: List[FireCloudPermission]
+  ): Future[PerRequestMessage] = {
     val agoraPermissionsToPost = permissions map { permission => AgoraPermissionService.toAgoraPermission(permission) }
     val agoraPermissionsPosted = agoraDAO.postNamespacePermissions(ns, entity, agoraPermissionsToPost)
     delegatePermissionsResponse(agoraPermissionsPosted)
   }
 
-  private def delegatePermissionsResponse(agoraPerms: Future[List[AgoraPermission]]): Future[PerRequestMessage] = {
-    agoraPerms map {
-      perms =>
-        RequestComplete(OK, perms map AgoraPermissionService.toFireCloudPermission)
+  private def delegatePermissionsResponse(agoraPerms: Future[List[AgoraPermission]]): Future[PerRequestMessage] =
+    agoraPerms map { perms =>
+      RequestComplete(OK, perms map AgoraPermissionService.toFireCloudPermission)
     } recover {
       case e: FireCloudExceptionWithErrorReport =>
 //        RequestComplete(e.errorReport.statusCode.getOrElse(InternalServerError), e.errorReport)
@@ -44,6 +47,5 @@ class NamespaceService (protected val argUserInfo: UserInfo, val agoraDAO: Agora
       case e: Throwable =>
         RequestCompleteWithErrorReport(InternalServerError, e.getMessage)
     }
-  }
 
 }

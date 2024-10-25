@@ -16,7 +16,7 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  val managedGroupServiceConstructor:(WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
+  val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
 
   val uniqueId = "normal-user"
 
@@ -26,8 +26,8 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
       "OK response is returned" in {
         Get("/api/groups") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(OK)
-        }
+            status should equal(OK)
+          }
       }
     }
 
@@ -35,13 +35,13 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
       "Created response is returned" in {
         Post("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(Created)
-        }
+            status should equal(Created)
+          }
 
         Post("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(Created)
-        }
+            status should equal(Created)
+          }
       }
     }
 
@@ -49,13 +49,13 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
       "OK response is returned" in {
         Post("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(Created)
-        }
+            status should equal(Created)
+          }
 
         Get("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(OK)
-        }
+            status should equal(OK)
+          }
       }
     }
 
@@ -63,13 +63,13 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
       "OK response is returned" in {
         Post("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(Created)
-        }
+            status should equal(Created)
+          }
 
         Delete("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(NoContent)
-        }
+            status should equal(NoContent)
+          }
       }
     }
 
@@ -77,13 +77,13 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
       "OK response is returned" in {
         Post("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(Created)
-        }
+            status should equal(Created)
+          }
 
         Put("/api/groups/example-group/admin/test@test.test") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(NoContent)
-        }
+            status should equal(NoContent)
+          }
       }
     }
 
@@ -91,13 +91,13 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
       "OK response is returned" in {
         Post("/api/groups/example-group") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(Created)
-        }
+            status should equal(Created)
+          }
 
         Delete("/api/groups/example-group/admin/test@test.test") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(NoContent)
-        }
+            status should equal(NoContent)
+          }
       }
     }
 
@@ -105,8 +105,8 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
       "OK response is returned" in {
         Post("/api/groups/example-group/requestAccess") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-          status should equal(NoContent)
-        }
+            status should equal(NoContent)
+          }
       }
     }
   }

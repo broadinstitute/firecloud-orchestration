@@ -22,6 +22,6 @@ trait OntologyDAO extends ReportsSubsystemStatus {
 
   def autocomplete(term: String): List[TermResource]
 
-  override def serviceName:Subsystem = OntologyDAO.serviceName
+  override def serviceName: Subsystem = OntologyDAO.serviceName
 
 }

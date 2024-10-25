@@ -20,7 +20,7 @@ import scala.util.Try
   *  UserInfo.
  */
 
-trait WithAccessToken { val accessToken : OAuth2BearerToken }
+trait WithAccessToken { val accessToken: OAuth2BearerToken }
 
 /**
   * Represents an authenticated user.
@@ -31,9 +31,14 @@ trait WithAccessToken { val accessToken : OAuth2BearerToken }
   * @param googleAccessTokenThroughB2C if this is a Google login through B2C, contains the opaque
   *                                    Google access token. Empty otherwise.
   */
-case class UserInfo(userEmail: String, accessToken: OAuth2BearerToken, accessTokenExpiresIn: Long, id: String, googleAccessTokenThroughB2C: Option[OAuth2BearerToken] = None) extends WithAccessToken {
+case class UserInfo(userEmail: String,
+                    accessToken: OAuth2BearerToken,
+                    accessTokenExpiresIn: Long,
+                    id: String,
+                    googleAccessTokenThroughB2C: Option[OAuth2BearerToken] = None
+) extends WithAccessToken {
   def isB2C: Boolean =
-  // B2C ids are uuids, while google ids are numeric
+    // B2C ids are uuids, while google ids are numeric
     Try(BigInt(id)).isFailure
 }
 
@@ -43,14 +48,17 @@ object UserInfo {
 }
 
 case class AccessToken(accessToken: OAuth2BearerToken) extends WithAccessToken
-object AccessToken{
+object AccessToken {
   def apply(tokenStr: String) = new AccessToken(OAuth2BearerToken(tokenStr))
 }
 
 // response from Google has other fields, but these are the ones we care about
 case class OAuthUser(sub: String, email: String)
 
-case class RegistrationInfo(userInfo: WorkbenchUserInfo, enabled: WorkbenchEnabled, messages:Option[List[String]] = None)
+case class RegistrationInfo(userInfo: WorkbenchUserInfo,
+                            enabled: WorkbenchEnabled,
+                            messages: Option[List[String]] = None
+)
 case class RegistrationInfoV2(userSubjectId: String, userEmail: String, enabled: Boolean)
 
 case class UserIdInfo(userSubjectId: String, userEmail: String, googleSubjectId: String)
@@ -65,4 +73,3 @@ case class Curator(curator: Boolean)
 // indicates whether or not the user can import (workflow|data|etc) into a workspace - the user
 // must have either a writable workspace or the ability to create a workspace (ready billing project)
 case class UserImportPermission(billingProject: Boolean, writableWorkspace: Boolean)
-

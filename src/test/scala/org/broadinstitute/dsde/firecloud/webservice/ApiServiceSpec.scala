@@ -17,7 +17,12 @@ import scala.concurrent.duration._
   */
 
 // common trait to be inherited by API service tests
-trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest with SprayJsonSupport with TestRequestBuilding {
+trait ApiServiceSpec
+    extends AnyFlatSpec
+    with Matchers
+    with ScalatestRouteTest
+    with SprayJsonSupport
+    with TestRequestBuilding {
   // increase the timeout for ScalatestRouteTest from the default of 1 second, otherwise
   // intermittent failures occur on requests not completing in time
   implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
@@ -41,14 +46,25 @@ trait ApiServiceSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest w
     def actorRefFactory = system
 
     val nihServiceConstructor = NihService.constructor(
-      new Application(agoraDao, googleDao, ontologyDao, rawlsDao, samDao, searchDao, researchPurposeSupport, thurloeDao, shareLogDao, shibbolethDao, cwdsDao, ecmDao)
+      new Application(agoraDao,
+                      googleDao,
+                      ontologyDao,
+                      rawlsDao,
+                      samDao,
+                      searchDao,
+                      researchPurposeSupport,
+                      thurloeDao,
+                      shareLogDao,
+                      shibbolethDao,
+                      cwdsDao,
+                      ecmDao
+      )
     ) _
 
   }
 
   // lifted from rawls. prefer this to using theSameElementsAs directly, because its functionality depends on whitespace
-  def assertSameElements[T](expected: IterableOnce[T], actual: IterableOnce[T]): Unit = {
+  def assertSameElements[T](expected: IterableOnce[T], actual: IterableOnce[T]): Unit =
     expected.iterator.to(Iterable) should contain theSameElementsAs actual.iterator.to(Iterable)
-  }
 
 }

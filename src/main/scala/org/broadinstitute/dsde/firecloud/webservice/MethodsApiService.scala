@@ -30,11 +30,10 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
   val agoraPermissionService: UserInfo => AgoraPermissionService
 
   val methodsApiServiceRoutes: Route =
-  // routes that are valid for both configurations and methods
-    pathPrefix( "configurations|methods".r ) { agoraEntityType =>
-
+    // routes that are valid for both configurations and methods
+    pathPrefix("configurations|methods".r) { agoraEntityType =>
       val passthroughBase = agoraEntityType match {
-        case "methods" => remoteMethodsUrl
+        case "methods"        => remoteMethodsUrl
         case "configurations" => remoteConfigurationsUrl
       }
 
@@ -43,37 +42,39 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
           extract(_.request.method) { method =>
             extract(_.request.uri.query()) { query =>
               // only pass query params for GETs
-              val targetUri = if (method == HttpMethods.GET)
-                Uri(passthroughBase).withQuery(query)
-              else
-                Uri(passthroughBase)
+              val targetUri =
+                if (method == HttpMethods.GET)
+                  Uri(passthroughBase).withQuery(query)
+                else
+                  Uri(passthroughBase)
               passthrough(targetUri, method)
             }
           }
         }
       } ~
-        pathPrefix( Segment / Segment / IntNumber ) { (namespace, name, snapshotId) =>
+        pathPrefix(Segment / Segment / IntNumber) { (namespace, name, snapshotId) =>
           pathEnd {
             (get | delete) {
               extract(_.request.method) { method =>
                 extract(_.request.uri.query()) { query =>
                   // only pass query params for GETs
                   val baseUri = Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId")
-                  val targetUri = if (method == HttpMethods.GET)
-                    baseUri.withQuery(query)
-                  else
-                    baseUri
+                  val targetUri =
+                    if (method == HttpMethods.GET)
+                      baseUri.withQuery(query)
+                    else
+                      baseUri
                   passthrough(targetUri, method)
                 }
               }
             }
           } ~
-            path( "permissions") {
+            path("permissions") {
               val url = s"$passthroughBase/${urlify(namespace, name)}/$snapshotId/permissions"
               get {
                 requireUserInfo() { userInfo =>
                   // pass to AgoraPermissionHandler
-                  complete { agoraPermissionService(userInfo).getAgoraPermission(url) }
+                  complete(agoraPermissionService(userInfo).getAgoraPermission(url))
                 }
               } ~
                 post {
@@ -83,7 +84,10 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
                     entity(as[List[FireCloudPermission]]) { fireCloudPermissions =>
                       requireUserInfo() { userInfo =>
                         complete {
-                          agoraPermissionService(userInfo).createAgoraPermission(url, fireCloudPermissions.map(_.toAgoraPermission))
+                          agoraPermissionService(userInfo).createAgoraPermission(
+                            url,
+                            fireCloudPermissions.map(_.toAgoraPermission)
+                          )
                         }
                       }
                     }
@@ -93,44 +97,48 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
         }
     } ~
       // routes that are only valid for methods
-      pathPrefix( "methods" ) {
+      pathPrefix("methods") {
         val passthroughBase = remoteMethodsUrl
-        path( "definitions" ) {
+        path("definitions") {
           get {
             passthrough(s"$passthroughBase/definitions", HttpMethods.GET)
           }
         } ~
-          path( "permissions") {
+          path("permissions") {
             put {
               handleRejections(entityExtractionRejectionHandler) {
                 entity(as[List[MethodAclPair]]) { fireCloudPermissions =>
-                    val agoraPermissions = fireCloudPermissions map { fc =>
-                      EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
-                    }
-                    requireUserInfo() { userInfo =>
-                      complete { agoraPermissionService(userInfo).batchInsertAgoraPermissions(agoraPermissions) }
-                    }
+                  val agoraPermissions = fireCloudPermissions map { fc =>
+                    EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
+                  }
+                  requireUserInfo() { userInfo =>
+                    complete(agoraPermissionService(userInfo).batchInsertAgoraPermissions(agoraPermissions))
+                  }
                 }
               }
             }
           } ~
-          pathPrefix( Segment / Segment ) { (namespace, name) =>
-            path( "configurations" ) {
+          pathPrefix(Segment / Segment) { (namespace, name) =>
+            path("configurations") {
               get {
-                passthrough(s"$passthroughBase/${urlify(namespace,name)}/configurations", HttpMethods.GET)
+                passthrough(s"$passthroughBase/${urlify(namespace, name)}/configurations", HttpMethods.GET)
               }
             } ~
-              pathPrefix( IntNumber ) { snapshotId =>
+              pathPrefix(IntNumber) { snapshotId =>
                 pathEnd {
                   post {
                     extract(_.request.uri.query()) { query =>
-                      passthrough(Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId").withQuery(query), HttpMethods.POST)
+                      passthrough(Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId").withQuery(query),
+                                  HttpMethods.POST
+                      )
                     }
                   }
                 } ~
-                  path( "configurations" ) {
+                  path("configurations") {
                     get {
-                      passthrough(s"$passthroughBase/${urlify(namespace,name)}/$snapshotId/configurations", HttpMethods.GET)
+                      passthrough(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId/configurations",
+                                  HttpMethods.GET
+                      )
                     }
                   }
               }
@@ -143,7 +151,7 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
       though it's largely untested and there may still be problems. Any entities created
       after syntax validation should be just fine and the encoding won't touch them.
    */
-  private def urlify(namespace:String, name:String) = enc(namespace) + "/" + enc(name)
-  private def enc(in:String) = java.net.URLEncoder.encode(in,"utf-8").replace("+", "%20")
+  private def urlify(namespace: String, name: String) = enc(namespace) + "/" + enc(name)
+  private def enc(in: String) = java.net.URLEncoder.encode(in, "utf-8").replace("+", "%20")
 
 }
