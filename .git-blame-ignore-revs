@@ -1,0 +1,4 @@
+# .git-blame-ignore-revs
+
+# scalafmt mass change
+579d6ffd2c2d25c0e8cdab7ea83ca630de043c8b
