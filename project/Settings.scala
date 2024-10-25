@@ -5,6 +5,7 @@ import Version._
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport.scalafmtFilter
 
 object Settings {
 
@@ -41,9 +42,14 @@ object Settings {
     assembly / test := {}
   )
 
+  val scalafmtSettings = List(
+    Global / excludeLintKeys += scalafmtFilter,
+    Global / scalafmtFilter := "diff-ref=HEAD^"
+  )
+
   //common settings for all sbt subprojects
   val commonSettings =
-    commonBuildSettings ++ commonAssemblySettings ++ commonTestSettings ++ List(
+    commonBuildSettings ++ commonAssemblySettings ++ commonTestSettings ++ scalafmtSettings ++ List(
     organization  := "org.broadinstitute.dsde.firecloud",
     scalaVersion  := "2.13.15",
     resolvers := proxyResolvers ++: resolvers.value ++: commonResolvers,

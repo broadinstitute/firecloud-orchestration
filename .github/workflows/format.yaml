@@ -1,0 +1,28 @@
+name: Check formatting for modified files with scalafmt
+
+on:
+  pull_request:
+    paths-ignore: ['**.md']
+
+jobs:
+  format:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+          cache: sbt
+
+      - name: Check formatting for modified files
+        run: |
+          sbt scalafmtCheckAll
