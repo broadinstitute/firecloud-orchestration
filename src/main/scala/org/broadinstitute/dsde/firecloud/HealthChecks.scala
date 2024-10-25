@@ -14,9 +14,8 @@ object HealthChecks {
   val termsOfServiceUrl = "app.terra.bio/#terms-of-service"
 }
 
-class HealthChecks(app: Application)
-                  (implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
-                    extends LazyLogging {
+class HealthChecks(app: Application)(implicit val system: ActorSystem, implicit val executionContext: ExecutionContext)
+    extends LazyLogging {
 
   def healthMonitorChecks: () => Map[Subsystem, Future[SubsystemStatus]] = () => {
     val servicesToMonitor = Seq(app.rawlsDAO, app.samDAO, app.thurloeDAO) ++

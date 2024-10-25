@@ -27,15 +27,13 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDire
 
   override def beforeAll() = {
     echoServer = startClientAndServer(echoPort)
-      echoServer.when(request())
-        .respond(
-          callback().
-            withCallbackClass("org.broadinstitute.dsde.firecloud.service.EchoCallback"))
+    echoServer
+      .when(request())
+      .respond(callback().withCallbackClass("org.broadinstitute.dsde.firecloud.service.EchoCallback"))
   }
 
-  override def afterAll() = {
+  override def afterAll() =
     echoServer.stop
-  }
 
   "Passthrough Directives" - {
     "passthrough() directive" - {
@@ -62,13 +60,13 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDire
 
       "path with a single query parameter" - {
         "should send the query parameter through" in {
-          validateUri("/one/2/three?key=value", Some(Map("key"->"value")))
+          validateUri("/one/2/three?key=value", Some(Map("key" -> "value")))
         }
       }
 
       "path with multiple query parameters" - {
         "should send the query parameters through" in {
-          validateUri("/one/2/three?key=value&key2=val2", Some(Map("key"->"value", "key2"->"val2")))
+          validateUri("/one/2/three?key=value&key2=val2", Some(Map("key" -> "value", "key2" -> "val2")))
         }
       }
 
@@ -77,7 +75,7 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDire
           validateUri(
             "/one/2/three?key=value&key2=1%323",
             "/one/2/three?key=value&key2=123",
-            Some(Map("key"->"value", "key2"->"123"))
+            Some(Map("key" -> "value", "key2" -> "123"))
           )
         }
       }
@@ -88,7 +86,7 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDire
             val specRoute = passthrough(echoUrl + "/", meth)
             val reqMethod = new RequestBuilder(meth)
             reqMethod() ~> sealRoute(specRoute) ~> check {
-              assertResult(OK) {status}
+              assertResult(OK)(status)
               // special handling for HEAD, because HEAD won't return a body
               if (meth != HEAD && meth != CONNECT) {
                 val info = responseAs[RequestInfo]
@@ -106,13 +104,11 @@ final class PassthroughDirectivesSpec extends BaseServiceSpec with FireCloudDire
     }
   }
 
-  private def validateUri(path: String, queryParams: Option[Map[String, String]] = None): Unit = {
+  private def validateUri(path: String, queryParams: Option[Map[String, String]] = None): Unit =
     validateUri(path, path, queryParams)
-  }
 
-  private def validateUri(inpath: String, outpath: String): Unit = {
+  private def validateUri(inpath: String, outpath: String): Unit =
     validateUri(inpath, outpath, None)
-  }
 
   private def validateUri(inpath: String, outpath: String, queryParams: Option[Map[String, String]]): Unit = {
     val specRoute = passthrough(echoUrl + inpath, HttpMethods.GET)

@@ -36,7 +36,8 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
 
   val usernames = Map("fcSubjectId1" -> "nihUsername1", "fcSubjectId2" -> "nihUsername2")
 
-  val expiretimes1 = Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString, "fcSubjectId2" -> DateUtils.nowPlus24Hours.toString)
+  val expiretimes1 =
+    Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString, "fcSubjectId2" -> DateUtils.nowPlus24Hours.toString)
   val currentUsernames1 = Map("fcSubjectId2" -> "nihUsername2")
 
   val expiretimes2 = Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString)
@@ -61,27 +62,40 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "honor expiration of JWTs" in {
-    //Set up a Mock Shibboleth with a public key that matches a private key we have access to
-    //The private key that matches the public key in MockShibbolethDao is lost to time
+    // Set up a Mock Shibboleth with a public key that matches a private key we have access to
+    // The private key that matches the public key in MockShibbolethDao is lost to time
     val keypairGen = KeyPairGenerator.getInstance("RSA")
     keypairGen.initialize(1024)
     val keypair = keypairGen.generateKeyPair()
 
     val privKey: PrivateKey = keypair.getPrivate
-    val pubKey: String = s"-----BEGIN PUBLIC KEY-----\n${Base64.getEncoder.encodeToString(keypair.getPublic.getEncoded)}\n-----END PUBLIC KEY-----"
+    val pubKey: String =
+      s"-----BEGIN PUBLIC KEY-----\n${Base64.getEncoder.encodeToString(keypair.getPublic.getEncoded)}\n-----END PUBLIC KEY-----"
 
     val mockShibboleth = mock[ShibbolethDAO]
     when(mockShibboleth.getPublicKey()).thenReturn(Future.successful(pubKey))
     val nihServiceMock = new NihService(samDao, thurloeDao, googleDao, mockShibboleth, ecmDao)
 
     // expires in 15 minutes
-    val expiresInTheFuture: Long = Instant.ofEpochMilli(System.currentTimeMillis() + (15 * 60 * 1000)).getEpochSecond // 15 minutes * 60 seconds * 1000 milliseconds
-    val validStr = Jwt.encode(JwtClaim("{\"eraCommonsUsername\": \"firecloud-dev\", \"iat\": 1652937842}").expiresAt(expiresInTheFuture), privKey, JwtAlgorithm.RS256)
+    val expiresInTheFuture: Long =
+      Instant
+        .ofEpochMilli(System.currentTimeMillis() + (15 * 60 * 1000))
+        .getEpochSecond // 15 minutes * 60 seconds * 1000 milliseconds
+    val validStr = Jwt.encode(
+      JwtClaim("{\"eraCommonsUsername\": \"firecloud-dev\", \"iat\": 1652937842}").expiresAt(expiresInTheFuture),
+      privKey,
+      JwtAlgorithm.RS256
+    )
     val validJwt = JWTWrapper(validStr)
 
     // expired 1 minute ago
-    val expiresInThePast: Long = Instant.ofEpochMilli(System.currentTimeMillis() - (60 * 1000)).getEpochSecond // 60 seconds * 1000 milliseconds
-    val expStr = Jwt.encode(JwtClaim("{\"eraCommonsUsername\": \"firecloud-dev\", \"iat\": 1655232707}").expiresAt(expiresInThePast), privKey, JwtAlgorithm.RS256)
+    val expiresInThePast: Long =
+      Instant.ofEpochMilli(System.currentTimeMillis() - (60 * 1000)).getEpochSecond // 60 seconds * 1000 milliseconds
+    val expStr = Jwt.encode(
+      JwtClaim("{\"eraCommonsUsername\": \"firecloud-dev\", \"iat\": 1655232707}").expiresAt(expiresInThePast),
+      privKey,
+      JwtAlgorithm.RS256
+    )
     val expJwt = JWTWrapper(expStr)
 
     val userToken: UserInfo = UserInfo("dummyToken", thurloeDao.TCGA_AND_TARGET_LINKED)
@@ -89,14 +103,13 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
     val resp1 = Await.result(nihServiceMock.updateNihLinkAndSyncSelf(userToken, validJwt), 3.seconds)
     val resp2 = Await.result(nihServiceMock.updateNihLinkAndSyncSelf(userToken, expJwt), 3.seconds)
 
-
     resp1 match {
-      case _@ RequestComplete((StatusCodes.OK, _)) => succeed
-      case x => fail(s"Unexpired token should be accepted. Response was: $x")
+      case _ @RequestComplete((StatusCodes.OK, _)) => succeed
+      case x                                       => fail(s"Unexpired token should be accepted. Response was: $x")
     }
 
     resp2 match {
-      case _@ RequestComplete((StatusCodes.BadRequest, errorReport: ErrorReport)) =>
+      case _ @RequestComplete((StatusCodes.BadRequest, errorReport: ErrorReport)) =>
         errorReport.message shouldBe "Failed to decode JWT"
       case x =>
         fail(s"Expired token should fail at the decode stage. Response was: $x")

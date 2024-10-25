@@ -103,74 +103,58 @@ class TSVParserSpec extends AnyFlatSpec {
 
   "EntityClient.backwardsCompatStripIdSuffixes" should "fix up the names of attributes for certain reference types for pairs" in {
     val entityType: String = "pair"
-    val requiredAttributes: Map[String, String] = Map("case_sample_id" -> "sample",
-      "control_sample_id" -> "sample",
-      "participant_id" -> "participant")
+    val requiredAttributes: Map[String, String] =
+      Map("case_sample_id" -> "sample", "control_sample_id" -> "sample", "participant_id" -> "participant")
 
-    val input = Seq(
-      "entity:pair_id",
-      "case_sample_id",
-      "control_sample_id",
-      "participant_id",
-      "some_other_id",
-      "ref_dict",
-      "ref_fasta")
+    val input = Seq("entity:pair_id",
+                    "case_sample_id",
+                    "control_sample_id",
+                    "participant_id",
+                    "some_other_id",
+                    "ref_dict",
+                    "ref_fasta"
+    )
 
-    val expect = Seq(
-      "entity:pair_id",
-      "case_sample",
-      "control_sample",
-      "participant",
-      "some_other_id",
-      "ref_dict",
-      "ref_fasta")
+    val expect =
+      Seq("entity:pair_id", "case_sample", "control_sample", "participant", "some_other_id", "ref_dict", "ref_fasta")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
+      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty),
+                                                   entityType,
+                                                   FirecloudModelSchema
+      )
     }
   }
 
   it should "fix up the names of attributes for certain reference types for samples" in {
     val entityType: String = "sample"
-    val requiredAttributes: Map[String, String] = Map(
-      "participant_id" -> "participant")
+    val requiredAttributes: Map[String, String] = Map("participant_id" -> "participant")
 
-    val input = Seq(
-      "entity:sample_id",
-      "participant_id",
-      "some_other_id",
-      "ref_dict",
-      "ref_fasta")
+    val input = Seq("entity:sample_id", "participant_id", "some_other_id", "ref_dict", "ref_fasta")
 
-    val expect = Seq(
-      "entity:sample_id",
-      "participant",
-      "some_other_id",
-      "ref_dict",
-      "ref_fasta")
+    val expect = Seq("entity:sample_id", "participant", "some_other_id", "ref_dict", "ref_fasta")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
+      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty),
+                                                   entityType,
+                                                   FirecloudModelSchema
+      )
     }
   }
-
 
   it should "fix up the names of attributes for certain reference types for participant sets" in {
     val entityType: String = "participant_set"
     val requiredAttributes: Map[String, String] = Map.empty
 
-    val input = Seq(
-      "entity:participant_set_id",
-      "participant_id",
-      "some_other_id")
+    val input = Seq("entity:participant_set_id", "participant_id", "some_other_id")
 
-    val expect = Seq(
-      "entity:participant_set_id",
-      "participant",
-      "some_other_id")
+    val expect = Seq("entity:participant_set_id", "participant", "some_other_id")
 
     assertResult(TSVLoadFile(input.head, expect, Seq.empty), entityType) {
-      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty), entityType, FirecloudModelSchema)
+      EntityService.backwardsCompatStripIdSuffixes(TSVLoadFile(input.head, input, Seq.empty),
+                                                   entityType,
+                                                   FirecloudModelSchema
+      )
     }
   }
 }

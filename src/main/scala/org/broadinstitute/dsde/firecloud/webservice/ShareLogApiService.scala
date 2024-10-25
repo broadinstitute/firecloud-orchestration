@@ -8,27 +8,28 @@ import org.broadinstitute.dsde.firecloud.utils.{EnabledUserDirectives, StandardU
 
 import scala.concurrent.ExecutionContext
 
-trait ShareLogApiService extends FireCloudDirectives
-  with StandardUserInfoDirectives with EnabledUserDirectives
-  with SprayJsonSupport {
+trait ShareLogApiService
+    extends FireCloudDirectives
+    with StandardUserInfoDirectives
+    with EnabledUserDirectives
+    with SprayJsonSupport {
 
   implicit val executionContext: ExecutionContext
   val shareLogServiceConstructor: () => ShareLogService
 
-  val shareLogServiceRoutes: Route = {
+  val shareLogServiceRoutes: Route =
     pathPrefix("sharelog") {
-      path("sharees" ) {
+      path("sharees") {
         get {
           parameter("shareType".?) { shareType =>
             requireUserInfo() { userInfo =>
-               requireEnabledUser(userInfo) {
-                complete { shareLogServiceConstructor().getSharees(userInfo.id, shareType.map(ShareType.withName)) }
-               }
+              requireEnabledUser(userInfo) {
+                complete(shareLogServiceConstructor().getSharees(userInfo.id, shareType.map(ShareType.withName)))
+              }
             }
           }
         }
       }
     }
-  }
 
 }

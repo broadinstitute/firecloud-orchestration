@@ -11,4 +11,5 @@ case class SamUser(id: WorkbenchUserId,
                    enabled: Boolean,
                    createdAt: Instant,
                    registeredAt: Option[Instant],
-                   updatedAt: Instant)
+                   updatedAt: Instant
+)

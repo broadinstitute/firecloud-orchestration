@@ -96,8 +96,10 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
       }
 
       "Profile instantiated with ProfileWrapper is valid" in {
-        val pw = ProfileWrapper("123", List(
-          FireCloudKeyValue(Some("firstName"), Some("test-firstName")),
+        val pw = ProfileWrapper(
+          "123",
+          List(
+            FireCloudKeyValue(Some("firstName"), Some("test-firstName")),
             FireCloudKeyValue(Some("lastName"), Some("test-lastName")),
             FireCloudKeyValue(Some("title"), Some("test-title")),
             FireCloudKeyValue(Some("institute"), Some("test-institute")),
@@ -106,7 +108,8 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
             FireCloudKeyValue(Some("programLocationState"), Some("test-programLocationState")),
             FireCloudKeyValue(Some("programLocationCountry"), Some("test-programLocationCountry")),
             FireCloudKeyValue(Some("contactEmail"), Some("test-contactEmail@noreply.com"))
-        ))
+          )
+        )
         val profile = Profile(pw)
         profile shouldNot be(null)
       }
@@ -114,7 +117,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
 
     "Incorrectly formed profiles" - {
       "BasicProfile with blank required info is invalid" in {
-        val ex = intercept[IllegalArgumentException]{
+        val ex = intercept[IllegalArgumentException] {
           BasicProfile(
             firstName = "",
             lastName = "",
@@ -133,7 +136,7 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
         ex shouldNot be(null)
       }
       "Profile with invalid contact email is invalid" in {
-        val ex = intercept[IllegalArgumentException]{
+        val ex = intercept[IllegalArgumentException] {
           Profile(
             firstName = randomString,
             lastName = randomString,
@@ -156,12 +159,15 @@ class ProfileSpec extends AnyFreeSpec with Matchers {
 
   "ProfileUtils" - {
 
-    val pw = ProfileWrapper("123", List(
-      FireCloudKeyValue(Some("imastring"), Some("hello")),
-      FireCloudKeyValue(Some("imalong"), Some("1556724034")),
-      FireCloudKeyValue(Some("imnotalong"), Some("not-a-long")),
-      FireCloudKeyValue(Some("imnothing"), None)
-    ))
+    val pw = ProfileWrapper(
+      "123",
+      List(
+        FireCloudKeyValue(Some("imastring"), Some("hello")),
+        FireCloudKeyValue(Some("imalong"), Some("1556724034")),
+        FireCloudKeyValue(Some("imnotalong"), Some("not-a-long")),
+        FireCloudKeyValue(Some("imnothing"), None)
+      )
+    )
 
     "getString" - {
       "returns None if key doesn't exist" in {

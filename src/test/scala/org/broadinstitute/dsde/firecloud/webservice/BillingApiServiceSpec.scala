@@ -24,39 +24,53 @@ final class BillingApiServiceSpec extends BaseServiceSpec with BillingApiService
 
     workspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
 
-    workspaceServer.when(
-      request()
-        .withMethod(POST.name)
-        .withPath(billingPath))
-      .respond(HttpResponse.response()
+    workspaceServer
+      .when(
+        request()
+          .withMethod(POST.name)
+          .withPath(billingPath)
+      )
+      .respond(
+        HttpResponse
+          .response()
           .withHeaders(MockUtils.header)
-          .withStatusCode(Created.intValue))
+          .withStatusCode(Created.intValue)
+      )
 
-    workspaceServer.when(
-      request()
-        .withMethod(GET.name)
-        .withPath(billingPath + "/project1/members"))
-      .respond(HttpResponse.response()
+    workspaceServer
+      .when(
+        request()
+          .withMethod(GET.name)
+          .withPath(billingPath + "/project1/members")
+      )
+      .respond(
+        HttpResponse
+          .response()
           .withHeaders(MockUtils.header)
-          .withStatusCode(OK.intValue))
+          .withStatusCode(OK.intValue)
+      )
 
     List(PUT, DELETE).foreach { method =>
-      workspaceServer.when(
-        request()
-          .withMethod(method.name)
-          .withPath(billingPath + "/project2/user/foo@bar.com"))
-        .respond(HttpResponse.response()
+      workspaceServer
+        .when(
+          request()
+            .withMethod(method.name)
+            .withPath(billingPath + "/project2/user/foo@bar.com")
+        )
+        .respond(
+          HttpResponse
+            .response()
             .withHeaders(MockUtils.header)
-            .withStatusCode(OK.intValue))
+            .withStatusCode(OK.intValue)
+        )
     }
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     workspaceServer.stop()
-  }
 
   // streamingPassthrough directive needs to see the routes under "/api", which is how FireCloudApiService starts them
-  val testableRoutes = pathPrefix("api") { billingServiceRoutes }
+  val testableRoutes = pathPrefix("api")(billingServiceRoutes)
 
   "BillingApiService" - {
     "list project members" in {

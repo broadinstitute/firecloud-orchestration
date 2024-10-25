@@ -24,11 +24,11 @@ object ESIntegrationSupport extends IntegrationTestConfig {
     val timeStr = new SimpleDateFormat("yyyyMMdd't'HH:mm:ss").format(Calendar.getInstance.getTime)
     val username = Try(System.getProperty("user.name")) match {
       case Success(str) => str.toLowerCase
-      case Failure(ex) => "unknownuser"
+      case Failure(ex)  => "unknownuser"
     }
     val hostname = Try(java.net.InetAddress.getLocalHost.getHostName) match {
       case Success(str) => str.toLowerCase
-      case Failure(ex) => "unknownhostname"
+      case Failure(ex)  => "unknownhostname"
     }
 
     Seq(tag, username, hostname, timeStr).mkString("_")
@@ -37,23 +37,21 @@ object ESIntegrationSupport extends IntegrationTestConfig {
   // construct a client, using IntegrationTestConfig's server names (which should be the runtime server names)
   lazy val client: TransportClient = ElasticUtils.buildClient(ITElasticSearch.servers, ITElasticSearch.clusterName)
 
-  lazy val mockOntologyDAO:OntologyDAO = new MockOntologyDAO
-  lazy val researchPurposeSupport:ResearchPurposeSupport = new ESResearchPurposeSupport(mockOntologyDAO)
+  lazy val mockOntologyDAO: OntologyDAO = new MockOntologyDAO
+  lazy val researchPurposeSupport: ResearchPurposeSupport = new ESResearchPurposeSupport(mockOntologyDAO)
 
-  lazy val searchDAO:SearchDAO = {
+  lazy val searchDAO: SearchDAO =
     // use the temporary index name defined above
     new ElasticSearchDAO(client, itTestIndexName, researchPurposeSupport)
-  }
 
-  lazy val ontologyDAO:OntologyDAO = {
+  lazy val ontologyDAO: OntologyDAO =
     // use the index name defined in reference.conf, since we execute read-only
     new ElasticSearchOntologyDAO(client, FireCloudConfig.ElasticSearch.ontologyIndexName)
-  }
 
-  lazy val shareLogDAO:ShareLogDAO = {
+  lazy val shareLogDAO: ShareLogDAO =
     new ElasticSearchShareLogDAO(client, itTestIndexName, RefreshPolicy.IMMEDIATE)
-  }
 
-  lazy val emptyCriteria = LibrarySearchParams(None,Map.empty[String,Seq[String]],None,Map.empty[String,Int],None,None,None,None)
+  lazy val emptyCriteria =
+    LibrarySearchParams(None, Map.empty[String, Seq[String]], None, Map.empty[String, Int], None, None, None, None)
 
 }

@@ -18,19 +18,22 @@ trait SearchResultValidation {
 
   val dur = Duration(2, MINUTES)
 
-  def searchFor(txt:String) = {
+  def searchFor(txt: String) = {
     val criteria = emptyCriteria.copy(searchString = Some(txt))
     Await.result(searchDAO.findDocuments(criteria, Seq.empty[String], Map.empty), dur)
   }
 
-  def searchWithPurpose(researchPurpose: Option[ResearchPurpose], term:Option[String], filters:Option[Map[String, Seq[String]]]): LibrarySearchResponse = {
+  def searchWithPurpose(researchPurpose: Option[ResearchPurpose],
+                        term: Option[String],
+                        filters: Option[Map[String, Seq[String]]]
+  ): LibrarySearchResponse = {
     val criteria = emptyCriteria.copy(
       searchString = term,
       researchPurpose = researchPurpose,
       filters = filters.getOrElse(Map.empty[String, Seq[String]])
     )
     // set size to 100 to make sure we return all results for testing comparisons
-    Await.result(searchDAO.findDocuments(criteria.copy(size=100), Seq.empty[String], Map.empty), dur)
+    Await.result(searchDAO.findDocuments(criteria.copy(size = 100), Seq.empty[String], Map.empty), dur)
   }
 
   def searchWithPurpose(researchPurpose: ResearchPurpose): LibrarySearchResponse =
@@ -43,11 +46,9 @@ trait SearchResultValidation {
     searchWithPurpose(Some(researchPurpose), None, Some(filters))
 
   def suggestWithPurpose(researchPurpose: ResearchPurpose, term: String) = {
-    val criteria = emptyCriteria.copy(
-      searchString = Some(term),
-      researchPurpose = Some(researchPurpose))
+    val criteria = emptyCriteria.copy(searchString = Some(term), researchPurpose = Some(researchPurpose))
     // set size to 100 to make sure we return all results for testing comparisons
-    Await.result(searchDAO.suggestionsFromAll(criteria.copy(size=100), Seq.empty[String], Map.empty), dur)
+    Await.result(searchDAO.suggestionsFromAll(criteria.copy(size = 100), Seq.empty[String], Map.empty), dur)
   }
 
   /**
@@ -57,7 +58,8 @@ trait SearchResultValidation {
     * would.
     */
   def searchWithResearchPurposeQuery(researchPurpose: ResearchPurpose): SearchResponse = {
-    val boolQuery: BoolQueryBuilder = researchPurposeSupport.researchPurposeFilters(researchPurpose, name => "library:" + name)
+    val boolQuery: BoolQueryBuilder =
+      researchPurposeSupport.researchPurposeFilters(researchPurpose, name => "library:" + name)
 
     // Use a MockResearchPurposeSupport here to prove that it's using the query created above
     val elasticSearchDAO = new ElasticSearchDAO(client, itTestIndexName, new MockResearchPurposeSupport)
@@ -65,25 +67,21 @@ trait SearchResultValidation {
     elasticSearchDAO.executeESRequest[SearchRequest, SearchResponse, SearchRequestBuilder](searchRequest)
   }
 
-  def searchWithFilter(workspacePolicyMap: Map[String, UserPolicy]) = {
+  def searchWithFilter(workspacePolicyMap: Map[String, UserPolicy]) =
     Await.result(searchDAO.findDocuments(emptyCriteria, Seq.empty[String], workspacePolicyMap), dur)
-  }
 
-  def validateResultNames(expectedNames:Set[String], response:LibrarySearchResponse) = {
+  def validateResultNames(expectedNames: Set[String], response: LibrarySearchResponse) =
     validateResultField("library:datasetName", expectedNames, response)
-  }
 
-  def validateResultIndications(expectedIndications:Set[String], response:LibrarySearchResponse) = {
+  def validateResultIndications(expectedIndications: Set[String], response: LibrarySearchResponse) =
     validateResultField("library:indication", expectedIndications, response)
-  }
 
-  def validateSuggestions(expectedSuggestions:Set[String], response:LibrarySearchResponse) = {
+  def validateSuggestions(expectedSuggestions: Set[String], response: LibrarySearchResponse) =
     validateResultField("suggestion", expectedSuggestions, response)
-  }
 
-  def validateResultField(attrName:String, expectedValues:Set[String], response:LibrarySearchResponse) = {
-    val actualValues:Set[String] = getResultField(attrName, response)
-    assertResult(expectedValues) {actualValues}
+  def validateResultField(attrName: String, expectedValues: Set[String], response: LibrarySearchResponse) = {
+    val actualValues: Set[String] = getResultField(attrName, response)
+    assertResult(expectedValues)(actualValues)
   }
 
   def validateResultNames(expectedNames: Set[String], response: SearchResponse): Unit = {
@@ -91,16 +89,14 @@ trait SearchResultValidation {
       _.getSourceAsString.parseJson
     }
     val names = getResultField("library:datasetName", results)
-    assertResult(expectedNames) {names}
+    assertResult(expectedNames)(names)
   }
 
-  def getResultField(attrName:String, response:LibrarySearchResponse):Set[String] = {
+  def getResultField(attrName: String, response: LibrarySearchResponse): Set[String] =
     getResultField(attrName, response.results)
-  }
 
-  def getResultField(attrName: String, results: Seq[JsValue]) = {
-    (results map {jsval:JsValue =>
+  def getResultField(attrName: String, results: Seq[JsValue]) =
+    (results map { jsval: JsValue =>
       jsval.asJsObject.fields(attrName).convertTo[String]
     }).toSet
-  }
 }

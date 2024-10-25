@@ -46,5 +46,5 @@ trait ThurloeDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def deleteKeyValue(forUserId: String, keyName: String, callerToken: WithAccessToken): Future[Try[Unit]]
 
-  override def serviceName:Subsystem = ThurloeDAO.serviceName
+  override def serviceName: Subsystem = ThurloeDAO.serviceName
 }

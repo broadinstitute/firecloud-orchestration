@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MockGoogleServicesDAO extends GoogleServicesDAO {
 
-  private final val spreadsheetJson = """{
+  final private val spreadsheetJson = """{
                                         |  "properties": {
                                         |    "autoRecalc": "ON_CHANGE",
                                         |    "defaultFormat": {
@@ -65,38 +65,51 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
                                         |  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/randomId/edit"
                                         |}
                                         |""".stripMargin.parseJson.asJsObject
-  final val spreadsheetUpdateJson = """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
+  final val spreadsheetUpdateJson =
+    """{"spreadsheetId":"randomId","updatedRange":"Sheet1!A1:F45","updatedRows":45,"updatedCells":270,"updatedColumns":6}""".parseJson.asJsObject
 
   val pubsubMessages = new LinkedBlockingQueue[String]()
 
   override def getAdminUserAccessToken: String = "adminUserAccessToken"
-  override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream = {
+  override def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream =
     objectKey match {
       case "target-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntarget-user".getBytes("UTF-8"))
-      case "tcga-whitelist.txt" => new ByteArrayInputStream("firecloud-dev\ntcga-user".getBytes("UTF-8"))
-      case _ => new ByteArrayInputStream(" ".getBytes("UTF-8"))
+      case "tcga-whitelist.txt"   => new ByteArrayInputStream("firecloud-dev\ntcga-user".getBytes("UTF-8"))
+      case _                      => new ByteArrayInputStream(" ".getBytes("UTF-8"))
     }
-  }
   override def getObjectResourceUrl(bucketName: String, objectKey: String): String = ""
 
-  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath = GcsPath(bucketName, objectKey)
-  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath = GcsPath(bucketName, objectKey)
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName,
+                                    objectKey: GcsObjectName,
+                                    objectContents: Array[Byte]
+  ): GcsPath = GcsPath(bucketName, objectKey)
+  override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath =
+    GcsPath(bucketName, objectKey)
 
-  override def getUserProfile(accessToken: WithAccessToken)
-                             (implicit executionContext: ExecutionContext): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
-  override val fetchPriceList: Future[GooglePriceList] = {
-    Future.successful(GooglePriceList(GooglePrices(Map("us" -> 0.01, "europe-west1" -> 0.02), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))), "v0", "18-November-2016"))
-  }
+  override def getUserProfile(accessToken: WithAccessToken)(implicit
+    executionContext: ExecutionContext
+  ): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
+  override val fetchPriceList: Future[GooglePriceList] =
+    Future.successful(
+      GooglePriceList(
+        GooglePrices(Map("us" -> 0.01, "europe-west1" -> 0.02), UsTieredPriceItem(Map(1024L -> BigDecimal(0.12)))),
+        "v0",
+        "18-November-2016"
+      )
+    )
 
   override def deleteGoogleGroup(groupEmail: String): Unit = ()
-  override def createGoogleGroup(groupName: String): Option[String] = Option("new-google-group@support.something.firecloud.org")
-  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option("user-email@something.com")
-  override def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
+  override def createGoogleGroup(groupName: String): Option[String] = Option(
+    "new-google-group@support.something.firecloud.org"
+  )
+  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option(
+    "user-email@something.com"
+  )
+  override def getBucket(bucketName: String, petKey: String): Option[Bucket] =
     bucketName match {
-      case "usBucket" => Option(new Bucket().setName("usBucket").setLocation("US"))
-      case "europeWest1Bucket"=> Option(new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1"))
+      case "usBucket"          => Option(new Bucket().setName("usBucket").setLocation("US"))
+      case "europeWest1Bucket" => Option(new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1"))
     }
-  }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 

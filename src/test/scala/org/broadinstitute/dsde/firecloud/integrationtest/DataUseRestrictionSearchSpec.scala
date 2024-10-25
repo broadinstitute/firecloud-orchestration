@@ -16,7 +16,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import spray.json.DefaultJsonProtocol._
 
-class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidation with BeforeAndAfterAll with Matchers with LibraryServiceSupport {
+class DataUseRestrictionSearchSpec
+    extends AnyFreeSpec
+    with SearchResultValidation
+    with BeforeAndAfterAll
+    with Matchers
+    with LibraryServiceSupport {
 
   val datasets: Seq[WorkspaceDetails] = DataUseRestrictionTestFixtures.allDatasets
 
@@ -33,9 +38,8 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
     logger.info("... fixtures indexed.")
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     searchDAO.deleteIndex()
-  }
 
   "Library Data Use Restriction Indexing" - {
 
@@ -112,7 +116,10 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
 
       "RS-G:Female should be indexed as RS-G:true, RS-FM:true" in {
         val searchResponse = searchFor("RSGFemale")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true), Seq("RS-G", "RS-FM"))
+        assertDataUseRestrictions(searchResponse,
+                                  DataUseRestriction(`RS-G` = true, `RS-FM` = true),
+                                  Seq("RS-G", "RS-FM")
+        )
       }
 
       "RS-G:Male should be indexed as RS-G:true, RS-M:true" in {
@@ -127,7 +134,10 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
 
       "RS-FM dataset should be indexed as true" in {
         val searchResponse = searchFor("RSGFemale")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(`RS-G` = true, `RS-FM` = true), Seq("RS-G", "RS-FM"))
+        assertDataUseRestrictions(searchResponse,
+                                  DataUseRestriction(`RS-G` = true, `RS-FM` = true),
+                                  Seq("RS-G", "RS-FM")
+        )
       }
 
       "RS-M dataset should be indexed as true" in {
@@ -137,7 +147,11 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
 
       "DS:non-empty list dataset should have values" in {
         val searchResponse = searchFor("DS-unique")
-        assertDataUseRestrictions(searchResponse, DataUseRestriction(DS = DataUseRestrictionTestFixtures.diseaseValuesInts), DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _))
+        assertDataUseRestrictions(
+          searchResponse,
+          DataUseRestriction(DS = DataUseRestrictionTestFixtures.diseaseValuesInts),
+          DataUseRestrictionTestFixtures.diseaseValuesLabels.map("DS:" + _)
+        )
       }
 
       "IRB dataset should be indexed as true" in {
@@ -147,7 +161,8 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
 
       "'EVERYTHING' dataset should have a mix of values" in {
         val searchResponse = searchFor("EVERYTHING")
-        assertDataUseRestrictions(searchResponse,
+        assertDataUseRestrictions(
+          searchResponse,
           DataUseRestriction(
             GRU = true,
             HMB = true,
@@ -169,7 +184,8 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
 
       "'TOP_THREE' dataset should have a mix of values" in {
         val searchResponse = searchFor("TOP_THREE")
-        assertDataUseRestrictions(searchResponse,
+        assertDataUseRestrictions(
+          searchResponse,
           DataUseRestriction(
             GRU = true,
             HMB = true,
@@ -184,41 +200,38 @@ class DataUseRestrictionSearchSpec extends AnyFreeSpec with SearchResultValidati
 
   }
 
-
   //////////////////
   // Utility methods
   //////////////////
 
-
   override def searchFor(text: String): LibrarySearchResponse = {
-    val criteria = emptyCriteria.copy(
-      searchString = Some(text),
-      size = datasets.size)
+    val criteria = emptyCriteria.copy(searchString = Some(text), size = datasets.size)
     Await.result(searchDAO.findDocuments(criteria, Seq.empty[String], Map.empty), dur)
   }
 
-  private def getDataUseRestrictions(searchResponse: LibrarySearchResponse): Seq[DataUseRestriction] = {
+  private def getDataUseRestrictions(searchResponse: LibrarySearchResponse): Seq[DataUseRestriction] =
     searchResponse.results.map { hit =>
       val sdur = hit.asJsObject.fields(AttributeName.toDelimitedName(structuredUseRestrictionAttributeName)).asJsObject
       sdur.convertTo[DataUseRestriction]
     }
-  }
 
-  private def getConsentCodes(searchResponse: LibrarySearchResponse): Seq[String] = {
+  private def getConsentCodes(searchResponse: LibrarySearchResponse): Seq[String] =
     searchResponse.results.flatMap { hit =>
       val jsObj = hit.asJsObject
       if (jsObj.getFields(AttributeName.toDelimitedName(consentCodesAttributeName)).nonEmpty) {
         jsObj.fields(AttributeName.toDelimitedName(consentCodesAttributeName)).convertTo[Seq[String]]
-      } else { Seq.empty}
+      } else { Seq.empty }
     }
-  }
 
-  private def assertDataUseRestrictions(searchResponse: LibrarySearchResponse, expected: DataUseRestriction, expectedCodes: Seq[String] = Seq.empty[String]): Unit = {
+  private def assertDataUseRestrictions(searchResponse: LibrarySearchResponse,
+                                        expected: DataUseRestriction,
+                                        expectedCodes: Seq[String] = Seq.empty[String]
+  ): Unit = {
     searchResponse shouldNot be(null)
 
     if (searchResponse.results.size != 1) {
       logger.error(s"Size: ${searchResponse.results.size}")
-      searchResponse.results.map { sr => logger.error(s"${sr.toString}")}
+      searchResponse.results.map(sr => logger.error(s"${sr.toString}"))
     }
 
     searchResponse.results.size should be(1)

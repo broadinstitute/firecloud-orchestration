@@ -12,13 +12,12 @@ trait HealthApiService extends FireCloudDirectives {
   implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
 
-  val healthServiceRoutes: Route = {
+  val healthServiceRoutes: Route =
     path("health") {
       complete(OK)
     } ~
       path("error") {
         complete(ServiceUnavailable)
       }
-  }
 
 }

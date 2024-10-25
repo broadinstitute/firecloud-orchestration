@@ -6,12 +6,12 @@ import org.broadinstitute.dsde.rawls.model.AccessEntry
 /**
   * Created by davidan on 7/5/17.
   */
-case class PermissionReport (
+case class PermissionReport(
   workspaceACL: Map[String, AccessEntry],
   referencedMethods: Seq[EntityAccessControl]
 )
 
-case class PermissionReportRequest (
+case class PermissionReportRequest(
   users: Option[Seq[String]],
   configs: Option[Seq[OrchMethodConfigurationName]]
 )

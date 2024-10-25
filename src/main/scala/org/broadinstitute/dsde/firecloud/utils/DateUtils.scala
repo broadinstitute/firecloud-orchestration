@@ -1,65 +1,48 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import org.joda.time.{Seconds, Hours, DateTime}
-
+import org.joda.time.{DateTime, Hours, Seconds}
 
 object DateUtils {
 
   val EPOCH = 1000L
 
-
-  def nowPlus30Days: Long = {
+  def nowPlus30Days: Long =
     nowDateTime.plusDays(30).getMillis / EPOCH
-  }
 
-  def nowMinus30Days: Long = {
+  def nowMinus30Days: Long =
     nowDateTime.minusDays(30).getMillis / EPOCH
-  }
 
-  def nowPlus24Hours: Long = {
+  def nowPlus24Hours: Long =
     nowDateTime.plusHours(24).getMillis / EPOCH
-  }
 
-  def nowMinus24Hours: Long = {
+  def nowMinus24Hours: Long =
     nowDateTime.minusHours(24).getMillis / EPOCH
-  }
 
-  def nowPlus1Hour: Long = {
+  def nowPlus1Hour: Long =
     nowDateTime.plusHours(1).getMillis / EPOCH
-  }
 
-  def nowMinus1Hour: Long = {
+  def nowMinus1Hour: Long =
     nowDateTime.minusHours(1).getMillis / EPOCH
-  }
 
-  def hoursSince(seconds: Long): Int = {
+  def hoursSince(seconds: Long): Int =
     Hours.hoursBetween(dtFromSeconds(seconds), nowDateTime).getHours
-  }
 
-  def hoursUntil(seconds: Long): Int = {
+  def hoursUntil(seconds: Long): Int =
     Hours.hoursBetween(nowDateTime, dtFromSeconds(seconds)).getHours
-  }
 
-  def secondsSince(seconds: Long): Int = {
+  def secondsSince(seconds: Long): Int =
     Seconds.secondsBetween(dtFromSeconds(seconds), nowDateTime).getSeconds
-  }
 
-
-  def now: Long = {
+  def now: Long =
     nowDateTime.getMillis / EPOCH
-  }
 
-  def nowDateTime: DateTime = {
+  def nowDateTime: DateTime =
     dtFromMillis(System.currentTimeMillis())
-  }
 
-  def dtFromMillis(millis: Long): DateTime = {
+  def dtFromMillis(millis: Long): DateTime =
     new DateTime(millis)
-  }
 
-  def dtFromSeconds(seconds: Long): DateTime = {
+  def dtFromSeconds(seconds: Long): DateTime =
     new DateTime(seconds * EPOCH)
-  }
-
 
 }

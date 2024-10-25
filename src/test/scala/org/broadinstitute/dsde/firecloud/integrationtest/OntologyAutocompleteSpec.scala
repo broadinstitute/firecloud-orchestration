@@ -7,26 +7,25 @@ import org.scalatest.freespec.AnyFreeSpec
 
 class OntologyAutocompleteSpec extends AnyFreeSpec {
 
-
   "Ontology Autocompete" - {
     "should match prefixes" in {
-      val terms:List[TermResource] = ontologyDAO.autocomplete("bipo")
+      val terms: List[TermResource] = ontologyDAO.autocomplete("bipo")
       val labels = terms.map(_.label)
       // NB: yes, what's in the index is actually "ll", not "II"
-      assertResult(Set("bipolar disorder", "bipolar I disorder", "bipolar ll disorder")) { labels.toSet }
+      assertResult(Set("bipolar disorder", "bipolar I disorder", "bipolar ll disorder"))(labels.toSet)
     }
     "should return empty list for unknown prefix" in {
-      val terms:List[TermResource] = ontologyDAO.autocomplete("Mxyzptlk")
-      assertResult(List.empty[TermResource]) { terms }
+      val terms: List[TermResource] = ontologyDAO.autocomplete("Mxyzptlk")
+      assertResult(List.empty[TermResource])(terms)
     }
     "should limit results to 20" in {
       // search for a common prefix
-      val terms:List[TermResource] = ontologyDAO.autocomplete("dis")
-      assertResult(20) { terms.size }
+      val terms: List[TermResource] = ontologyDAO.autocomplete("dis")
+      assertResult(20)(terms.size)
     }
     "should search in both synonyms and labels" in {
       // search for a common prefix
-      val terms:List[TermResource] = ontologyDAO.autocomplete("leukoe")
+      val terms: List[TermResource] = ontologyDAO.autocomplete("leukoe")
       val labels = terms.map(_.label)
       val expected = Set(
         // matches in label:
@@ -40,11 +39,9 @@ class OntologyAutocompleteSpec extends AnyFreeSpec {
         "myelophthisic anemia",
         "subacute sclerosing panencephalitis"
       )
-      assertResult(expected) { labels.toSet }
+      assertResult(expected)(labels.toSet)
 
     }
   }
-
-
 
 }

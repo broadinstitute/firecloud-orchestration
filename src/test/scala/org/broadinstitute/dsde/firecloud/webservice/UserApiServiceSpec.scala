@@ -19,18 +19,28 @@ import spray.json._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
-class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
-  with RegisterApiService with UserApiService with SprayJsonSupport {
+class UserApiServiceSpec
+    extends BaseServiceSpec
+    with SamMockserverUtils
+    with RegisterApiService
+    with UserApiService
+    with SprayJsonSupport {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  val registerServiceConstructor:() => RegisterService = RegisterService.constructor(app)
-  val userServiceConstructor:(UserInfo) => UserService = UserService.constructor(app)
+  val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
+  val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
   var workspaceServer: ClientAndServer = _
   var profileServer: ClientAndServer = _
   var samServer: ClientAndServer = _
-  val httpMethods = List(HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT,
-    HttpMethods.DELETE, HttpMethods.PATCH, HttpMethods.OPTIONS, HttpMethods.HEAD)
+  val httpMethods = List(HttpMethods.GET,
+                         HttpMethods.POST,
+                         HttpMethods.PUT,
+                         HttpMethods.DELETE,
+                         HttpMethods.PATCH,
+                         HttpMethods.OPTIONS,
+                         HttpMethods.HEAD
+  )
 
   val userWithGoogleGroup = "have-google-group"
   val userWithEmptyGoogleGroup = "have-empty-google-group"
@@ -39,7 +49,7 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
   val exampleKey = "favoriteColor"
   val exampleVal = "green"
   val fullProfile = BasicProfile(
-    firstName= randomAlpha(),
+    firstName = randomAlpha(),
     lastName = randomAlpha(),
     title = randomAlpha(),
     contactEmail = None,
@@ -66,9 +76,12 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
                      |  }
                      |}""".stripMargin
 
-  val enabledV1UserBody = """{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
-  val noLdapV1UserBody = """{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
-  val noGoogleV1UserBody = """{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
+  val enabledV1UserBody =
+    """{"enabled": {"google": true, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
+  val noLdapV1UserBody =
+    """{"enabled": {"google": true, "ldap": false, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
+  val noGoogleV1UserBody =
+    """{"enabled": {"google": false, "ldap": true, "allUsersGroup": true}, "userInfo": {"userSubjectId": "1111111111", "userEmail": "no@nope.org"}}"""
 
   val enabledV2UserBody = """{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": true}"""
   val noLdapV2UserBody = """{"userSubjectId": "1111111111", "userEmail": "no@nope.org", "enabled": false}"""
@@ -79,44 +92,54 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
 
   val uglyJsonBody = """{"userInfo": "whaaaaaaat??"}"""
 
-
   override def beforeAll(): Unit = {
 
     workspaceServer = startClientAndServer(workspaceServerPort)
     workspaceServer
       .when(request.withMethod("GET").withPath(UserApiService.billingPath))
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
       )
 
     samServer = startClientAndServer(samServerPort)
     samServer
       .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
       )
 
     samServer
       .when(request.withMethod("POST").withPath(UserApiService.samRegisterUserPath))
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(Created.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(Created.intValue)
       )
 
     samServer
       .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(userStatus).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withBody(userStatus)
+          .withStatusCode(OK.intValue)
       )
 
     samServer
       .when(request.withMethod("GET").withPath(UserApiService.samUserProxyGroupPath("test@test.test")))
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
       )
 
     returnEnabledUser(samServer)
@@ -124,38 +147,62 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
     profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
     // to ensure that all posts to any combination will yield a successful response.
-    allProperties.keys foreach {
-      key =>
-        profileServer
-          .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
-            UserApiService.remoteGetKeyPath.format(uniqueId, key)))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
+    allProperties.keys foreach { key =>
+      profileServer
+        .when(
+          request()
+            .withMethod("POST")
+            .withHeader(fireCloudHeader.name, fireCloudHeader.value)
+            .withPath(UserApiService.remoteGetKeyPath.format(uniqueId, key))
+        )
+        .respond(
+          org.mockserver.model.HttpResponse
+            .response()
+            .withHeaders(MockUtils.header)
+            .withStatusCode(OK.intValue)
+        )
     }
 
-    List(HttpMethods.GET, HttpMethods.POST, HttpMethods.DELETE) foreach {
-      method =>
-        profileServer
-          .when(request().withMethod(method.name).withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(
-            UserApiService.remoteGetKeyPath.format(uniqueId, exampleKey)))
-          .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
-          )
+    List(HttpMethods.GET, HttpMethods.POST, HttpMethods.DELETE) foreach { method =>
+      profileServer
+        .when(
+          request()
+            .withMethod(method.name)
+            .withHeader(fireCloudHeader.name, fireCloudHeader.value)
+            .withPath(UserApiService.remoteGetKeyPath.format(uniqueId, exampleKey))
+        )
+        .respond(
+          org.mockserver.model.HttpResponse
+            .response()
+            .withHeaders(MockUtils.header)
+            .withStatusCode(OK.intValue)
+        )
     }
     profileServer
-      .when(request().withMethod("GET").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserApiService.remoteGetAllPath.format(uniqueId)))
+      .when(
+        request()
+          .withMethod("GET")
+          .withHeader(fireCloudHeader.name, fireCloudHeader.value)
+          .withPath(UserApiService.remoteGetAllPath.format(uniqueId))
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
       )
     profileServer
-      .when(request().withMethod("POST").withHeader(fireCloudHeader.name, fireCloudHeader.value).withPath(UserApiService.remoteSetKeyPath))
+      .when(
+        request()
+          .withMethod("POST")
+          .withHeader(fireCloudHeader.name, fireCloudHeader.value)
+          .withPath(UserApiService.remoteSetKeyPath)
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
       )
   }
 
@@ -195,32 +242,56 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
       }
       "if anonymousGroup KVP does not exist, it gets assigned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
-            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
-            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
+          assert(
+            entityAs[String].parseJson
+              .convertTo[ProfileWrapper]
+              .keyValuePairs
+              .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+              .flatMap(_.value)
+              .equals(Option("new-google-group@support.something.firecloud.org"))
+          )
         }
       }
       "if anonymousGroup key exists but value is empty, a new group gets assigned, and MethodNotAllowed is not returned" in {
-        Get("/register/profile") ~> dummyUserIdHeaders(userWithEmptyGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
-            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
-            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
+        Get("/register/profile") ~> dummyUserIdHeaders(userWithEmptyGoogleGroup) ~> sealRoute(
+          userServiceRoutes
+        ) ~> check {
+          assert(
+            entityAs[String].parseJson
+              .convertTo[ProfileWrapper]
+              .keyValuePairs
+              .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+              .flatMap(_.value)
+              .equals(Option("new-google-group@support.something.firecloud.org"))
+          )
           status shouldNot equal(MethodNotAllowed)
         }
       }
       "existing anonymousGroup is not overwritten, and MethodNotAllowed is not returned" in {
         Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
-            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
-            .flatMap(_.value).equals(Option("existing-google-group@support.something.firecloud.org")))
+          assert(
+            entityAs[String].parseJson
+              .convertTo[ProfileWrapper]
+              .keyValuePairs
+              .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+              .flatMap(_.value)
+              .equals(Option("existing-google-group@support.something.firecloud.org"))
+          )
           status shouldNot equal(MethodNotAllowed)
         }
       }
       "a user with no contact email still gets assigned a new anonymousGroup, and MethodNotAllowed is not returned" in {
-        Get("/register/profile") ~> dummyUserIdHeaders(userWithNoContactEmail) ~> sealRoute(userServiceRoutes) ~> check {
-          assert(entityAs[String].parseJson.convertTo[ProfileWrapper].keyValuePairs
-            .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
-            .flatMap(_.value).equals(Option("new-google-group@support.something.firecloud.org")))
+        Get("/register/profile") ~> dummyUserIdHeaders(userWithNoContactEmail) ~> sealRoute(
+          userServiceRoutes
+        ) ~> check {
+          assert(
+            entityAs[String].parseJson
+              .convertTo[ProfileWrapper]
+              .keyValuePairs
+              .find(_.key.contains("anonymousGroup")) // .find returns Option[FireCloudKeyValue]
+              .flatMap(_.value)
+              .equals(Option("new-google-group@support.something.firecloud.org"))
+          )
           status shouldNot equal(MethodNotAllowed)
         }
       }
@@ -229,10 +300,10 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
     "when POST-ting a complete profile" - {
       "OK response is returned" in {
         Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
-            sealRoute(registerRoutes) ~> check {
-          log.debug(s"POST /$ApiPrefix: " + status)
-          status should equal(OK)
-        }
+          sealRoute(registerRoutes) ~> check {
+            log.debug(s"POST /$ApiPrefix: " + status)
+            status should equal(OK)
+          }
       }
     }
 
@@ -241,9 +312,9 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
         val incompleteProfile = Map("name" -> randomAlpha())
         Post(s"/$ApiPrefix", incompleteProfile) ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(registerRoutes) ~> check {
-          log.debug(s"POST /$ApiPrefix: " + status)
-          status should equal(BadRequest)
-        }
+            log.debug(s"POST /$ApiPrefix: " + status)
+            status should equal(BadRequest)
+          }
       }
     }
 
@@ -251,15 +322,15 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
       "OK response is returned for valid user" in {
         Get("/api/proxyGroup/test@test.test") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-          status should equal(OK)
-        }
+            status should equal(OK)
+          }
       }
 
       "NotFound response is returned for invalid user" in {
         Get("/api/proxyGroup/test@not.found") ~>
           dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-          status should equal(NotFound)
-        }
+            status should equal(NotFound)
+          }
       }
     }
   }
@@ -272,14 +343,16 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
         samServer
           .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
+            org.mockserver.model.HttpResponse
+              .response()
+              .withHeaders(MockUtils.header)
+              .withStatusCode(NotFound.intValue)
           )
         Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
-            sealRoute(registerRoutes) ~> check {
-          log.debug(s"POST /$ApiPrefix: " + status)
-          status should equal(OK)
-        }
+          sealRoute(registerRoutes) ~> check {
+            log.debug(s"POST /$ApiPrefix: " + status)
+            status should equal(OK)
+          }
       }
     }
 
@@ -290,22 +363,25 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
         samServer
           .when(request.withMethod("GET").withPath(UserApiService.samRegisterUserPath))
           .respond(
-            org.mockserver.model.HttpResponse.response()
-              .withHeaders(MockUtils.header).withStatusCode(NotFound.intValue)
+            org.mockserver.model.HttpResponse
+              .response()
+              .withHeaders(MockUtils.header)
+              .withStatusCode(NotFound.intValue)
           )
         samServer
           .when(request.withMethod("POST").withPath(UserApiService.samRegisterUserPath))
           .respond(
-            org.mockserver.model.HttpResponse.response()
+            org.mockserver.model.HttpResponse
+              .response()
               .withHeaders(MockUtils.header)
               .withStatusCode(InternalServerError.intValue)
               .withBody(s"${Conflict.intValue} ${Conflict.reason}")
           )
         Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
-            sealRoute(registerRoutes) ~> check {
-          log.debug(s"POST /$ApiPrefix: " + status)
-          status should equal(OK)
-        }
+          sealRoute(registerRoutes) ~> check {
+            log.debug(s"POST /$ApiPrefix: " + status)
+            status should equal(OK)
+          }
       }
     }
 
@@ -508,9 +584,11 @@ class UserApiServiceSpec extends BaseServiceSpec with SamMockserverUtils
     samServer
       .when(request.withMethod("GET").withPath(path))
       .respond(
-        org.mockserver.model.HttpResponse.response()
+        org.mockserver.model.HttpResponse
+          .response()
           .withBody(body)
-          .withHeaders(MockUtils.header).withStatusCode(statusCode)
+          .withHeaders(MockUtils.header)
+          .withStatusCode(statusCode)
       )
   }
 }

@@ -18,8 +18,10 @@ class EntitiesWithTypeServiceSpec extends BaseServiceSpec with EntityApiService 
 
   val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
 
-  val validFireCloudPath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/valid/"
-  val invalidFireCloudPath = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/invalid/"
+  val validFireCloudPath =
+    FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/valid/"
+  val invalidFireCloudPath =
+    FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath + "/broad-dsde-dev/invalid/"
 
   "EntityService-EntitiesWithType" - {
 

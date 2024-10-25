@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud.utils
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.{Host, `Timeout-Access`}
+import akka.http.scaladsl.model.headers.{`Timeout-Access`, Host}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.{BasicDirectives, RouteDirectives}
@@ -17,9 +17,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-trait StreamingPassthrough
-  extends BasicDirectives
-    with RouteDirectives {
+trait StreamingPassthrough extends BasicDirectives with RouteDirectives {
 
   // Log under the StreamingPassthrough class, not whatever class mixes this in.
   protected lazy val streamingPassthroughLogger: Logger =
@@ -29,9 +27,8 @@ trait StreamingPassthrough
   implicit val executionContext: ExecutionContext
   val passthroughErrorReportSource: ErrorReportSource = ErrorReportSource("Orchestration")
 
-  def escapePathSegment(pathString: String) = {
+  def escapePathSegment(pathString: String) =
     UrlEscapers.urlPathSegmentEscaper().escape(pathString)
-  }
 
   /**
     * Passes through, to remoteBaseUri, all requests that match or start with the
@@ -39,11 +36,10 @@ trait StreamingPassthrough
     *
     * @param remoteBaseUri the remote system to use as target for passthrough requests
     */
-  def streamingPassthrough(remoteBaseUri: Uri): Route = {
+  def streamingPassthrough(remoteBaseUri: Uri): Route =
     extractMatchedPath { localBasePath =>
       passthroughImpl(localBasePath, remoteBaseUri)
     }
-  }
 
   /**
     * Passes through, to a remote server, all requests that match or start with the
@@ -55,9 +51,8 @@ trait StreamingPassthrough
     *                           is the fully-qualified URL to a remote system
     *                           to use as target for passthrough requests.
     */
-  def streamingPassthrough(passthroughMapping: (Uri.Path, Uri)): Route = {
+  def streamingPassthrough(passthroughMapping: (Uri.Path, Uri)): Route =
     passthroughImpl(passthroughMapping._1, passthroughMapping._2)
-  }
 
   /**
    * Passes through, to a remote server, all requests that match or start with the
@@ -70,9 +65,8 @@ trait StreamingPassthrough
    *                           to use as target for passthrough requests.
    *  @param pathOverride as the pre-defined path to use when constructing the remote path value
    */
-  def streamingPassthroughWithPathRedirect(passthroughMapping: (Uri.Path, Uri), pathOverride: String): Route = {
+  def streamingPassthroughWithPathRedirect(passthroughMapping: (Uri.Path, Uri), pathOverride: String): Route =
     passthroughImpl(passthroughMapping._1, passthroughMapping._2, Option(pathOverride))
-  }
 
   /**
     * The passthrough implementation:
@@ -81,7 +75,10 @@ trait StreamingPassthrough
    *    - `remotePathOverride` to provide a pre-configured path if remote path structure is different from local
     *   - call the remote system and reply to the user via `routeResponse` streaming
    */
-  private def passthroughImpl(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePathOverride: Option[String] = None): Route = {
+  private def passthroughImpl(localBasePath: Uri.Path,
+                              remoteBaseUri: Uri,
+                              remotePathOverride: Option[String] = None
+  ): Route =
     mapRequest(transformToPassthroughRequest(localBasePath, remoteBaseUri, remotePathOverride)) {
       extractRequest { req =>
         complete {
@@ -89,7 +86,6 @@ trait StreamingPassthrough
         }
       }
     }
-  }
 
   /**
     * Accepts an http request from an end user to Orchestration,
@@ -104,7 +100,9 @@ trait StreamingPassthrough
     * @param req the request inbound to Orchestration
     * @return the outbound request to be sent to another service
     */
-  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePath: Option[String] = None)(req: HttpRequest): HttpRequest = {
+  def transformToPassthroughRequest(localBasePath: Uri.Path, remoteBaseUri: Uri, remotePath: Option[String] = None)(
+    req: HttpRequest
+  ): HttpRequest = {
     // Convert the URI to the one suitable for the remote system
     val targetUri = convertToRemoteUri(req.uri, localBasePath, remoteBaseUri, remotePath)
     // Remove unwanted headers:
@@ -116,7 +114,7 @@ trait StreamingPassthrough
     // so we remove and set it with targetUri host
     val filteredHeaders = req.headers.filter { hdr =>
       hdr.isNot(`Timeout-Access`.lowercaseName) &&
-        hdr.isNot(Host.lowercaseName)
+      hdr.isNot(Host.lowercaseName)
     }
 
     val targetHeaders = filteredHeaders :+ Host(targetUri.authority.host)
@@ -140,7 +138,11 @@ trait StreamingPassthrough
     * @param modifiedRemotePath a modified path value to be used over requestUri.path.toString if provided
     * @return the URI suitable for sending to the remote system
     */
-  def convertToRemoteUri(requestUri: Uri, localBasePath: Uri.Path, remoteBaseUri: Uri, modifiedRemotePath: Option[String] = None): Uri = {
+  def convertToRemoteUri(requestUri: Uri,
+                         localBasePath: Uri.Path,
+                         remoteBaseUri: Uri,
+                         modifiedRemotePath: Option[String] = None
+  ): Uri = {
     // Ensure the incoming request starts with the localBasePath. Abort if it doesn't.
     // This condition should only be caused by developer error in which the streamingPassthrough
     // directive is incorrectly configured inside a route.
@@ -159,10 +161,7 @@ trait StreamingPassthrough
     // * the scheme, host, and port as defined in remoteBaseUri (host and port are combined into authority)
     // * the path built from the remoteBaseUri path + remainder
     // * everything else (querystring, fragment, userinfo) from the original request
-    requestUri.copy(
-      scheme = remoteBaseUri.scheme,
-      authority = remoteBaseUri.authority,
-      path = remotePath)
+    requestUri.copy(scheme = remoteBaseUri.scheme, authority = remoteBaseUri.authority, path = remotePath)
   }
 
   /**
@@ -173,7 +172,8 @@ trait StreamingPassthrough
     * @return the Future-wrapped response from the remote server
     */
   private def routeResponse(req: HttpRequest): Future[HttpResponse] = {
-    val flowFuture = Source.single((req, NotUsed))
+    val flowFuture = Source
+      .single((req, NotUsed))
       .via(Http().superPool[NotUsed]())
       .runWith(Sink.head)
 
@@ -186,14 +186,11 @@ trait StreamingPassthrough
         case Failure(ex) =>
           // the remote server did not respond at all, so we have nothing to use for the reply;
           // throw an error
-          throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.InternalServerError, ex)(passthroughErrorReportSource))
+          throw new FireCloudExceptionWithErrorReport(
+            ErrorReport(StatusCodes.InternalServerError, ex)(passthroughErrorReportSource)
+          )
       }
     }
   }
-
-
-
-
-
 
 }

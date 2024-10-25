@@ -7,7 +7,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.{FILETYPE_PFB, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockRawlsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{
+  MockCwdsDAO,
+  MockRawlsDAO,
+  MockShareLogDAO,
+  WorkspaceApiServiceSpecShareLogDAO
+}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -37,9 +42,9 @@ object WorkspaceApiServiceSpec {
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Some(Map(AttributeName("library", "published") -> AttributeBoolean(true))), //attributes
-    false, //locked
-    Some(Set.empty), //authorizationDomain
+    Some(Map(AttributeName("library", "published") -> AttributeBoolean(true))), // attributes
+    false, // locked
+    Some(Set.empty), // authorizationDomain
     WorkspaceVersions.V2,
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
@@ -54,7 +59,11 @@ object WorkspaceApiServiceSpec {
 
 }
 
-class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService with BeforeAndAfterEach with SprayJsonSupport {
+class WorkspaceApiServiceSpec
+    extends BaseServiceSpec
+    with WorkspaceApiService
+    with BeforeAndAfterEach
+    with SprayJsonSupport {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -67,9 +76,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     DateTime.now(),
     DateTime.now(),
     "my_workspace_creator",
-    Some(Map()), //attributes
-    false, //locked
-    Some(Set.empty), //authorizationDomain
+    Some(Map()), // attributes
+    false, // locked
+    Some(Set.empty), // authorizationDomain
     WorkspaceVersions.V2,
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
@@ -85,33 +94,45 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   val jobId = "testOp"
 
   // Mock remote endpoints
-  private final val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
-  private final val workspacesPath = workspacesRoot + "/%s/%s".format(workspace.namespace, workspace.name)
-  private final val methodconfigsPath = workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace, workspace.name)
-  private final val updateAttributesPath = workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace, workspace.name)
-  private final val setAttributesPath = workspacesRoot + "/%s/%s/setAttributes".format(workspace.namespace, workspace.name)
-  private final val tsvAttributesImportPath = workspacesRoot + "/%s/%s/importAttributesTSV".format(workspace.namespace, workspace.name)
-  private final val tsvAttributesExportPath = workspacesRoot + "/%s/%s/exportAttributesTSV".format(workspace.namespace, workspace.name)
-  private final val batchUpsertPath = s"${workspacesRoot}/${workspace.namespace}/${workspace.name}/entities/batchUpsert"
-  private final val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace, workspace.name)
-  private final val sendChangeNotificationPath = workspacesRoot + "/%s/%s/sendChangeNotification".format(workspace.namespace, workspace.name)
-  private final val accessInstructionsPath = workspacesRoot + "/%s/%s/accessInstructions".format(workspace.namespace, workspace.name)
-  private final val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace, workspace.name)
-  private final val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace, workspace.name)
-  private final val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace, workspace.name)
-  private final val bucketPath = workspacesRoot + "/%s/%s/checkBucketReadAccess".format(workspace.namespace, workspace.name)
-  private final val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
-  private final val tsvImportFlexiblePath = workspacesRoot + "/%s/%s/flexibleImportEntities".format(workspace.namespace, workspace.name)
-  private final val pfbImportPath = workspacesRoot + "/%s/%s/importPFB".format(workspace.namespace, workspace.name)
-  private final val importJobPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
-  private final val importJobStatusPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
-  private final val bucketUsagePath = s"$workspacesPath/bucketUsage"
-  private final val usBucketStorageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
-  private final val europeWest1storageCostEstimatePath = workspacesRoot + "/%s/%s/storageCostEstimate".format("europeWest1BucketWorkspace", workspace.name)
-  private final val tagAutocompletePath = s"$workspacesRoot/tags"
-  private final val executionEngineVersionPath = "/version/executionEngine"
+  final private val workspacesRoot = FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesPath
+  final private val workspacesPath = workspacesRoot + "/%s/%s".format(workspace.namespace, workspace.name)
+  final private val methodconfigsPath =
+    workspacesRoot + "/%s/%s/methodconfigs".format(workspace.namespace, workspace.name)
+  final private val updateAttributesPath =
+    workspacesRoot + "/%s/%s/updateAttributes".format(workspace.namespace, workspace.name)
+  final private val setAttributesPath =
+    workspacesRoot + "/%s/%s/setAttributes".format(workspace.namespace, workspace.name)
+  final private val tsvAttributesImportPath =
+    workspacesRoot + "/%s/%s/importAttributesTSV".format(workspace.namespace, workspace.name)
+  final private val tsvAttributesExportPath =
+    workspacesRoot + "/%s/%s/exportAttributesTSV".format(workspace.namespace, workspace.name)
+  final private val batchUpsertPath = s"${workspacesRoot}/${workspace.namespace}/${workspace.name}/entities/batchUpsert"
+  final private val aclPath = workspacesRoot + "/%s/%s/acl".format(workspace.namespace, workspace.name)
+  final private val sendChangeNotificationPath =
+    workspacesRoot + "/%s/%s/sendChangeNotification".format(workspace.namespace, workspace.name)
+  final private val accessInstructionsPath =
+    workspacesRoot + "/%s/%s/accessInstructions".format(workspace.namespace, workspace.name)
+  final private val clonePath = workspacesRoot + "/%s/%s/clone".format(workspace.namespace, workspace.name)
+  final private val lockPath = workspacesRoot + "/%s/%s/lock".format(workspace.namespace, workspace.name)
+  final private val unlockPath = workspacesRoot + "/%s/%s/unlock".format(workspace.namespace, workspace.name)
+  final private val bucketPath =
+    workspacesRoot + "/%s/%s/checkBucketReadAccess".format(workspace.namespace, workspace.name)
+  final private val tsvImportPath = workspacesRoot + "/%s/%s/importEntities".format(workspace.namespace, workspace.name)
+  final private val tsvImportFlexiblePath =
+    workspacesRoot + "/%s/%s/flexibleImportEntities".format(workspace.namespace, workspace.name)
+  final private val pfbImportPath = workspacesRoot + "/%s/%s/importPFB".format(workspace.namespace, workspace.name)
+  final private val importJobPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
+  final private val importJobStatusPath =
+    workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
+  final private val bucketUsagePath = s"$workspacesPath/bucketUsage"
+  final private val usBucketStorageCostEstimatePath =
+    workspacesRoot + "/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
+  final private val europeWest1storageCostEstimatePath =
+    workspacesRoot + "/%s/%s/storageCostEstimate".format("europeWest1BucketWorkspace", workspace.name)
+  final private val tagAutocompletePath = s"$workspacesRoot/tags"
+  final private val executionEngineVersionPath = "/version/executionEngine"
 
-  private def catalogPath(ns:String=workspace.namespace, name:String=workspace.name) =
+  private def catalogPath(ns: String = workspace.namespace, name: String = workspace.name) =
     workspacesRoot + "/%s/%s/catalog".format(ns, name)
 
   val localShareLogDao: MockShareLogDAO = new WorkspaceApiServiceSpecShareLogDAO
@@ -119,9 +140,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
   // use a disabled cWDS for these tests; enabled cWDS has tests coverage elsewhere
   val mockCwdsDao: MockCwdsDAO = new MockCwdsDAO(enabled = false)
 
-  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
-  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService = PermissionReportService.constructor(app)
-  val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app.copy(cwdsDAO = mockCwdsDao))
+  val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService =
+    WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
+  val permissionReportServiceConstructor: (UserInfo) => PermissionReportService =
+    PermissionReportService.constructor(app)
+  val entityServiceConstructor: (ModelSchema) => EntityService =
+    EntityService.constructor(app.copy(cwdsDAO = mockCwdsDao))
 
   val nihProtectedAuthDomain = ManagedGroupRef(RawlsGroupName("dbGapAuthorizedUsers"))
 
@@ -131,14 +155,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "attributes",
     "att",
     "id",
-    "", //bucketname
+    "", // bucketname
     Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
-    Some(Map()), //attrs
+    Some(Map()), // attrs
     false,
-    Some(Set(nihProtectedAuthDomain)), //authorizationDomain
+    Some(Set(nihProtectedAuthDomain)), // authorizationDomain
     WorkspaceVersions.V2,
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
@@ -155,14 +179,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "attributes",
     "att",
     "id",
-    "", //bucketname
+    "", // bucketname
     Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
-    Some(Map()), //attrs
+    Some(Map()), // attrs
     false,
-    Some(Set(ManagedGroupRef(RawlsGroupName("secret_realm")))), //authorizationDomain
+    Some(Set(ManagedGroupRef(RawlsGroupName("secret_realm")))), // authorizationDomain
     WorkspaceVersions.V2,
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
@@ -179,14 +203,14 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "attributes",
     "att",
     "id",
-    "", //bucketname
+    "", // bucketname
     Some("wf-collection"),
     DateTime.now(),
     DateTime.now(),
     "mb",
-    Some(Map()), //attrs
+    Some(Map()), // attrs
     false,
-    Some(Set.empty), //authorizationDomain
+    Some(Set.empty), // authorizationDomain
     WorkspaceVersions.V2,
     GoogleProjectId("googleProject"),
     Some(GoogleProjectNumber("googleProjectNumber")),
@@ -199,9 +223,39 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     WorkspaceState.Ready
   )
 
-  val protectedRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), protectedRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
-  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), authDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
-  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(Some(WorkspaceAccessLevels.Owner), canShare=Some(false), canCompute=Some(true), catalog=Some(false), nonAuthDomainRawlsWorkspace, Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)), Some(WorkspaceBucketOptions(false)), Some(Set.empty), None)
+  val protectedRawlsWorkspaceResponse = WorkspaceResponse(
+    Some(WorkspaceAccessLevels.Owner),
+    canShare = Some(false),
+    canCompute = Some(true),
+    catalog = Some(false),
+    protectedRawlsWorkspace,
+    Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
+    Some(WorkspaceBucketOptions(false)),
+    Some(Set.empty),
+    None
+  )
+  val authDomainRawlsWorkspaceResponse = WorkspaceResponse(
+    Some(WorkspaceAccessLevels.Owner),
+    canShare = Some(false),
+    canCompute = Some(true),
+    catalog = Some(false),
+    authDomainRawlsWorkspace,
+    Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
+    Some(WorkspaceBucketOptions(false)),
+    Some(Set.empty),
+    None
+  )
+  val nonAuthDomainRawlsWorkspaceResponse = WorkspaceResponse(
+    Some(WorkspaceAccessLevels.Owner),
+    canShare = Some(false),
+    canCompute = Some(true),
+    catalog = Some(false),
+    nonAuthDomainRawlsWorkspace,
+    Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
+    Some(WorkspaceBucketOptions(false)),
+    Some(Set.empty),
+    None
+  )
 
   var rawlsServer: ClientAndServer = _
 
@@ -211,15 +265,24 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param path   request path
     * @param status status for the response
     */
-  def stubRawlsService(method: HttpMethod, path: String, status: StatusCode, body: Option[String] = None, query: Option[(String, String)] = None, requestBody: Option[String] = None): Unit = {
+  def stubRawlsService(method: HttpMethod,
+                       path: String,
+                       status: StatusCode,
+                       body: Option[String] = None,
+                       query: Option[(String, String)] = None,
+                       requestBody: Option[String] = None
+  ): Unit = {
     rawlsServer.reset()
-    val request = org.mockserver.model.HttpRequest.request()
+    val request = org.mockserver.model.HttpRequest
+      .request()
       .withMethod(method.name)
       .withPath(path)
     if (query.isDefined) request.withQueryStringParameter(query.get._1, query.get._2)
     requestBody.foreach(request.withBody)
-    val response = org.mockserver.model.HttpResponse.response()
-      .withHeaders(MockUtils.header).withStatusCode(status.intValue)
+    val response = org.mockserver.model.HttpResponse
+      .response()
+      .withHeaders(MockUtils.header)
+      .withStatusCode(status.intValue)
     if (body.isDefined) response.withBody(body.get)
     rawlsServer
       .when(request)
@@ -237,10 +300,35 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param authDomain (optional) authorization domain for the new workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCreateWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty): (WorkspaceRequest, WorkspaceDetails) = {
+  def stubRawlsCreateWorkspace(namespace: String,
+                               name: String,
+                               authDomain: Set[ManagedGroupRef] = Set.empty
+  ): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val rawlsRequest = WorkspaceRequest(namespace, name, Map(), Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(Map()), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, None, Option(DateTime.now()), None, None, WorkspaceState.Ready)
+    val rawlsResponse = WorkspaceDetails(
+      namespace,
+      name,
+      "foo",
+      "bar",
+      Some("wf-collection"),
+      DateTime.now(),
+      DateTime.now(),
+      "bob",
+      Some(Map()),
+      false,
+      Some(authDomain),
+      WorkspaceVersions.V2,
+      GoogleProjectId("googleProject"),
+      Some(GoogleProjectNumber("googleProjectNumber")),
+      Some(RawlsBillingAccountName("billingAccount")),
+      None,
+      None,
+      Option(DateTime.now()),
+      None,
+      None,
+      WorkspaceState.Ready
+    )
     stubRawlsService(HttpMethods.POST, workspacesRoot, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -257,12 +345,39 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     * @param attributes (optional) attributes expected to be given to rawls for the new cloned workspace
     * @return pair of expected WorkspaceRequest and the Workspace that the stub will respond with
     */
-  def stubRawlsCloneWorkspace(namespace: String, name: String, authDomain: Set[ManagedGroupRef] = Set.empty, attributes: Attributable.AttributeMap = Map()): (WorkspaceRequest, WorkspaceDetails) = {
+  def stubRawlsCloneWorkspace(namespace: String,
+                              name: String,
+                              authDomain: Set[ManagedGroupRef] = Set.empty,
+                              attributes: Attributable.AttributeMap = Map()
+  ): (WorkspaceRequest, WorkspaceDetails) = {
     rawlsServer.reset()
     val published: (AttributeName, AttributeBoolean) = AttributeName("library", "published") -> AttributeBoolean(false)
     val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
-    val rawlsRequest: WorkspaceRequest = WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
-    val rawlsResponse = WorkspaceDetails(namespace, name, "foo", "bar", Some("wf-collection"), DateTime.now(), DateTime.now(), "bob", Some(attributes + published + discoverable), false, Some(authDomain), WorkspaceVersions.V2, GoogleProjectId("googleProject"), Some(GoogleProjectNumber("googleProjectNumber")), Some(RawlsBillingAccountName("billingAccount")), None, None, Option(DateTime.now()), None, None, WorkspaceState.Ready)
+    val rawlsRequest: WorkspaceRequest =
+      WorkspaceRequest(namespace, name, attributes + published + discoverable, Option(authDomain))
+    val rawlsResponse = WorkspaceDetails(
+      namespace,
+      name,
+      "foo",
+      "bar",
+      Some("wf-collection"),
+      DateTime.now(),
+      DateTime.now(),
+      "bob",
+      Some(attributes + published + discoverable),
+      false,
+      Some(authDomain),
+      WorkspaceVersions.V2,
+      GoogleProjectId("googleProject"),
+      Some(GoogleProjectNumber("googleProjectNumber")),
+      Some(RawlsBillingAccountName("billingAccount")),
+      None,
+      None,
+      Option(DateTime.now()),
+      None,
+      None,
+      WorkspaceState.Ready
+    )
     stubRawlsService(HttpMethods.POST, clonePath, Created, Option(rawlsResponse.toJson.compactPrint))
     (rawlsRequest, rawlsResponse)
   }
@@ -272,31 +387,28 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     rawlsServer
       .when(request().withMethod(method.name).withPath(path))
       .respond(
-        org.mockserver.model.HttpResponse.response()
+        org.mockserver.model.HttpResponse
+          .response()
           .withHeaders(MockUtils.header)
           .withStatusCode(status.intValue)
           .withBody(rawlsErrorReport(status).toJson.compactPrint)
       )
   }
 
-  override def beforeAll(): Unit = {
+  override def beforeAll(): Unit =
     rawlsServer = startClientAndServer(MockUtils.workspaceServerPort)
-  }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     rawlsServer.stop
-  }
 
-  override def beforeEach(): Unit = {
+  override def beforeEach(): Unit =
     this.searchDao.reset()
-  }
 
-  override def afterEach(): Unit = {
+  override def afterEach(): Unit =
     this.searchDao.reset()
-  }
 
-  //there are many values in the response that in reality cannot be predicted
-  //we will only compare the key details: namespace, name, authdomain, attributes
+  // there are many values in the response that in reality cannot be predicted
+  // we will only compare the key details: namespace, name, authdomain, attributes
   def assertWorkspaceDetailsEqual(expected: WorkspaceDetails, actual: WorkspaceDetails) = {
     actual.namespace should equal(expected.namespace)
     actual.name should equal(expected.name)
@@ -308,9 +420,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces path" - {
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
-        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -319,9 +432,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment path" - {
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, POST methods" in {
-        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -330,17 +444,28 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/methodconfigs path" - {
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, DELETE methods" in {
-        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/methodconfigs") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/methodconfigs") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
       }
-      Seq("this","workspace") foreach { prefix =>
+      Seq("this", "workspace") foreach { prefix =>
         s"Forbidden error is returned for HTTP POST with an output to $prefix.library:" in {
-          val methodConfigs = MethodConfiguration("namespace", "name", Some("root"), None, Map.empty, Map("value" -> AttributeString(s"$prefix.library:param")), MethodRepoMethod("methodnamespace", "methodname", 1))
-          Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          val methodConfigs = MethodConfiguration(
+            "namespace",
+            "name",
+            Some("root"),
+            None,
+            Map.empty,
+            Map("value" -> AttributeString(s"$prefix.library:param")),
+            MethodRepoMethod("methodnamespace", "methodname", 1)
+          )
+          Post(methodconfigsPath, methodConfigs) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(Forbidden)
           }
         }
@@ -349,9 +474,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/acl path" - {
       "MethodNotAllowed error is returned for HTTP PUT, POST, DELETE methods" in {
-        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/acl") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/acl") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -360,9 +486,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/clone path" - {
       "MethodNotAllowed error is returned for HTTP PUT, PATCH, GET, DELETE methods" in {
-        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/clone") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/clone") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -371,9 +498,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/lock path" - {
       "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
-        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/lock") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/lock") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -382,9 +510,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/unlock path" - {
       "MethodNotAllowed error is returned for HTTP POST, PATCH, GET, DELETE methods" in {
-        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/unlock") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/unlock") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -393,9 +522,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/checkBucketReadAccess path" - {
       "MethodNotAllowed error is returned for HTTP POST, PATCH, PUT, DELETE methods" in {
-        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/checkBucketReadAccess") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/checkBucketReadAccess") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -404,9 +534,10 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/sendChangeNotification path" - {
       "MethodNotAllowed error is returned for HTTP GET, PATCH, PUT, DELETE methods" in {
-        List(HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
-          method =>
-          new RequestBuilder(method)("/api/workspaces/namespace/name/sendChangeNotification") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        List(HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/sendChangeNotification") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -415,11 +546,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the /workspaces/segment/segment/accessInstructions path" - {
       "MethodNotAllowed error is returned for HTTP POST, PATCH, PUT, DELETE methods" in {
-        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map {
-          method =>
-            new RequestBuilder(method)("/api/workspaces/namespace/name/accessInstructions") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-              status should equal(MethodNotAllowed)
-            }
+        List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map { method =>
+          new RequestBuilder(method)("/api/workspaces/namespace/name/accessInstructions") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
+            status should equal(MethodNotAllowed)
+          }
         }
       }
     }
@@ -427,7 +559,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/segment/segment/bucketUsage path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
-          new RequestBuilder(method)("/api/workspaces/namespace/name/bucketUsage") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/namespace/name/bucketUsage") ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -437,7 +571,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Passthrough tests on the /workspaces/tags path" - {
       List(HttpMethods.POST, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
         s"MethodNotAllowed error is returned for $method" in {
-          new RequestBuilder(method)("/api/workspaces/tags") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)("/api/workspaces/tags") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(MethodNotAllowed)
           }
         }
@@ -451,10 +587,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       List(HttpMethods.GET) foreach { method =>
         s"OK status is returned for HTTP $method" in {
           val dao = new MockRawlsDAO
-          val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare=Some(false))
-          val lrwr = Seq.fill(2){rwr}
+          val rwr = dao.rawlsWorkspaceResponseWithAttributes.copy(canShare = Some(false))
+          val lrwr = Seq.fill(2)(rwr)
           stubRawlsService(method, workspacesRoot, OK, Some(lrwr.toJson.compactPrint))
-          new RequestBuilder(method)(workspacesRoot) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)(workspacesRoot) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(OK)
           }
         }
@@ -463,29 +601,43 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
     "Passthrough tests on the GET /workspaces/%s/%s path" - {
       s"OK status is returned for HTTP GET (workspace in authdomain)" in {
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(authDomainRawlsWorkspaceResponse.toJson.compactPrint))
+        stubRawlsService(HttpMethods.GET,
+                         workspacesPath,
+                         OK,
+                         Some(authDomainRawlsWorkspaceResponse.toJson.compactPrint)
+        )
         Get(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
-          //generally this is not how we want to treat the response
-          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
-          //here we take the plain text and force it to be json so we can get the test to work
-          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.nonEmpty)
+          // generally this is not how we want to treat the response
+          // it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          // here we take the plain text and force it to be json so we can get the test to work
+          assert(
+            entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.nonEmpty
+          )
         }
       }
 
       s"OK status is returned for HTTP GET (non-auth-domained workspace)" in {
-        stubRawlsService(HttpMethods.GET, workspacesPath, OK, Some(nonAuthDomainRawlsWorkspaceResponse.toJson.compactPrint))
+        stubRawlsService(HttpMethods.GET,
+                         workspacesPath,
+                         OK,
+                         Some(nonAuthDomainRawlsWorkspaceResponse.toJson.compactPrint)
+        )
         Get(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
           status should equal(OK)
-          //generally this is not how we want to treat the response
-          //it should already be returned as JSON but for some strange reason it's being returned as text/plain
-          //here we take the plain text and force it to be json so we can get the test to work
-          assert(entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.isEmpty)
+          // generally this is not how we want to treat the response
+          // it should already be returned as JSON but for some strange reason it's being returned as text/plain
+          // here we take the plain text and force it to be json so we can get the test to work
+          assert(
+            entityAs[String].parseJson.convertTo[UIWorkspaceResponse].workspace.get.authorizationDomain.get.isEmpty
+          )
         }
       }
 
       s"Accepted status is returned for HTTP DELETE" in {
-        new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+        new RequestBuilder(HttpMethods.DELETE)(workspacesPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+          workspaceRoutes
+        ) ~> check {
           status should equal(Accepted)
         }
       }
@@ -495,7 +647,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       List(HttpMethods.GET) foreach { method =>
         s"OK status is returned for HTTP $method" in {
           stubRawlsService(method, methodconfigsPath, OK)
-          new RequestBuilder(method)(methodconfigsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(method)(methodconfigsPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(OK)
           }
         }
@@ -507,8 +661,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         Seq("allRepos" -> "true", "allRepos" -> "false", "allRepos" -> "banana") foreach { query =>
           stubRawlsService(HttpMethods.GET, methodconfigsPath, OK, None, Some(query))
 
-          Get(Uri(methodconfigsPath).withQuery(Query(query))) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-            rawlsServer.verify(request().withPath(methodconfigsPath).withMethod("GET").withQueryStringParameter(query._1, query._2))
+          Get(Uri(methodconfigsPath).withQuery(Query(query))) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
+            rawlsServer.verify(
+              request().withPath(methodconfigsPath).withMethod("GET").withQueryStringParameter(query._1, query._2)
+            )
 
             status should equal(OK)
           }
@@ -552,7 +710,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       }
     }
 
-
     "Passthrough tests on the /workspaces/%s/%s/unlock path" - {
       "OK status is returned for PUT" in {
         stubRawlsService(HttpMethods.PUT, unlockPath, OK)
@@ -561,7 +718,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
       }
     }
-
 
     "Passthrough tests on the /workspaces/%s/%s/checkBucketReadAccess path" - {
       "OK status is returned for GET" in {
@@ -582,21 +738,25 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "Passthrough tests on the /version/executionEngine path" - {
-        "OK status is returned for GET" in {
-          stubRawlsService(HttpMethods.GET, executionEngineVersionPath, OK)
-          Get(executionEngineVersionPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(OK)
-          }
+      "OK status is returned for GET" in {
+        stubRawlsService(HttpMethods.GET, executionEngineVersionPath, OK)
+        Get(executionEngineVersionPath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          status should equal(OK)
         }
       }
+    }
 
     "Passthrough tests on the workspaces/tags path" - {
       "OK status is returned for GET" in {
         val tagJsonString = """{ "tag": "tagtest", "count": 3 }"""
         stubRawlsService(HttpMethods.GET, tagAutocompletePath, OK, Some(tagJsonString), Some("q", "tag"))
         Get("/api/workspaces/tags", ("q", "tag"))
-        new RequestBuilder(HttpMethods.GET)("/api/workspaces/tags?q=tag") ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-          rawlsServer.verify(request().withPath(tagAutocompletePath).withMethod("GET").withQueryStringParameter("q", "tag"))
+        new RequestBuilder(HttpMethods.GET)("/api/workspaces/tags?q=tag") ~> dummyUserIdHeaders(
+          dummyUserId
+        ) ~> sealRoute(workspaceRoutes) ~> check {
+          rawlsServer.verify(
+            request().withPath(tagAutocompletePath).withMethod("GET").withQueryStringParameter("q", "tag")
+          )
           status should equal(OK)
           responseAs[String] should equal(tagJsonString)
         }
@@ -609,26 +769,37 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
       val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name")
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map())
-      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
+      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+        workspaceRoutes
+      ) ~> check {
+        rawlsServer.verify(
+          request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint)
+        )
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
     }
 
     "POST on /workspaces with 'protected' workspace request sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (rawlsRequest, rawlsResponse) = stubRawlsCreateWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
+      val (rawlsRequest, rawlsResponse) =
+        stubRawlsCreateWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
 
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
-      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        rawlsServer.verify(request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint))
+      Post(workspacesRoot, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+        workspaceRoutes
+      ) ~> check {
+        rawlsServer.verify(
+          request().withPath(workspacesRoot).withMethod("POST").withBody(rawlsRequest.toJson.compactPrint)
+        )
         status should equal(Created)
         responseAs[WorkspaceDetails] should equal(rawlsResponse)
       }
     }
 
     "OK status is returned from PATCH on /workspaces/%s/%s/acl" in {
-      Patch(aclPath, List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+      Patch(aclPath,
+            List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))
+      ) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
       }
     }
@@ -646,7 +817,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "POST on /workspaces/.../.../clone for 'protected' workspace sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
       val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
 
-      val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
+      val orchestrationRequest: WorkspaceRequest =
+        WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(Created)
         assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
@@ -654,11 +826,17 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     }
 
     "When cloning a published workspace, the clone should not be published" in {
-      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name",
-        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false), AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList))
+      val (_, rawlsResponse) = stubRawlsCloneWorkspace(
+        "namespace",
+        "name",
+        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false),
+                         AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
+        )
+      )
 
       val published = AttributeName("library", "published") -> AttributeBoolean(true)
-      val discoverable = AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
+      val discoverable =
+        AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
       val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
       Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(Created)
@@ -669,35 +847,48 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Catalog permission tests on /workspaces/.../.../catalog" - {
       "when calling PATCH" - {
         "should be Forbidden as reader" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("reader"), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          val content =
+            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath("reader"), content) ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }
         }
         "should be Forbidden as writer" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("unpublishedwriter"), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          val content =
+            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath("unpublishedwriter"), content) ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(Forbidden)
           }
         }
         "should be OK as owner" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          val content =
+            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
+          new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(OK)
-            val expected = WorkspaceCatalogUpdateResponseList(Seq(WorkspaceCatalogResponse("userid", true)),Seq.empty)
-            responseAs[WorkspaceCatalogUpdateResponseList] should equal (expected)
+            val expected = WorkspaceCatalogUpdateResponseList(Seq(WorkspaceCatalogResponse("userid", true)), Seq.empty)
+            responseAs[WorkspaceCatalogUpdateResponseList] should equal(expected)
 
           }
         }
       }
       "when calling GET" - {
         "should be OK as reader" in {
-          new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
             status should equal(OK)
           }
         }
         "should be OK as writer" in {
-          new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+          new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders(
+            dummyUserId
+          ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
         }
@@ -708,11 +899,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
       "when calling any method other than POST on workspaces/*/*/importEntities path" - {
         "should receive a MethodNotAllowed error" in {
-          List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map {
-            method =>
-              new RequestBuilder(method)(tsvImportPath, MockTSVFormData.membershipValid) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-                status should equal(MethodNotAllowed)
-              }
+          List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.GET, HttpMethods.DELETE) map { method =>
+            new RequestBuilder(method)(tsvImportPath, MockTSVFormData.membershipValid) ~> dummyUserIdHeaders(
+              dummyUserId
+            ) ~> sealRoute(workspaceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
           }
         }
       }
@@ -907,7 +1099,8 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
-              errorReportCheck("FireCloud", BadRequest)            }
+              errorReportCheck("FireCloud", BadRequest)
+            }
           }
 
           "should 200 OK if the entity type is non-FC model when calling the flexible import" in {
@@ -1016,9 +1209,9 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         (Post(pfbImportPath, PFBImportRequest("https://bad.request.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-            responseAs[String] should include ("Bad request as reported by cwds")
-          }
+          status should equal(BadRequest)
+          responseAs[String] should include("Bad request as reported by cwds")
+        }
       }
 
       "should bubble up 403 from cwds" in {
@@ -1026,7 +1219,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(Forbidden)
-          responseAs[String] should include ("Missing Authorization: Bearer token in header")
+          responseAs[String] should include("Missing Authorization: Bearer token in header")
         }
       }
       "should propagate any other errors from cWDS" in {
@@ -1035,7 +1228,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(UnavailableForLegalReasons)
-          responseAs[String] should include ("cwds message")
+          responseAs[String] should include("cwds message")
         }
       }
 
@@ -1043,18 +1236,20 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         val pfbPath = "https://good.avro"
 
-        val orchExpectedPayload = AsyncImportResponse(url = pfbPath, jobId = "MockCwdsDAO will generate a random UUID",
-                                                   workspace = WorkspaceName(workspace.namespace, workspace.name))
+        val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
+                                                      jobId = "MockCwdsDAO will generate a random UUID",
+                                                      workspace = WorkspaceName(workspace.namespace, workspace.name)
+        )
 
         (Post(pfbImportPath, PFBImportRequest("https://good.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(Accepted)
-            val jobResponse = responseAs[AsyncImportResponse]
-            jobResponse.url should be (orchExpectedPayload.url)
-            jobResponse.workspace should be (orchExpectedPayload.workspace)
-            jobResponse.jobId  should not be empty
-          }
+          status should equal(Accepted)
+          val jobResponse = responseAs[AsyncImportResponse]
+          jobResponse.url should be(orchExpectedPayload.url)
+          jobResponse.workspace should be(orchExpectedPayload.workspace)
+          jobResponse.jobId should not be empty
+        }
       }
 
     }
@@ -1062,7 +1257,6 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "WorkspaceService POST importJob Tests" - {
 
       List(FILETYPE_PFB, FILETYPE_TDR) foreach { filetype =>
-
         s"for filetype $filetype" - {
 
           "should bubble up 400 from cwds" in {
@@ -1070,7 +1264,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
-              responseAs[String] should include ("Bad request as reported by cwds")
+              responseAs[String] should include("Bad request as reported by cwds")
             }
           }
 
@@ -1079,7 +1273,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(Forbidden)
-              responseAs[String] should include ("Missing Authorization: Bearer token in header")
+              responseAs[String] should include("Missing Authorization: Bearer token in header")
             }
           }
           "should propagate any other errors from cWDS" in {
@@ -1088,7 +1282,7 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(UnavailableForLegalReasons)
-              responseAs[String] should include ("cwds message")
+              responseAs[String] should include("cwds message")
             }
           }
 
@@ -1097,17 +1291,18 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
             val pfbPath = "https://good.avro"
 
             val orchExpectedPayload = AsyncImportResponse(url = pfbPath,
-              jobId = "MockCwdsDAO will generate a random UUID",
-              workspace = WorkspaceName(workspace.namespace, workspace.name))
+                                                          jobId = "MockCwdsDAO will generate a random UUID",
+                                                          workspace = WorkspaceName(workspace.namespace, workspace.name)
+            )
 
             (Post(importJobPath, AsyncImportRequest("https://good.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(Accepted)
               val jobResponse = responseAs[AsyncImportResponse]
-              jobResponse.url should be (orchExpectedPayload.url)
-              jobResponse.workspace should be (orchExpectedPayload.workspace)
-              jobResponse.jobId  should not be empty
+              jobResponse.url should be(orchExpectedPayload.url)
+              jobResponse.workspace should be(orchExpectedPayload.workspace)
+              jobResponse.jobId should not be empty
             }
           }
         }
@@ -1118,11 +1313,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Workspace updateAttributes tests" - {
       "when calling any method other than PATCH on workspaces/*/*/updateAttributes path" - {
         "should receive a MethodNotAllowed error" in {
-          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
-            method =>
-              new RequestBuilder(method)(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-                status should equal(MethodNotAllowed)
-              }
+          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map { method =>
+            new RequestBuilder(method)(updateAttributesPath,
+                                       HttpEntity(MediaTypes.`application/json`, "{}")
+            ) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
           }
         }
       }
@@ -1137,14 +1333,19 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
 
         "should 200 OK if the payload is ok" in {
-          (Patch(updateAttributesPath,
-            HttpEntity(MediaTypes.`application/json`, """[
-                                                        |  {
-                                                        |    "op": "AddUpdateAttribute",
-                                                        |    "attributeName": "library:dataCategory",
-                                                        |    "addUpdateAttribute": "test-attribute-value"
-                                                        |  }
-                                                        |]""".stripMargin))
+          (Patch(
+            updateAttributesPath,
+            HttpEntity(
+              MediaTypes.`application/json`,
+              """[
+                |  {
+                |    "op": "AddUpdateAttribute",
+                |    "attributeName": "library:dataCategory",
+                |    "addUpdateAttribute": "test-attribute-value"
+                |  }
+                |]""".stripMargin
+            )
+          )
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
@@ -1154,18 +1355,27 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should republish if the document is already published" in {
 
-          (Patch(workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
-            HttpEntity(MediaTypes.`application/json`, """[
-                                                        |  {
-                                                        |    "op": "AddUpdateAttribute",
-                                                        |    "attributeName": "library:dataCategory",
-                                                        |    "addUpdateAttribute": "test-attribute-value"
-                                                        |  }
-                                                        |]""".stripMargin))
+          (Patch(
+            workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace,
+                                                              WorkspaceApiServiceSpec.publishedWorkspace.name
+            ),
+            HttpEntity(
+              MediaTypes.`application/json`,
+              """[
+                |  {
+                |    "op": "AddUpdateAttribute",
+                |    "attributeName": "library:dataCategory",
+                |    "addUpdateAttribute": "test-attribute-value"
+                |  }
+                |]""".stripMargin
+            )
+          )
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked.get(), "Should have republished this published WS when changing attributes")
+            assert(this.searchDao.indexDocumentInvoked.get(),
+                   "Should have republished this published WS when changing attributes"
+            )
           }
         }
 
@@ -1175,11 +1385,12 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Workspace setAttributes tests" - {
       "when calling any method other than PATCH on workspaces/*/*/setAttributes path" - {
         "should receive a MethodNotAllowed error" in {
-          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map {
-            method =>
-              new RequestBuilder(method)(setAttributesPath, HttpEntity(MediaTypes.`application/json`, "{}")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-                status should equal(MethodNotAllowed)
-              }
+          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.GET, HttpMethods.DELETE) map { method =>
+            new RequestBuilder(method)(setAttributesPath,
+                                       HttpEntity(MediaTypes.`application/json`, "{}")
+            ) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
+              status should equal(MethodNotAllowed)
+            }
           }
         }
       }
@@ -1194,10 +1405,15 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
         }
 
         "should 200 OK if the payload is ok" in {
-          (Patch(setAttributesPath,
-            HttpEntity(MediaTypes.`application/json`, """{"description": "something",
-                                                        | "array": [1, 2, 3]
-                                                        | }""".stripMargin))
+          (Patch(
+            setAttributesPath,
+            HttpEntity(
+              MediaTypes.`application/json`,
+              """{"description": "something",
+                | "array": [1, 2, 3]
+                | }""".stripMargin
+            )
+          )
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
@@ -1207,14 +1423,23 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
 
         "should republish if the document is already published" in {
 
-          (Patch(workspacesRoot + "/%s/%s/setAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace, WorkspaceApiServiceSpec.publishedWorkspace.name),
-            HttpEntity(MediaTypes.`application/json`, """{"description": "something",
-                                                        | "array": [1, 2, 3]
-                                                        | }""".stripMargin))
+          (Patch(
+            workspacesRoot + "/%s/%s/setAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace,
+                                                           WorkspaceApiServiceSpec.publishedWorkspace.name
+            ),
+            HttpEntity(
+              MediaTypes.`application/json`,
+              """{"description": "something",
+                | "array": [1, 2, 3]
+                | }""".stripMargin
+            )
+          )
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked.get(), "Should have republished this published WS when changing attributes")
+            assert(this.searchDao.indexDocumentInvoked.get(),
+                   "Should have republished this published WS when changing attributes"
+            )
           }
         }
 
@@ -1225,48 +1450,48 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
           (Post(tsvAttributesImportPath, MockTSVFormData.addNewWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(OK)
-          })
+              status should equal(OK)
+            })
         }
 
         "should 400 Bad Request if first row does not start with \"workspace\"" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.wrongHeaderWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
+              status should equal(BadRequest)
+            })
         }
 
         "should 400 Bad Request if there are more names than values" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyNamesWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
+              status should equal(BadRequest)
+            })
         }
 
         "should 400 Bad Request if there are more values than names" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyValuesWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
+              status should equal(BadRequest)
+            })
         }
 
         "should 400 Bad Request if there are more than 2 rows" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyRowsWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
+              status should equal(BadRequest)
+            })
         }
 
         "should 400 Bad Request if there are fewer than 2 rows" in {
           (Post(tsvAttributesImportPath, MockTSVFormData.tooFewRowsWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(BadRequest)
-          })
+              status should equal(BadRequest)
+            })
         }
 
       }
@@ -1275,31 +1500,36 @@ class WorkspaceApiServiceSpec extends BaseServiceSpec with WorkspaceApiService w
     "Workspace storage cost estimate tests" - {
       "when calling any method other than GET on workspaces/*/*/storageCostEstimate" - {
         "should return 405 Method Not Allowed for anything other than GET" in {
-          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.PATCH, HttpMethods.DELETE) map {
-            method =>
-              new RequestBuilder(method)(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-                status should be (MethodNotAllowed)
-              }
+          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.PATCH, HttpMethods.DELETE) map { method =>
+            new RequestBuilder(method)(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+              workspaceRoutes
+            ) ~> check {
+              status should be(MethodNotAllowed)
+            }
           }
         }
       }
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for us region" in {
-          Get(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-            status should be (OK)
+          Get(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
+            status should be(OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.01
-            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$2.38")
+            responseAs[WorkspaceStorageCostEstimate].estimate should be("$2.38")
           }
         }
       }
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
         "should return 200 with result for different europe east 1 region." in {
-          Get(europeWest1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-            status should be (OK)
+          Get(europeWest1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
+            status should be(OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.02
-            responseAs[WorkspaceStorageCostEstimate].estimate should be ("$4.77")
+            responseAs[WorkspaceStorageCostEstimate].estimate should be("$4.77")
           }
         }
       }

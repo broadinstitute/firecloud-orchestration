@@ -30,22 +30,24 @@ class Ga4ghApiServiceSpec extends BaseServiceSpec with Ga4ghApiService with Befo
     // The following paths are currently unimplemented in Agora, but handled.
     "/ga4gh/v1/tools/namespace:name/versions/1/dockerfile",
     "/ga4gh/v1/tools/namespace:name/versions/1/WDL/descriptor/1",
-    "/ga4gh/v1/tools/namespace:name/versions/1/WDL/tests")
+    "/ga4gh/v1/tools/namespace:name/versions/1/WDL/tests"
+  )
 
   override def beforeAll(): Unit = {
     toolRegistryServer = startClientAndServer(MockUtils.methodsServerPort)
     toolPaths.map { path =>
-      toolRegistryServer.when(request().withMethod(HttpMethods.GET.name).withPath(path))
+      toolRegistryServer
+        .when(request().withMethod(HttpMethods.GET.name).withPath(path))
         .respond(
-          org.mockserver.model.HttpResponse.response()
+          org.mockserver.model.HttpResponse
+            .response()
             .withStatusCode(OK.intValue)
         )
     }
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     toolRegistryServer.stop()
-  }
 
   "GA4GH API service" - {
     "Tool Registry" - {

@@ -13,19 +13,23 @@ trait SamMockserverUtils {
     *
     * @param samMockserver the Sam mockserver to configure
     */
-  def returnEnabledUser(samMockserver: ClientAndServer): Unit = {
+  def returnEnabledUser(samMockserver: ClientAndServer): Unit =
     samMockserver
-      .when(request
-        .withMethod("GET")
-        .withPath("/register/user/v2/self/info"))
-      .respond(response()
-          .withHeaders(MockUtils.header).withBody(
-          """{
-            |  "adminEnabled": true,
-            |  "enabled": true,
-            |  "userEmail": "enabled@nowhere.com",
-            |  "userSubjectId": "enabled-id"
-            |}""".stripMargin).withStatusCode(OK.intValue))
-  }
+      .when(
+        request
+          .withMethod("GET")
+          .withPath("/register/user/v2/self/info")
+      )
+      .respond(
+        response()
+          .withHeaders(MockUtils.header)
+          .withBody("""{
+                      |  "adminEnabled": true,
+                      |  "enabled": true,
+                      |  "userEmail": "enabled@nowhere.com",
+                      |  "userSubjectId": "enabled-id"
+                      |}""".stripMargin)
+          .withStatusCode(OK.intValue)
+      )
 
 }

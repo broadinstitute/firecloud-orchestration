@@ -23,12 +23,18 @@ trait SearchDAO extends LazyLogging with ReportsSubsystemStatus {
   def createIndex(): Unit
   def deleteIndex(): Unit
 
-  def bulkIndex(docs: Seq[Document], refresh:Boolean = false): LibraryBulkIndexResponse
+  def bulkIndex(docs: Seq[Document], refresh: Boolean = false): LibraryBulkIndexResponse
   def indexDocument(doc: Document): Unit
   def deleteDocument(id: String): Unit
-  def findDocuments(criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse]
-  def suggestionsFromAll(criteria: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse]
+  def findDocuments(criteria: LibrarySearchParams,
+                    groups: Seq[String],
+                    workspacePolicyMap: Map[String, UserPolicy]
+  ): Future[LibrarySearchResponse]
+  def suggestionsFromAll(criteria: LibrarySearchParams,
+                         groups: Seq[String],
+                         workspacePolicyMap: Map[String, UserPolicy]
+  ): Future[LibrarySearchResponse]
   def suggestionsForFieldPopulate(field: String, text: String): Future[Seq[String]]
 
-  override def serviceName:Subsystem = SearchDAO.serviceName
+  override def serviceName: Subsystem = SearchDAO.serviceName
 }

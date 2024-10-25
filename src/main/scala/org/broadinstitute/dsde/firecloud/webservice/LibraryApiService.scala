@@ -13,9 +13,11 @@ import spray.json.DefaultJsonProtocol._
 import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 
-trait LibraryApiService extends FireCloudDirectives
-  with StandardUserInfoDirectives with EnabledUserDirectives
-  with RestJsonClient {
+trait LibraryApiService
+    extends FireCloudDirectives
+    with StandardUserInfoDirectives
+    with EnabledUserDirectives
+    with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
 
@@ -26,22 +28,22 @@ trait LibraryApiService extends FireCloudDirectives
 
   val libraryRoutes: Route =
     pathPrefix("duos") {
-      path("autocomplete" / Segment) { (searchTerm) =>
+      path("autocomplete" / Segment) { searchTerm =>
         get {
-          complete { ontologyServiceConstructor().autocompleteOntology(searchTerm) }
+          complete(ontologyServiceConstructor().autocompleteOntology(searchTerm))
         }
       } ~
         path("researchPurposeQuery") {
           post {
             entity(as[ResearchPurposeRequest]) { researchPurposeRequest =>
-              complete { ontologyServiceConstructor().buildResearchPurposeQuery(researchPurposeRequest) }
+              complete(ontologyServiceConstructor().buildResearchPurposeQuery(researchPurposeRequest))
             }
           }
         } ~
         path("structuredData") {
           post {
             entity(as[StructuredDataRequest]) { request =>
-              complete { ontologyServiceConstructor().buildStructuredUseRestrictionAttribute(request) }
+              complete(ontologyServiceConstructor().buildStructuredUseRestrictionAttribute(request))
             }
           }
         }
@@ -60,90 +62,98 @@ trait LibraryApiService extends FireCloudDirectives
               get { requestContext =>
                 userAuthedRequest(Get(rawlsCuratorUrl))(userInfo).flatMap { response =>
                   response.status match {
-                    case OK => requestContext.complete(OK, Curator(true))
+                    case OK       => requestContext.complete(OK, Curator(true))
                     case NotFound => requestContext.complete(OK, Curator(false))
-                    case _ => requestContext.complete(response) // replay the root exception
+                    case _        => requestContext.complete(response) // replay the root exception
                   }
                 }
               }
             } ~
-            path("groups") {
-              pathEndOrSingleSlash {
-                get {
-                  requireEnabledUser(userInfo) {
-                    complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSeq)
-                  }
-                }
-              }
-            } ~
-            pathPrefix(Segment / Segment) { (namespace, name) =>
-              path("metadata") {
-                put {
-                  parameter("validate" ? "false") { validationParam =>
-                    val doValidate = java.lang.Boolean.valueOf(validationParam) // for lenient parsing
-                    entity(as[String]) { rawAttrsString =>
-                      complete { libraryServiceConstructor(userInfo).updateLibraryMetadata(namespace, name, rawAttrsString, doValidate) }
-                    }
-                  }
-                } ~ {
+              path("groups") {
+                pathEndOrSingleSlash {
                   get {
-                    complete { libraryServiceConstructor(userInfo).getLibraryMetadata(namespace, name) }
+                    requireEnabledUser(userInfo) {
+                      complete(OK, FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSeq)
+                    }
                   }
                 }
               } ~
-              path("discoverableGroups") {
-                put {
-                  entity(as[Seq[String]]) { newGroups =>
-                    complete { libraryServiceConstructor(userInfo).updateDiscoverableByGroups(namespace, name, newGroups) }
+              pathPrefix(Segment / Segment) { (namespace, name) =>
+                path("metadata") {
+                  put {
+                    parameter("validate" ? "false") { validationParam =>
+                      val doValidate = java.lang.Boolean.valueOf(validationParam) // for lenient parsing
+                      entity(as[String]) { rawAttrsString =>
+                        complete {
+                          libraryServiceConstructor(userInfo).updateLibraryMetadata(namespace,
+                                                                                    name,
+                                                                                    rawAttrsString,
+                                                                                    doValidate
+                          )
+                        }
+                      }
+                    }
+                  } ~ {
+                    get {
+                      complete(libraryServiceConstructor(userInfo).getLibraryMetadata(namespace, name))
+                    }
                   }
                 } ~
-                  get {
-                    complete { libraryServiceConstructor(userInfo).getDiscoverableByGroups(namespace, name) }
+                  path("discoverableGroups") {
+                    put {
+                      entity(as[Seq[String]]) { newGroups =>
+                        complete {
+                          libraryServiceConstructor(userInfo).updateDiscoverableByGroups(namespace, name, newGroups)
+                        }
+                      }
+                    } ~
+                      get {
+                        complete(libraryServiceConstructor(userInfo).getDiscoverableByGroups(namespace, name))
+                      }
+                  } ~
+                  path("published") {
+                    post {
+                      complete(libraryServiceConstructor(userInfo).setWorkspaceIsPublished(namespace, name, true))
+                    } ~
+                      delete {
+                        complete(libraryServiceConstructor(userInfo).setWorkspaceIsPublished(namespace, name, false))
+                      }
                   }
               } ~
-              path("published") {
+              path("admin" / "reindex") {
+                post {
+                  complete(libraryServiceConstructor(userInfo).adminIndexAllWorkspaces())
+                }
+              } ~
+              pathPrefix("search") {
+                pathEndOrSingleSlash {
                   post {
-                    complete { libraryServiceConstructor(userInfo).setWorkspaceIsPublished(namespace, name, true) }
-                  } ~
-                  delete {
-                    complete { libraryServiceConstructor(userInfo).setWorkspaceIsPublished(namespace, name, false) }
+                    entity(as[LibrarySearchParams]) { params =>
+                      complete(libraryServiceConstructor(userInfo).findDocuments(params))
+                    }
                   }
                 }
-            } ~
-            path("admin" / "reindex") {
-              post {
-                complete { libraryServiceConstructor(userInfo).adminIndexAllWorkspaces() }
-              }
-            } ~
-            pathPrefix("search") {
-              pathEndOrSingleSlash {
-                post {
-                  entity(as[LibrarySearchParams]) { params =>
-                    complete { libraryServiceConstructor(userInfo).findDocuments(params) }
+              } ~
+              pathPrefix("suggest") {
+                pathEndOrSingleSlash {
+                  post {
+                    entity(as[LibrarySearchParams]) { params =>
+                      complete(libraryServiceConstructor(userInfo).suggest(params))
+                    }
                   }
                 }
-              }
-            } ~
-            pathPrefix("suggest") {
-              pathEndOrSingleSlash {
-                post {
-                  entity(as[LibrarySearchParams]) { params =>
-                    complete { libraryServiceConstructor(userInfo).suggest(params) }
-                  }
-                }
-              }
-            } ~
-            pathPrefix("populate" / "suggest" / Segment ) { (field) =>
-              get {
-                requireEnabledUser(userInfo) {
-                  parameter(Symbol("q")) { text =>
-                    complete {
-                      libraryServiceConstructor(userInfo).populateSuggest(field, text)
+              } ~
+              pathPrefix("populate" / "suggest" / Segment) { field =>
+                get {
+                  requireEnabledUser(userInfo) {
+                    parameter(Symbol("q")) { text =>
+                      complete {
+                        libraryServiceConstructor(userInfo).populateSuggest(field, text)
+                      }
                     }
                   }
                 }
               }
-            }
           }
         }
       }

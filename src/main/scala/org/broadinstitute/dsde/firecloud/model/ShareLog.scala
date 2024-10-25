@@ -11,5 +11,3 @@ object ShareLog {
   }
   case class Share(userId: String, sharee: String, shareType: ShareType.Value, timestamp: Option[Instant] = None)
 }
-
-

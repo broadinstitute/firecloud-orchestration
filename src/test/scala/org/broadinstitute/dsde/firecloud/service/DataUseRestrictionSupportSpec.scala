@@ -24,9 +24,11 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
 
         "and all consent codes are true or filled in" in {
           val ontologyDAO = new MockOntologyDAO
-          val request = StructuredDataRequest(generalResearchUse = true,
+          val request = StructuredDataRequest(
+            generalResearchUse = true,
             healthMedicalBiomedicalUseRequired = true,
-            diseaseUseRequired = Array("http://purl.obolibrary.org/obo/DOID_4325","http://purl.obolibrary.org/obo/DOID_2531"),
+            diseaseUseRequired =
+              Array("http://purl.obolibrary.org/obo/DOID_4325", "http://purl.obolibrary.org/obo/DOID_2531"),
             commercialUseProhibited = true,
             forProfitUseProhibited = true,
             methodsResearchProhibited = true,
@@ -35,9 +37,24 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             genderUseRequired = "female",
             pediatricResearchRequired = true,
             irbRequired = true,
-            prefix = Some("blah"))
+            prefix = Some("blah")
+          )
 
-          val expected = Map("blahconsentCodes" -> Array("NAGR","NMDS","NCTRL","RS-G","GRU","RS-PD","NCU","RS-FM","NPU","HMB","IRB","DS:Ebola hemorrhagic fever","DS:hematologic cancer").toJson,
+          val expected = Map(
+            "blahconsentCodes" -> Array("NAGR",
+                                        "NMDS",
+                                        "NCTRL",
+                                        "RS-G",
+                                        "GRU",
+                                        "RS-PD",
+                                        "NCU",
+                                        "RS-FM",
+                                        "NPU",
+                                        "HMB",
+                                        "IRB",
+                                        "DS:Ebola hemorrhagic fever",
+                                        "DS:hematologic cancer"
+            ).toJson,
             "blahdulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "blahstructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,
@@ -48,19 +65,22 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
               "NAGR" -> true.toJson,
               "RS-FM" -> true.toJson,
               "RS-M" -> false.toJson,
-              "NMDS"-> true.toJson,
+              "NMDS" -> true.toJson,
               "NCTRL" -> true.toJson,
-              "GRU" ->true.toJson,
+              "GRU" -> true.toJson,
               "HMB" -> true.toJson,
-              "DS" -> Array(4325,2531).toJson).toJson)
+              "DS" -> Array(4325, 2531).toJson
+            ).toJson
+          )
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
-          result should be (expected)
+          result should be(expected)
         }
 
         "and all consent codes are false or empty" in {
           val ontologyDAO = new MockOntologyDAO
-          val request = StructuredDataRequest(generalResearchUse = false,
+          val request = StructuredDataRequest(
+            generalResearchUse = false,
             healthMedicalBiomedicalUseRequired = false,
             diseaseUseRequired = Array(),
             commercialUseProhibited = false,
@@ -71,9 +91,11 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             genderUseRequired = "",
             pediatricResearchRequired = false,
             irbRequired = false,
-            prefix = None)
+            prefix = None
+          )
 
-          val expected = Map("consentCodes" -> Array.empty[String].toJson,
+          val expected = Map(
+            "consentCodes" -> Array.empty[String].toJson,
             "dulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "structuredUseRestriction" -> Map(
               "NPU" -> false.toJson,
@@ -84,19 +106,22 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
               "NAGR" -> false.toJson,
               "RS-FM" -> false.toJson,
               "RS-M" -> false.toJson,
-              "NMDS"-> false.toJson,
+              "NMDS" -> false.toJson,
               "NCTRL" -> false.toJson,
               "GRU" -> false.toJson,
               "HMB" -> false.toJson,
-              "DS" -> Array.empty[String].toJson).toJson)
+              "DS" -> Array.empty[String].toJson
+            ).toJson
+          )
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
-          result should be (expected)
+          result should be(expected)
         }
 
         "and consent codes are a mixture of true and false" in {
           val ontologyDAO = new MockOntologyDAO
-          val request = StructuredDataRequest(generalResearchUse = false,
+          val request = StructuredDataRequest(
+            generalResearchUse = false,
             healthMedicalBiomedicalUseRequired = true,
             diseaseUseRequired = Array("http://purl.obolibrary.org/obo/DOID_1240"),
             commercialUseProhibited = false,
@@ -107,9 +132,11 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             genderUseRequired = "Male",
             pediatricResearchRequired = false,
             irbRequired = true,
-            prefix = Some("library"))
+            prefix = Some("library")
+          )
 
-          val expected = Map("libraryconsentCodes" -> Array("NCTRL","RS-G","RS-M","NPU","HMB","IRB","DS:leukemia").toJson,
+          val expected = Map(
+            "libraryconsentCodes" -> Array("NCTRL", "RS-G", "RS-M", "NPU", "HMB", "IRB", "DS:leukemia").toJson,
             "librarydulvn" -> FireCloudConfig.Duos.dulvn.toJson,
             "librarystructuredUseRestriction" -> Map(
               "NPU" -> true.toJson,
@@ -120,14 +147,16 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
               "NAGR" -> false.toJson,
               "RS-FM" -> false.toJson,
               "RS-M" -> true.toJson,
-              "NMDS"-> false.toJson,
+              "NMDS" -> false.toJson,
               "NCTRL" -> true.toJson,
               "GRU" -> false.toJson,
               "HMB" -> true.toJson,
-              "DS" -> Array(1240).toJson).toJson)
+              "DS" -> Array(1240).toJson
+            ).toJson
+          )
 
           val result = generateStructuredUseRestrictionAttribute(request, ontologyDAO)
-          result should be (expected)
+          result should be(expected)
         }
       }
 
@@ -136,7 +165,8 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
         "dataset should have a fully populated data use restriction attribute" in {
           allDatasets.map { ds =>
             val ontologyDAO = new MockOntologyDAO
-            val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(ds, ontologyDAO).structured
+            val attrs: Map[AttributeName, Attribute] =
+              generateStructuredAndDisplayAttributes(ds, ontologyDAO).structured
             val durAtt: Attribute = attrs.getOrElse(structuredUseRestrictionAttributeName, AttributeNull)
             durAtt shouldNot be(AttributeNull)
             val dur = makeDurFromWorkspace(ds, ontologyDAO)
@@ -207,7 +237,8 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
         "dataset should not have any data use restriction for empty attributes" in {
           val workspace: WorkspaceDetails = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
           val ontologyDAO = new MockOntologyDAO
-          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
+          val attrs: Map[AttributeName, Attribute] =
+            generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
           attrs should be(empty)
         }
 
@@ -217,10 +248,13 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             AttributeName.withDefaultNS("name") -> AttributeString("one"),
             AttributeName.withDefaultNS("namespace") -> AttributeString("two"),
             AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
-            AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
+            AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(
+              Seq(AttributeString("one"), AttributeString("two"), AttributeString("three"))
+            )
           )
           val workspace: WorkspaceDetails = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
-          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
+          val attrs: Map[AttributeName, Attribute] =
+            generateStructuredAndDisplayAttributes(workspace, ontologyDAO).structured
           attrs should be(empty)
         }
 
@@ -261,7 +295,8 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
 
         "'TOP_THREE' dataset should have the right codes" in {
           val ontologyDAO = new MockOntologyDAO
-          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(topThreeDataset.head, ontologyDAO).display
+          val attrs: Map[AttributeName, Attribute] =
+            generateStructuredAndDisplayAttributes(topThreeDataset.head, ontologyDAO).display
           val codes: Seq[String] = getValuesFromAttributeValueListAsAttribute(attrs.get(consentCodesAttributeName))
           val expected = Seq("GRU", "HMB") ++ diseaseValuesLabels.map(s => s"DS:$s")
           codes should contain theSameElementsAs expected
@@ -273,7 +308,8 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
         "dataset should not have any data use display codes for empty attributes" in {
           val ontologyDAO = new MockOntologyDAO
           val workspace: WorkspaceDetails = mkWorkspace(Map.empty[AttributeName, Attribute], "empty", "empty")
-          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).display
+          val attrs: Map[AttributeName, Attribute] =
+            generateStructuredAndDisplayAttributes(workspace, ontologyDAO).display
           attrs should be(empty)
         }
 
@@ -283,10 +319,13 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             AttributeName.withDefaultNS("name") -> AttributeString("one"),
             AttributeName.withDefaultNS("namespace") -> AttributeString("two"),
             AttributeName.withDefaultNS("workspaceId") -> AttributeString("three"),
-            AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(Seq(AttributeString("one"), AttributeString("two"), AttributeString("three")))
+            AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(
+              Seq(AttributeString("one"), AttributeString("two"), AttributeString("three"))
+            )
           )
           val workspace: WorkspaceDetails = mkWorkspace(nonLibraryAttributes, "non-library", "non-library")
-          val attrs: Map[AttributeName, Attribute] = generateStructuredAndDisplayAttributes(workspace, ontologyDAO).display
+          val attrs: Map[AttributeName, Attribute] =
+            generateStructuredAndDisplayAttributes(workspace, ontologyDAO).display
           attrs should be(empty)
         }
 
@@ -295,19 +334,16 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
     }
   }
 
-
   //////////////////
   // Utility methods
   //////////////////
 
-
-  private def getValuesFromAttributeValueListAsAttribute(attrs: Option[Attribute]): Seq[String] = {
-    (attrs collect {
-      case x: AttributeValueList => x.list.collect {
-        case a: AttributeString => a.value
+  private def getValuesFromAttributeValueListAsAttribute(attrs: Option[Attribute]): Seq[String] =
+    (attrs collect { case x: AttributeValueList =>
+      x.list.collect { case a: AttributeString =>
+        a.value
       }
     }).getOrElse(Seq.empty[String])
-  }
 
   private def makeDurFromWorkspace(ds: WorkspaceDetails, ontologyDAO: MockOntologyDAO): DataUseRestriction = {
     val attrs = generateStructuredAndDisplayAttributes(ds, ontologyDAO).structured
@@ -315,9 +351,8 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
     durAtt.toJson.convertTo[DataUseRestriction]
   }
 
-  private def checkBooleanTrue(dur: DataUseRestriction, fieldName: String): Boolean = {
+  private def checkBooleanTrue(dur: DataUseRestriction, fieldName: String): Boolean =
     getFieldMap(dur).getOrElse(fieldName, false).asInstanceOf[Boolean]
-  }
 
   private def checkListValues(dur: DataUseRestriction, fieldName: String): Unit = {
     val fieldValue: Seq[String] = getFieldMap(dur).getOrElse(fieldName, Seq.empty[String]).asInstanceOf[Seq[String]]
@@ -329,17 +364,15 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
     diseaseValuesInts should contain theSameElementsAs fieldValue
   }
 
-  private def getFieldMap(dur: DataUseRestriction): Map[String, Object] = {
+  private def getFieldMap(dur: DataUseRestriction): Map[String, Object] =
     dur.getClass.getDeclaredFields map { f =>
       f.setAccessible(true)
       getFieldName(f) -> f.get(dur)
     } toMap
-  }
 
   // Since we have dashes in DUR field names, the value that comes back from Field.getName
   // looks like "RS$minusPOP" instead of "RS-POP"
-  private def getFieldName(f: Field): String = {
+  private def getFieldName(f: Field): String =
     f.getName.replace("$minus", "-")
-  }
 
 }

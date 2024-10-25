@@ -21,9 +21,14 @@ import spray.json.DefaultJsonProtocol
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiService with UserApiService
-  with DefaultJsonProtocol with SprayJsonSupport
-  with BeforeAndAfterAll with SamMockserverUtils {
+final class RegisterApiServiceSpec
+    extends BaseServiceSpec
+    with RegisterApiService
+    with UserApiService
+    with DefaultJsonProtocol
+    with SprayJsonSupport
+    with BeforeAndAfterAll
+    with SamMockserverUtils {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -36,47 +41,54 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     mockSamServer = startClientAndServer(MockUtils.samServerPort)
     // disabled user
     mockSamServer
-      .when(request
-        .withMethod("GET")
-        .withPath("/register/user/v2/self/info")
-        .withHeader(new Header("Authorization", "Bearer disabled")))
+      .when(
+        request
+          .withMethod("GET")
+          .withPath("/register/user/v2/self/info")
+          .withHeader(new Header("Authorization", "Bearer disabled"))
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(
-          """{
-            |  "adminEnabled": false,
-            |  "enabled": false,
-            |  "userEmail": "disabled@nowhere.com",
-            |  "userSubjectId": "disabled-id"
-            |}""".stripMargin).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withBody("""{
+                      |  "adminEnabled": false,
+                      |  "enabled": false,
+                      |  "userEmail": "disabled@nowhere.com",
+                      |  "userSubjectId": "disabled-id"
+                      |}""".stripMargin)
+          .withStatusCode(OK.intValue)
       )
 
     // unregistered user
     mockSamServer
-      .when(request
-        .withMethod("GET")
-        .withPath("/register/user/v2/self/info")
-        .withHeader(new Header("Authorization", "Bearer unregistered")))
+      .when(
+        request
+          .withMethod("GET")
+          .withPath("/register/user/v2/self/info")
+          .withHeader(new Header("Authorization", "Bearer unregistered"))
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody(
-          """{
-            |  "causes": [],
-            |  "message": "Google Id unregistered-id not found in sam",
-            |  "source": "sam",
-            |  "stackTrace": [],
-            |  "statusCode": 404
-            |}""".stripMargin).withStatusCode(NotFound.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withBody("""{
+                      |  "causes": [],
+                      |  "message": "Google Id unregistered-id not found in sam",
+                      |  "source": "sam",
+                      |  "stackTrace": [],
+                      |  "statusCode": 404
+                      |}""".stripMargin)
+          .withStatusCode(NotFound.intValue)
       )
 
     returnEnabledUser(mockSamServer)
   }
 
-
-  override val registerServiceConstructor:() => RegisterService =
+  override val registerServiceConstructor: () => RegisterService =
     RegisterService.constructor(app.copy(thurloeDAO = new RegisterApiServiceSpecThurloeDAO))
 
-  override val userServiceConstructor:(UserInfo) => UserService =
+  override val userServiceConstructor: (UserInfo) => UserService =
     UserService.constructor(app.copy(thurloeDAO = new RegisterApiServiceSpecThurloeDAO))
 
   def makeBasicProfile(hasTermsOfService: Boolean): BasicProfile = {
@@ -152,21 +164,27 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     "register-profile API POST" - {
       "should fail with no terms of service" in {
         val payload = makeBasicProfile(false)
-        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(registerRoutes) ~> check {
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(
+          registerRoutes
+        ) ~> check {
           status should be(Forbidden)
         }
       }
 
       "should succeed with terms of service" in {
         val payload = makeBasicProfile(true)
-        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(registerRoutes) ~> check {
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(
+          registerRoutes
+        ) ~> check {
           status should be(OK)
         }
       }
 
       "should succeed user who already exists" in {
         val payload = makeBasicProfile(true)
-        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(registerRoutes) ~> check {
+        Post("/register/profile", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(
+          registerRoutes
+        ) ~> check {
           status should be(OK)
         }
       }
@@ -175,14 +193,18 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     "register-with-profile API POST" - {
       "should fail if Sam does not register the user" in {
         val payload = makeBasicProfile(false)
-        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = false, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(v1RegisterRoutes) ~> check {
+        Post("/users/v1/registerWithProfile",
+             RegisterRequest(acceptsTermsOfService = false, profile = payload)
+        ) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(v1RegisterRoutes) ~> check {
           status should be(BadRequest)
         }
       }
 
       "should succeed if Sam does register the user" in {
         val payload = makeBasicProfile(true)
-        Post("/users/v1/registerWithProfile", RegisterRequest(acceptsTermsOfService = true, profile = payload)) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(v1RegisterRoutes) ~> check {
+        Post("/users/v1/registerWithProfile",
+             RegisterRequest(acceptsTermsOfService = true, profile = payload)
+        ) ~> dummyUserIdHeaders("RegisterApiServiceSpec", "new") ~> sealRoute(v1RegisterRoutes) ~> check {
           status should be(OK)
         }
       }
@@ -196,7 +218,9 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
       // These tests will fail if GET /register/profile is put behind requireEnabledUser().
       List("enabled", "disabled", "unregistered") foreach { testCase =>
         s"should succeed for a(n) $testCase user" in {
-          Get("/register/profile") ~> dummyUserIdHeaders(userId = testCase, token = testCase) ~> sealRoute(userServiceRoutes) ~> check {
+          Get("/register/profile") ~> dummyUserIdHeaders(userId = testCase, token = testCase) ~> sealRoute(
+            userServiceRoutes
+          ) ~> check {
             withClue(s"with actual response body: ${responseAs[String]}, got error message ->") {
               status should be(OK)
             }
@@ -206,15 +230,15 @@ final class RegisterApiServiceSpec extends BaseServiceSpec with RegisterApiServi
     }
   }
 
-  private def assertPreferencesUpdate(payload: Map[String, String], expectedStatus: StatusCode): Unit = {
-    Post("/profile/preferences", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(profileRoutes) ~> check {
+  private def assertPreferencesUpdate(payload: Map[String, String], expectedStatus: StatusCode): Unit =
+    Post("/profile/preferences", payload) ~> dummyUserIdHeaders("RegisterApiServiceSpec") ~> sealRoute(
+      profileRoutes
+    ) ~> check {
       status should be(expectedStatus)
     }
-  }
 
   // for purposes of these tests, we treat Thurloe as if it is always successful.
   final class RegisterApiServiceSpecThurloeDAO extends MockThurloeDAO {
-    override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String])= Future.successful(Success(()))
+    override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]) = Future.successful(Success(()))
   }
 }
-
