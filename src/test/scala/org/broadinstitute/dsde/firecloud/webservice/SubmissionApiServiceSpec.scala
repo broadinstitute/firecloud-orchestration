@@ -15,61 +15,64 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  override def beforeAll(): Unit = {
+  override def beforeAll(): Unit =
     MockWorkspaceServer.startWorkspaceServer()
-  }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     MockWorkspaceServer.stopWorkspaceServer()
-  }
 
-  val localSubmissionsCountPath = FireCloudConfig.Rawls.submissionsCountPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace,
-    MockWorkspaceServer.mockValidWorkspace.name)
+  val localSubmissionsCountPath = FireCloudConfig.Rawls.submissionsCountPath
+    .format(MockWorkspaceServer.mockValidWorkspace.namespace, MockWorkspaceServer.mockValidWorkspace.name)
 
-  val localSubmissionsPath = FireCloudConfig.Rawls.submissionsPath.format(
-    MockWorkspaceServer.mockValidWorkspace.namespace,
-    MockWorkspaceServer.mockValidWorkspace.name)
+  val localSubmissionsPath = FireCloudConfig.Rawls.submissionsPath
+    .format(MockWorkspaceServer.mockValidWorkspace.namespace, MockWorkspaceServer.mockValidWorkspace.name)
 
   val localSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
-    MockWorkspaceServer.mockValidId)
+    MockWorkspaceServer.mockValidId
+  )
 
   val localInvalidSubmissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
-    MockWorkspaceServer.mockInvalidId)
+    MockWorkspaceServer.mockInvalidId
+  )
 
   val localSubmissionWorkflowIdPath = FireCloudConfig.Rawls.submissionsWorkflowIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockValidId,
-    MockWorkspaceServer.mockValidId)
+    MockWorkspaceServer.mockValidId
+  )
 
   val localSpacedWorkspaceWorkflowIdPath = FireCloudConfig.Rawls.submissionsWorkflowIdPath.format(
     MockWorkspaceServer.mockSpacedWorkspace.namespace,
     MockWorkspaceServer.mockSpacedWorkspace.name,
     MockWorkspaceServer.mockValidId,
-    MockWorkspaceServer.mockValidId)
+    MockWorkspaceServer.mockValidId
+  )
 
   val localInvalidSubmissionWorkflowIdPath = FireCloudConfig.Rawls.submissionsWorkflowIdPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockInvalidId,
-    MockWorkspaceServer.mockInvalidId)
+    MockWorkspaceServer.mockInvalidId
+  )
 
   val localSubmissionWorkflowIdOutputsPath = FireCloudConfig.Rawls.submissionsWorkflowIdOutputsPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockValidId,
-    MockWorkspaceServer.mockValidId)
+    MockWorkspaceServer.mockValidId
+  )
 
   val localInvalidSubmissionWorkflowIdOutputsPath = FireCloudConfig.Rawls.submissionsWorkflowIdOutputsPath.format(
     MockWorkspaceServer.mockValidWorkspace.namespace,
     MockWorkspaceServer.mockValidWorkspace.name,
     MockWorkspaceServer.mockInvalidId,
-    MockWorkspaceServer.mockInvalidId)
+    MockWorkspaceServer.mockInvalidId
+  )
 
   "SubmissionApiService" - {
     "when hitting the /submissions/queueStatus path" - {
@@ -95,7 +98,7 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       "a list of submissions is returned" in {
         (Get(localSubmissionsPath)
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-            status should equal(OK)
+          status should equal(OK)
         }
       }
     }
@@ -104,9 +107,9 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       "OK response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-            status should equal(OK)
-            val submission = responseAs[OrchSubmissionRequest]
-            submission shouldNot be (None)
+          status should equal(OK)
+          val submission = responseAs[OrchSubmissionRequest]
+          submission shouldNot be(None)
         }
       }
     }
@@ -115,8 +118,8 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       "BadRequest response is returned" in {
         (Post(localSubmissionsPath, MockWorkspaceServer.mockInvalidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-            status should equal(BadRequest)
-            errorReportCheck("Rawls", BadRequest)
+          status should equal(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
         }
       }
     }
@@ -126,7 +129,9 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
      */
     "when calling POST on the /workspaces/*/*/submissions path without a valid authentication token" - {
       "Found (302 redirect) response is returned" in {
-        Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission) ~> sealRoute(submissionServiceRoutes) ~> check {
+        Post(localSubmissionsPath, MockWorkspaceServer.mockValidSubmission) ~> sealRoute(
+          submissionServiceRoutes
+        ) ~> check {
           status should equal(Found)
         }
       }
@@ -136,17 +141,17 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       "with a valid submission, OK response is returned" in {
         (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockValidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-            status should equal(OK)
-            val submission = responseAs[OrchSubmissionRequest]
-            submission shouldNot be (None)
+          status should equal(OK)
+          val submission = responseAs[OrchSubmissionRequest]
+          submission shouldNot be(None)
         }
       }
 
       "with an invalid submission, BadRequest response is returned" in {
         (Post(s"$localSubmissionsPath/validate", MockWorkspaceServer.mockInvalidSubmission)
           ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
-            status should equal(BadRequest)
-            errorReportCheck("Rawls", BadRequest)
+          status should equal(BadRequest)
+          errorReportCheck("Rawls", BadRequest)
         }
       }
     }
@@ -188,13 +193,16 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
     "when calling PATCH on the /workspaces/*/*/submissions/* path" - {
       MockWorkspaceServer.submissionIdPatchResponseMapping.foreach { case (id, expectedResponseCode, _) =>
         s"HTTP $expectedResponseCode responses are forwarded back correctly" in {
-          val submissionIdPath = FireCloudConfig.Rawls.submissionsIdPath.format(
-            MockWorkspaceServer.mockValidWorkspace.namespace,
-            MockWorkspaceServer.mockValidWorkspace.name,
-            id)
+          val submissionIdPath =
+            FireCloudConfig.Rawls.submissionsIdPath.format(MockWorkspaceServer.mockValidWorkspace.namespace,
+                                                           MockWorkspaceServer.mockValidWorkspace.name,
+                                                           id
+            )
 
-          (Patch(submissionIdPath, "PATCH request body. The mock server will ignore this content and respond " +
-            "entirely based on submission ID instead")
+          (Patch(submissionIdPath,
+                 "PATCH request body. The mock server will ignore this content and respond " +
+                   "entirely based on submission ID instead"
+          )
             ~> dummyAuthHeaders) ~> sealRoute(submissionServiceRoutes) ~> check {
             status should equal(expectedResponseCode)
             if (status != OK) {
@@ -216,7 +224,9 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
         // the request inbound to orchestration should encoded, so we replace spaces with  %20 in the test below.
         // this test really verifies that the runtime orch code can accept an encoded URI and maintain the encoding
         // when it passes through the request to rawls - i.e. it doesn't decode the request at any point.
-        Get(localSpacedWorkspaceWorkflowIdPath.replace(" ","%20")) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
+        Get(localSpacedWorkspaceWorkflowIdPath.replace(" ", "%20")) ~> dummyAuthHeaders ~> sealRoute(
+          submissionServiceRoutes
+        ) ~> check {
           status should equal(OK)
         }
       }
@@ -237,7 +247,9 @@ final class SubmissionApiServiceSpec extends BaseServiceSpec with SubmissionApiS
       }
 
       "with an invalid id, NotFound response is returned" in {
-        Get(localInvalidSubmissionWorkflowIdOutputsPath) ~> dummyAuthHeaders ~> sealRoute(submissionServiceRoutes) ~> check {
+        Get(localInvalidSubmissionWorkflowIdOutputsPath) ~> dummyAuthHeaders ~> sealRoute(
+          submissionServiceRoutes
+        ) ~> check {
           status should equal(NotFound)
           errorReportCheck("Rawls", NotFound)
         }

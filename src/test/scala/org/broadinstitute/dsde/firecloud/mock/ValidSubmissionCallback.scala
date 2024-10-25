@@ -16,14 +16,15 @@ class ValidSubmissionCallback extends ExpectationResponseCallback {
     val jsonAst = httpRequest.getBodyAsString.parseJson
     val submission = jsonAst.convertTo[OrchSubmissionRequest]
     submission match {
-      case x if x.entityName.isDefined &&
-        x.entityType.isDefined &&
-        x.expression.isDefined &&
-        x.useCallCache.isDefined &&
-        x.deleteIntermediateOutputFiles.isDefined &&
-        x.workflowFailureMode.isDefined &&
-        x.methodConfigurationName.isDefined &&
-        x.methodConfigurationNamespace.isDefined =>
+      case x
+          if x.entityName.isDefined &&
+            x.entityType.isDefined &&
+            x.expression.isDefined &&
+            x.useCallCache.isDefined &&
+            x.deleteIntermediateOutputFiles.isDefined &&
+            x.workflowFailureMode.isDefined &&
+            x.methodConfigurationName.isDefined &&
+            x.methodConfigurationNamespace.isDefined =>
         response()
           .withHeaders(header)
           .withStatusCode(OK.intValue)

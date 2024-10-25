@@ -14,16 +14,16 @@ class AgoraACLTranslationSpec extends AnyFreeSpec {
       "should equal ListOwner" in {
         val objFC = FireCloudPermission(email.get, Owner)
         val objAgora = objFC.toAgoraPermission
-        assertResult(email) { objAgora.user }
-        assertResult(ListOwner) { objAgora.roles.get }
+        assertResult(email)(objAgora.user)
+        assertResult(ListOwner)(objAgora.roles.get)
       }
     }
     "when translating ListOwner Agora->FC" - {
       "should equal Owner" in {
         val objAgora = AgoraPermission(email, Some(ListOwner))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(Owner) { objFC.role}
+        assertResult(email.get)(objFC.user)
+        assertResult(Owner)(objFC.role)
       }
     }
     // READER
@@ -31,16 +31,16 @@ class AgoraACLTranslationSpec extends AnyFreeSpec {
       "should equal ListReader" in {
         val objFC = FireCloudPermission(email.get, Reader)
         val objAgora = objFC.toAgoraPermission
-        assertResult(email) { objAgora.user }
-        assertResult(ListReader) { objAgora.roles.get }
+        assertResult(email)(objAgora.user)
+        assertResult(ListReader)(objAgora.roles.get)
       }
     }
     "when translating ListReader Agora->FC" - {
       "should equal Reader" in {
         val objAgora = AgoraPermission(email, Some(ListReader))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(Reader) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(Reader)(objFC.role)
       }
     }
     // NO ACCESS
@@ -48,16 +48,16 @@ class AgoraACLTranslationSpec extends AnyFreeSpec {
       "should equal ListNoAccess" in {
         val objFC = FireCloudPermission(email.get, NoAccess)
         val objAgora = objFC.toAgoraPermission
-        assertResult(email) { objAgora.user }
-        assertResult(ListNoAccess) { objAgora.roles.get }
+        assertResult(email)(objAgora.user)
+        assertResult(ListNoAccess)(objAgora.roles.get)
       }
     }
     "when translating ListNoAccess Agora->FC" - {
       "should equal NoAccess" in {
         val objAgora = AgoraPermission(email, Some(ListNoAccess))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(NoAccess) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(NoAccess)(objFC.role)
       }
     }
     // ALL
@@ -65,49 +65,49 @@ class AgoraACLTranslationSpec extends AnyFreeSpec {
       "should equal Owner" in {
         val objAgora = AgoraPermission(email, Some(ListAll))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(Owner) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(Owner)(objFC.role)
       }
     }
     // EDGE CASES, AGORA->FC
     "when translating partial list Agora->FC" - {
       "should equal NoAccess" in {
-        val objAgora = AgoraPermission(email, Some(List("Read","Write")))
+        val objAgora = AgoraPermission(email, Some(List("Read", "Write")))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(NoAccess) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(NoAccess)(objFC.role)
       }
     }
     "when translating superset list Agora->FC" - {
       "should equal NoAccess" in {
-        val objAgora = AgoraPermission(email, Some(ListOwner ++ List("Extra","Permissions")))
+        val objAgora = AgoraPermission(email, Some(ListOwner ++ List("Extra", "Permissions")))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(NoAccess) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(NoAccess)(objFC.role)
       }
     }
     "when translating empty list Agora->FC" - {
       "should equal NoAccess" in {
         val objAgora = AgoraPermission(email, Some(List.empty))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(NoAccess) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(NoAccess)(objFC.role)
       }
     }
     "when translating whitespace list Agora->FC" - {
       "should equal NoAccess" in {
         val objAgora = AgoraPermission(email, Some(List("")))
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(NoAccess) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(NoAccess)(objFC.role)
       }
     }
     "when translating None Agora->FC" - {
       "should equal NoAccess" in {
         val objAgora = AgoraPermission(email, None)
         val objFC = objAgora.toFireCloudPermission
-        assertResult(email.get) { objFC.user }
-        assertResult(NoAccess) { objFC.role }
+        assertResult(email.get)(objFC.user)
+        assertResult(NoAccess)(objFC.role)
       }
     }
 

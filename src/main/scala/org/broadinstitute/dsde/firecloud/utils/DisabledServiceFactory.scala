@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.utils
 
 import java.lang.reflect.Proxy
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
 object DisabledServiceFactory {
 
@@ -18,7 +18,10 @@ object DisabledServiceFactory {
         classTag[T].runtimeClass.getClassLoader,
         Array(classTag[T].runtimeClass),
         (_, method, _) =>
-          if (method.getName.equals("isEnabled") && method.getParameterCount == 0 && method.getReturnType == classOf[Boolean])
+          if (
+            method.getName
+              .equals("isEnabled") && method.getParameterCount == 0 && method.getReturnType == classOf[Boolean]
+          )
             false
           else
             throw new UnsupportedOperationException(s"${method.toGenericString} is disabled.")

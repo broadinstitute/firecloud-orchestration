@@ -22,9 +22,9 @@ object HttpCwdsDAO {
 
 class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends CwdsDAO {
 
-  private final val RUNNING_STATUSES: java.util.List[String] = List("CREATED", "QUEUED", "RUNNING").asJava
+  final private val RUNNING_STATUSES: java.util.List[String] = List("CREATED", "QUEUED", "RUNNING").asJava
 
-  private final val STATUS_TRANSLATION: Map[GenericJob.StatusEnum,String] = Map(
+  final private val STATUS_TRANSLATION: Map[GenericJob.StatusEnum, String] = Map(
     // there is no effective difference between Translating and ReadyForUpsert for our purposes
     CREATED -> "Translating",
     QUEUED -> "Translating",
@@ -35,7 +35,7 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     UNKNOWN -> "Error"
   )
 
-  private final val TYPE_TRANSLATION: Map[String, ImportRequest.TypeEnum] = Map(
+  final private val TYPE_TRANSLATION: Map[String, ImportRequest.TypeEnum] = Map(
     "pfb" -> ImportRequest.TypeEnum.PFB,
     "tdrexport" -> ImportRequest.TypeEnum.TDRMANIFEST,
     "rawlsjson" -> ImportRequest.TypeEnum.RAWLSJSON
@@ -45,8 +45,9 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
 
   override def getSupportedFormats: List[String] = supportedFormats
 
-  override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo)
-  : scala.collection.immutable.List[CwdsListResponse] = {
+  override def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit
+    userInfo: UserInfo
+  ): scala.collection.immutable.List[CwdsListResponse] = {
     // determine the proper cWDS statuses based on the runningOnly argument
     // the Java API expects null when not specifying statuses
     val statuses = if (runningOnly) RUNNING_STATUSES else null
@@ -55,7 +56,8 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     jobApi.setApiClient(getApiClient(userInfo.accessToken.token))
 
     // query cWDS for its jobs, and translate the response to CwdsListResponse format
-    jobApi.jobsInInstanceV1(UUID.fromString(workspaceId), statuses)
+    jobApi
+      .jobsInInstanceV1(UUID.fromString(workspaceId), statuses)
       .asScala
       .map(toCwdsListResponse)
       .toList
@@ -68,9 +70,9 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     toCwdsListResponse(jobApi.jobStatusV1(UUID.fromString(jobId)))
   }
 
-  override def importV1(workspaceId: String,
-                        asyncImportRequest: AsyncImportRequest
-                       )(implicit userInfo: UserInfo): GenericJob = {
+  override def importV1(workspaceId: String, asyncImportRequest: AsyncImportRequest)(implicit
+    userInfo: UserInfo
+  ): GenericJob = {
     val importApi: ImportApi = new ImportApi()
     importApi.setApiClient(getApiClient(userInfo.accessToken.token))
 
@@ -85,7 +87,9 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     // as of this writing, the only available option is "tdrSyncPermissions"
     asyncImportRequest.options.map { opts =>
       opts.tdrSyncPermissions.map { tdrSyncPermissions =>
-        importRequest.setOptions(Map[String, Object]("tdrSyncPermissions" -> tdrSyncPermissions.asInstanceOf[Object]).asJava)
+        importRequest.setOptions(
+          Map[String, Object]("tdrSyncPermissions" -> tdrSyncPermissions.asInstanceOf[Object]).asJava
+        )
       }
       opts.isUpsert.map { isUpsert =>
         importRequest.setOptions(Map[String, Object]("isUpsert" -> isUpsert.asInstanceOf[Object]).asJava)
@@ -96,22 +100,22 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     importRequest
   }
 
-  protected[dataaccess] def toCwdsImportType(input: String): ImportRequest.TypeEnum = {
-    TYPE_TRANSLATION.getOrElse(input,
-      throw new FireCloudException("Import type unknown; possible values are: " + TYPE_TRANSLATION.keys.mkString))
-  }
+  protected[dataaccess] def toCwdsImportType(input: String): ImportRequest.TypeEnum =
+    TYPE_TRANSLATION.getOrElse(
+      input,
+      throw new FireCloudException("Import type unknown; possible values are: " + TYPE_TRANSLATION.keys.mkString)
+    )
 
-  protected[dataaccess] def toCwdsListResponse(cwdsJob: GenericJob): CwdsListResponse = {
+  protected[dataaccess] def toCwdsListResponse(cwdsJob: GenericJob): CwdsListResponse =
     CwdsListResponse(jobId = cwdsJob.getJobId.toString,
-      status = toCwdsStatus(cwdsJob.getStatus),
-      filetype = cwdsJob.getJobType.getValue,
-      message = Option(cwdsJob.getErrorMessage))
-  }
+                     status = toCwdsStatus(cwdsJob.getStatus),
+                     filetype = cwdsJob.getJobType.getValue,
+                     message = Option(cwdsJob.getErrorMessage)
+    )
 
-  protected[dataaccess] def toCwdsStatus(cwdsStatus: GenericJob.StatusEnum): String = {
+  protected[dataaccess] def toCwdsStatus(cwdsStatus: GenericJob.StatusEnum): String =
     // don't fail status translation if status somehow could not be found
     STATUS_TRANSLATION.getOrElse(cwdsStatus, "Unknown")
-  }
 
   private def getApiClient(accessToken: String): ApiClient = {
     // prepare the cWDS client

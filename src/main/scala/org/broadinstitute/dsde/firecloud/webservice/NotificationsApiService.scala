@@ -6,13 +6,13 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 
-trait NotificationsApiService extends  FireCloudDirectives with StandardUserInfoDirectives {
-  private final val ApiPrefix = "api/notifications"
-  private final val General = "general"
-  private final val Workspace = "workspace"
-  private final val RawlsNotifications = FireCloudConfig.Rawls.notificationsUrl
+trait NotificationsApiService extends FireCloudDirectives with StandardUserInfoDirectives {
+  final private val ApiPrefix = "api/notifications"
+  final private val General = "general"
+  final private val Workspace = "workspace"
+  final private val RawlsNotifications = FireCloudConfig.Rawls.notificationsUrl
 
-  final val notificationsRoutes: Route = {
+  final val notificationsRoutes: Route =
     get {
       pathPrefix(separateOnSlashes(ApiPrefix)) {
         path(General) {
@@ -23,5 +23,4 @@ trait NotificationsApiService extends  FireCloudDirectives with StandardUserInfo
           }
       }
     }
-  }
 }

@@ -1,7 +1,7 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, ImportOptions, CwdsListResponse}
+import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, CwdsListResponse, ImportOptions}
 import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
 import org.databiosphere.workspacedata.model.GenericJob.{JobTypeEnum, StatusEnum}
 import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
@@ -115,7 +115,7 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         cwdsDao.toCwdsImportType("rawlsjson") shouldBe ImportRequest.TypeEnum.RAWLSJSON
       }
       "other input should throw" in {
-        a [FireCloudException] should be thrownBy cwdsDao.toCwdsImportType("something-else")
+        a[FireCloudException] should be thrownBy cwdsDao.toCwdsImportType("something-else")
       }
     }
 
@@ -123,14 +123,12 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
       "should translate an import request with no options" in {
         val testURI: URI = URI.create("https://example.com/")
 
-        val input = AsyncImportRequest(url = testURI.toString,
-          filetype = "pfb",
-          options = None)
+        val input = AsyncImportRequest(url = testURI.toString, filetype = "pfb", options = None)
 
         val expected = new ImportRequest()
         expected.setUrl(testURI)
         expected.setType(ImportRequest.TypeEnum.PFB)
-        expected.setOptions(Map.empty[String,Object].asJava)
+        expected.setOptions(Map.empty[String, Object].asJava)
 
         cwdsDao.toCwdsImportRequest(input) shouldBe expected
       }
@@ -139,13 +137,14 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         val testURI: URI = URI.create("https://example.com/")
 
         val input = AsyncImportRequest(url = testURI.toString,
-          filetype = "pfb",
-          options = Some(ImportOptions(tdrSyncPermissions = None)))
+                                       filetype = "pfb",
+                                       options = Some(ImportOptions(tdrSyncPermissions = None))
+        )
 
         val expected = new ImportRequest()
         expected.setUrl(testURI)
         expected.setType(ImportRequest.TypeEnum.PFB)
-        expected.setOptions(Map.empty[String,Object].asJava)
+        expected.setOptions(Map.empty[String, Object].asJava)
 
         cwdsDao.toCwdsImportRequest(input) shouldBe expected
       }
@@ -154,13 +153,14 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         val testURI: URI = URI.create("https://example.com/")
 
         val input = AsyncImportRequest(url = testURI.toString,
-          filetype = "pfb",
-          options = Some(ImportOptions(tdrSyncPermissions = Some(true))))
+                                       filetype = "pfb",
+                                       options = Some(ImportOptions(tdrSyncPermissions = Some(true)))
+        )
 
         val expected = new ImportRequest()
         expected.setUrl(testURI)
         expected.setType(ImportRequest.TypeEnum.PFB)
-        expected.setOptions(Map[String,Object]("tdrSyncPermissions" -> true.asInstanceOf[Object]).asJava)
+        expected.setOptions(Map[String, Object]("tdrSyncPermissions" -> true.asInstanceOf[Object]).asJava)
 
         cwdsDao.toCwdsImportRequest(input) shouldBe expected
       }
@@ -169,13 +169,14 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         val testURI: URI = URI.create("https://example.com/")
 
         val input = AsyncImportRequest(url = testURI.toString,
-          filetype = "pfb",
-          options = Some(ImportOptions(tdrSyncPermissions = Some(false))))
+                                       filetype = "pfb",
+                                       options = Some(ImportOptions(tdrSyncPermissions = Some(false)))
+        )
 
         val expected = new ImportRequest()
         expected.setUrl(testURI)
         expected.setType(ImportRequest.TypeEnum.PFB)
-        expected.setOptions(Map[String,Object]("tdrSyncPermissions" -> false.asInstanceOf[Object]).asJava)
+        expected.setOptions(Map[String, Object]("tdrSyncPermissions" -> false.asInstanceOf[Object]).asJava)
 
         cwdsDao.toCwdsImportRequest(input) shouldBe expected
       }
@@ -184,20 +185,19 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         val testURI: URI = URI.create("https://example.com/")
 
         val input = AsyncImportRequest(url = testURI.toString,
-          filetype = "rawlsjson",
-          options = Some(ImportOptions(isUpsert = Some(true))))
+                                       filetype = "rawlsjson",
+                                       options = Some(ImportOptions(isUpsert = Some(true)))
+        )
 
         val expected = new ImportRequest()
         expected.setUrl(testURI)
         expected.setType(ImportRequest.TypeEnum.RAWLSJSON)
-        expected.setOptions(Map[String,Object]("isUpsert" -> true.asInstanceOf[Object]).asJava)
+        expected.setOptions(Map[String, Object]("isUpsert" -> true.asInstanceOf[Object]).asJava)
 
         cwdsDao.toCwdsImportRequest(input) shouldBe expected
       }
     }
 
-
   }
-
 
 }

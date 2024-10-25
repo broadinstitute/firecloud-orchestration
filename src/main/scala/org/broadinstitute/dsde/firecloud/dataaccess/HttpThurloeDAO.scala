@@ -17,34 +17,45 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+
 /**
   * Created by mbemis on 10/21/16.
   */
-class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionContext: ExecutionContext, implicit val materializer: Materializer )
-  extends ThurloeDAO with RestJsonClient with SprayJsonSupport {
+class HttpThurloeDAO(implicit val system: ActorSystem,
+                     implicit val executionContext: ExecutionContext,
+                     implicit val materializer: Materializer
+) extends ThurloeDAO
+    with RestJsonClient
+    with SprayJsonSupport {
 
-  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
+  override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] =
     wrapExceptions {
-      val req = userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)), useFireCloudHeader = true, label = Some("HttpThurloeDAO.getAllKVPs"))(callerToken)
+      val req = userAuthedRequest(Get(UserApiService.remoteGetAllURL.format(forUserId)),
+                                  useFireCloudHeader = true,
+                                  label = Some("HttpThurloeDAO.getAllKVPs")
+      )(callerToken)
 
       req flatMap { response =>
         response.status match {
-          case StatusCodes.OK => Unmarshal(response).to[ProfileWrapper].map(Option(_))
+          case StatusCodes.OK       => Unmarshal(response).to[ProfileWrapper].map(Option(_))
           case StatusCodes.NotFound => Future.successful(None)
-          case _ => throw new FireCloudException("Unable to get user KVPs from profile service")
+          case _                    => throw new FireCloudException("Unable to get user KVPs from profile service")
         }
       }
     }
-  }
 
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
-    val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(Query(("key"->key)))
+    val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(Query("key" -> key))
     wrapExceptions {
-      adminAuthedRequest(Get(queryUri), false, true, label = Some("HttpThurloeDAO.getAllUserValuesForKey")).flatMap(x => Unmarshal(x).to[Seq[ThurloeKeyValue]]).map { tkvs =>
-        val resultOptions = tkvs.map { tkv => (tkv.userId, tkv.keyValuePair.flatMap { kvp => kvp.value }) }
-        val actualResultsOnly = resultOptions collect { case (Some(firecloudSubjId), Some(thurloeValue)) => (firecloudSubjId, thurloeValue) }
-        actualResultsOnly.toMap
-      }
+      adminAuthedRequest(Get(queryUri), false, true, label = Some("HttpThurloeDAO.getAllUserValuesForKey"))
+        .flatMap(x => Unmarshal(x).to[Seq[ThurloeKeyValue]])
+        .map { tkvs =>
+          val resultOptions = tkvs.map(tkv => (tkv.userId, tkv.keyValuePair.flatMap(kvp => kvp.value)))
+          val actualResultsOnly = resultOptions collect { case (Some(firecloudSubjId), Some(thurloeValue)) =>
+            (firecloudSubjId, thurloeValue)
+          }
+          actualResultsOnly.toMap
+        }
     }
   }
 
@@ -65,11 +76,22 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     * @param callerToken auth token of the user making the call
     * @return success/failure of save
     */
-  override def saveKeyValues(forUserId: String, callerToken: WithAccessToken, keyValues: Map[String, String]): Future[Try[Unit]] = {
-    val thurloeKeyValues = ThurloeKeyValues(Option(forUserId), Option(keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value)) }.toSeq))
+  override def saveKeyValues(forUserId: String,
+                             callerToken: WithAccessToken,
+                             keyValues: Map[String, String]
+  ): Future[Try[Unit]] = {
+    val thurloeKeyValues = ThurloeKeyValues(Option(forUserId),
+                                            Option(keyValues.map { case (key, value) =>
+                                              FireCloudKeyValue(Option(key), Option(value))
+                                            }.toSeq)
+    )
     wrapExceptions {
-      userAuthedRequest(Post(UserApiService.remoteSetKeyURL, thurloeKeyValues), compressed = false, useFireCloudHeader = true, label = Some("HttpThurloeDAO.saveKeyValues"))(callerToken) map { response =>
-        if(response.status.isSuccess) Try(())
+      userAuthedRequest(Post(UserApiService.remoteSetKeyURL, thurloeKeyValues),
+                        compressed = false,
+                        useFireCloudHeader = true,
+                        label = Some("HttpThurloeDAO.saveKeyValues")
+      )(callerToken) map { response =>
+        if (response.status.isSuccess) Try(())
         else Try(throw new FireCloudException(s"Unable to update user profile"))
       }
     }
@@ -80,57 +102,62 @@ class HttpThurloeDAO ( implicit val system: ActorSystem, implicit val executionC
     saveKeyValues(userInfo, profilePropertyMap).map(_ => ())
   }
 
-  override def deleteKeyValue(forUserId: String, keyName: String, callerToken: WithAccessToken): Future[Try[Unit]] = {
+  override def deleteKeyValue(forUserId: String, keyName: String, callerToken: WithAccessToken): Future[Try[Unit]] =
     wrapExceptions {
-      userAuthedRequest(Delete(UserApiService.remoteDeleteKeyURL.format(forUserId, keyName)), useFireCloudHeader = true, label = Some("HttpThurloeDAO.deleteKeyValue"))(callerToken) map { response =>
-        if(response.status.isSuccess) Try(())
+      userAuthedRequest(Delete(UserApiService.remoteDeleteKeyURL.format(forUserId, keyName)),
+                        useFireCloudHeader = true,
+                        label = Some("HttpThurloeDAO.deleteKeyValue")
+      )(callerToken) map { response =>
+        if (response.status.isSuccess) Try(())
         else Try(throw new FireCloudException(s"Unable to delete key ${keyName} from user profile"))
       }
     }
-  }
 
-  private def wrapExceptions[T](codeBlock: => Future[T]): Future[T] = {
-    codeBlock.recover {
-      case t: Throwable => {
-        throw new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, t))
-      }
+  private def wrapExceptions[T](codeBlock: => Future[T]): Future[T] =
+    codeBlock.recover { case t: Throwable =>
+      throw new FireCloudExceptionWithErrorReport(ErrorReport.apply(StatusCodes.InternalServerError, t))
     }
-  }
 
   override def bulkUserQuery(userIds: List[String], keySelection: List[String]): Future[List[ProfileWrapper]] = {
-    val userIdParams:List[(String,String)] = userIds.map(("userId", _))
-    val keyParams:List[(String,String)] = keySelection.map(("key", _))
+    val userIdParams: List[(String, String)] = userIds.map(("userId", _))
+    val keyParams: List[(String, String)] = keySelection.map(("key", _))
 
     val allQueryParams = keyParams ++ userIdParams
 
     val queryUri = Uri(UserApiService.remoteGetQueryURL).withQuery(Query(allQueryParams.toMap))
 
     // default uri length for Spray - which Thurloe uses - is 2048 chars
-    assert(queryUri.toString().length <  2048, s"generated url is too long at ${queryUri.toString().length} chars.")
+    assert(queryUri.toString().length < 2048, s"generated url is too long at ${queryUri.toString().length} chars.")
 
-    val req = adminAuthedRequest(Get(queryUri), useFireCloudHeader = true,label = Some("HttpThurloeDAO.bulkUserQuery"))
+    val req = adminAuthedRequest(Get(queryUri), useFireCloudHeader = true, label = Some("HttpThurloeDAO.bulkUserQuery"))
 
     req flatMap { response =>
       response.status match {
         case StatusCodes.OK =>
-          val profileKVPsF:Future[List[ProfileKVP]] = Unmarshal(response).to[List[ProfileKVP]]
-          val groupedByUserF:Future[Map[String, List[ProfileKVP]]] = profileKVPsF.map(x => x.groupBy(_.userId))
-          groupedByUserF.map{ groupedByUser =>
-            groupedByUser.map {
-              case (userId: String, kvps: List[ProfileKVP]) => ProfileWrapper(userId, kvps.map(_.keyValuePair))
+          val profileKVPsF: Future[List[ProfileKVP]] = Unmarshal(response).to[List[ProfileKVP]]
+          val groupedByUserF: Future[Map[String, List[ProfileKVP]]] = profileKVPsF.map(x => x.groupBy(_.userId))
+          groupedByUserF.map { groupedByUser =>
+            groupedByUser.map { case (userId: String, kvps: List[ProfileKVP]) =>
+              ProfileWrapper(userId, kvps.map(_.keyValuePair))
             }.toList
           }
 
-        case _ => throw new FireCloudException(s"Unable to execute bulkUserQuery from profile service: ${response.status} $response")
+        case _ =>
+          throw new FireCloudException(
+            s"Unable to execute bulkUserQuery from profile service: ${response.status} $response"
+          )
       }
     }
   }
 
   override def status: Future[SubsystemStatus] = {
-    val thurloeStatus = unAuthedRequestToObject[ThurloeStatus](Get(Uri(FireCloudConfig.Thurloe.baseUrl).withPath(Uri.Path("/status"))), useFireCloudHeader = true)
+    val thurloeStatus = unAuthedRequestToObject[ThurloeStatus](
+      Get(Uri(FireCloudConfig.Thurloe.baseUrl).withPath(Uri.Path("/status"))),
+      useFireCloudHeader = true
+    )
     thurloeStatus map { thurloeStatus =>
       thurloeStatus.status match {
-        case "up" => SubsystemStatus(ok = true, None)
+        case "up"   => SubsystemStatus(ok = true, None)
         case "down" => SubsystemStatus(ok = false, thurloeStatus.error.map(List(_)))
       }
     }

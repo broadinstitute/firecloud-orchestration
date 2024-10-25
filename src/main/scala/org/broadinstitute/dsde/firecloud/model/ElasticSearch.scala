@@ -28,16 +28,15 @@ case class AttributeDetail(
   typeahead: Option[String] = None
 )
 
-
 case class ESDatasetProperty(properties: Map[String, ESPropertyFields])
 
 // trait def, with util factories
 trait ESPropertyFields {
-  def suggestField(`type`:String) = ESInnerField(`type`,
-    analyzer = Some("autocomplete"),
-    search_analyzer = Some("standard"),
-    include_in_all = Some(false),
-    store = Some(true)
+  def suggestField(`type`: String) = ESInnerField(`type`,
+                                                  analyzer = Some("autocomplete"),
+                                                  search_analyzer = Some("standard"),
+                                                  include_in_all = Some(false),
+                                                  store = Some(true)
   )
   // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-suggesters-completion.html
   def completionField = ESInnerField(
@@ -45,23 +44,21 @@ trait ESPropertyFields {
     analyzer = Option("simple"),
     search_analyzer = Option("simple")
   )
-  def keywordField(`type`:String) = ESInnerField("keyword")
-  def sortField(`type`:String) = ESInnerField(`type`,
-    analyzer = Some("sort_analyzer"),
-    include_in_all = Some(false),
-    fielddata = Some(true)
-  )
+  def keywordField(`type`: String) = ESInnerField("keyword")
+  def sortField(`type`: String) =
+    ESInnerField(`type`, analyzer = Some("sort_analyzer"), include_in_all = Some(false), fielddata = Some(true))
 }
 
 // top-level field defs, for facet and non-facet types
-case class ESType(`type`: String, fields: Option[Map[String,ESInnerField]], copy_to: Option[String] = None ) extends ESPropertyFields
+case class ESType(`type`: String, fields: Option[Map[String, ESInnerField]], copy_to: Option[String] = None)
+    extends ESPropertyFields
 object ESType extends ESPropertyFields {
-  def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean):ESType =  {
-    val innerFields = Map.empty[String,ESInnerField] ++
+  def apply(`type`: String, hasPopulateSuggest: Boolean, hasSearchSuggest: Boolean, isAggregatable: Boolean): ESType = {
+    val innerFields = Map.empty[String, ESInnerField] ++
       (if (`type`.equals("string"))
-        Map("sort" -> sortField(`type`))
-      else
-        Map("sort" -> ESInnerField(`type`))) ++
+         Map("sort" -> sortField(`type`))
+       else
+         Map("sort" -> ESInnerField(`type`))) ++
       (if (isAggregatable) Map("keyword" -> keywordField(`type`)) else Nil) ++
       (if (hasPopulateSuggest) Map("suggestKeyword" -> keywordField(`type`)) else Nil)
     if (hasSearchSuggest)
@@ -72,12 +69,10 @@ object ESType extends ESPropertyFields {
 
 }
 
-case class ESNestedType(properties:Map[String,ESInnerField], `type`:String="nested") extends ESPropertyFields
+case class ESNestedType(properties: Map[String, ESInnerField], `type`: String = "nested") extends ESPropertyFields
 
-case class ESInternalType(
-  `type`: String,
-  index: String = "not_analyzed",
-  include_in_all: Boolean = false) extends ESPropertyFields
+case class ESInternalType(`type`: String, index: String = "not_analyzed", include_in_all: Boolean = false)
+    extends ESPropertyFields
 
 // def for ElasticSearch's multi-fields: https://www.elastic.co/guide/en/elasticsearch/reference/2.4/multi-fields.html
 // technically, the top-level fields and inner fields are the same thing, and we *could* use the same class.
@@ -88,7 +83,8 @@ case class ESInnerField(`type`: String,
                         include_in_all: Option[Boolean] = None,
                         store: Option[Boolean] = None,
                         copy_to: Option[String] = None,
-                        fielddata: Option[Boolean] = None) extends ESPropertyFields
+                        fielddata: Option[Boolean] = None
+) extends ESPropertyFields
 
 // classes for sending documents to ES to be indexed
 trait Indexable {
@@ -108,7 +104,6 @@ object Document {
   def apply(id: String, jsonStr: String) = new Document(id, jsonStr.parseJson.asJsObject)
 }
 
-
 // classes to convert from json body and to json response
 
 /**
@@ -119,38 +114,47 @@ object Document {
   * @param from used for pagination, where to start the returned results
   * @param size used for pagination, how many results to return
   */
-case class LibrarySearchParams(
-  searchString: Option[String],
-  filters: Map[String, Seq[String]],
-  researchPurpose: Option[ResearchPurpose],
-  fieldAggregations: Map[String, Int],
-  from: Int = 0,
-  size: Int = 10,
-  sortField: Option[String] = None,
-  sortDirection: Option[String] = None)
+case class LibrarySearchParams(searchString: Option[String],
+                               filters: Map[String, Seq[String]],
+                               researchPurpose: Option[ResearchPurpose],
+                               fieldAggregations: Map[String, Int],
+                               from: Int = 0,
+                               size: Int = 10,
+                               sortField: Option[String] = None,
+                               sortDirection: Option[String] = None
+)
 
 object LibrarySearchParams {
-  def apply(searchString: Option[String], filters: Map[String, Seq[String]], researchPurpose: Option[ResearchPurpose], fieldAggregations: Map[String, Int], from: Option[Int], size: Option[Int], sortField: Option[String], sortDirection: Option[String]) = {
-    new LibrarySearchParams(searchString, filters, researchPurpose, fieldAggregations, from.getOrElse(0), size.getOrElse(10), sortField, sortDirection)
-  }
+  def apply(searchString: Option[String],
+            filters: Map[String, Seq[String]],
+            researchPurpose: Option[ResearchPurpose],
+            fieldAggregations: Map[String, Int],
+            from: Option[Int],
+            size: Option[Int],
+            sortField: Option[String],
+            sortDirection: Option[String]
+  ) =
+    new LibrarySearchParams(searchString,
+                            filters,
+                            researchPurpose,
+                            fieldAggregations,
+                            from.getOrElse(0),
+                            size.getOrElse(10),
+                            sortField,
+                            sortDirection
+    )
 }
 
-case class LibrarySearchResponse(
-  searchParams: LibrarySearchParams,
-  total: Int,
-  results: Seq[JsValue],
-  aggregations: Seq[LibraryAggregationResponse])
+case class LibrarySearchResponse(searchParams: LibrarySearchParams,
+                                 total: Int,
+                                 results: Seq[JsValue],
+                                 aggregations: Seq[LibraryAggregationResponse]
+)
 
-case class LibraryAggregationResponse(
-  field: String,
-  results: AggregationFieldResults)
+case class LibraryAggregationResponse(field: String, results: AggregationFieldResults)
 
-case class AggregationFieldResults(
-  numOtherDocs: Int,
-  buckets: Seq[AggregationTermResult])
+case class AggregationFieldResults(numOtherDocs: Int, buckets: Seq[AggregationTermResult])
 
 case class AggregationTermResult(key: String, doc_count: Int)
 
-case class LibraryBulkIndexResponse(totalCount: Int, hasFailures: Boolean, failureMessages: Map[String,String])
-
-
+case class LibraryBulkIndexResponse(totalCount: Int, hasFailures: Boolean, failureMessages: Map[String, String])

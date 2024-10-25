@@ -16,7 +16,7 @@ class ValidEntityCopyCallback extends ExpectationResponseCallback {
     val copyRequest = httpRequest.getBodyAsString.parseJson.convertTo[EntityCopyDefinition]
 
     (copyRequest.sourceWorkspace.namespace, copyRequest.destinationWorkspace.name) match {
-      case (x:String, y:String) if x == "broad-dsde-dev" && y == "valid" =>
+      case (x: String, y: String) if x == "broad-dsde-dev" && y == "valid" =>
         response()
           .withHeaders(header)
           .withStatusCode(Created.intValue)

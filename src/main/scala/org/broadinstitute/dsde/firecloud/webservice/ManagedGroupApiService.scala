@@ -23,32 +23,44 @@ trait ManagedGroupApiService extends Directives with RequestBuilding with Standa
       pathPrefix("groups") {
         pathEnd {
           get {
-            complete { managedGroupServiceConstructor(userInfo).listGroups() }
+            complete(managedGroupServiceConstructor(userInfo).listGroups())
           }
         } ~
           pathPrefix(Segment) { groupName =>
             pathEnd {
               get {
-                complete { managedGroupServiceConstructor(userInfo).listGroupMembers(WorkbenchGroupName(groupName)) }
+                complete(managedGroupServiceConstructor(userInfo).listGroupMembers(WorkbenchGroupName(groupName)))
               } ~
-              post {
-                complete { managedGroupServiceConstructor(userInfo).createGroup(WorkbenchGroupName(groupName)) }
-              } ~
-              delete {
-                complete { managedGroupServiceConstructor(userInfo).deleteGroup(WorkbenchGroupName(groupName)) }
-              }
+                post {
+                  complete(managedGroupServiceConstructor(userInfo).createGroup(WorkbenchGroupName(groupName)))
+                } ~
+                delete {
+                  complete(managedGroupServiceConstructor(userInfo).deleteGroup(WorkbenchGroupName(groupName)))
+                }
             } ~
               path("requestAccess") {
                 post {
-                  complete { managedGroupServiceConstructor(userInfo).requestGroupAccess(WorkbenchGroupName(groupName)) }
+                  complete {
+                    managedGroupServiceConstructor(userInfo).requestGroupAccess(WorkbenchGroupName(groupName))
+                  }
                 }
               } ~
               path(Segment / Segment) { (role, email) =>
                 put {
-                  complete { managedGroupServiceConstructor(userInfo).addGroupMember(WorkbenchGroupName(groupName), ManagedGroupRoles.withName(role), WorkbenchEmail(email)) }
+                  complete {
+                    managedGroupServiceConstructor(userInfo).addGroupMember(WorkbenchGroupName(groupName),
+                                                                            ManagedGroupRoles.withName(role),
+                                                                            WorkbenchEmail(email)
+                    )
+                  }
                 } ~
                   delete {
-                    complete { managedGroupServiceConstructor(userInfo).removeGroupMember(WorkbenchGroupName(groupName), ManagedGroupRoles.withName(role), WorkbenchEmail(email)) }
+                    complete {
+                      managedGroupServiceConstructor(userInfo).removeGroupMember(WorkbenchGroupName(groupName),
+                                                                                 ManagedGroupRoles.withName(role),
+                                                                                 WorkbenchEmail(email)
+                      )
+                    }
                   }
               }
           }

@@ -26,40 +26,38 @@ class NamespaceApiServiceSpec extends BaseServiceSpec with NamespaceApiService {
 
     "when calling GET on a namespace permissions path" - {
       "a valid list of FireCloud permissions is returned" in {
-        urls map {
-          url =>
-            Get(url) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
-              status should equal(OK)
-              val permissions = responseAs[List[FireCloudPermission]]
-              permissions should be (fcPermissions)
-            }
+        urls map { url =>
+          Get(url) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
+            status should equal(OK)
+            val permissions = responseAs[List[FireCloudPermission]]
+            permissions should be(fcPermissions)
+          }
         }
       }
     }
 
     "when calling POST on a namespace permissions path" - {
       "a valid FireCloud permission is returned" in {
-        urls map {
-          url =>
-            Post(url, fcPermissions) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
-              status should equal(OK)
-              val permissions = responseAs[List[FireCloudPermission]]
-              permissions should be (fcPermissions)
-            }
+        urls map { url =>
+          Post(url, fcPermissions) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
+            status should equal(OK)
+            val permissions = responseAs[List[FireCloudPermission]]
+            permissions should be(fcPermissions)
+          }
         }
       }
     }
 
     "when calling PUT or DELETE on a namespace permissions path" - {
       "a Method Not Allowed response is returned" in {
-        urls map {
-          url =>
-            List(HttpMethods.PUT, HttpMethods.DELETE) map {
-              method =>
-                new RequestBuilder(method)(url, fcPermissions) ~> dummyUserIdHeaders("1234") ~> sealRoute(namespaceRoutes) ~> check {
-                  status should equal(MethodNotAllowed)
-                }
+        urls map { url =>
+          List(HttpMethods.PUT, HttpMethods.DELETE) map { method =>
+            new RequestBuilder(method)(url, fcPermissions) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+              namespaceRoutes
+            ) ~> check {
+              status should equal(MethodNotAllowed)
             }
+          }
         }
       }
     }

@@ -21,11 +21,11 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
   val syncRoute: Route =
     path("sync_whitelist" / Segment) { whitelistName =>
       post {
-        complete { nihServiceConstructor().syncAllowlistAllUsers(whitelistName) }
+        complete(nihServiceConstructor().syncAllowlistAllUsers(whitelistName))
       }
     } ~ path("sync_whitelist") {
       post {
-        complete { nihServiceConstructor().syncAllNihAllowlistsAllUsers() }
+        complete(nihServiceConstructor().syncAllNihAllowlistsAllUsers())
       }
     }
 
@@ -37,18 +37,20 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
           path("callback") {
             post {
               entity(as[JWTWrapper]) { jwtWrapper =>
-                complete { nihServiceConstructor().updateNihLinkAndSyncSelf(userInfo, jwtWrapper) }
+                complete(nihServiceConstructor().updateNihLinkAndSyncSelf(userInfo, jwtWrapper))
               }
             }
           } ~
-          path ("status") {
-            complete { nihServiceConstructor().getNihStatus(userInfo) }
-          } ~
-          path ("account") {
-            delete {
-              complete { nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent) }
+            path("status") {
+              complete(nihServiceConstructor().getNihStatus(userInfo))
+            } ~
+            path("account") {
+              delete {
+                complete {
+                  nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent)
+                }
+              }
             }
-          }
         }
       }
     }

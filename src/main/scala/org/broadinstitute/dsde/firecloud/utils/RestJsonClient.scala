@@ -4,7 +4,7 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.Coders._
-import akka.http.scaladsl.model.headers.{HttpEncodings, `Accept-Encoding`}
+import akka.http.scaladsl.model.headers.{`Accept-Encoding`, HttpEncodings}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, ResponseEntity}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.Materializer
@@ -26,30 +26,41 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
   implicit val materializer: Materializer
   val http = Http(system)
 
-  private final val NoPerfLabel: Instant = Instant.MIN
+  final private val NoPerfLabel: Instant = Instant.MIN
 
-  def unAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                      label: Option[String] = None): Future[HttpResponse] = {
-    implicit val userInfo:WithAccessToken = null
+  def unAuthedRequest(req: HttpRequest,
+                      compressed: Boolean = false,
+                      useFireCloudHeader: Boolean = false,
+                      label: Option[String] = None
+  ): Future[HttpResponse] = {
+    implicit val userInfo: WithAccessToken = null
     doRequest(None)(req, compressed, useFireCloudHeader, label)
   }
 
-  def userAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                        label: Option[String] = None)
-                       (implicit userInfo: WithAccessToken): Future[HttpResponse] =
+  def userAuthedRequest(req: HttpRequest,
+                        compressed: Boolean = false,
+                        useFireCloudHeader: Boolean = false,
+                        label: Option[String] = None
+  )(implicit userInfo: WithAccessToken): Future[HttpResponse] =
     doRequest(Option(addCredentials(userInfo.accessToken)))(req, compressed, useFireCloudHeader, label)
 
-  def adminAuthedRequest(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                         label: Option[String] = None): Future[HttpResponse] =
+  def adminAuthedRequest(req: HttpRequest,
+                         compressed: Boolean = false,
+                         useFireCloudHeader: Boolean = false,
+                         label: Option[String] = None
+  ): Future[HttpResponse] =
     doRequest(Option(addAdminCredentials))(req, compressed, useFireCloudHeader, label)
 
-  private def doRequest(addCreds: Option[RequestTransformer])(req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                                                              label: Option[String] = None): Future[HttpResponse] = {
+  private def doRequest(addCreds: Option[RequestTransformer])(req: HttpRequest,
+                                                              compressed: Boolean = false,
+                                                              useFireCloudHeader: Boolean = false,
+                                                              label: Option[String] = None
+  ): Future[HttpResponse] = {
     val intermediateRequest = (compressed, useFireCloudHeader) match {
-      case (true, true) => req.addHeader(`Accept-Encoding`(HttpEncodings.gzip)).addHeader(fireCloudHeader)
+      case (true, true)  => req.addHeader(`Accept-Encoding`(HttpEncodings.gzip)).addHeader(fireCloudHeader)
       case (true, false) => req.addHeader(`Accept-Encoding`(HttpEncodings.gzip))
       case (false, true) => req.addHeader(fireCloudHeader)
-      case _ => req
+      case _             => req
     }
 
     val finalRequest = addCreds.map(creds => creds(intermediateRequest)).getOrElse(intermediateRequest)
@@ -58,7 +69,7 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
 
     for {
       response <- http.singleRequest(finalRequest)
-      decodedResponse <- if(compressed) Future.successful(decodeResponse(response)) else Future.successful(response)
+      decodedResponse <- if (compressed) Future.successful(decodeResponse(response)) else Future.successful(response)
     } yield {
       if (tick != NoPerfLabel) {
         val tock = Instant.now()
@@ -68,30 +79,45 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
     }
   }
 
-  def authedRequestToObject[T](req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                               label: Option[String] = None)
-                              (implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
+  def authedRequestToObject[T](req: HttpRequest,
+                               compressed: Boolean = false,
+                               useFireCloudHeader: Boolean = false,
+                               label: Option[String] = None
+  )(implicit
+    userInfo: WithAccessToken,
+    unmarshaller: Unmarshaller[ResponseEntity, T],
+    ers: ErrorReportSource
+  ): Future[T] =
     requestToObject(true, req, compressed, useFireCloudHeader, label)
-  }
 
-  def unAuthedRequestToObject[T](req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                                 label: Option[String] = None)
-                                (implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
-    implicit val userInfo:WithAccessToken = null
+  def unAuthedRequestToObject[T](req: HttpRequest,
+                                 compressed: Boolean = false,
+                                 useFireCloudHeader: Boolean = false,
+                                 label: Option[String] = None
+  )(implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
+    implicit val userInfo: WithAccessToken = null
     requestToObject(false, req, compressed, useFireCloudHeader, label)
   }
 
-  def adminAuthedRequestToObject[T](req:HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false)
-                                   (implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
+  def adminAuthedRequestToObject[T](req: HttpRequest,
+                                    compressed: Boolean = false,
+                                    useFireCloudHeader: Boolean = false
+  )(implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] =
     resultsToObject(adminAuthedRequest(req, compressed, useFireCloudHeader))
-  }
 
-  private def requestToObject[T](auth: Boolean, req: HttpRequest, compressed: Boolean = false, useFireCloudHeader: Boolean = false,
-                                 label: Option[String] = None)
-                                (implicit userInfo: WithAccessToken, unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
+  private def requestToObject[T](auth: Boolean,
+                                 req: HttpRequest,
+                                 compressed: Boolean = false,
+                                 useFireCloudHeader: Boolean = false,
+                                 label: Option[String] = None
+  )(implicit
+    userInfo: WithAccessToken,
+    unmarshaller: Unmarshaller[ResponseEntity, T],
+    ers: ErrorReportSource
+  ): Future[T] = {
     val tick = if (label.nonEmpty) Instant.now() else NoPerfLabel
 
-    val resp = if(auth) {
+    val resp = if (auth) {
       userAuthedRequest(req, compressed, useFireCloudHeader)
     } else {
       unAuthedRequest(req, compressed, useFireCloudHeader)
@@ -100,10 +126,11 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
     resultsToObject(resp, label, tick)
   }
 
-  private def resultsToObject[T](resp: Future[HttpResponse], label: Option[String] = None, tick: Instant = NoPerfLabel)
-                                (implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] = {
+  private def resultsToObject[T](resp: Future[HttpResponse],
+                                 label: Option[String] = None,
+                                 tick: Instant = NoPerfLabel
+  )(implicit unmarshaller: Unmarshaller[ResponseEntity, T], ers: ErrorReportSource): Future[T] =
     resp flatMap { response =>
-
       if (label.nonEmpty && tick != NoPerfLabel) {
         val tock = Instant.now()
         perfLogger.info(perfmsg(label.get, response.status.value, tick, tock))
@@ -113,31 +140,27 @@ trait RestJsonClient extends FireCloudRequestBuilding with PerformanceLogging {
         case s if s.isSuccess =>
           Unmarshal(response.entity).to[T].recoverWith {
             case de: DeserializationException =>
-              throw new FireCloudExceptionWithErrorReport(
-                ErrorReport(s"could not deserialize response: ${de.msg}"))
-            case e: Throwable => {
+              throw new FireCloudExceptionWithErrorReport(ErrorReport(s"could not deserialize response: ${de.msg}"))
+            case e: Throwable =>
               FCErrorReport(response).map { errorReport =>
                 throw new FireCloudExceptionWithErrorReport(errorReport)
               }
-            }
           }
-        case f => {
+        case f =>
           FCErrorReport(response).map { errorReport =>
-            //we never consume the response body in this case, so we must discard the bytes here
+            // we never consume the response body in this case, so we must discard the bytes here
             response.discardEntityBytes()
             throw new FireCloudExceptionWithErrorReport(errorReport)
           }
-        }
       }
     }
-  }
 
   private def decodeResponse(response: HttpResponse): HttpResponse = {
     val decoder = response.encoding match {
-      case HttpEncodings.gzip => Gzip
-      case HttpEncodings.deflate => Deflate
+      case HttpEncodings.gzip     => Gzip
+      case HttpEncodings.deflate  => Deflate
       case HttpEncodings.identity => NoCoding
-      case _ => NoCoding
+      case _                      => NoCoding
     }
 
     decoder.decodeMessage(response)

@@ -21,13 +21,21 @@ import akka.testkit.TestKitBase
 import scala.concurrent.duration._
 
 // common Service Spec to be inherited by service tests
-trait ServiceSpec extends AnyFreeSpec with ScalaFutures with ScalatestRouteTest with Matchers with TestRequestBuilding with TestKitBase {
+trait ServiceSpec
+    extends AnyFreeSpec
+    with ScalaFutures
+    with ScalatestRouteTest
+    with Matchers
+    with TestRequestBuilding
+    with TestKitBase {
 
   implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   val allHttpMethods = Seq(CONNECT, DELETE, GET, HEAD, PATCH, POST, PUT, TRACE)
 
-  def allHttpMethodsExcept(method: HttpMethod, methods: HttpMethod*): Seq[HttpMethod] = allHttpMethodsExcept(method +: methods)
+  def allHttpMethodsExcept(method: HttpMethod, methods: HttpMethod*): Seq[HttpMethod] = allHttpMethodsExcept(
+    method +: methods
+  )
   def allHttpMethodsExcept(methods: Seq[HttpMethod]): Seq[HttpMethod] = allHttpMethods.diff(methods)
 
   // is the response an ErrorReport with the given Source and StatusCode
@@ -37,9 +45,8 @@ trait ServiceSpec extends AnyFreeSpec with ScalaFutures with ScalatestRouteTest 
     report.statusCode.get should be(statusCode)
   }
 
-  def checkIfPassedThrough(route: Route, method: HttpMethod, uri: String, toBeHandled: Boolean): Unit = {
+  def checkIfPassedThrough(route: Route, method: HttpMethod, uri: String, toBeHandled: Boolean): Unit =
     new RequestBuilder(method)(uri) ~> dummyAuthHeaders ~> route ~> check {
       handled should be(toBeHandled)
     }
-  }
 }

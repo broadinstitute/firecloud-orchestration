@@ -2,7 +2,12 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.{DisabledExternalCredsDAO, MockCwdsDAO, MockResearchPurposeSupport, MockShareLogDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.{
+  DisabledExternalCredsDAO,
+  MockCwdsDAO,
+  MockResearchPurposeSupport,
+  MockShareLogDAO
+}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
@@ -11,10 +16,22 @@ import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+class UserServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
-class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
-
-  val customApp = Application(agoraDao, new MockGoogleServicesFailedGroupsDAO(), ontologyDao, new MockRawlsDeleteWSDAO(), samDao, new MockSearchDeleteWSDAO(), new MockResearchPurposeSupport, thurloeDao, new MockShareLogDAO, shibbolethDao, new MockCwdsDAO, new DisabledExternalCredsDAO)
+  val customApp = Application(
+    agoraDao,
+    new MockGoogleServicesFailedGroupsDAO(),
+    ontologyDao,
+    new MockRawlsDeleteWSDAO(),
+    samDao,
+    new MockSearchDeleteWSDAO(),
+    new MockResearchPurposeSupport,
+    thurloeDao,
+    new MockShareLogDAO,
+    shibbolethDao,
+    new MockCwdsDAO,
+    new DisabledExternalCredsDAO
+  )
 
   val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(customApp)
 
@@ -40,18 +57,18 @@ class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
       "should return original keys if Google group creation fails" in {
         val keys = ProfileWrapper(userToken.id, List())
         val anonymousGroupName = "makeGoogleGroupCreationFail"
-        val rqComplete = Await.
-          result(userService.setupAnonymizedGoogleGroup(keys, anonymousGroupName), 3.seconds).
-          asInstanceOf[RequestComplete[ProfileWrapper]]
+        val rqComplete = Await
+          .result(userService.setupAnonymizedGoogleGroup(keys, anonymousGroupName), 3.seconds)
+          .asInstanceOf[RequestComplete[ProfileWrapper]]
         val returnedKeys = rqComplete.response
         returnedKeys should equal(keys)
       }
       "should return original keys if adding a member to Google group fails" in {
         val keys = ProfileWrapper(userToken.id, List())
         val anonymousGroupName = "makeAddMemberFail"
-        val rqComplete = Await.
-          result(userService.setupAnonymizedGoogleGroup(keys, anonymousGroupName), 3.seconds).
-          asInstanceOf[RequestComplete[ProfileWrapper]]
+        val rqComplete = Await
+          .result(userService.setupAnonymizedGoogleGroup(keys, anonymousGroupName), 3.seconds)
+          .asInstanceOf[RequestComplete[ProfileWrapper]]
         val returnedKeys = rqComplete.response
         returnedKeys should equal(keys)
       }
@@ -65,16 +82,14 @@ class UserServiceSpec  extends BaseServiceSpec with BeforeAndAfterEach {
  * [Copied/modified from WorkspaceServiceSpec]
  */
 class MockGoogleServicesFailedGroupsDAO extends MockGoogleServicesDAO {
-  override def createGoogleGroup(groupName: String): Option[String] = {
+  override def createGoogleGroup(groupName: String): Option[String] =
     groupName match {
       case "makeGoogleGroupCreationFail" => Option.empty
-      case _ => Option(groupName)
+      case _                             => Option(groupName)
     }
-  }
-  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = {
+  override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] =
     groupName match {
       case "makeAddMemberFail" => Option.empty
-      case _ => Option(targetUserEmail)
+      case _                   => Option(targetUserEmail)
     }
-  }
 }

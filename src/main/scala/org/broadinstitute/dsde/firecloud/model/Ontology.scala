@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.firecloud.model
 
-
 object Ontology {
 
   case class TermResource(

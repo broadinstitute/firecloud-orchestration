@@ -31,7 +31,7 @@ trait OauthApiService extends FireCloudDirectives with StandardUserInfoDirective
       path("api" / "refresh-token-status") {
         get {
           requireUserInfo() { _ =>
-            complete { RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> false)) }
+            complete(RequestComplete(StatusCodes.OK, Map("requiresRefresh" -> false)))
           }
         }
       }

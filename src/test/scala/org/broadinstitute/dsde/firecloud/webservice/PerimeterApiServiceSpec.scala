@@ -31,65 +31,92 @@ final class PerimeterApiServiceSpec extends BaseServiceSpec with PerimeterApiSer
 
     mockWorkspaceServer = startClientAndServer(MockUtils.workspaceServerPort)
 
-    mockWorkspaceServer.when(
-      request()
-        .withMethod(PUT.name)
-        .withPath(s"$perimeterPath/$validPerimeter/projects/$validProject"))
-      .respond(HttpResponse.response()
+    mockWorkspaceServer
+      .when(
+        request()
+          .withMethod(PUT.name)
+          .withPath(s"$perimeterPath/$validPerimeter/projects/$validProject")
+      )
+      .respond(
+        HttpResponse
+          .response()
           .withHeaders(MockUtils.header)
-          .withStatusCode(Accepted.intValue))
+          .withStatusCode(Accepted.intValue)
+      )
 
-    mockWorkspaceServer.when(
-      request()
-        .withMethod(PUT.name)
-        .withPath(s"$perimeterPath/$invalidPerimeter/projects/$validProject"))
-      .respond(HttpResponse.response()
-        .withHeaders(MockUtils.header)
-        .withStatusCode(NotFound.intValue))
+    mockWorkspaceServer
+      .when(
+        request()
+          .withMethod(PUT.name)
+          .withPath(s"$perimeterPath/$invalidPerimeter/projects/$validProject")
+      )
+      .respond(
+        HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(NotFound.intValue)
+      )
 
-    mockWorkspaceServer.when(
-      request()
-        .withMethod(PUT.name)
-        .withPath(s"$perimeterPath/$validPerimeter/projects/$invalidProject"))
-      .respond(HttpResponse.response()
-        .withHeaders(MockUtils.header)
-        .withStatusCode(Forbidden.intValue))
+    mockWorkspaceServer
+      .when(
+        request()
+          .withMethod(PUT.name)
+          .withPath(s"$perimeterPath/$validPerimeter/projects/$invalidProject")
+      )
+      .respond(
+        HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(Forbidden.intValue)
+      )
 
-    mockWorkspaceServer.when(
-      request()
-        .withMethod(PUT.name)
-        .withPath(s"$perimeterPath/$validPerimeter/projects/$notReadyProject"))
-      .respond(HttpResponse.response()
-        .withHeaders(MockUtils.header)
-        .withStatusCode(BadRequest.intValue))
+    mockWorkspaceServer
+      .when(
+        request()
+          .withMethod(PUT.name)
+          .withPath(s"$perimeterPath/$validPerimeter/projects/$notReadyProject")
+      )
+      .respond(
+        HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(BadRequest.intValue)
+      )
 
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     mockWorkspaceServer.stop()
-  }
 
   "PerimeterApiService" - {
     "add project to perimeter" in {
-      Put(s"/servicePerimeters/$validPerimeter/projects/$validProject") ~> dummyAuthHeaders ~> sealRoute(perimeterServiceRoutes) ~> check {
+      Put(s"/servicePerimeters/$validPerimeter/projects/$validProject") ~> dummyAuthHeaders ~> sealRoute(
+        perimeterServiceRoutes
+      ) ~> check {
         status should be(Accepted)
       }
     }
 
     "add project to invalid perimeter" in {
-      Put(s"/servicePerimeters/$invalidPerimeter/projects/$validProject") ~> dummyAuthHeaders ~> sealRoute(perimeterServiceRoutes) ~> check {
+      Put(s"/servicePerimeters/$invalidPerimeter/projects/$validProject") ~> dummyAuthHeaders ~> sealRoute(
+        perimeterServiceRoutes
+      ) ~> check {
         status should be(NotFound)
       }
     }
 
     "add invalid project to perimeter" in {
-      Put(s"/servicePerimeters/$validPerimeter/projects/$invalidProject") ~> dummyAuthHeaders ~> sealRoute(perimeterServiceRoutes) ~> check {
+      Put(s"/servicePerimeters/$validPerimeter/projects/$invalidProject") ~> dummyAuthHeaders ~> sealRoute(
+        perimeterServiceRoutes
+      ) ~> check {
         status should be(Forbidden)
       }
     }
 
     "add unready project to perimeter" in {
-      Put(s"/servicePerimeters/$validPerimeter/projects/$notReadyProject") ~> dummyAuthHeaders ~> sealRoute(perimeterServiceRoutes) ~> check {
+      Put(s"/servicePerimeters/$validPerimeter/projects/$notReadyProject") ~> dummyAuthHeaders ~> sealRoute(
+        perimeterServiceRoutes
+      ) ~> check {
         status should be(BadRequest)
       }
     }

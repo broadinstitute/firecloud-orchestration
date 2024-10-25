@@ -18,7 +18,7 @@ import org.broadinstitute.dsde.workbench.util.FutureSupport.toFutureTry
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-trait EnabledUserDirectives extends LazyLogging  with SprayJsonSupport {
+trait EnabledUserDirectives extends LazyLogging with SprayJsonSupport {
 
   // Hardcode an ErrorReportSource to allow differentiating between enabled-user errors and other errors.
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource("Orchestration-enabled-check")
@@ -33,7 +33,9 @@ trait EnabledUserDirectives extends LazyLogging  with SprayJsonSupport {
     * @param samBaseUrl where to find Sam - used for unit testing
     * @return n/a
     */
-  def requireEnabledUser(userInfo: UserInfo, samBaseUrl: String = FireCloudConfig.Sam.baseUrl)(innerRoute: RequestContext => Future[RouteResult]): Route = {
+  def requireEnabledUser(userInfo: UserInfo, samBaseUrl: String = FireCloudConfig.Sam.baseUrl)(
+    innerRoute: RequestContext => Future[RouteResult]
+  ): Route =
     extractUri { uri =>
       onComplete(getUserEnabled(userInfo.accessToken.token, samBaseUrl)) {
         case Success(true) =>
@@ -44,31 +46,43 @@ trait EnabledUserDirectives extends LazyLogging  with SprayJsonSupport {
           // the 401/"User is disabled." response mirrors what Sam returns in this case.
           throwErrorReport(StatusCodes.Unauthorized, "User is disabled.")
         case Failure(fcerr: FireCloudExceptionWithErrorReport) =>
-          logger.error(s"FireCloudExceptionWithErrorReport exception checking enabled status for user ${userInfo.userEmail}: (${fcerr.getMessage}) while calling $uri", fcerr)
+          logger.error(
+            s"FireCloudExceptionWithErrorReport exception checking enabled status for user ${userInfo.userEmail}: (${fcerr.getMessage}) while calling $uri",
+            fcerr
+          )
           // rebuild the FireCloudExceptionWithErrorReport to ensure we're not passing along stack traces
           val code = fcerr.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError)
           throwErrorReport(code, fcerr.getMessage)
-        case Failure(apiex:ApiException) =>
-          logger.error(s"ApiException exception checking enabled status for user ${userInfo.userEmail}: (${apiex.getMessage}) while calling $uri", apiex)
+        case Failure(apiex: ApiException) =>
+          logger.error(
+            s"ApiException exception checking enabled status for user ${userInfo.userEmail}: (${apiex.getMessage}) while calling $uri",
+            apiex
+          )
           val code = StatusCode.int2StatusCode(apiex.getCode)
           if (code == StatusCodes.NotFound) {
             throwErrorReport(StatusCodes.Unauthorized, "User is not registered.")
           } else {
-            val message = if (Option(apiex.getMessage).isEmpty || apiex.getMessage.isEmpty) code.defaultMessage() else apiex.getMessage
+            val message =
+              if (Option(apiex.getMessage).isEmpty || apiex.getMessage.isEmpty) code.defaultMessage()
+              else apiex.getMessage
             throwErrorReport(code, message)
           }
         case Failure(ex) =>
-          logger.error(s"Unexpected exception checking enabled status for user ${userInfo.userEmail}: (${ex.getMessage}) while calling $uri", ex)
+          logger.error(
+            s"Unexpected exception checking enabled status for user ${userInfo.userEmail}: (${ex.getMessage}) while calling $uri",
+            ex
+          )
           throwErrorReport(StatusCodes.InternalServerError, ex.getMessage)
       }
     }
-  }
-
 
   private class SamApiCallback[T](functionName: String = "userStatusInfo") extends ApiCallback[T] {
     private val promise = Promise[T]()
 
-    override def onFailure(e: ApiException, statusCode: Int, responseHeaders: java.util.Map[String, java.util.List[String]]): Unit = {
+    override def onFailure(e: ApiException,
+                           statusCode: Int,
+                           responseHeaders: java.util.Map[String, java.util.List[String]]
+    ): Unit = {
       val response = e.getResponseBody
       // attempt to propagate an ErrorReport from Sam. If we can't understand Sam's response as an ErrorReport,
       // create our own error message.
@@ -82,14 +96,21 @@ trait EnabledUserDirectives extends LazyLogging  with SprayJsonSupport {
           toFutureTry(Unmarshal(response).to[String]) map { maybeString =>
             val stringErrMsg = maybeString match {
               case Success(stringErr) => stringErr
-              case Failure(_) => response
+              case Failure(_)         => response
             }
-            throw new FireCloudExceptionWithErrorReport(ErrorReport(StatusCode.int2StatusCode(statusCode), s"Sam call to $functionName failed with error '$stringErrMsg'"))
+            throw new FireCloudExceptionWithErrorReport(
+              ErrorReport(StatusCode.int2StatusCode(statusCode),
+                          s"Sam call to $functionName failed with error '$stringErrMsg'"
+              )
+            )
           }
       }
       promise.failure(e)
     }
-    override def onSuccess(result: T, statusCode: Int, responseHeaders: java.util.Map[String, java.util.List[String]]): Unit = promise.success(result)
+    override def onSuccess(result: T,
+                           statusCode: Int,
+                           responseHeaders: java.util.Map[String, java.util.List[String]]
+    ): Unit = promise.success(result)
 
     override def onUploadProgress(bytesWritten: Long, contentLength: Long, done: Boolean): Unit = ()
 

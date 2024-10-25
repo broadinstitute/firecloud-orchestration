@@ -24,26 +24,78 @@ object MethodConfigurationApiService {
   val remoteCopyToMethodRepoConfigPath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/copyToMethodRepo"
   val remoteCopyToMethodRepoConfigUrl = FireCloudConfig.Rawls.baseUrl + remoteCopyToMethodRepoConfigPath
 
-  def remoteMethodConfigPath(workspaceNamespace:String, workspaceName:String, configNamespace:String, configName:String) =
-    FireCloudConfig.Rawls.authPrefix + "/workspaces/%s/%s/methodconfigs/%s/%s".format(workspaceNamespace, workspaceName, configNamespace, configName)
-  def remoteMethodConfigUrl(workspaceNamespace:String, workspaceName:String, configNamespace:String, configName:String) =
-    FireCloudConfig.Rawls.baseUrl + remoteMethodConfigPath(workspaceNamespace, workspaceName, configNamespace, configName)
+  def remoteMethodConfigPath(workspaceNamespace: String,
+                             workspaceName: String,
+                             configNamespace: String,
+                             configName: String
+  ) =
+    FireCloudConfig.Rawls.authPrefix + "/workspaces/%s/%s/methodconfigs/%s/%s".format(workspaceNamespace,
+                                                                                      workspaceName,
+                                                                                      configNamespace,
+                                                                                      configName
+    )
+  def remoteMethodConfigUrl(workspaceNamespace: String,
+                            workspaceName: String,
+                            configNamespace: String,
+                            configName: String
+  ) =
+    FireCloudConfig.Rawls.baseUrl + remoteMethodConfigPath(workspaceNamespace,
+                                                           workspaceName,
+                                                           configNamespace,
+                                                           configName
+    )
 
-  def remoteMethodConfigRenamePath(workspaceNamespace:String, workspaceName:String, configNamespace:String, configName:String) =
-    FireCloudConfig.Rawls.authPrefix + "/workspaces/%s/%s/methodconfigs/%s/%s/rename".format(workspaceNamespace, workspaceName, configNamespace, configName)
-  def remoteMethodConfigRenameUrl(workspaceNamespace:String, workspaceName:String, configNamespace:String, configName:String) =
-    FireCloudConfig.Rawls.baseUrl + remoteMethodConfigRenamePath(workspaceNamespace, workspaceName, configNamespace, configName)
+  def remoteMethodConfigRenamePath(workspaceNamespace: String,
+                                   workspaceName: String,
+                                   configNamespace: String,
+                                   configName: String
+  ) =
+    FireCloudConfig.Rawls.authPrefix + "/workspaces/%s/%s/methodconfigs/%s/%s/rename".format(workspaceNamespace,
+                                                                                             workspaceName,
+                                                                                             configNamespace,
+                                                                                             configName
+    )
+  def remoteMethodConfigRenameUrl(workspaceNamespace: String,
+                                  workspaceName: String,
+                                  configNamespace: String,
+                                  configName: String
+  ) =
+    FireCloudConfig.Rawls.baseUrl + remoteMethodConfigRenamePath(workspaceNamespace,
+                                                                 workspaceName,
+                                                                 configNamespace,
+                                                                 configName
+    )
 
-  def remoteMethodConfigValidatePath(workspaceNamespace:String, workspaceName:String, configNamespace:String, configName:String) =
-    FireCloudConfig.Rawls.authPrefix + "/workspaces/%s/%s/methodconfigs/%s/%s/validate".format(workspaceNamespace, workspaceName, configNamespace, configName)
-  def remoteMethodConfigValidateUrl(workspaceNamespace:String, workspaceName:String, configNamespace:String, configName:String) =
-    FireCloudConfig.Rawls.baseUrl + remoteMethodConfigValidatePath(workspaceNamespace, workspaceName, configNamespace, configName)
+  def remoteMethodConfigValidatePath(workspaceNamespace: String,
+                                     workspaceName: String,
+                                     configNamespace: String,
+                                     configName: String
+  ) =
+    FireCloudConfig.Rawls.authPrefix + "/workspaces/%s/%s/methodconfigs/%s/%s/validate".format(workspaceNamespace,
+                                                                                               workspaceName,
+                                                                                               configNamespace,
+                                                                                               configName
+    )
+  def remoteMethodConfigValidateUrl(workspaceNamespace: String,
+                                    workspaceName: String,
+                                    configNamespace: String,
+                                    configName: String
+  ) =
+    FireCloudConfig.Rawls.baseUrl + remoteMethodConfigValidatePath(workspaceNamespace,
+                                                                   workspaceName,
+                                                                   configNamespace,
+                                                                   configName
+    )
 
 }
 
-trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSupport with StandardUserInfoDirectives with RestJsonClient {
+trait MethodConfigurationApiService
+    extends FireCloudDirectives
+    with SprayJsonSupport
+    with StandardUserInfoDirectives
+    with RestJsonClient {
 
-  private final val ApiPrefix = "workspaces"
+  final private val ApiPrefix = "workspaces"
   lazy val log = LoggerFactory.getLogger(getClass)
 
   val methodConfigurationRoutes: Route = requireUserInfo() { userInfo =>
@@ -62,15 +114,17 @@ trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSu
                   methodRepoName = ingest.configurationName,
                   methodRepoNamespace = ingest.configurationNamespace,
                   methodRepoSnapshotId = ingest.configurationSnapshotId,
-                  destination = Option(MethodConfigurationId(
-                    name = ingest.destinationName,
-                    namespace = ingest.destinationNamespace,
-                    workspaceName = Option(WorkspaceName(
-                      namespace = workspaceNamespace,
-                      name = workspaceName)))))
+                  destination = Option(
+                    MethodConfigurationId(
+                      name = ingest.destinationName,
+                      namespace = ingest.destinationNamespace,
+                      workspaceName = Option(WorkspaceName(namespace = workspaceNamespace, name = workspaceName))
+                    )
+                  )
+                )
                 val extReq = Post(MethodConfigurationApiService.remoteCopyFromMethodRepoConfigUrl, copyMethodConfig)
 
-                complete { userAuthedRequest(extReq)(userInfo) }
+                complete(userAuthedRequest(extReq)(userInfo))
               }
             }
           } ~ path("copyToMethodRepo") {
@@ -79,30 +133,56 @@ trait MethodConfigurationApiService extends FireCloudDirectives with SprayJsonSu
                 val copyMethodConfig = new MethodConfigurationPublish(
                   methodRepoName = ingest.configurationName,
                   methodRepoNamespace = ingest.configurationNamespace,
-                  source = Option(MethodConfigurationId(
-                    name = ingest.sourceName,
-                    namespace = ingest.sourceNamespace,
-                    workspaceName = Option(WorkspaceName(
-                      namespace = workspaceNamespace,
-                      name = workspaceName)))))
+                  source = Option(
+                    MethodConfigurationId(name = ingest.sourceName,
+                                          namespace = ingest.sourceNamespace,
+                                          workspaceName =
+                                            Option(WorkspaceName(namespace = workspaceNamespace, name = workspaceName))
+                    )
+                  )
+                )
                 val extReq = Post(MethodConfigurationApiService.remoteCopyToMethodRepoConfigUrl, copyMethodConfig)
 
-                complete { userAuthedRequest(extReq)(userInfo) }
+                complete(userAuthedRequest(extReq)(userInfo))
               }
             }
           } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
             pathEnd {
               passthrough(
-                encodeUri(MethodConfigurationApiService.remoteMethodConfigUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
-                HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE)
+                encodeUri(
+                  MethodConfigurationApiService.remoteMethodConfigUrl(workspaceNamespace,
+                                                                      workspaceName,
+                                                                      configNamespace,
+                                                                      configName
+                  )
+                ),
+                HttpMethods.GET,
+                HttpMethods.PUT,
+                HttpMethods.POST,
+                HttpMethods.DELETE
+              )
             } ~
               path("rename") {
-                passthrough(encodeUri(MethodConfigurationApiService.remoteMethodConfigRenameUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
-                  HttpMethods.POST)
+                passthrough(encodeUri(
+                              MethodConfigurationApiService.remoteMethodConfigRenameUrl(workspaceNamespace,
+                                                                                        workspaceName,
+                                                                                        configNamespace,
+                                                                                        configName
+                              )
+                            ),
+                            HttpMethods.POST
+                )
               } ~
               path("validate") {
-                passthrough(encodeUri(MethodConfigurationApiService.remoteMethodConfigValidateUrl(workspaceNamespace, workspaceName, configNamespace, configName)),
-                  HttpMethods.GET)
+                passthrough(encodeUri(
+                              MethodConfigurationApiService.remoteMethodConfigValidateUrl(workspaceNamespace,
+                                                                                          workspaceName,
+                                                                                          configNamespace,
+                                                                                          configName
+                              )
+                            ),
+                            HttpMethods.GET
+                )
               }
           }
         }

@@ -10,25 +10,28 @@ class MockShareLogDAO extends ShareLogDAO {
 
   private val errorMessage = "unit test exception: override in a class specific to test"
 
-  override def logShare(userId: String, sharee: String, shareType: ShareType.Value): Share = throw new Exception(errorMessage)
+  override def logShare(userId: String, sharee: String, shareType: ShareType.Value): Share = throw new Exception(
+    errorMessage
+  )
 
-  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] = throw new Exception(errorMessage)
+  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] =
+    throw new Exception(errorMessage)
 
   override def getShare(share: Share): Share = throw new Exception(errorMessage)
 
-  override def getShares(userId: String, shareType: Option[ShareType.Value] = None): Seq[Share] = throw new Exception(errorMessage)
+  override def getShares(userId: String, shareType: Option[ShareType.Value] = None): Seq[Share] = throw new Exception(
+    errorMessage
+  )
 }
 
 class ShareLogApiServiceSpecShareLogDAO extends MockShareLogDAO {
 
-  override def getShares(userId: String, shareType: Option[ShareType.Value]): Seq[Share] = {
+  override def getShares(userId: String, shareType: Option[ShareType.Value]): Seq[Share] =
     ElasticSearchShareLogDAOSpecFixtures.fixtureShares
-  }
 }
 
 class WorkspaceApiServiceSpecShareLogDAO extends MockShareLogDAO {
 
-  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] = {
-    sharees map{ sharee => Share(userId, sharee, shareType)}
-  }
+  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] =
+    sharees map { sharee => Share(userId, sharee, shareType) }
 }

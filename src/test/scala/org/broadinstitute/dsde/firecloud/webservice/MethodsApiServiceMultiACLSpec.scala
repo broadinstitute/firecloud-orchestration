@@ -14,8 +14,11 @@ import spray.json._
 
 import scala.concurrent.ExecutionContext
 
-
-class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with ServiceSpec with MethodsApiService with SprayJsonSupport {
+class MethodsApiServiceMultiACLSpec
+    extends BaseServiceSpec
+    with ServiceSpec
+    with MethodsApiService
+    with SprayJsonSupport {
 
   def actorRefFactory = system
 
@@ -31,11 +34,10 @@ class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with ServiceSpec wit
   "Methods Repository multi-ACL upsert endpoint" - {
     "when testing DELETE, GET, POST methods on the multi-permissions path" - {
       "NotFound is returned" in {
-        List(HttpMethods.DELETE, HttpMethods.GET, HttpMethods.POST) foreach {
-          method =>
-            new RequestBuilder(method)(localMethodPermissionsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
-              status should equal(MethodNotAllowed)
-            }
+        List(HttpMethods.DELETE, HttpMethods.GET, HttpMethods.POST) foreach { method =>
+          new RequestBuilder(method)(localMethodPermissionsPath) ~> sealRoute(methodsApiServiceRoutes) ~> check {
+            status should equal(MethodNotAllowed)
+          }
         }
       }
     }
@@ -43,10 +45,12 @@ class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with ServiceSpec wit
     "when sending valid input" - {
       "returns OK and translates responses" in {
         val payload = Seq(
-          MethodAclPair(MethodRepoMethod("ns1","n1",1), Seq(FireCloudPermission("user1@example.com","OWNER"))),
-          MethodAclPair(MethodRepoMethod("ns2","n2",2), Seq(FireCloudPermission("user2@example.com","READER")))
+          MethodAclPair(MethodRepoMethod("ns1", "n1", 1), Seq(FireCloudPermission("user1@example.com", "OWNER"))),
+          MethodAclPair(MethodRepoMethod("ns2", "n2", 2), Seq(FireCloudPermission("user2@example.com", "READER")))
         )
-        Put(localMethodPermissionsPath, payload) ~> dummyUserIdHeaders("MethodsApiServiceMultiACLSpec") ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Put(localMethodPermissionsPath, payload) ~> dummyUserIdHeaders("MethodsApiServiceMultiACLSpec") ~> sealRoute(
+          methodsApiServiceRoutes
+        ) ~> check {
           status should equal(OK)
 
           val resp = responseAs[Seq[MethodAclPair]]
@@ -55,12 +59,13 @@ class MethodsApiServiceMultiACLSpec extends BaseServiceSpec with ServiceSpec wit
       }
     }
 
-
     // BAD INPUTS
     "when posting malformed data" - {
       "BadRequest is returned" in {
         // endpoint expects a JsArray; send it a JsObject and expect BadRequest.
-        Put(localMethodPermissionsPath, JsObject(Map("foo"->JsString("bar")))) ~> dummyAuthHeaders ~> sealRoute(methodsApiServiceRoutes) ~> check {
+        Put(localMethodPermissionsPath, JsObject(Map("foo" -> JsString("bar")))) ~> dummyAuthHeaders ~> sealRoute(
+          methodsApiServiceRoutes
+        ) ~> check {
           status should equal(BadRequest)
         }
       }

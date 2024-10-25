@@ -14,7 +14,9 @@ import scala.util.Try
 object ErrorReportExtensions {
   object FCErrorReport extends SprayJsonSupport {
 
-    def apply(response: HttpResponse)(implicit ers: ErrorReportSource, executionContext: ExecutionContext, mat: Materializer): Future[ErrorReport] = {
+    def apply(
+      response: HttpResponse
+    )(implicit ers: ErrorReportSource, executionContext: ExecutionContext, mat: Materializer): Future[ErrorReport] =
       // code prior to creation of this error report may have already consumed the response entity
 
       response.entity match {
@@ -22,13 +24,14 @@ object ErrorReportExtensions {
           val entityString = data.decodeString(java.nio.charset.Charset.defaultCharset())
           Unmarshal(entityString).to[ErrorReport].map { re =>
             new ErrorReport(ers.source, re.message, Option(response.status), Seq(re), Seq.empty, None)
-          } recover {
-            case _ =>
-              new ErrorReport(ers.source, entityString, Option(response.status), Seq.empty, Seq.empty, None)
+          } recover { case _ =>
+            new ErrorReport(ers.source, entityString, Option(response.status), Seq.empty, Seq.empty, None)
           }
         case _ =>
           val fallbackMessage = Try(response.toString()).toOption.getOrElse("Unexpected error")
-          Future.successful(new ErrorReport(ers.source, fallbackMessage, Option(response.status), Seq.empty, Seq.empty, None))
+          Future.successful(
+            new ErrorReport(ers.source, fallbackMessage, Option(response.status), Seq.empty, Seq.empty, None)
+          )
       }
 //
 //      Unmarshal(response).to[ErrorReport].map { re =>
@@ -38,7 +41,6 @@ object ErrorReportExtensions {
 //          new ErrorReport(ers.source, message, Option(response.status), Seq.empty, Seq.empty, None)
 //        }
 //      }
-    }
   }
 }
 

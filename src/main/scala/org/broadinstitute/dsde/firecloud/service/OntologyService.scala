@@ -19,21 +19,25 @@ object OntologyService {
 
 }
 
-class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeSupport: ResearchPurposeSupport)
-                     (implicit protected val executionContext: ExecutionContext)
-  extends DataUseRestrictionSupport with SprayJsonSupport with LazyLogging {
+class OntologyService(val ontologyDAO: OntologyDAO, val researchPurposeSupport: ResearchPurposeSupport)(implicit
+  protected val executionContext: ExecutionContext
+) extends DataUseRestrictionSupport
+    with SprayJsonSupport
+    with LazyLogging {
 
-  def buildStructuredUseRestrictionAttribute(request: StructuredDataRequest): Future[PerRequestMessage] = {
+  def buildStructuredUseRestrictionAttribute(request: StructuredDataRequest): Future[PerRequestMessage] =
     Future(RequestComplete(generateStructuredUseRestrictionAttribute(request, ontologyDAO)))
-  }
 
-  def autocompleteOntology(term: String): Future[PerRequestMessage] = {
+  def autocompleteOntology(term: String): Future[PerRequestMessage] =
     Future(RequestComplete(ontologyDAO.autocomplete(term)))
-  }
 
   def buildResearchPurposeQuery(request: ResearchPurposeRequest): Future[PerRequestMessage] = {
     import spray.json._
     def addPrefix(name: String): String = request.prefix.getOrElse("") + name
-    Future(RequestComplete(researchPurposeSupport.researchPurposeFilters(ResearchPurpose(request), addPrefix).toString.parseJson))
+    Future(
+      RequestComplete(
+        researchPurposeSupport.researchPurposeFilters(ResearchPurpose(request), addPrefix).toString.parseJson
+      )
+    )
   }
 }

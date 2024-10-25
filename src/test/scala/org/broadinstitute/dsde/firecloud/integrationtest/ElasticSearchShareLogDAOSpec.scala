@@ -19,10 +19,9 @@ class ElasticSearchShareLogDAOSpec extends AnyFreeSpec with Matchers with Before
     }
   }
 
-  override def afterAll() = {
+  override def afterAll() =
     // using the delete from search dao because we don't have recreate in sharelog dao
     searchDAO.deleteIndex()
-  }
 
   private def scrubShares(in: Seq[Share]) = in.map(_.copy(timestamp = None))
 
@@ -34,7 +33,7 @@ class ElasticSearchShareLogDAOSpec extends AnyFreeSpec with Matchers with Before
         val checkFake2 = shareLogDAO.getShares("fake2")
         val check = checkFake1 ++ checkFake2
 
-        assertResult(expected.size) { check.size }
+        assertResult(expected.size)(check.size)
         scrubShares(check) should contain theSameElementsAs scrubShares(expected)
       }
       "should get shares of a specific type and none others" in {
@@ -44,7 +43,7 @@ class ElasticSearchShareLogDAOSpec extends AnyFreeSpec with Matchers with Before
           .sortBy(_.sharee)
         val check = shareLogDAO.getShares("fake1", Some(ShareType.GROUP)).sortBy(_.sharee)
 
-        assertResult(expected.size) { check.size }
+        assertResult(expected.size)(check.size)
         scrubShares(check) should contain theSameElementsAs scrubShares(expected)
       }
     }
@@ -53,7 +52,7 @@ class ElasticSearchShareLogDAOSpec extends AnyFreeSpec with Matchers with Before
         val share = Share("roger", "syd@gmail.com", ShareType.WORKSPACE)
         val loggedShare = shareLogDAO.logShare(share.userId, share.sharee, share.shareType)
         val check = shareLogDAO.getShare(share)
-        assertResult(loggedShare) { check }
+        assertResult(loggedShare)(check)
       }
       "should successfully log a record of a user sharing a workspace with the same user twice" in {
         val loggedShare = shareLogDAO.logShare("fake4", "fake3@gmail.com", ShareType.WORKSPACE)

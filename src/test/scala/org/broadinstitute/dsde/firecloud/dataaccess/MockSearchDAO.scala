@@ -26,22 +26,26 @@ class MockSearchDAO extends SearchDAO {
   var autocompleteInvoked = new AtomicBoolean(false)
   var populateSuggestInvoked = new AtomicBoolean(false)
 
-  override def bulkIndex(docs: Seq[Document], refresh:Boolean = false) = LibraryBulkIndexResponse(0, false, Map.empty)
+  override def bulkIndex(docs: Seq[Document], refresh: Boolean = false) = LibraryBulkIndexResponse(0, false, Map.empty)
 
-  override def indexDocument(doc: Document) = {
+  override def indexDocument(doc: Document) =
     indexDocumentInvoked.set(true)
-  }
 
-  override def deleteDocument(id: String) = {
+  override def deleteDocument(id: String) =
     deleteDocumentInvoked.set(true)
-  }
 
-  override def findDocuments(librarySearchParams: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse] = {
+  override def findDocuments(librarySearchParams: LibrarySearchParams,
+                             groups: Seq[String],
+                             workspacePolicyMap: Map[String, UserPolicy]
+  ): Future[LibrarySearchResponse] = {
     findDocumentsInvoked.set(true)
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
 
-  override def suggestionsFromAll(librarySearchParams: LibrarySearchParams, groups: Seq[String], workspacePolicyMap: Map[String, UserPolicy]): Future[LibrarySearchResponse] = {
+  override def suggestionsFromAll(librarySearchParams: LibrarySearchParams,
+                                  groups: Seq[String],
+                                  workspacePolicyMap: Map[String, UserPolicy]
+  ): Future[LibrarySearchResponse] = {
     autocompleteInvoked.set(true)
     Future(LibrarySearchResponse(librarySearchParams, 0, Seq[JsValue](), Seq[LibraryAggregationResponse]()))
   }
