@@ -224,29 +224,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
   }
 
-  def getBucket(bucketName: String, petKey: String, userProject: Option[GoogleProjectId]): Option[Bucket] = {
-    val keyStream = new ByteArrayInputStream(petKey.getBytes)
-    val credential =
-      getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
-
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential))
-      .setApplicationName(appName)
-      .build()
-
-    val request = storage.buckets().get(bucketName)
-    userProject.map(id => request.setUserProject(id.value))
-
-    Try(executeGoogleRequest[Bucket](request)) match {
-      case Failure(ex) =>
-        // handle this case so we can give a good log message. In the future we may handle this
-        // differently, such as returning an empty list.
-        logger.warn(s"could not get $bucketName", ex)
-        throw ex
-      case Success(response) =>
-        Option(response)
-    }
-  }
-
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey, "UTF-8"))
