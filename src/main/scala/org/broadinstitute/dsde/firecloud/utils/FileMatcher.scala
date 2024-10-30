@@ -11,17 +11,16 @@ import scala.util.matching.Regex
 // *******************************************************************************************************************
 
 case class PairPattern(
-                        mainFile: Regex,
-                        pairedFile: String => Regex
-                      )
+  mainFile: Regex,
+  pairedFile: String => Regex
+)
 
 case class PairMatch(
-                      mainFile: String,
-                      matchedFile: Option[String],
-                      baseName: Option[String],
-                      id: Option[String]
-                    )
-
+  mainFile: String,
+  matchedFile: Option[String],
+  baseName: Option[String],
+  id: Option[String]
+)
 
 class FileMatcher extends LazyLogging {
 
@@ -37,9 +36,8 @@ class FileMatcher extends LazyLogging {
     pairNextFile(files, List())
   }
 
-
   @tailrec
-  private def pairNextFile(remainingFileList: List[String], pairsFound: List[PairMatch]): List[PairMatch] = {
+  private def pairNextFile(remainingFileList: List[String], pairsFound: List[PairMatch]): List[PairMatch] =
     remainingFileList match {
       case Nil =>
         // no files left to match. Just return what we have found so far.
@@ -54,7 +52,6 @@ class FileMatcher extends LazyLogging {
         }
 
     }
-  }
 
   private def tryToMatch(mainFile: String, remainingFileList: List[String]): PairMatch = {
     // does the current file hit on any of our file-matching patterns?
@@ -89,6 +86,5 @@ class FileMatcher extends LazyLogging {
         }
     }
   }
-
 
 }

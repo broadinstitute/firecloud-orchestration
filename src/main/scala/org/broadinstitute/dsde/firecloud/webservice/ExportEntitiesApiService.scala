@@ -4,7 +4,7 @@ import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{ContentType, HttpCharsets, MediaTypes}
 import akka.http.scaladsl.model.StatusCodes.OK
-import akka.http.scaladsl.model.headers.{ContentDispositionTypes, `Content-Disposition`, `Content-Type`}
+import akka.http.scaladsl.model.headers.{`Content-Disposition`, `Content-Type`, ContentDispositionTypes}
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.lang3.StringUtils
@@ -64,37 +64,48 @@ trait ExportEntitiesApiService
               }
             }
         }
-      }
     } ~
-  // *******************************************************************************************************************
-  // POC of file-matching for AJ-2025
-  // *******************************************************************************************************************
-  // TODO: add swagger definition
-  path( "api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" / "frombucket") { (workspaceNamespace, workspaceName, entityType) =>
-    requireUserInfo() { userInfo =>
-      post {
-        import ExportEntitiesByTypeActor._
-        entity(as[FileMatchingOptions]) { matchingOptions =>
-          val attributeNames = None
-          val model = None
-          val exportArgs = ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, attributeNames, model)
+      // *******************************************************************************************************************
+      // POC of file-matching for AJ-2025
+      // *******************************************************************************************************************
+      // TODO: add swagger definition
+      path("api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" / "frombucket") {
+        (workspaceNamespace, workspaceName, entityType) =>
+          requireUserInfo() { userInfo =>
+            post {
+              import ExportEntitiesByTypeActor._
+              entity(as[FileMatchingOptions]) { matchingOptions =>
+                val attributeNames = None
+                val model = None
+                val exportArgs = ExportEntitiesByTypeArguments(userInfo,
+                                                               workspaceNamespace,
+                                                               workspaceName,
+                                                               entityType,
+                                                               attributeNames,
+                                                               model
+                )
 
-          complete {
-            exportEntitiesByTypeConstructor(exportArgs).matchBucketFiles(matchingOptions) map { pairs =>
-              // download the TSV as an attachment:
-               RequestCompleteWithHeaders((OK, pairs),
-                `Content-Type`.apply(ContentType.apply(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)),
-                `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "filematching.tsv"))
-               )
+                complete {
+                  exportEntitiesByTypeConstructor(exportArgs).matchBucketFiles(matchingOptions) map { pairs =>
+                    // download the TSV as an attachment:
+                    RequestCompleteWithHeaders(
+                      (OK, pairs),
+                      `Content-Type`.apply(
+                        ContentType.apply(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
+                      ),
+                      `Content-Disposition`.apply(ContentDispositionTypes.attachment,
+                                                  Map("filename" -> "filematching.tsv")
+                      )
+                    )
 
-              // for easy debugging: output the TSV as text
-              // RequestComplete(OK, pairs)
+                    // for easy debugging: output the TSV as text
+                    // RequestComplete(OK, pairs)
+                  }
+                }
+              }
             }
           }
-        }
       }
-    }
-  }
   // *******************************************************************************************************************
   // POC of file-matching for AJ-2025
   // *******************************************************************************************************************

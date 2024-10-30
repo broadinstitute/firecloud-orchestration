@@ -44,8 +44,12 @@ class FileMatcherSpec extends AnyFreeSpec with Matchers {
         actual shouldBe expected
       }
       "should return results when some inputs dont hit the regex at all" in {
-        val input = List("Sample1_01.fastq.gz", "Sample2_01.fastq.gz", "Sample1_02.fastq.gz", "anotherfile.txt",
-          "my-cat-picture.jpg")
+        val input = List("Sample1_01.fastq.gz",
+                         "Sample2_01.fastq.gz",
+                         "Sample1_02.fastq.gz",
+                         "anotherfile.txt",
+                         "my-cat-picture.jpg"
+        )
 
         val expected = List(
           PairMatch("Sample1_01.fastq.gz", Option("Sample1_02.fastq.gz"), Option("sample"), Option("1")),

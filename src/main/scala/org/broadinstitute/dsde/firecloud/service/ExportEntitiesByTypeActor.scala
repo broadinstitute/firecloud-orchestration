@@ -52,7 +52,6 @@ object ExportEntitiesByTypeActor {
       exportArgs.model,
       system
     )
-  
 
   // *******************************************************************************************************************
   // POC of file-matching for AJ-2025
@@ -389,8 +388,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   // those files based on Illumina single end and paired end read patterns
   // *******************************************************************************************************************
 
-
-  def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] = {
+  def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] =
     // retrieve workspace so we can get its bucket
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
       val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
@@ -414,8 +412,10 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       val entities: List[Entity] = pairs.map { pair =>
         val attributes = Map(
           AttributeName.withDefaultNS("read1") -> AttributeString(urlmap(pair.mainFile)),
-          AttributeName.withDefaultNS("read2") -> AttributeString(pair.matchedFile.map{f => urlmap(f)}.getOrElse("")),
-          AttributeName.withDefaultNS("detectedType") -> AttributeString(pair.baseName.getOrElse("")),
+          AttributeName.withDefaultNS("read2") -> AttributeString(
+            pair.matchedFile.map(f => urlmap(f)).getOrElse("")
+          ),
+          AttributeName.withDefaultNS("detectedType") -> AttributeString(pair.baseName.getOrElse(""))
         )
         Entity(pair.id.getOrElse(pair.mainFile), entityType, attributes)
       }
@@ -424,11 +424,9 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
       // transform the entities into a TSV
       val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
-      val rowString = rows.map { _.mkString("\t")}.mkString("\n") + "\n"
+      val rowString = rows.map(_.mkString("\t")).mkString("\n") + "\n"
 
       headerString + rowString
     }
-  }
-
 
 }
