@@ -3,7 +3,13 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import java.util.NoSuchElementException
 
 import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO._
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, FireCloudKeyValue, ProfileWrapper, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{
+  BasicProfile,
+  FireCloudKeyValue,
+  ProfileWrapper,
+  UserInfo,
+  WithAccessToken
+}
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 
@@ -56,96 +62,105 @@ class MockThurloeDAO extends ThurloeDAO {
   var mockKeyValues: Map[String, Set[FireCloudKeyValue]] =
     Map(
       NORMAL_USER -> baseProfile,
-      //TCGA users
-      TCGA_LINKED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("tcga-user")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
+      "foo" -> baseProfile, // to match registeredUser, enabledUserInfo, unknownUserInfo from MockSamDao
+      // TCGA users
+      TCGA_LINKED -> baseProfile.++(
+        Set(
+          FireCloudKeyValue(Some("email"), Some(TCGA_LINKED)),
+          FireCloudKeyValue(Some("linkedNihUsername"), Some("tcga-user")),
+          FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString))
+        )
       ),
-      TCGA_LINKED_NO_EXPIRE_DATE -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_NO_EXPIRE_DATE)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user")))
+      TCGA_LINKED_NO_EXPIRE_DATE -> baseProfile.++(
+        Set(FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_NO_EXPIRE_DATE)),
+            FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user"))
+        )
       ),
-      TCGA_LINKED_EXPIRED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_EXPIRED)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
+      TCGA_LINKED_EXPIRED -> baseProfile.++(
+        Set(
+          FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_EXPIRED)),
+          FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
+          FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString))
+        )
       ),
-      TCGA_LINKED_INVALID_EXPIRE_DATE -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_INVALID_EXPIRE_DATE)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!")))
+      TCGA_LINKED_INVALID_EXPIRE_DATE -> baseProfile.++(
+        Set(
+          FireCloudKeyValue(Some("email"), Some(TCGA_LINKED_INVALID_EXPIRE_DATE)),
+          FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
+          FireCloudKeyValue(Some("linkExpireTime"), Some("expiration-dates-cant-be-words!"))
+        )
       ),
-      TCGA_UNLINKED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_UNLINKED)))
+      TCGA_UNLINKED -> baseProfile.++(Set(FireCloudKeyValue(Some("email"), Some(TCGA_UNLINKED)))),
+      // TARGET users
+      TARGET_LINKED -> baseProfile.++(
+        Set(
+          FireCloudKeyValue(Some("email"), Some(TARGET_LINKED)),
+          FireCloudKeyValue(Some("linkedNihUsername"), Some("target-user")),
+          FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString))
+        )
       ),
-      //TARGET users
-      TARGET_LINKED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TARGET_LINKED)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("target-user")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
+      TARGET_LINKED_EXPIRED -> baseProfile.++(
+        Set(
+          FireCloudKeyValue(Some("email"), Some(TARGET_LINKED_EXPIRED)),
+          FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
+          FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString))
+        )
       ),
-      TARGET_LINKED_EXPIRED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TARGET_LINKED_EXPIRED)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
+      TARGET_UNLINKED -> baseProfile.++(Set(FireCloudKeyValue(Some("email"), Some(TARGET_UNLINKED)))),
+      // TCGA and TARGET users
+      TCGA_AND_TARGET_LINKED -> baseProfile.++(
+        Set(
+          FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_LINKED)),
+          FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
+          FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString))
+        )
       ),
-      TARGET_UNLINKED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TARGET_UNLINKED)))
+      TCGA_AND_TARGET_LINKED_EXPIRED -> baseProfile.++(
+        Set(
+          FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_LINKED_EXPIRED)),
+          FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
+          FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString))
+        )
       ),
-      //TCGA and TARGET users
-      TCGA_AND_TARGET_LINKED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_LINKED)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-dev")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowPlus30Days.toString)))
+      TCGA_AND_TARGET_UNLINKED -> baseProfile.++(Set(FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_UNLINKED)))),
+      // Anonymized google groups
+      HAVE_GOOGLE_GROUP -> baseProfile.++(
+        Set(FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
       ),
-      TCGA_AND_TARGET_LINKED_EXPIRED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_LINKED_EXPIRED)),
-        FireCloudKeyValue(Some("linkedNihUsername"), Some("firecloud-user2")),
-        FireCloudKeyValue(Some("linkExpireTime"), Some(DateUtils.nowMinus1Hour.toString)))
-      ),
-      TCGA_AND_TARGET_UNLINKED -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("email"), Some(TCGA_AND_TARGET_UNLINKED)))
-      ),
-      //Anonymized google groups
-      HAVE_GOOGLE_GROUP -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("anonymousGroup"), Some("existing-google-group@support.something.firecloud.org")))
-      ),
-      HAVE_EMPTY_GOOGLE_GROUP -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("anonymousGroup"), Some("")))
-      ),
-      NO_CONTACT_EMAIL -> baseProfile.++(Set(
-        FireCloudKeyValue(Some("contactEmail"), Some("")))
-      )
+      HAVE_EMPTY_GOOGLE_GROUP -> baseProfile.++(Set(FireCloudKeyValue(Some("anonymousGroup"), Some("")))),
+      NO_CONTACT_EMAIL -> baseProfile.++(Set(FireCloudKeyValue(Some("contactEmail"), Some(""))))
     )
 
-
   override def getAllKVPs(forUserId: String, callerToken: WithAccessToken): Future[Option[ProfileWrapper]] = {
-    val profileWrapper = try {
-      Option(ProfileWrapper(forUserId, mockKeyValues(forUserId).toList))
-    } catch {
-      case e:NoSuchElementException => None
-    }
+    val profileWrapper =
+      try
+        Option(ProfileWrapper(forUserId, mockKeyValues(forUserId).toList))
+      catch {
+        case e: NoSuchElementException => None
+      }
     Future.successful(profileWrapper)
   }
 
-  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
+  override def saveProfile(userInfo: UserInfo, profile: BasicProfile): Future[Unit] =
     saveKeyValues(userInfo, profile.propertyValueMap).map(_ => ())
-  }
 
   override def saveKeyValues(userInfo: UserInfo, keyValues: Map[String, String]): Future[Try[Unit]] = {
     val newKVsForUser = userInfo.id -> (mockKeyValues(userInfo.id).filter {
       case FireCloudKeyValue(Some(key), _) => !keyValues.contains(key)
-      case FireCloudKeyValue(_, _) => false
-    } ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value))})
+      case FireCloudKeyValue(_, _)         => false
+    } ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value)) })
 
     mockKeyValues = mockKeyValues + newKVsForUser
     Future.successful(Success(()))
   }
 
-
-  override def saveKeyValues(forUserId: String, callerToken: WithAccessToken, keyValues: Map[String, String]): Future[Try[Unit]] = {
-    val newKVsForUser = (forUserId -> (mockKeyValues(forUserId) ++ keyValues.map { case (key, value) => FireCloudKeyValue(Option(key), Option(value))}))
+  override def saveKeyValues(forUserId: String,
+                             callerToken: WithAccessToken,
+                             keyValues: Map[String, String]
+  ): Future[Try[Unit]] = {
+    val newKVsForUser = forUserId -> (mockKeyValues(forUserId) ++ keyValues.map { case (key, value) =>
+      FireCloudKeyValue(Option(key), Option(value))
+    })
     mockKeyValues = mockKeyValues + newKVsForUser
     Future.successful(Success(()))
   }
@@ -157,14 +172,15 @@ class MockThurloeDAO extends ThurloeDAO {
   }
 
   override def getAllUserValuesForKey(key: String): Future[Map[String, String]] = {
-    val userValuesForKey = mockKeyValues.map{ case (userId, keyValues) =>
-      userId -> keyValues.filter(_.key.equals(Option(key)))
-    }.flatMap { case (userId, kvPair) =>
-      if(kvPair.nonEmpty) {
-        Some((userId -> kvPair.head.value.get))
+    val userValuesForKey = mockKeyValues
+      .map { case (userId, keyValues) =>
+        userId -> keyValues.filter(_.key.equals(Option(key)))
       }
-      else None
-    }
+      .flatMap { case (userId, kvPair) =>
+        if (kvPair.nonEmpty) {
+          Some(userId -> kvPair.head.value.get)
+        } else None
+      }
 
     Future.successful(userValuesForKey)
   }

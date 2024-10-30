@@ -15,9 +15,12 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-trait EntityApiService extends FireCloudDirectives
-  with StreamingPassthrough
-  with FireCloudRequestBuilding with StandardUserInfoDirectives with RestJsonClient {
+trait EntityApiService
+    extends FireCloudDirectives
+    with StreamingPassthrough
+    with FireCloudRequestBuilding
+    with StandardUserInfoDirectives
+    with RestJsonClient {
 
   implicit val executionContext: ExecutionContext
   lazy val log = LoggerFactory.getLogger(getClass)
@@ -31,8 +34,13 @@ trait EntityApiService extends FireCloudDirectives
         path("entities_with_type") {
           get {
             requireUserInfo() { userInfo =>
-              //TODO: the model schema doesn't matter for this one. Ideally, make it Optional
-              complete { entityServiceConstructor(FlexibleModelSchema).getEntitiesWithType(workspaceNamespace, workspaceName, userInfo) }
+              // TODO: the model schema doesn't matter for this one. Ideally, make it Optional
+              complete {
+                entityServiceConstructor(FlexibleModelSchema).getEntitiesWithType(workspaceNamespace,
+                                                                                  workspaceName,
+                                                                                  userInfo
+                )
+              }
             }
           }
         } ~
@@ -47,16 +55,19 @@ trait EntityApiService extends FireCloudDirectives
                   requireUserInfo() { userInfo =>
                     parameter(Symbol("linkExistingEntities").?) { linkExistingEntities =>
                       entity(as[EntityCopyWithoutDestinationDefinition]) { copyRequest =>
-                        val linkExistingEntitiesBool = Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
-                          val copyMethodConfig = new EntityCopyDefinition(
-                            sourceWorkspace = copyRequest.sourceWorkspace,
-                            destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
-                            entityType = copyRequest.entityType,
-                            entityNames = copyRequest.entityNames)
-                          val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool), copyMethodConfig)
+                        val linkExistingEntitiesBool =
+                          Try(linkExistingEntities.getOrElse("false").toBoolean).getOrElse(false)
+                        val copyMethodConfig = new EntityCopyDefinition(
+                          sourceWorkspace = copyRequest.sourceWorkspace,
+                          destinationWorkspace = WorkspaceName(workspaceNamespace, workspaceName),
+                          entityType = copyRequest.entityType,
+                          entityNames = copyRequest.entityNames
+                        )
+                        val extReq = Post(FireCloudConfig.Rawls.workspacesEntitiesCopyUrl(linkExistingEntitiesBool),
+                                          copyMethodConfig
+                        )
 
-
-                          complete { userAuthedRequest(extReq)(userInfo) }
+                        complete(userAuthedRequest(extReq)(userInfo))
                       }
                     }
                   }
@@ -68,11 +79,17 @@ trait EntityApiService extends FireCloudDirectives
                 }
               } ~
               pathPrefix(Segment) { entityType =>
-                streamingPassthrough(FireCloudConfig.Rawls.entityPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName)) + "/" + entityType)
+                streamingPassthrough(
+                  FireCloudConfig.Rawls.entityPathFromWorkspace(escapePathSegment(workspaceNamespace),
+                                                                escapePathSegment(workspaceName)
+                  ) + "/" + entityType
+                )
               }
           } ~
           pathPrefix("entityQuery") {
-            streamingPassthrough(entityQueryPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName)))
+            streamingPassthrough(
+              entityQueryPathFromWorkspace(escapePathSegment(workspaceNamespace), escapePathSegment(workspaceName))
+            )
           } ~
           pathPrefix("entityTypes") {
             extractRequest { req =>
@@ -84,19 +101,19 @@ trait EntityApiService extends FireCloudDirectives
                   patch {
                     passthrough(passthroughTarget, HttpMethods.PATCH)
                   } ~
-                  delete {
-                    passthrough(passthroughTarget, HttpMethods.DELETE)
-                  }
+                    delete {
+                      passthrough(passthroughTarget, HttpMethods.DELETE)
+                    }
                 } ~
-                pathPrefix("attributes") {
-                  path(Segment) { _ => // attributeName
-                    pathEnd {
-                      patch {
-                        passthrough(passthroughTarget, HttpMethods.PATCH)
+                  pathPrefix("attributes") {
+                    path(Segment) { _ => // attributeName
+                      pathEnd {
+                        patch {
+                          passthrough(passthroughTarget, HttpMethods.PATCH)
+                        }
                       }
                     }
                   }
-                }
               }
             }
           }

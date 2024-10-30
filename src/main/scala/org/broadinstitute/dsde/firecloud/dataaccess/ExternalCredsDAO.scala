@@ -17,7 +17,9 @@ trait ExternalCredsDAO {
   def deleteLinkedEraAccount(userInfo: UserInfo)(implicit orchInfo: WithAccessToken): Future[Unit]
 
   @throws(classOf[ApiException])
-  def getLinkedEraAccountForUsername(username: String)(implicit orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]]
+  def getLinkedEraAccountForUsername(username: String)(implicit
+    orchInfo: WithAccessToken
+  ): Future[Option[LinkedEraAccount]]
 
   @throws(classOf[ApiException])
   def getActiveLinkedEraAccounts(implicit orchInfo: WithAccessToken): Future[Seq[LinkedEraAccount]]

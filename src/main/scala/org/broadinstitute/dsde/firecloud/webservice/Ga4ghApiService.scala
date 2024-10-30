@@ -37,11 +37,11 @@ trait Ga4ghApiService extends FireCloudDirectives {
                 passthrough(uri, HttpMethods.GET)
               }
             } ~
-            path("tools" / Segment) { (id) =>
+            path("tools" / Segment) { id =>
               val targetUri = Uri(s"$agoraGA4GH/tools/$id")
               passthrough(targetUri, HttpMethods.GET)
             } ~
-            path("tools" / Segment / "versions") { (id) =>
+            path("tools" / Segment / "versions") { id =>
               val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions")
               passthrough(targetUri, HttpMethods.GET)
             } ~
@@ -57,9 +57,11 @@ trait Ga4ghApiService extends FireCloudDirectives {
               val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions/$versionId/$descriptorType/descriptor")
               passthrough(targetUri, HttpMethods.GET)
             } ~
-            path("tools" / Segment / "versions" / Segment / Segment / "descriptor" / Segment) { (id, versionId, descriptorType, relativePath) =>
-              val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions/$versionId/$descriptorType/descriptor/$relativePath")
-              passthrough(targetUri, HttpMethods.GET)
+            path("tools" / Segment / "versions" / Segment / Segment / "descriptor" / Segment) {
+              (id, versionId, descriptorType, relativePath) =>
+                val targetUri =
+                  Uri(s"$agoraGA4GH/tools/$id/versions/$versionId/$descriptorType/descriptor/$relativePath")
+                passthrough(targetUri, HttpMethods.GET)
             } ~
             path("tools" / Segment / "versions" / Segment / Segment / "tests") { (id, versionId, descriptorType) =>
               val targetUri = Uri(s"$agoraGA4GH/tools/$id/versions/$versionId/$descriptorType/tests")

@@ -13,7 +13,12 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, LibraryService, OntologyService}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.{AttributeFormat, AttributeName, AttributeString, PlainArrayAttributeListSerializer}
+import org.broadinstitute.dsde.rawls.model.{
+  AttributeFormat,
+  AttributeName,
+  AttributeString,
+  PlainArrayAttributeListSerializer
+}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer._
 import org.scalatest.BeforeAndAfterEach
@@ -25,26 +30,29 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
-
-class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
-  with SamMockserverUtils with BeforeAndAfterEach with SprayJsonSupport {
+class LibraryApiServiceSpec
+    extends BaseServiceSpec
+    with LibraryApiService
+    with SamMockserverUtils
+    with BeforeAndAfterEach
+    with SprayJsonSupport {
 
   def actorRefFactory = system
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   lazy val isCuratorPath = "/api/library/user/role/curator"
-  private def publishedPath(ns:String="namespace", name:String="name") =
+  private def publishedPath(ns: String = "namespace", name: String = "name") =
     "/api/library/%s/%s/published".format(ns, name)
   private def setMetadataPath(ns: String = "republish", name: String = "name") =
     "/api/library/%s/%s/metadata".format(ns, name)
   private def setDiscoverableGroupsPath(ns: String = "discoverableGroups", name: String = "name") =
     "/api/library/%s/%s/discoverableGroups".format(ns, name)
-  private final val librarySearchPath = "/api/library/search"
-  private final val librarySuggestPath = "/api/library/suggest"
-  private final val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
-  private final val libraryGroupsPath = "/api/library/groups"
+  final private val librarySearchPath = "/api/library/search"
+  final private val librarySuggestPath = "/api/library/suggest"
+  final private val libraryPopulateSuggestPath = "/api/library/populate/suggest/"
+  final private val libraryGroupsPath = "/api/library/groups"
 
-  private final val duosResearchPurposeQuery = "/duos/researchPurposeQuery"
+  final private val duosResearchPurposeQuery = "/duos/researchPurposeQuery"
 
   val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
   val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
@@ -104,17 +112,14 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
     returnEnabledUser(mockSamServer)
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     mockSamServer.stop()
-  }
 
-  override def beforeEach(): Unit = {
+  override def beforeEach(): Unit =
     searchDao.reset()
-  }
 
-  override def afterEach(): Unit = {
+  override def afterEach(): Unit =
     searchDao.reset()
-  }
 
   "LibraryService" - {
 
@@ -123,11 +128,12 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
     "when calling the isCurator endpoint" - {
       "PUT, POST, DELETE on /api/library/user/role/curator" - {
         "should receive a MethodNotAllowed" in {
-          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map {
-            method =>
-              new RequestBuilder(method)(isCuratorPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-                status should equal(MethodNotAllowed)
-              }
+          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE) map { method =>
+            new RequestBuilder(method)(isCuratorPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+              libraryRoutes
+            ) ~> check {
+              status should equal(MethodNotAllowed)
+            }
           }
         }
       }
@@ -135,56 +141,72 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
 
     "when saving metadata" - {
       "complete data can be saved for an unpublished workspace" in {
-          val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
-          new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
-            status should equal(OK)
-          }
+        val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders(
+          "1234"
+        ) ~> sealRoute(libraryRoutes) ~> check {
+          status should equal(OK)
         }
+      }
       "incomplete data can be saved for an unpublished workspace" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter"), content) ~> dummyUserIdHeaders(
+          "1234"
+        ) ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
         }
       }
 
       "complete data can be saved for a published workspace" in {
         val content = HttpEntity(ContentTypes.`application/json`, testLibraryMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders(
+          "1234"
+        ) ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
         }
       }
 
       "cannot save incomplete data if already published dataset" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter"), content) ~> dummyUserIdHeaders(
+          "1234"
+        ) ~> sealRoute(libraryRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
 
       "validates for unpublished dataset if user specifies validate=true" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter") + "?validate=true", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter") + "?validate=true",
+                                            content
+        ) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
 
       "validation defaults to false if user specifies a non-boolean value" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter") + "?validate=cat", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("unpublishedwriter") + "?validate=cat",
+                                            content
+        ) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
         }
       }
 
       "always validates for published workspace even if user specifies validate=false" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter") + "?validate=false", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter") + "?validate=false",
+                                            content
+        ) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
 
       "always validates for published workspace even if user specifies a non-boolean value" in {
         val content = HttpEntity(ContentTypes.`application/json`, incompleteMetadata)
-        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter") + "?validate=cat", content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        new RequestBuilder(HttpMethods.PUT)(setMetadataPath("publishedwriter") + "?validate=cat",
+                                            content
+        ) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(BadRequest)
         }
       }
@@ -200,8 +222,8 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
           status should equal(OK)
           val meta = responseAs[AttributeMap]
           // see MockRawlsDAO.publishedRawlsWorkspaceWithAttributes
-          val expected:AttributeMap = Map( AttributeName("library", "projectName") -> AttributeString("testing") )
-          assertResult(expected) {meta}
+          val expected: AttributeMap = Map(AttributeName("library", "projectName") -> AttributeString("testing"))
+          assertResult(expected)(meta)
         }
       }
       "complete data can be retrieved for a valid workspace" in {
@@ -209,7 +231,7 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
           status should equal(OK)
           val meta = responseAs[AttributeMap]
           val expected = new MockRawlsDAO().unpublishedRawlsWorkspaceLibraryValid.attributes.get
-          assertResult (expected) {meta}
+          assertResult(expected)(meta)
         }
       }
       "will return empty set if no metadata exists" in {
@@ -224,19 +246,25 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
     "when calling publish" - {
       "POST on " + publishedPath() - {
         "should return No Content for already published workspace " in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders(
+            "1234"
+          ) ~> sealRoute(libraryRoutes) ~> check {
             status should equal(NoContent)
           }
         }
         "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")) ~> dummyUserIdHeaders(
+            "1234"
+          ) ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.indexDocumentInvoked.get(), "indexDocument should have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should not have been invoked")
           }
         }
         "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
-          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+            libraryRoutes
+          ) ~> check {
             status should equal(BadRequest)
             assert(!this.searchDao.indexDocumentInvoked.get(), "indexDocument should not have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should not have been invoked")
@@ -245,12 +273,16 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       }
       "DELETE on " + publishedPath() - {
         "should be No Content for unpublished workspace" in {
-          new RequestBuilder(HttpMethods.DELETE)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.DELETE)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders(
+            "1234"
+          ) ~> sealRoute(libraryRoutes) ~> check {
             status should equal(NoContent)
           }
         }
         "as return OK and invoke deleteDocument for published workspace" in {
-          new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")) ~> dummyUserIdHeaders(
+            "1234"
+          ) ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should have been invoked")
             assert(!this.searchDao.indexDocumentInvoked.get(), "indexDocument should not have been invoked")
@@ -262,7 +294,9 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       "POST with no searchterm on " + librarySearchPath - {
         "should retrieve all datasets" in {
           val content = HttpEntity(ContentTypes.`application/json`, "{}")
-          new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+            libraryRoutes
+          ) ~> check {
             status should equal(OK)
             assert(this.searchDao.findDocumentsInvoked.get(), "findDocuments should have been invoked")
           }
@@ -270,8 +304,11 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       }
       "POST on " + librarySearchPath - {
         "should search for datasets" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
-          new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          val content =
+            HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
+          new RequestBuilder(HttpMethods.POST)(librarySearchPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+            libraryRoutes
+          ) ~> check {
             status should equal(OK)
             assert(this.searchDao.findDocumentsInvoked.get(), "findDocuments should have been invoked")
             val respdata = Await.result(Unmarshal(response).to[LibrarySearchResponse], Duration.Inf)
@@ -282,8 +319,11 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       }
       "POST on " + librarySuggestPath - {
         "should return autcomplete suggestions" in {
-          val content = HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
-          new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          val content =
+            HttpEntity(ContentTypes.`application/json`, "{\"searchTerm\":\"test\", \"from\":0, \"size\":10}")
+          new RequestBuilder(HttpMethods.POST)(librarySuggestPath, content) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+            libraryRoutes
+          ) ~> check {
             status should equal(OK)
             assert(this.searchDao.autocompleteInvoked.get(), "autocompleteInvoked should have been invoked")
             val respdata = Await.result(Unmarshal(response).to[LibrarySearchResponse], Duration.Inf)
@@ -294,7 +334,9 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       }
       "GET on " + libraryPopulateSuggestPath - {
         "should return autcomplete suggestions" in {
-          new RequestBuilder(HttpMethods.GET)(libraryPopulateSuggestPath + "library:datasetOwner?q=aha") ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.GET)(
+            libraryPopulateSuggestPath + "library:datasetOwner?q=aha"
+          ) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
             status should equal(OK)
             assert(this.searchDao.populateSuggestInvoked.get(), "populateSuggestInvoked should have been invoked")
             val respdata = Await.result(Unmarshal(response).to[String], Duration.Inf)
@@ -305,10 +347,12 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
       }
       "GET on " + libraryGroupsPath - {
         "should return the all broad users group" in {
-          new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+          new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+            libraryRoutes
+          ) ~> check {
             status should equal(OK)
             val respdata = Await.result(Unmarshal(response).to[Seq[String]], Duration.Inf)
-            assert(respdata.toSet ==  FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
+            assert(respdata.toSet == FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
           }
         }
       }
@@ -316,15 +360,19 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
 
     "when working with Library discoverable groups" - {
       "should return the right groups on get" in {
-        Get(setDiscoverableGroupsPath("libraryValid","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        Get(setDiscoverableGroupsPath("libraryValid", "unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          libraryRoutes
+        ) ~> check {
           status should equal(OK)
-          assertResult(List("group1","group2")) {responseAs[List[String]]}
+          assertResult(List("group1", "group2"))(responseAs[List[String]])
         }
       }
       "should return an empty array if no groups are assigned" in {
-        Get(setDiscoverableGroupsPath("publishedwriter","unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
+        Get(setDiscoverableGroupsPath("publishedwriter", "unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          libraryRoutes
+        ) ~> check {
           status should equal(OK)
-          assertResult(List.empty[String]) {responseAs[List[String]]}
+          assertResult(List.empty[String])(responseAs[List[String]])
         }
       }
     }
@@ -342,7 +390,9 @@ class LibraryApiServiceSpec extends BaseServiceSpec with LibraryApiService
         val request = ResearchPurposeRequest.empty.copy(DS = Some(Seq(s"${doidPrefix}1234", s"${doidPrefix}5678")))
         new RequestBuilder(HttpMethods.POST)(duosResearchPurposeQuery, request) ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
-          val diseaseIds = responseAs[JsObject].extract[Int](Symbol("bool") / Symbol("should") / * / Symbol("term") / "structuredUseRestriction.DS" / Symbol("value"))
+          val diseaseIds = responseAs[JsObject].extract[Int](
+            Symbol("bool") / Symbol("should") / * / Symbol("term") / "structuredUseRestriction.DS" / Symbol("value")
+          )
           diseaseIds should equal(Seq(1234, 5678))
         }
       }

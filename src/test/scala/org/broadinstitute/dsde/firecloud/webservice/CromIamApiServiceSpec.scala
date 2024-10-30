@@ -29,7 +29,7 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
   }
 
   // streamingPassthrough directive needs to see the routes under "/api", which is how FireCloudApiService starts them
-  val testableRoutes = pathPrefix("api") { cromIamApiServiceRoutes }
+  val testableRoutes = pathPrefix("api")(cromIamApiServiceRoutes)
 
   "CromIAM passthrough" - {
 
@@ -99,13 +99,15 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should forward query parameters on GET" in {
 
-        val request = org.mockserver.model.HttpRequest.request()
+        val request = org.mockserver.model.HttpRequest
+          .request()
           .withMethod("GET")
           .withPath(s"$endpoint")
           .withQueryStringParameter("includeKey", "hit")
           .withQueryStringParameter("includeKey", "hitFailure")
 
-        val response = org.mockserver.model.HttpResponse.response()
+        val response = org.mockserver.model.HttpResponse
+          .response()
           .withStatusCode(200)
           .withBody("We got all of your includeKeys")
 
@@ -113,7 +115,9 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery(Query("includeKey=hit&includeKey=hitFailure"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(testableRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("includeKey=hit&includeKey=hitFailure"))) ~> dummyUserIdHeaders(
+          "1234"
+        ) ~> sealRoute(testableRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -129,8 +133,10 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
       // "workspaceServer" mockserver, not the "cromiamServer" mockserver.
 
       val endpointPapiV1 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/operations/foobar"
-      val endpointPapiV2 = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/projects/proj/operations/foobar"
-      val endpointGoogleLifeSciencesBeta = workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/projects/proj/projId/locations/us-somewhere/operations/opId"
+      val endpointPapiV2 =
+        workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/projects/proj/operations/foobar"
+      val endpointGoogleLifeSciencesBeta =
+        workflowRoot + "/my-bogus-workflow-id-565656/backend/metadata/projects/proj/projId/locations/us-somewhere/operations/opId"
       val myMethods = List(HttpMethods.GET)
 
       "should pass through my methods PAPIv1" in {
@@ -166,13 +172,15 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should forward query parameters on GET" in {
 
-        val request = org.mockserver.model.HttpRequest.request()
+        val request = org.mockserver.model.HttpRequest
+          .request()
           .withMethod("GET")
           .withPath(s"$endpoint")
           .withQueryStringParameter("start", "start value")
           .withQueryStringParameter("end", "end value")
 
-        val response = org.mockserver.model.HttpResponse.response()
+        val response = org.mockserver.model.HttpResponse
+          .response()
           .withStatusCode(200)
           .withBody("Got a query with start and end values")
 
@@ -180,7 +188,9 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery(Query("start=start%20value&end=end%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(testableRoutes) ~> check {
+        Get(Uri(endpoint).withQuery(Query("start=start%20value&end=end%20value"))) ~> dummyUserIdHeaders(
+          "1234"
+        ) ~> sealRoute(testableRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)
@@ -203,13 +213,15 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
 
       "should forward query parameters on GET" in {
 
-        val request = org.mockserver.model.HttpRequest.request()
+        val request = org.mockserver.model.HttpRequest
+          .request()
           .withMethod("GET")
           .withPath(s"$endpoint")
           .withQueryStringParameter("workflowA", "workflowA value")
           .withQueryStringParameter("workflowB", "workflowB value")
 
-        val response = org.mockserver.model.HttpResponse.response()
+        val response = org.mockserver.model.HttpResponse
+          .response()
           .withStatusCode(200)
           .withBody("Got a query with workflowA and workflowB values")
 
@@ -217,7 +229,9 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
           .when(request)
           .respond(response)
 
-        Get(Uri(endpoint).withQuery(Query("workflowA=workflowA%20value&workflowB=workflowB%20value"))) ~> dummyUserIdHeaders("1234") ~> sealRoute(testableRoutes) ~> check {
+        Get(
+          Uri(endpoint).withQuery(Query("workflowA=workflowA%20value&workflowB=workflowB%20value"))
+        ) ~> dummyUserIdHeaders("1234") ~> sealRoute(testableRoutes) ~> check {
           cromiamServer.verify(request)
 
           status.intValue should equal(200)

@@ -24,94 +24,115 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
 
 class EnabledUserDirectivesSpec
-  extends AnyFreeSpec
+    extends AnyFreeSpec
     with EnabledUserDirectives
     with Matchers
     with ScalatestRouteTest
     with BeforeAndAfterAll
     with SprayJsonSupport {
 
-  override implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  implicit override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val enabledUser: UserInfo = UserInfo("enabled@nowhere.com", OAuth2BearerToken("enabled"), 123456, "enabled-id")
   val disabledUser: UserInfo = UserInfo("disabled@nowhere.com", OAuth2BearerToken("disabled"), 123456, "disabled-id")
-  val unregisteredUser: UserInfo = UserInfo("unregistered@nowhere.com", OAuth2BearerToken("unregistered"), 123456, "unregistered-id")
-  val samApiExceptionUser: UserInfo = UserInfo("samapiexception@nowhere.com", OAuth2BearerToken("samapiexception"), 123456, "samapiexception-id")
+  val unregisteredUser: UserInfo =
+    UserInfo("unregistered@nowhere.com", OAuth2BearerToken("unregistered"), 123456, "unregistered-id")
+  val samApiExceptionUser: UserInfo =
+    UserInfo("samapiexception@nowhere.com", OAuth2BearerToken("samapiexception"), 123456, "samapiexception-id")
 
   val samUserInfoPath = "/register/user/v2/self/info"
 
   var mockSamServer: ClientAndServer = _
 
-  def stopMockSamServer(): Unit = {
+  def stopMockSamServer(): Unit =
     mockSamServer.stop()
-  }
 
   def startMockSamServer(): Unit = {
     mockSamServer = startClientAndServer(MockUtils.samServerPort)
 
     // enabled user
     mockSamServer
-      .when(request
-        .withMethod("GET")
-        .withPath(samUserInfoPath)
-        .withHeader(new Header("Authorization", "Bearer enabled")))
+      .when(
+        request
+          .withMethod("GET")
+          .withPath(samUserInfoPath)
+          .withHeader(new Header("Authorization", "Bearer enabled"))
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody("""{
-                                                    |  "adminEnabled": true,
-                                                    |  "enabled": true,
-                                                    |  "userEmail": "enabled@nowhere.com",
-                                                    |  "userSubjectId": "enabled-id"
-                                                    |}""".stripMargin).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withBody("""{
+                      |  "adminEnabled": true,
+                      |  "enabled": true,
+                      |  "userEmail": "enabled@nowhere.com",
+                      |  "userSubjectId": "enabled-id"
+                      |}""".stripMargin)
+          .withStatusCode(OK.intValue)
       )
 
     // disabled user
     mockSamServer
-      .when(request
-        .withMethod("GET")
-        .withPath(samUserInfoPath)
-        .withHeader(new Header("Authorization", "Bearer disabled")))
+      .when(
+        request
+          .withMethod("GET")
+          .withPath(samUserInfoPath)
+          .withHeader(new Header("Authorization", "Bearer disabled"))
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody("""{
-                                                    |  "adminEnabled": false,
-                                                    |  "enabled": false,
-                                                    |  "userEmail": "disabled@nowhere.com",
-                                                    |  "userSubjectId": "disabled-id"
-                                                    |}""".stripMargin).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withBody("""{
+                      |  "adminEnabled": false,
+                      |  "enabled": false,
+                      |  "userEmail": "disabled@nowhere.com",
+                      |  "userSubjectId": "disabled-id"
+                      |}""".stripMargin)
+          .withStatusCode(OK.intValue)
       )
 
     // unregistered user
     mockSamServer
-      .when(request
-        .withMethod("GET")
-        .withPath(samUserInfoPath)
-        .withHeader(new Header("Authorization", "Bearer unregistered")))
+      .when(
+        request
+          .withMethod("GET")
+          .withPath(samUserInfoPath)
+          .withHeader(new Header("Authorization", "Bearer unregistered"))
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody("""{
-                                                    |  "causes": [],
-                                                    |  "message": "Google Id unregistered-id not found in sam",
-                                                    |  "source": "sam",
-                                                    |  "stackTrace": [],
-                                                    |  "statusCode": 404
-                                                    |}""".stripMargin).withStatusCode(NotFound.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withBody("""{
+                      |  "causes": [],
+                      |  "message": "Google Id unregistered-id not found in sam",
+                      |  "source": "sam",
+                      |  "stackTrace": [],
+                      |  "statusCode": 404
+                      |}""".stripMargin)
+          .withStatusCode(NotFound.intValue)
       )
 
     // ApiException from the Sam client
     mockSamServer
-      .when(request
-        .withMethod("GET")
-        .withPath(samUserInfoPath)
-        .withHeader(new Header("Authorization", "Bearer samapiexception")))
+      .when(
+        request
+          .withMethod("GET")
+          .withPath(samUserInfoPath)
+          .withHeader(new Header("Authorization", "Bearer samapiexception"))
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withBody("""{
-                                                    |  "source": "Sam",
-                                                    |  "message": "unit test error",
-                                                    |  "statusCode": 418,
-                                                    |  "causes": [],
-                                                    |}""".stripMargin).withStatusCode(ImATeapot.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withBody("""{
+                      |  "source": "Sam",
+                      |  "message": "unit test error",
+                      |  "statusCode": 418,
+                      |  "causes": [],
+                      |}""".stripMargin)
+          .withStatusCode(ImATeapot.intValue)
       )
 
   }
@@ -125,13 +146,13 @@ class EnabledUserDirectivesSpec
   implicit val exceptionHandler: ExceptionHandler = FireCloudApiService.exceptionHandler
 
   // define a simple route that uses requireEnabledUser
-  def userEnabledRoute(userInfo: UserInfo): Route = seal({
+  def userEnabledRoute(userInfo: UserInfo): Route = seal {
     get {
       requireEnabledUser(userInfo, s"http://localhost:${MockUtils.samServerPort}") {
         complete("route was successful")
       }
     }
-  })
+  }
 
   "requireEnabledUser" - {
     "should allow enabled users" in {

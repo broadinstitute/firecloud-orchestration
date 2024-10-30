@@ -18,9 +18,12 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-class StreamingPassthroughSpec extends AnyFreeSpec
-  with Matchers with BeforeAndAfterAll with ScalatestRouteTest
-  with StreamingPassthrough {
+class StreamingPassthroughSpec
+    extends AnyFreeSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalatestRouteTest
+    with StreamingPassthrough {
 
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.global
 
@@ -38,11 +41,13 @@ class StreamingPassthroughSpec extends AnyFreeSpec
 
     // set up mockserver responses for each testable status code
     testableStatusCodes foreach { statusCode =>
-      val request = org.mockserver.model.HttpRequest.request()
+      val request = org.mockserver.model.HttpRequest
+        .request()
         .withMethod("GET")
         .withPath(s"/statuscode/checker/${statusCode.intValue()}")
 
-      val response = org.mockserver.model.HttpResponse.response()
+      val response = org.mockserver.model.HttpResponse
+        .response()
         .withStatusCode(statusCode.intValue())
         .withBody(statusCode.reason)
 
@@ -52,10 +57,8 @@ class StreamingPassthroughSpec extends AnyFreeSpec
     }
   }
 
-  override protected def afterAll(): Unit = {
+  override protected def afterAll(): Unit =
     localMockserver.stop()
-  }
-
 
   "convertToRemoteUri" - {
     "should calculate a remainder" in {
@@ -125,45 +128,51 @@ class StreamingPassthroughSpec extends AnyFreeSpec
     // fixtures for the next set of tests
     val fixtureHeaders = Seq(Accept(Seq(MediaRanges.`application/*`)))
     val fixtureRequest = HttpRequest(method = HttpMethods.POST,
-      uri = Uri("http://localhost:8123/foo/bar/baz/qux"),
-      headers = fixtureHeaders)
+                                     uri = Uri("http://localhost:8123/foo/bar/baz/qux"),
+                                     headers = fixtureHeaders
+    )
 
     "should NOT forward Timeout-Access header" in {
       val requestHeaders = fixtureHeaders :+ RawHeader("Timeout-Access", "doesnt matter")
       val expectedHeaders = fixtureHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
-      actual.headers should contain theSameElementsAs (expectedHeaders)
+      val actual =
+        transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
+      actual.headers should contain theSameElementsAs expectedHeaders
     }
     "should rewrite Host header" in {
       val requestHeaders = fixtureHeaders :+ Host("overwritten")
       val expectedHeaders = fixtureHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
-      actual.headers should contain theSameElementsAs (expectedHeaders)
+      val actual =
+        transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
+      actual.headers should contain theSameElementsAs expectedHeaders
     }
     "should forward Authorization header" in {
       val requestHeaders = fixtureHeaders :+ Authorization(OAuth2BearerToken("123456"))
       val expectedHeaders = requestHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
-      actual.headers should contain theSameElementsAs(expectedHeaders)
+      val actual =
+        transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
+      actual.headers should contain theSameElementsAs expectedHeaders
     }
     "should forward miscellaneous headers" in {
       val requestHeaders = fixtureHeaders :+ RawHeader("X-FireCloud-Id", FireCloudConfig.FireCloud.fireCloudId)
       val expectedHeaders = requestHeaders :+ Host("example.com")
       val req = fixtureRequest.withHeaders(requestHeaders)
       // call transformToPassthroughRequest
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
-      actual.headers should contain theSameElementsAs (expectedHeaders)
+      val actual =
+        transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
+      actual.headers should contain theSameElementsAs expectedHeaders
     }
     List(CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE) foreach { methodUnderTest =>
       s"should preserve request method $methodUnderTest" in {
         val req = fixtureRequest.withMethod(methodUnderTest)
-        val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
+        val actual =
+          transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
         actual.method shouldBe methodUnderTest
       }
     }
@@ -171,16 +180,16 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       val randomJson = JsObject("mykey" -> JsString(UUID.randomUUID().toString))
       val requestEntity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString.apply(randomJson.compactPrint))
       val req = fixtureRequest.withEntity(requestEntity)
-      val actual = transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
+      val actual =
+        transformToPassthroughRequest(Path("/foo/bar"), Uri("https://example.com/api/version/foo"), None)(req)
       actual.entity shouldBe requestEntity
     }
   }
 
   "mockserver-based tests" - {
 
-    val testRoute = {
+    val testRoute =
       streamingPassthrough(Uri(s"http://localhost:$localMockserverPort/statuscode/checker"))
-    }
 
     testableStatusCodes foreach { codeUnderTest =>
       s"should reply with remote-system ${codeUnderTest.intValue} (${codeUnderTest.reason()}) responses" in {
@@ -202,7 +211,5 @@ class StreamingPassthroughSpec extends AnyFreeSpec
       actual shouldBe expected
     }
   }
-
-
 
 }

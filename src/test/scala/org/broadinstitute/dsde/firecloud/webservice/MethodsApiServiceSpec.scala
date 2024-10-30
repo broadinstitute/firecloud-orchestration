@@ -21,7 +21,7 @@ import scala.concurrent.ExecutionContext
 
 final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with MethodsApiService {
 
-  def actorRefFactory:ActorSystem = system
+  def actorRefFactory: ActorSystem = system
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -40,20 +40,32 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
 
     NB: we don't test the permissions endpoints here, because they are not passthroughs;
     those are tested elsewhere
-  */
+   */
   val testCases = Seq(
-    Api("/configurations", GET, "/api/v1/configurations", allowQueryParams=true),
-    Api("/configurations", POST, "/api/v1/configurations", allowQueryParams=false),
-    Api("/configurations/namespace/name/1", GET, "/api/v1/configurations/namespace/name/1", allowQueryParams=true),
-    Api("/configurations/namespace/name/1", DELETE, "/api/v1/configurations/namespace/name/1", allowQueryParams=false),
-    Api("/methods", GET, "/api/v1/methods", allowQueryParams=true),
-    Api("/methods", POST, "/api/v1/methods", allowQueryParams=false),
-    Api("/methods/namespace/name/1", GET, "/api/v1/methods/namespace/name/1", allowQueryParams=true),
-    Api("/methods/namespace/name/1", DELETE, "/api/v1/methods/namespace/name/1", allowQueryParams=false),
-    Api("/methods/namespace/name/1", POST, "/api/v1/methods/namespace/name/1", allowQueryParams=true),
-    Api("/methods/namespace/name/1/configurations", GET, "/api/v1/methods/namespace/name/1/configurations", allowQueryParams=false),
-    Api("/methods/definitions", GET, "/api/v1/methods/definitions", allowQueryParams=false),
-    Api("/methods/namespace/name/configurations", GET, "/api/v1/methods/namespace/name/configurations", allowQueryParams=false)
+    Api("/configurations", GET, "/api/v1/configurations", allowQueryParams = true),
+    Api("/configurations", POST, "/api/v1/configurations", allowQueryParams = false),
+    Api("/configurations/namespace/name/1", GET, "/api/v1/configurations/namespace/name/1", allowQueryParams = true),
+    Api("/configurations/namespace/name/1",
+        DELETE,
+        "/api/v1/configurations/namespace/name/1",
+        allowQueryParams = false
+    ),
+    Api("/methods", GET, "/api/v1/methods", allowQueryParams = true),
+    Api("/methods", POST, "/api/v1/methods", allowQueryParams = false),
+    Api("/methods/namespace/name/1", GET, "/api/v1/methods/namespace/name/1", allowQueryParams = true),
+    Api("/methods/namespace/name/1", DELETE, "/api/v1/methods/namespace/name/1", allowQueryParams = false),
+    Api("/methods/namespace/name/1", POST, "/api/v1/methods/namespace/name/1", allowQueryParams = true),
+    Api("/methods/namespace/name/1/configurations",
+        GET,
+        "/api/v1/methods/namespace/name/1/configurations",
+        allowQueryParams = false
+    ),
+    Api("/methods/definitions", GET, "/api/v1/methods/definitions", allowQueryParams = false),
+    Api("/methods/namespace/name/configurations",
+        GET,
+        "/api/v1/methods/namespace/name/configurations",
+        allowQueryParams = false
+    )
   )
 
   /*
@@ -81,13 +93,14 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
     testCases foreach { api =>
       methodsServer
         .when(request().withMethod(api.verb.name).withPath(api.remotePath))
-          .respond(callback().withCallbackClass("org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceSpecCallback"))
+        .respond(
+          callback().withCallbackClass("org.broadinstitute.dsde.firecloud.webservice.MethodsApiServiceSpecCallback")
+        )
     }
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     methodsServer.stop()
-  }
 
   // tests
   "MethodsApiService uses of passthrough directive" - {
@@ -130,13 +143,14 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
 
 final class MethodsApiServiceSpecCallback extends ExpectationResponseCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
-    val method:String = httpRequest.getMethod.getValue
-    val path:String = httpRequest.getPath.getValue
-    val hasParams:Boolean = !httpRequest.getQueryStringParameterList.isEmpty
+    val method: String = httpRequest.getMethod.getValue
+    val path: String = httpRequest.getPath.getValue
+    val hasParams: Boolean = !httpRequest.getQueryStringParameterList.isEmpty
 
     val content = s"$method $path $hasParams"
 
-    val resp = response().withHeaders(MockUtils.header).withStatusCode(NonAuthoritativeInformation.intValue).withBody(content)
+    val resp =
+      response().withHeaders(MockUtils.header).withStatusCode(NonAuthoritativeInformation.intValue).withBody(content)
     resp
   }
 }

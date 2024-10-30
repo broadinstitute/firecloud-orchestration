@@ -22,7 +22,6 @@ trait ShareLogDAO extends ElasticSearchDAOSupport {
     */
   def logShare(userId: String, sharee: String, shareType: ShareType.Value): Share
 
-
   /**
     * Logs records of a user sharing a workspace, group, or method with users.
     *

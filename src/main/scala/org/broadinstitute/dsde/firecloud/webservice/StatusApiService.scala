@@ -19,22 +19,21 @@ object BuildTimeVersion {
 
 trait StatusApiService extends Directives with RequestBuilding with SprayJsonSupport {
 
-  private final val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+  final private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
   implicit val executionContext: ExecutionContext
 
   val statusServiceConstructor: () => StatusService
 
-  val statusRoutes: Route = {
+  val statusRoutes: Route =
     path("status") {
       get {
-        complete { statusServiceConstructor().collectStatusInfo() }
+        complete(statusServiceConstructor().collectStatusInfo())
       }
     } ~
-      path( "version") {
+      path("version") {
         get { requestContext =>
           requestContext.complete(StatusCodes.OK, BuildTimeVersion.versionJson)
         }
       }
-  }
 
 }

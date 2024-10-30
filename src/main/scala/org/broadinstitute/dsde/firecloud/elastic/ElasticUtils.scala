@@ -9,7 +9,7 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient
 import akka.http.scaladsl.model.Uri.Authority
 
 object ElasticUtils {
-  def buildClient(servers:Seq[Authority], clusterName: String): TransportClient = {
+  def buildClient(servers: Seq[Authority], clusterName: String): TransportClient = {
     val settings = Settings.builder
       .put("cluster.name", clusterName)
       .build

@@ -52,7 +52,8 @@ object FireCloudConfig {
     val entitiesPath = workspace.getString("entitiesPath")
     val entityQueryPath = workspace.getString("entityQueryPath")
     val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")
-    def workspacesEntitiesCopyUrl(linkExistingEntities: Boolean) = authUrl + workspacesEntitiesCopyPath + "?linkExistingEntities=%s".format(linkExistingEntities)
+    def workspacesEntitiesCopyUrl(linkExistingEntities: Boolean) =
+      authUrl + workspacesEntitiesCopyPath + "?linkExistingEntities=%s".format(linkExistingEntities)
     val submissionsCountPath = workspace.getString("submissionsCountPath")
     val submissionsPath = workspace.getString("submissionsPath")
     val submissionsIdPath = workspace.getString("submissionsIdPath")
@@ -68,20 +69,29 @@ object FireCloudConfig {
     val defaultPageSize = rawls.getInt("defaultPageSize")
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)
-    def entityQueryPathFromWorkspace(namespace: String, name: String) = authUrl + entityQueryPath.format(namespace, name)
+    def entityQueryPathFromWorkspace(namespace: String, name: String) =
+      authUrl + entityQueryPath.format(namespace, name)
     def createGroup(groupName: String) = authUrl + createGroupPath.format(groupName)
-    def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String, workspaceName: String, entityType: String, query: Option[EntityQuery] = None): Uri = {
-      val baseEntityQueryUri = Uri(FireCloudDirectiveUtils.encodeUri(s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"))
+    def entityQueryUriFromWorkspaceAndQuery(workspaceNamespace: String,
+                                            workspaceName: String,
+                                            entityType: String,
+                                            query: Option[EntityQuery] = None
+    ): Uri = {
+      val baseEntityQueryUri = Uri(
+        FireCloudDirectiveUtils.encodeUri(
+          s"${entityQueryPathFromWorkspace(workspaceNamespace, workspaceName)}/$entityType"
+        )
+      )
       query match {
         case Some(q) =>
-          val qMap: Map[String, String] = Map(
-            ("page", q.page.toString),
-            ("pageSize", q.pageSize.toString),
-            ("sortField", q.sortField),
-            ("sortDirection", SortDirections.toString(q.sortDirection)))
+          val qMap: Map[String, String] = Map(("page", q.page.toString),
+                                              ("pageSize", q.pageSize.toString),
+                                              ("sortField", q.sortField),
+                                              ("sortDirection", SortDirections.toString(q.sortDirection))
+          )
           val filteredQMap = q.filterTerms match {
             case Some(f) => qMap + ("filterTerms" -> f)
-            case _ => qMap
+            case _       => qMap
           }
           baseEntityQueryUri.withQuery(Query(filteredQMap))
         case _ => baseEntityQueryUri
@@ -159,7 +169,7 @@ object FireCloudConfig {
     lazy val whitelists: Set[NihAllowlist] = {
       val whitelistConfigs = nih.getConfig("whitelists")
 
-      whitelistConfigs.root.asScala.collect { case (name, configObject:ConfigObject) =>
+      whitelistConfigs.root.asScala.collect { case (name, configObject: ConfigObject) =>
         val config = configObject.toConfig
         val rawlsGroup = config.getString("rawlsGroup")
         val fileName = config.getString("fileName")
@@ -183,12 +193,11 @@ object FireCloudConfig {
     val enabled = elasticsearch.optionalBoolean("enabled").getOrElse(true)
   }
 
-  def parseESServers(confString: String): Seq[Authority] = {
+  def parseESServers(confString: String): Seq[Authority] =
     confString.split(',').toIndexedSeq map { hostport =>
       val hp = hostport.split(':')
       Authority(Host(hp(0)), hp(1).toInt)
     }
-  }
 
   object GoogleCloud {
     // lazy - only required when google is enabled
@@ -197,9 +206,19 @@ object FireCloudConfig {
     lazy val priceListEgressKey = googlecloud.getString("priceListEgressKey")
     lazy val priceListStorageKey = googlecloud.getString("priceListStorageKey")
     lazy val defaultStoragePriceListConf = googlecloud.getConfig("defaultStoragePriceList")
-    lazy val defaultStoragePriceList = defaultStoragePriceListConf.root().keySet().asScala.map(key => key -> BigDecimal(defaultStoragePriceListConf.getDouble(key))).toMap
+    lazy val defaultStoragePriceList = defaultStoragePriceListConf
+      .root()
+      .keySet()
+      .asScala
+      .map(key => key -> BigDecimal(defaultStoragePriceListConf.getDouble(key)))
+      .toMap
     lazy val defaultEgressPriceListConf = googlecloud.getConfig("defaultEgressPriceList")
-    lazy val defaultEgressPriceList = defaultEgressPriceListConf.root().keySet().asScala.map(key => key.toLong -> BigDecimal(defaultEgressPriceListConf.getDouble(key))).toMap
+    lazy val defaultEgressPriceList = defaultEgressPriceListConf
+      .root()
+      .keySet()
+      .asScala
+      .map(key => key.toLong -> BigDecimal(defaultEgressPriceListConf.getDouble(key)))
+      .toMap
     val enabled = googlecloud.optionalBoolean("enabled").getOrElse(true)
   }
 
@@ -224,13 +243,12 @@ object FireCloudConfig {
   }
 
   implicit class RichConfig(val config: Config) {
-    private def getOptional[T](path: String, get: String => T): Option[T] = {
+    private def getOptional[T](path: String, get: String => T): Option[T] =
       if (config.hasPath(path)) {
         Some(get(path))
       } else {
         None
       }
-    }
     def optionalString(path: String): Option[String] = getOptional(path, config.getString)
     def optionalInt(path: String): Option[Int] = getOptional(path, config.getInt)
     def optionalDouble(path: String): Option[Double] = getOptional(path, config.getDouble)

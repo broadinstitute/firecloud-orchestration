@@ -12,7 +12,6 @@ import akka.http.scaladsl.model.StatusCodes.OK
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-
 /*  We don't do much testing of the HealthMonitor itself, because that's tested as part of
     workbench-libs. Here, we test routing, de/serialization, and the config we send into
     the HealthMonitor.
@@ -24,17 +23,17 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   val healthMonitorChecks = new HealthChecks(app).healthMonitorChecks
-  val healthMonitor = system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)( healthMonitorChecks ), "health-monitor")
-  val monitorSchedule = system.scheduler.scheduleWithFixedDelay(Duration.Zero, 1.second, healthMonitor, HealthMonitor.CheckAll)
+  val healthMonitor =
+    system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)(healthMonitorChecks), "health-monitor")
+  val monitorSchedule =
+    system.scheduler.scheduleWithFixedDelay(Duration.Zero, 1.second, healthMonitor, HealthMonitor.CheckAll)
 
-  override def beforeAll() = {
+  override def beforeAll() =
     // wait for the healthMonitor to start up ...
     Thread.sleep(3000)
-  }
 
-  override def afterAll() = {
+  override def afterAll() =
     monitorSchedule.cancel()
-  }
 
   override val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
 
@@ -64,7 +63,7 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
         // changing the values of expectedSystems may affect the orch liveness probe
         // https://github.com/broadinstitute/terra-helmfile/blob/master/charts/firecloudorch/templates/probe/configmap.yaml
         val expectedSystems = Set(Agora, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe)
-        assertResult(expectedSystems) { statusCheckResponse.systems.keySet }
+        assertResult(expectedSystems)(statusCheckResponse.systems.keySet)
       }
     }
   }

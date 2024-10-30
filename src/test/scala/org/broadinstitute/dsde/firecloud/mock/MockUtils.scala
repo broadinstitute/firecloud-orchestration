@@ -20,37 +20,33 @@ object MockUtils {
   val samServerPort = 8994
   val cromiamServerPort = 8995
 
-   def randomPositiveInt(): Int = {
-     scala.util.Random.nextInt(9) + 1
-   }
+  def randomPositiveInt(): Int =
+    scala.util.Random.nextInt(9) + 1
 
-   def randomAlpha(): String = {
-     val chars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
-     randomStringFromCharList(randomPositiveInt(), chars)
-   }
-
-  def randomBoolean(): Boolean = {
-    scala.util.Random.nextBoolean()
+  def randomAlpha(): String = {
+    val chars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
+    randomStringFromCharList(randomPositiveInt(), chars)
   }
 
-   def randomStringFromCharList(length: Int, chars: Seq[Char]): String = {
-     val sb = new StringBuilder
-     for (i <- 1 to length) {
-       val randomNum = util.Random.nextInt(chars.length)
-       sb.append(chars(randomNum))
-     }
-     sb.toString()
-   }
+  def randomBoolean(): Boolean =
+    scala.util.Random.nextBoolean()
 
-   def isoDate(): String = {
-     isoDateFormat.format(new Date())
-   }
+  def randomStringFromCharList(length: Int, chars: Seq[Char]): String = {
+    val sb = new StringBuilder
+    for (i <- 1 to length) {
+      val randomNum = util.Random.nextInt(chars.length)
+      sb.append(chars(randomNum))
+    }
+    sb.toString()
+  }
+
+  def isoDate(): String =
+    isoDateFormat.format(new Date())
 
   def rawlsErrorReport(statusCode: StatusCode) =
     ErrorReport("Rawls", "dummy text", Option(statusCode), Seq(), Seq(), None)
 
-  def randomElement[A](list: List[A]): A = {
+  def randomElement[A](list: List[A]): A =
     list(scala.util.Random.nextInt(list.length))
-  }
 
 }

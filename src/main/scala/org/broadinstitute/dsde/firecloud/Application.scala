@@ -17,4 +17,5 @@ case class Application(agoraDAO: AgoraDAO,
                        shareLogDAO: ShareLogDAO,
                        shibbolethDAO: ShibbolethDAO,
                        cwdsDAO: CwdsDAO,
-                       ecmDAO: ExternalCredsDAO)
+                       ecmDAO: ExternalCredsDAO
+)

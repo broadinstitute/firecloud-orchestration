@@ -16,9 +16,12 @@ trait StandardUserInfoDirectives extends UserInfoDirectives {
       headerValueByName("OIDC_CLAIM_email") &
       optionalHeaderValueByName("OAUTH2_CLAIM_google_id") &
       optionalHeaderValueByName("OAUTH2_CLAIM_idp_access_token")
-    ) tmap {
-      case (token, userId, expiresIn, email, googleIdOpt, googleTokenOpt) => {
-        UserInfo(email, OAuth2BearerToken(token), expiresIn.toLong, googleIdOpt.getOrElse(userId), googleTokenOpt.map(OAuth2BearerToken))
-      }
-    }
+  ) tmap { case (token, userId, expiresIn, email, googleIdOpt, googleTokenOpt) =>
+    UserInfo(email,
+             OAuth2BearerToken(token),
+             expiresIn.toLong,
+             googleIdOpt.getOrElse(userId),
+             googleTokenOpt.map(OAuth2BearerToken)
+    )
+  }
 }

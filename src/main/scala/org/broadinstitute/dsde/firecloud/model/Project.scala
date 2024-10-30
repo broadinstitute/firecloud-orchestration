@@ -8,7 +8,11 @@ object Project {
   // following are horribly copied-and-pasted from rawls core, since they're not available as shared models
   case class CreateRawlsBillingProjectFullRequest(projectName: String, billingAccount: String)
 
-  case class RawlsBillingProjectMembership(projectName: RawlsBillingProjectName, role: ProjectRoles.ProjectRole, creationStatus: CreationStatuses.CreationStatus, message: Option[String] = None)
+  case class RawlsBillingProjectMembership(projectName: RawlsBillingProjectName,
+                                           role: ProjectRoles.ProjectRole,
+                                           creationStatus: CreationStatuses.CreationStatus,
+                                           message: Option[String] = None
+  )
 
   case class RawlsBillingProjectMember(email: RawlsUserEmail, role: ProjectRoles.ProjectRole)
 
@@ -21,15 +25,15 @@ object Project {
 
     def toName(status: CreationStatus): String = status match {
       case Creating => "Creating"
-      case Ready => "Ready"
-      case Error => "Error"
+      case Ready    => "Ready"
+      case Error    => "Error"
     }
 
     def withName(name: String): CreationStatus = name.toLowerCase match {
       case "creating" => Creating
-      case "ready" => Ready
-      case "error" => Error
-      case _ => throw new FireCloudException(s"invalid CreationStatus [${name}]")
+      case "ready"    => Ready
+      case "error"    => Error
+      case _          => throw new FireCloudException(s"invalid CreationStatus [${name}]")
     }
 
     case object Creating extends CreationStatus
@@ -49,13 +53,13 @@ object Project {
 
     def toName(role: ProjectRole): String = role match {
       case Owner => "Owner"
-      case User => "User"
+      case User  => "User"
     }
 
     def withName(name: String): ProjectRole = name.toLowerCase match {
       case "owner" => Owner
-      case "user" => User
-      case _ => throw new FireCloudException(s"invalid ProjectRole [${name}]")
+      case "user"  => User
+      case _       => throw new FireCloudException(s"invalid ProjectRole [${name}]")
     }
 
     case object Owner extends ProjectRole

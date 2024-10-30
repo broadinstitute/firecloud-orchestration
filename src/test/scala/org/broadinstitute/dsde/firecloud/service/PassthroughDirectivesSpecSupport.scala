@@ -17,7 +17,7 @@ class EchoCallback extends ExpectationResponseCallback {
   override def handle(httpRequest: HttpRequest): HttpResponse = {
     // translate the mockserver request to a spray Uri
     val query: Query = Option(httpRequest.getQueryStringParameters) match {
-      case None => Query.Empty
+      case None         => Query.Empty
       case Some(params) => Query(params.getRawParameterString)
     }
 
@@ -32,18 +32,15 @@ class EchoCallback extends ExpectationResponseCallback {
       sprayuri.toString()
     )
 
-    org.mockserver.model.HttpResponse.response()
+    org.mockserver.model.HttpResponse
+      .response()
       .withStatusCode(OK.intValue)
       .withHeader(MockUtils.header)
       .withBody(requestInfoFormat.write(requestInfo).prettyPrint)
   }
 }
 
-case class RequestInfo(
-  method: String,
-  path: String,
-  queryparams: Map[String,String],
-  url: String)
+case class RequestInfo(method: String, path: String, queryparams: Map[String, String], url: String)
 
 object PassthroughDirectivesSpecSupport {
   implicit val requestInfoFormat: RootJsonFormat[RequestInfo] = jsonFormat4(RequestInfo)

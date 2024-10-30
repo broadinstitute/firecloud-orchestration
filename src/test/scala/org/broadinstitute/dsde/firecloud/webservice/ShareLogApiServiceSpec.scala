@@ -17,7 +17,11 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
-final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiService with SamMockserverUtils with BeforeAndAfterAll {
+final class ShareLogApiServiceSpec
+    extends BaseServiceSpec
+    with ShareLogApiService
+    with SamMockserverUtils
+    with BeforeAndAfterAll {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
@@ -41,21 +45,27 @@ final class ShareLogApiServiceSpec extends BaseServiceSpec with ShareLogApiServi
 
   val localShareLogDao = new ShareLogApiServiceSpecShareLogDAO
 
-  override val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))
-  
+  override val shareLogServiceConstructor: () => ShareLogService =
+    ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))
+
   "ShareLogApiService" - {
     "when getting all sharees" in {
-      Get(getShareesPath)  ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {
-        assertResult(OK) { status }
-        responseAs[Seq[String]] should contain theSameElementsAs ElasticSearchShareLogDAOSpecFixtures.fixtureShares.map(_.sharee)
+      Get(getShareesPath) ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {
+        assertResult(OK)(status)
+        responseAs[Seq[String]] should contain theSameElementsAs ElasticSearchShareLogDAOSpecFixtures.fixtureShares.map(
+          _.sharee
+        )
       }
     }
     "when getting workspace sharees" in {
-      Get(makeGetShareesPath(ShareType.WORKSPACE)) ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {
-        assertResult(OK) { status }
-        responseAs[Seq[String]] should contain theSameElementsAs ElasticSearchShareLogDAOSpecFixtures.fixtureShares.map(_.sharee)
+      Get(makeGetShareesPath(ShareType.WORKSPACE)) ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(
+        shareLogServiceRoutes
+      ) ~> check {
+        assertResult(OK)(status)
+        responseAs[Seq[String]] should contain theSameElementsAs ElasticSearchShareLogDAOSpecFixtures.fixtureShares.map(
+          _.sharee
+        )
       }
     }
   }
 }
-

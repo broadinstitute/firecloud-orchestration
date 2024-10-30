@@ -13,13 +13,11 @@ final class NotificationsApiServiceSpec extends BaseServiceSpec with Notificatio
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  override def beforeAll(): Unit = {
+  override def beforeAll(): Unit =
     MockWorkspaceServer.startWorkspaceServer()
-  }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     MockWorkspaceServer.stopWorkspaceServer()
-  }
 
   "NotificationsApiService" - {
     "get workspace notifications" in {
@@ -54,9 +52,8 @@ final class NotificationsApiServiceSpec extends BaseServiceSpec with Notificatio
     }
   }
 
-  private def doAssert(method: HttpMethod, uri: String, expectedStatus: StatusCode): Unit = {
+  private def doAssert(method: HttpMethod, uri: String, expectedStatus: StatusCode): Unit =
     new RequestBuilder(method)(uri) ~> dummyAuthHeaders ~> sealRoute(notificationsRoutes) ~> check {
       status should be(expectedStatus)
     }
-  }
 }

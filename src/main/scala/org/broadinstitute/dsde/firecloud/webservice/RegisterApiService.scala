@@ -8,11 +8,20 @@ import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectives, RegisterS
 import org.broadinstitute.dsde.firecloud.utils.{EnabledUserDirectives, StandardUserInfoDirectives}
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.server.Route
-import org.broadinstitute.dsde.firecloud.service.RegisterService.{samTosBaseUrl, samTosDetailsUrl, samTosStatusUrl, samTosTextUrl}
+import org.broadinstitute.dsde.firecloud.service.RegisterService.{
+  samTosBaseUrl,
+  samTosDetailsUrl,
+  samTosStatusUrl,
+  samTosTextUrl
+}
 
 import scala.concurrent.ExecutionContext
 
-trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives with RequestBuilding with StandardUserInfoDirectives {
+trait RegisterApiService
+    extends FireCloudDirectives
+    with EnabledUserDirectives
+    with RequestBuilding
+    with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
 
@@ -20,15 +29,15 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
 
   val v1RegisterRoutes: Route =
     pathPrefix("users" / "v1" / "registerWithProfile") {
-        post {
-          requireUserInfo() { userInfo =>
-            entity(as[RegisterRequest]) { registerRequest =>
-              complete {
-                registerServiceConstructor().createUserWithProfile(userInfo, registerRequest)
-              }
+      post {
+        requireUserInfo() { userInfo =>
+          entity(as[RegisterRequest]) { registerRequest =>
+            complete {
+              registerServiceConstructor().createUserWithProfile(userInfo, registerRequest)
             }
           }
         }
+      }
     }
 
   val registerRoutes: Route =
@@ -37,7 +46,7 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
         post {
           requireUserInfo() { userInfo =>
             entity(as[BasicProfile]) { basicProfile =>
-              complete { registerServiceConstructor().createUpdateProfile(userInfo, basicProfile) }
+              complete(registerServiceConstructor().createUpdateProfile(userInfo, basicProfile))
             }
           }
         }
@@ -51,7 +60,7 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
           requireUserInfo() { userInfo =>
             requireEnabledUser(userInfo) {
               entity(as[Map[String, String]]) { preferences =>
-                complete { registerServiceConstructor().updateProfilePreferences(userInfo, preferences) }
+                complete(registerServiceConstructor().updateProfilePreferences(userInfo, preferences))
               }
             }
           }
@@ -59,41 +68,40 @@ trait RegisterApiService extends FireCloudDirectives with EnabledUserDirectives 
       }
     }
 
-  val tosRoutes: Route = {
+  val tosRoutes: Route =
     pathPrefix("tos") {
       path("text") {
         passthrough(samTosTextUrl, GET)
       }
     } ~
-    pathPrefix("register" / "user") {
-      pathPrefix("v1" / "termsofservice") {
-        pathEndOrSingleSlash {
-          post {
-            requireUserInfo() { _ =>
-              passthrough(samTosBaseUrl, POST)
-            }
+      pathPrefix("register" / "user") {
+        pathPrefix("v1" / "termsofservice") {
+          pathEndOrSingleSlash {
+            post {
+              requireUserInfo() { _ =>
+                passthrough(samTosBaseUrl, POST)
+              }
+            } ~
+              delete {
+                requireUserInfo() { _ =>
+                  passthrough(samTosBaseUrl, DELETE)
+                }
+              }
           } ~
-          delete {
-            requireUserInfo() { _ =>
-              passthrough(samTosBaseUrl, DELETE)
+            path("status") {
+              get {
+                requireUserInfo() { _ =>
+                  passthrough(samTosStatusUrl, GET)
+                }
+              }
             }
-          }
         } ~
-        path("status") {
-          get {
-            requireUserInfo() { _ =>
-              passthrough(samTosStatusUrl, GET)
+          pathPrefix("v2" / "self" / "termsOfServiceDetails") {
+            get {
+              requireUserInfo() { _ =>
+                passthrough(samTosDetailsUrl, GET)
+              }
             }
           }
-        }
-      } ~
-      pathPrefix("v2" / "self" / "termsOfServiceDetails") {
-        get {
-          requireUserInfo() { _ =>
-            passthrough(samTosDetailsUrl, GET)
-          }
-        }
       }
-    }
-  }
 }

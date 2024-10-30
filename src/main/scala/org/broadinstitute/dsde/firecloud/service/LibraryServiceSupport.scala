@@ -8,7 +8,11 @@ import org.broadinstitute.dsde.firecloud.model.Ontology.TermParent
 import org.broadinstitute.dsde.firecloud.model.{ConsentCodes, Document, ElasticSearch, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.LibraryService.orspIdAttribute
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddUpdateAttribute, AttributeUpdateOperation, RemoveAttribute}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
+  AddUpdateAttribute,
+  AttributeUpdateOperation,
+  RemoveAttribute
+}
 import org.broadinstitute.dsde.rawls.model._
 import org.everit.json.schema.loader.SchemaLoader
 import org.everit.json.schema.{Schema, ValidationException}
@@ -29,12 +33,14 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   implicit val userToken: WithAccessToken
 
-  def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] = {
+  def updatePublishAttribute(value: Boolean): Seq[AttributeUpdateOperation] =
     if (value) Seq(AddUpdateAttribute(LibraryService.publishedFlag, AttributeBoolean(true)))
     else Seq(RemoveAttribute(LibraryService.publishedFlag))
-  }
 
-  def indexableDocuments(workspaces: Seq[WorkspaceDetails], ontologyDAO: OntologyDAO)(implicit userToken: WithAccessToken, ec: ExecutionContext): Future[Seq[Document]] = {
+  def indexableDocuments(workspaces: Seq[WorkspaceDetails], ontologyDAO: OntologyDAO)(implicit
+    userToken: WithAccessToken,
+    ec: ExecutionContext
+  ): Future[Seq[Document]] = {
     // find all the ontology nodes in this list of workspaces
     val nodes = uniqueWorkspaceStringAttributes(workspaces, AttributeName.withLibraryNS("diseaseOntologyID"))
 
@@ -52,7 +58,8 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       ws.attributes.getOrElse(Map.empty).get(orspIdAttribute) match {
         case Some(_) =>
           // if so, remove explicit DU attributes
-          val newAttrs = replaceDataUseAttributes(ws.attributes.getOrElse(Map.empty), Map.empty[AttributeName, Attribute])
+          val newAttrs =
+            replaceDataUseAttributes(ws.attributes.getOrElse(Map.empty), Map.empty[AttributeName, Attribute])
           ws.copy(attributes = Option(newAttrs))
         case _ =>
           // this workspace does not have an ORSP id; leave it untouched
@@ -62,24 +69,33 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
     Future.successful(annotatedWorkspaces map { w => indexableDocument(w, parentMap, ontologyDAO) })
   }
 
-  private def indexableDocument(workspace: WorkspaceDetails, parentCache: Map[String,Seq[TermParent]], ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Document = {
-    val attrfields_subset = workspace.attributes.getOrElse(Map.empty).filter(_._1.namespace == AttributeName.libraryNamespace)
+  private def indexableDocument(workspace: WorkspaceDetails,
+                                parentCache: Map[String, Seq[TermParent]],
+                                ontologyDAO: OntologyDAO
+  )(implicit ec: ExecutionContext): Document = {
+    val attrfields_subset =
+      workspace.attributes.getOrElse(Map.empty).filter(_._1.namespace == AttributeName.libraryNamespace)
     val attrfields = attrfields_subset map { case (attr, value) =>
       attr.name match {
         case "discoverableByGroups" => AttributeName.withDefaultNS(ElasticSearch.fieldDiscoverableByGroups) -> value
-        case _ => attr -> value
+        case _                      => attr -> value
       }
     }
     val idfields = Map(
       AttributeName.withDefaultNS("name") -> AttributeString(workspace.name),
       AttributeName.withDefaultNS("namespace") -> AttributeString(workspace.namespace),
       AttributeName.withDefaultNS("workspaceId") -> AttributeString(workspace.workspaceId),
-      AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(workspace.authorizationDomain.getOrElse(Set.empty).map(group => AttributeString(group.membersGroupName.value)).toSeq)
+      AttributeName.withDefaultNS("authorizationDomain") -> AttributeValueList(
+        workspace.authorizationDomain
+          .getOrElse(Set.empty)
+          .map(group => AttributeString(group.membersGroupName.value))
+          .toSeq
+      )
     )
 
     val tagfields = workspace.attributes.getOrElse(Map.empty).get(AttributeName.withTagsNS()) match {
       case Some(t) => Map(AttributeName.withTagsNS() -> t)
-      case None => Map()
+      case None    => Map()
     }
 
     val durAttributeNames = ConsentCodes.allPreviousDurFieldNames.map(AttributeName.withLibraryNS)
@@ -92,7 +108,9 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
       case Some(id: AttributeString) =>
         val parents = parentCache.get(id.value)
         val parentFields = if (parents.isDefined) {
-          fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(parents.get.map(_.toESTermParent).toJson.compactPrint))
+          fields + (AttributeName.withDefaultNS("parents") -> AttributeValueRawJson(
+            parents.get.map(_.toESTermParent).toJson.compactPrint
+          ))
         } else {
           fields
         }
@@ -102,13 +120,17 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
   }
 
   def uniqueWorkspaceStringAttributes(workspaces: Seq[WorkspaceDetails], attributeName: AttributeName): Set[String] = {
-    val valueSeq:Seq[String] = workspaces.collect {
-      case w if w.attributes.getOrElse(Map.empty).contains(attributeName) =>
-        w.attributes.getOrElse(Map.empty)(attributeName)
-    }.collect {
-      case s:AttributeString => s.value
-    }
-    logger.debug(s"found ${valueSeq.size} workspaces with ${AttributeName.toDelimitedName(attributeName)} string attributes")
+    val valueSeq: Seq[String] = workspaces
+      .collect {
+        case w if w.attributes.getOrElse(Map.empty).contains(attributeName) =>
+          w.attributes.getOrElse(Map.empty)(attributeName)
+      }
+      .collect { case s: AttributeString =>
+        s.value
+      }
+    logger.debug(
+      s"found ${valueSeq.size} workspaces with ${AttributeName.toDelimitedName(attributeName)} string attributes"
+    )
 
     val valueSet = valueSeq.toSet
     logger.debug(s"found ${valueSet.size} unique ${AttributeName.toDelimitedName(attributeName)} values")
@@ -118,7 +140,7 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
 
   // wraps the ontologyDAO call, handles Nones/nulls, and returns a [Future[Seq].
   // the Seq is populated if the leaf node exists and has parents; Seq is empty otherwise.
-  def lookupParentNodes(leafId:String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext):Seq[TermParent] = {
+  def lookupParentNodes(leafId: String, ontologyDAO: OntologyDAO)(implicit ec: ExecutionContext): Seq[TermParent] =
     Try(ontologyDAO.search(leafId)) match {
       case Success(terms) if terms.nonEmpty =>
         terms.head.parents.getOrElse(Seq.empty)
@@ -127,7 +149,6 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
         logger.warn(s"exception getting term and parents from ontology: ${ex.getMessage}")
         Seq.empty[TermParent]
     }
-  }
 
   def defaultSchema: String = FileUtils.readAllTextFromResource(LibraryService.schemaLocation)
 
@@ -135,34 +156,35 @@ trait LibraryServiceSupport extends DataUseRestrictionSupport with LazyLogging {
   def schemaValidate(data: JsObject): Unit = validateJsonSchema(data.compactPrint, defaultSchema)
 
   def validateJsonSchema(data: String, schemaStr: String): Unit = {
-    val rawSchema:JSONObject = new JSONObject(new JSONTokener(schemaStr))
-    val schema:Schema = SchemaLoader.load(rawSchema)
+    val rawSchema: JSONObject = new JSONObject(new JSONTokener(schemaStr))
+    val schema: Schema = SchemaLoader.load(rawSchema)
     schema.validate(new JSONObject(data))
   }
 
-  def getSchemaValidationMessages(ve: ValidationException): Seq[String] = {
+  def getSchemaValidationMessages(ve: ValidationException): Seq[String] =
     Seq(ve.getPointerToViolation + ": " + ve.getErrorMessage) ++
       (ve.getCausingExceptions.asScala flatMap getSchemaValidationMessages)
-  }
 
-  def getEffectiveDiscoverGroups(samDAO: SamDAO)(implicit ec: ExecutionContext, userInfo:UserInfo): Future[Seq[String]] = {
+  def getEffectiveDiscoverGroups(
+    samDAO: SamDAO
+  )(implicit ec: ExecutionContext, userInfo: UserInfo): Future[Seq[String]] =
     samDAO.listGroups(userInfo) map { groupMemberships =>
       groupMemberships map (_.groupName) intersect FireCloudConfig.ElasticSearch.discoverGroupNames.asScala
     }
-  }
 
   // this method will determine if the user is making a change to discoverableByGroups
   // if the attribute does not exist on the workspace, it is the same as the empty list
   def isDiscoverableDifferent(workspaceResponse: WorkspaceResponse, userAttrs: AttributeMap): Boolean = {
 
-    def convert(list: Option[Attribute]): Seq[AttributeValue] = {
+    def convert(list: Option[Attribute]): Seq[AttributeValue] =
       list match {
-        case Some(x:AttributeValueList) => x.list
-        case _ => Seq.empty[AttributeValue]
+        case Some(x: AttributeValueList) => x.list
+        case _                           => Seq.empty[AttributeValue]
       }
-    }
 
-    val current = convert(workspaceResponse.workspace.attributes.getOrElse(Map.empty).get(LibraryService.discoverableWSAttribute))
+    val current = convert(
+      workspaceResponse.workspace.attributes.getOrElse(Map.empty).get(LibraryService.discoverableWSAttribute)
+    )
     val newvals = convert(userAttrs.get(LibraryService.discoverableWSAttribute))
 
     current.toSet != newvals.toSet

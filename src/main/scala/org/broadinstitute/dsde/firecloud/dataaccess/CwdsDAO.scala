@@ -16,18 +16,12 @@ trait CwdsDAO {
   def getSupportedFormats: List[String]
 
   @throws(classOf[ApiException])
-  def listJobsV1(workspaceId: String,
-                 runningOnly: Boolean
-                )(implicit userInfo: UserInfo): List[CwdsListResponse]
+  def listJobsV1(workspaceId: String, runningOnly: Boolean)(implicit userInfo: UserInfo): List[CwdsListResponse]
 
   @throws(classOf[ApiException])
-  def getJobV1(workspaceId: String,
-               jobId: String
-              )(implicit userInfo: UserInfo): CwdsListResponse
+  def getJobV1(workspaceId: String, jobId: String)(implicit userInfo: UserInfo): CwdsListResponse
 
   @throws(classOf[ApiException])
-  def importV1(workspaceId: String,
-               asyncImportRequest: AsyncImportRequest
-              )(implicit userInfo: UserInfo): GenericJob
+  def importV1(workspaceId: String, asyncImportRequest: AsyncImportRequest)(implicit userInfo: UserInfo): GenericJob
 
 }

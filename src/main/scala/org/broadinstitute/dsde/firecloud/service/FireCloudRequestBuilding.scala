@@ -9,12 +9,11 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.server.RequestContext
 
-
 trait FireCloudRequestBuilding extends RequestBuilding {
 
   val fireCloudHeader = RawHeader("X-FireCloud-Id", FireCloudConfig.FireCloud.fireCloudId)
 
-  def authHeaders(credentials:Option[HttpCredentials]): HttpRequest => HttpRequest = {
+  def authHeaders(credentials: Option[HttpCredentials]): HttpRequest => HttpRequest =
     credentials match {
       // if we have authorization credentials, apply them to the outgoing request
       case Some(c) => addCredentials(c) ~> addFireCloudCredentials
@@ -22,7 +21,6 @@ trait FireCloudRequestBuilding extends RequestBuilding {
       // alternately, we could throw an error here, since we assume some authorization should exist.
       case None => (r: HttpRequest) => r ~> addFireCloudCredentials
     }
-  }
 
   def authHeaders(requestContext: RequestContext): HttpRequest => HttpRequest = {
     // inspect headers for a pre-existing Authorization: header
@@ -32,9 +30,8 @@ trait FireCloudRequestBuilding extends RequestBuilding {
     authHeaders(authorizationHeader)
   }
 
-  def authHeaders(accessToken: WithAccessToken): HttpRequest => HttpRequest = {
+  def authHeaders(accessToken: WithAccessToken): HttpRequest => HttpRequest =
     authHeaders(Some(accessToken.accessToken))
-  }
 
   // with great power comes great responsibility!
   def addAdminCredentials = addCredentials(OAuth2BearerToken(HttpGoogleServicesDAO.getAdminUserAccessToken))

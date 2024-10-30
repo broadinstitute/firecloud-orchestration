@@ -38,27 +38,36 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
   val invalidFireCloudEntitiesCopyPath = apiPrefix + "/broad-dsde-dev/invalid/entities/copy"
 
   val validEntityCopy = EntityCopyWithoutDestinationDefinition(
-    sourceWorkspace = WorkspaceName(namespace="broad-dsde-dev", name="other-ws"),
-    entityType = "sample", Seq("sample_01"))
+    sourceWorkspace = WorkspaceName(namespace = "broad-dsde-dev", name = "other-ws"),
+    entityType = "sample",
+    Seq("sample_01")
+  )
   val invalidEntityCopy = EntityCopyWithoutDestinationDefinition(
-    sourceWorkspace = WorkspaceName(namespace="invalid", name="other-ws"),
-    entityType = "sample", Seq("sample_01"))
+    sourceWorkspace = WorkspaceName(namespace = "invalid", name = "other-ws"),
+    entityType = "sample",
+    Seq("sample_01")
+  )
 
-  val validEntityDelete = Seq(EntityId("sample","id"),EntityId("sample","bar"))
+  val validEntityDelete = Seq(EntityId("sample", "id"), EntityId("sample", "bar"))
   val invalidEntityDelete = validEntityCopy // we're testing that the payload can't be unmarshalled to a Seq[EntityId]
-  val mixedFailEntityDelete = Seq(EntityId("sample","foo"),EntityId("failme","kthxbai"),EntityId("sample","bar"))
-  val allFailEntityDelete = Seq(EntityId("failme","kthxbai"))
+  val mixedFailEntityDelete = Seq(EntityId("sample", "foo"), EntityId("failme", "kthxbai"), EntityId("sample", "bar"))
+  val allFailEntityDelete = Seq(EntityId("failme", "kthxbai"))
 
   def entityCopyWithDestination(copyDef: EntityCopyDefinition) = new EntityCopyDefinition(
     sourceWorkspace = copyDef.sourceWorkspace,
     destinationWorkspace = WorkspaceName("broad-dsde-dev", "valid"),
     entityType = copyDef.entityType,
-    entityNames = copyDef.entityNames)
+    entityNames = copyDef.entityNames
+  )
 
   val sampleAtts = Map(
     AttributeName.withDefaultNS("sample_type") -> AttributeString("Blood"),
-    AttributeName.withDefaultNS("ref_fasta") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"),
-    AttributeName.withDefaultNS("ref_dict") -> AttributeString("gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"),
+    AttributeName.withDefaultNS("ref_fasta") -> AttributeString(
+      "gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.fasta"
+    ),
+    AttributeName.withDefaultNS("ref_dict") -> AttributeString(
+      "gs://cancer-exome-pipeline-demo-data/Homo_sapiens_assembly19.dict"
+    ),
     AttributeName.withDefaultNS("participant_id") -> AttributeEntityReference("participant", "subject_HCC1143")
   )
   val validSampleEntities = List(Entity("sample_01", "sample", sampleAtts))
@@ -70,9 +79,15 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/sample"))
+          .withPath(
+            FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev",
+                                                                                         "valid"
+            ) + "/sample"
+          )
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
+        org.mockserver.model.HttpResponse
+          .response()
           .withHeaders(MockUtils.header)
           .withBody(validSampleEntities.toJson.compactPrint)
           .withStatusCode(OK.intValue)
@@ -82,30 +97,42 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid")))
+          .withPath(
+            FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid")
+          )
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
       )
     // Valid entity query case
     workspaceServer
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entityQueryPath.format("broad-dsde-dev", "valid") + "/sample"))
+          .withPath(
+            FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entityQueryPath.format("broad-dsde-dev",
+                                                                                            "valid"
+            ) + "/sample"
+          )
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
-          .withHeaders(MockUtils.header).withStatusCode(OK.intValue)
+        org.mockserver.model.HttpResponse
+          .response()
+          .withHeaders(MockUtils.header)
+          .withStatusCode(OK.intValue)
       )
     // Valid/Invalid Copy cases
     workspaceServer
       .when(
         request()
           .withMethod("POST")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath))
+          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.workspacesEntitiesCopyPath)
+      )
       .respond(
-        callback().
-          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityCopyCallback")
+        callback().withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityCopyCallback")
       )
 
     // Invalid Entities by sample type case
@@ -113,9 +140,15 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid") + "/sample"))
+          .withPath(
+            FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev",
+                                                                                         "invalid"
+            ) + "/sample"
+          )
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
+        org.mockserver.model.HttpResponse
+          .response()
           .withHeaders(MockUtils.header)
           .withStatusCode(NotFound.intValue)
           .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
@@ -125,9 +158,13 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("GET")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid")))
+          .withPath(
+            FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "invalid")
+          )
+      )
       .respond(
-        org.mockserver.model.HttpResponse.response()
+        org.mockserver.model.HttpResponse
+          .response()
           .withHeaders(MockUtils.header)
           .withStatusCode(NotFound.intValue)
           .withBody(MockUtils.rawlsErrorReport(NotFound).toJson.compactPrint)
@@ -137,16 +174,19 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
       .when(
         request()
           .withMethod("POST")
-          .withPath(FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev", "valid") + "/delete"))
+          .withPath(
+            FireCloudConfig.Rawls.authPrefix + FireCloudConfig.Rawls.entitiesPath.format("broad-dsde-dev",
+                                                                                         "valid"
+            ) + "/delete"
+          )
+      )
       .respond(
-        callback().
-          withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityDeleteCallback")
+        callback().withCallbackClass("org.broadinstitute.dsde.firecloud.mock.ValidEntityDeleteCallback")
       )
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     workspaceServer.stop()
-  }
 
   "EntityService" - {
 
@@ -176,7 +216,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling GET on valid entityQuery with params" - {
       "OK response is returned" in {
-        Get(validFireCloudEntityQuerySamplePath + "?page=1&pageSize=1") ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Get(validFireCloudEntityQuerySamplePath + "?page=1&pageSize=1") ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(OK)
         }
       }
@@ -184,7 +226,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling POST on valid copy entities" - {
       "Created response is returned" in {
-        Post(validFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Post(validFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(Created)
         }
       }
@@ -192,7 +236,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling POST on invalid copy entities" - {
       "NotFound response is returned" in {
-        Post(validFireCloudEntitiesCopyPath, invalidEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Post(validFireCloudEntitiesCopyPath, invalidEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -219,7 +265,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling POST on copy entities in an unknown workspace" - {
       "NotFound response is returned with an ErrorReport" in {
-        Post(invalidFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Post(invalidFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
@@ -228,7 +276,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling bulk entity delete with a valid payload" - {
       "response is NoContent" in {
-        Post(validFireCloudEntitiesBulkDeletePath, validEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Post(validFireCloudEntitiesBulkDeletePath, validEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(NoContent)
         }
       }
@@ -236,7 +286,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling bulk entity delete with an invalid payload" - {
       "BadRequest is returned" in {
-        Post(validFireCloudEntitiesBulkDeletePath, invalidEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Post(validFireCloudEntitiesBulkDeletePath, invalidEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(BadRequest)
         }
       }
@@ -244,7 +296,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling bulk entity delete with some missing entities" - {
       "BadRequest is returned with an ErrorReport" in {
-        Post(validFireCloudEntitiesBulkDeletePath, mixedFailEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Post(validFireCloudEntitiesBulkDeletePath, mixedFailEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(BadRequest)
           errorReportCheck("Rawls", BadRequest)
         }
@@ -253,7 +307,9 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
 
     "when calling bulk entity delete with all missing entities" - {
       "BadRequest is returned with an ErrorReport" in {
-        Post(validFireCloudEntitiesBulkDeletePath, allFailEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(entityRoutes) ~> check {
+        Post(validFireCloudEntitiesBulkDeletePath, allFailEntityDelete) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          entityRoutes
+        ) ~> check {
           status should be(BadRequest)
           errorReportCheck("Rawls", BadRequest)
         }

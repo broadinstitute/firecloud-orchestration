@@ -16,7 +16,7 @@ object OrchMethodRepository {
 
     def toPath(entityType: EntityType): String = entityType match {
       case Workflow | Task => "methods"
-      case Configuration => "configurations"
+      case Configuration   => "configurations"
     }
   }
 
@@ -49,16 +49,21 @@ object OrchMethodRepository {
     def toShortString: String = s"Method($namespace,$name,$snapshotId)"
   }
 
-  case class AgoraConfigurationShort(
-    name: String,
-    rootEntityType: String,
-    methodRepoMethod: AgoraMethod,
-    namespace: String)
+  case class AgoraConfigurationShort(name: String,
+                                     rootEntityType: String,
+                                     methodRepoMethod: AgoraMethod,
+                                     namespace: String
+  )
 
   object Method {
     def apply(mrm: AgoraMethod): Method = apply(mrm = mrm, managers = None, public = None)
-    def apply(mrm: AgoraMethod, managers:Option[Seq[String]], public:Option[Boolean]): Method =
-      new Method(Some(mrm.methodNamespace), Some(mrm.methodName), Some(mrm.methodVersion), managers=managers, public=public)
+    def apply(mrm: AgoraMethod, managers: Option[Seq[String]], public: Option[Boolean]): Method =
+      new Method(Some(mrm.methodNamespace),
+                 Some(mrm.methodName),
+                 Some(mrm.methodVersion),
+                 managers = managers,
+                 public = public
+      )
   }
 
   // represents a method/config permission as exposed to the user from the orchestration layer
@@ -87,7 +92,11 @@ object OrchMethodRepository {
 
   case class MethodAclPair(method: AgoraMethod, acls: Seq[FireCloudPermission], message: Option[String] = None)
 
-  case class EntityAccessControl(method:Option[Method], referencedBy: OrchMethodConfigurationName, acls: Seq[FireCloudPermission], message: Option[String] = None)
+  case class EntityAccessControl(method: Option[Method],
+                                 referencedBy: OrchMethodConfigurationName,
+                                 acls: Seq[FireCloudPermission],
+                                 message: Option[String] = None
+  )
 
   object ACLNames {
     val NoAccess = "NO ACCESS"
@@ -98,13 +107,11 @@ object OrchMethodRepository {
     // yes we could manually sort these, but I prefer using .sorted - it's a one-time init, and it eliminates human mistakes
     val ListNoAccess = List("Nothing")
     val ListReader = List("Read")
-    val ListOwner = List("Read","Write","Create","Redact","Manage").sorted
+    val ListOwner = List("Read", "Write", "Create", "Redact", "Manage").sorted
     val ListAll = List("All")
   }
 
-  def validatePublicOrEmail(email:String): Boolean = {
+  def validatePublicOrEmail(email: String): Boolean =
     "public".equals(email) || Try(new InternetAddress(email).validate()).isSuccess
-  }
-
 
 }

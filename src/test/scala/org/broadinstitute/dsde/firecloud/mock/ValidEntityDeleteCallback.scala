@@ -23,8 +23,7 @@ class ValidEntityDeleteCallback extends ExpectationResponseCallback {
       response()
         .withHeaders(header)
         .withStatusCode(NoContent.intValue)
-    }
-    else {
+    } else {
       response()
         .withHeaders(header)
         .withStatusCode(BadRequest.intValue)

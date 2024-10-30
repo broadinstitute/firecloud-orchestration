@@ -6,8 +6,16 @@ import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impShareFormat
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import org.elasticsearch.action.admin.indices.create.{CreateIndexRequest, CreateIndexRequestBuilder, CreateIndexResponse}
-import org.elasticsearch.action.admin.indices.exists.indices.{IndicesExistsRequest, IndicesExistsRequestBuilder, IndicesExistsResponse}
+import org.elasticsearch.action.admin.indices.create.{
+  CreateIndexRequest,
+  CreateIndexRequestBuilder,
+  CreateIndexResponse
+}
+import org.elasticsearch.action.admin.indices.exists.indices.{
+  IndicesExistsRequest,
+  IndicesExistsRequestBuilder,
+  IndicesExistsResponse
+}
 import org.elasticsearch.action.get.{GetRequest, GetRequestBuilder, GetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexRequestBuilder, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchRequestBuilder, SearchResponse}
@@ -25,6 +33,7 @@ import scala.util.hashing.MurmurHash3
 import scala.util.{Failure, Success, Try}
 
 trait ShareQueries {
+
   /**
     * Makes an ElasticSearch query builder to get user shares
     * @param userId     ID of user whose shares to get
@@ -47,10 +56,14 @@ trait ShareQueries {
   * @param client      The ElasticSearch client
   * @param indexName   The name of the target share log index in ElasticSearch
   */
-class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refreshMode: RefreshPolicy = RefreshPolicy.NONE)
-  extends ShareLogDAO with ElasticSearchDAOSupport with ShareQueries {
+class ElasticSearchShareLogDAO(client: TransportClient,
+                               indexName: String,
+                               refreshMode: RefreshPolicy = RefreshPolicy.NONE
+) extends ShareLogDAO
+    with ElasticSearchDAOSupport
+    with ShareQueries {
 
-  lazy private final val datatype = "sharelog"
+  final private lazy val datatype = "sharelog"
 
   init // checks for the presence of the index
 
@@ -83,9 +96,8 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     * @param shareType The type (workspace, group, or method) see `ShareLog`
     * @return The records of the shares - see `ShareLog.Share`
     */
-  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] = {
+  override def logShares(userId: String, sharees: Seq[String], shareType: ShareType.Value): Seq[Share] =
     sharees map { sharee => logShare(userId, sharee, shareType) }
-  }
 
   /**
     * Gets a share by the ID, a `MurmurHash3` of `userId` + `sharee` + `shareType`
@@ -98,7 +110,7 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
     val getSharesQuery = client.prepareGet(indexName, datatype, id)
     Try(executeESRequest[GetRequest, GetResponse, GetRequestBuilder](getSharesQuery)) match {
       case Success(get) if get.isExists => get.getSourceAsString.parseJson.convertTo[Share]
-      case Success(_) => throw new FireCloudException(s"share not found")
+      case Success(_)                   => throw new FireCloudException(s"share not found")
       case Failure(f) => throw new FireCloudException(s"error getting share for $share: ${f.getMessage}")
     }
   }
@@ -123,9 +135,8 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
       case hits =>
         if (hits.totalHits == 0)
           Seq.empty[Share]
-        else
-          if (hits.totalHits >= 100) logger.warn(s"Number of shares for user $userId has reached or exceeded 100.")
-          getSharesResponse.getHits.getHits.toList map (_.getSourceAsString.parseJson.convertTo[Share])
+        else if (hits.totalHits >= 100) logger.warn(s"Number of shares for user $userId has reached or exceeded 100.")
+        getSharesResponse.getHits.getHits.toList map (_.getSourceAsString.parseJson.convertTo[Share])
     }
   }
 
@@ -137,21 +148,20 @@ class ElasticSearchShareLogDAO(client: TransportClient, indexName: String, refre
 //
 //  override def autocomplete(userId: String, term: String): List[String] = ???
 
-  private def indexExists: Boolean = {
+  private def indexExists: Boolean =
     executeESRequest[IndicesExistsRequest, IndicesExistsResponse, IndicesExistsRequestBuilder](
-    client.admin.indices.prepareExists(indexName)
+      client.admin.indices.prepareExists(indexName)
     ).isExists
-  }
 
-  private def init: Unit = {
+  private def init: Unit =
     if (!indexExists) {
       executeESRequest[CreateIndexRequest, CreateIndexResponse, CreateIndexRequestBuilder](
-      client.admin.indices.prepareCreate(indexName))
+        client.admin.indices.prepareCreate(indexName)
+      )
       // Try one more time and fail if index creation fails
       if (!indexExists)
-      throw new FireCloudException(s"index $indexName does not exist!")
+        throw new FireCloudException(s"index $indexName does not exist!")
     }
-  }
 
   /**
     * Uses MurmurHash3 for quick hashing -
