@@ -19,7 +19,8 @@ trait ExportEntitiesApiService
     extends Directives
     with RequestBuilding
     with StandardUserInfoDirectives
-    with LazyLogging {
+    with LazyLogging
+    with SprayJsonSupport {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
