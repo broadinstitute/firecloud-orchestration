@@ -19,6 +19,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import spray.json._
 
+import java.nio.file.Path
 import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -393,31 +394,33 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
       val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
       // list all files in bucket which match matchingOptions.prefix
-      val fileList = googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix))
+      val fileList: List[GcsObjectName] = googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix))
 
-      // generate a map of filename-with-no-directories -> absolute gs:// url to filename
-      val urlmap: Map[String, String] = fileList.map { file =>
-        file.value.split('/').reverse.head -> s"gs://${workspaceBucket.value}/${file.value}"
-      }.toMap
+      // transform the list of GcsObjectName to a list of java.nio.Path
+      val pathList: List[Path] = fileList.map(gcsObject => new java.io.File(gcsObject.value).toPath)
 
-      val filenames = urlmap.keys.toList
+//      // generate a map of filename-with-no-directories -> absolute gs:// url to filename
+//      val urlmap: Map[String, String] = fileList.map { file =>
+//        file.value.split('/').reverse.head -> s"gs://${workspaceBucket.value}/${file.value}"
+//      }.toMap
+//
+//      val filenames = urlmap.keys.toList
 
       // perform the pairing
-      val pairs: List[PairMatch] = new FileMatcher().pairFiles(filenames)
+      val pairs: List[PairMatch] = new FileMatcher().pairPaths(pathList)
 
       // TSV headers
-      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "detectedType", "read1", "read2")
+      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "read1", "read2")
 
       // transform the matched pairs into entities
       val entities: List[Entity] = pairs.map { pair =>
         val attributes = Map(
-          AttributeName.withDefaultNS("read1") -> AttributeString(urlmap(pair.mainFile)),
+          AttributeName.withDefaultNS("read1") -> AttributeString(pair.mainFile.toString),
           AttributeName.withDefaultNS("read2") -> AttributeString(
-            pair.matchedFile.map(f => urlmap(f)).getOrElse("")
-          ),
-          AttributeName.withDefaultNS("detectedType") -> AttributeString(pair.baseName.getOrElse(""))
+            pair.matchedFile.map(_.toString).getOrElse("")
+          )
         )
-        Entity(pair.id.getOrElse(pair.mainFile), entityType, attributes)
+        Entity(pair.id.getOrElse(pair.mainFile.toString), entityType, attributes)
       }
 
       val headerString = entityHeaders.mkString("\t") + "\n"
