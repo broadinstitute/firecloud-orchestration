@@ -402,15 +402,14 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
       .getTokenValue
 
   override def listBucket(bucketName: GcsBucketName, prefix: Option[String]): List[GcsObjectName] = {
+    // listObjectsWithPrefix handles paginating through results if there are more results than
+    // the `maxPageSize` setting.
     val listAttempt = getStorageResource.use { storageService =>
       storageService
-        .listObjectsWithPrefix(bucketName, prefix.getOrElse(""), maxPageSize = 5000, isRecursive = true)
+        .listObjectsWithPrefix(bucketName, prefix.getOrElse(""), maxPageSize = 2000, isRecursive = true)
         .compile
         .toList
     }
-
-    // TODO: recurse if there are more files in the bucket and we need to paginate? Does
-    //  listObjectsWithPrefix handle that internally?
 
     // execute the upload
     listAttempt.unsafeRunSync()
