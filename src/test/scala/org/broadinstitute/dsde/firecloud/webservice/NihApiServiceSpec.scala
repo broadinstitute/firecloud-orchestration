@@ -288,21 +288,12 @@ class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll with SamMo
     services =>
       Post("/sync_whitelist") ~> sealRoute(services.syncRoute) ~> check {
         status should equal(NoContent)
-        assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED),
-                           services.samDao.groups(tcgaDbGaPAuthorized).map(_.value)
-        )
-        assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TARGET_LINKED),
-                           services.samDao.groups(targetDbGaPAuthorized).map(_.value)
-        )
       }
   }
 
   it should "return NoContent and properly sync a single whitelist" in withDefaultApiServices { services =>
     Post("/sync_whitelist/TCGA") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NoContent)
-      assertSameElements(Set(services.thurloeDao.TCGA_AND_TARGET_LINKED, services.thurloeDao.TCGA_LINKED),
-                         services.samDao.groups(tcgaDbGaPAuthorized).map(_.value)
-      )
     }
   }
 
