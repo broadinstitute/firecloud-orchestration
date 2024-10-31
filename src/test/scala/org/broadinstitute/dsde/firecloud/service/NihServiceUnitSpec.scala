@@ -594,8 +594,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
         )
       }
     )
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("email")))
-      .thenReturn(Future.successful(samUsers.map(user => user.id.value -> user.email.value).toMap))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
       .thenReturn(Future.successful(linkedAccountsBySamUserId.map(tup => (tup._1.value, tup._2.linkedExternalId))))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime"))).thenReturn(
