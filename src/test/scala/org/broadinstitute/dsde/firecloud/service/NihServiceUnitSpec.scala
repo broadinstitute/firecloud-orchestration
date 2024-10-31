@@ -244,12 +244,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   it should "sync all users by combining responses from ECM and Thurloe if they contain different users" in {
     when(ecmDao.getActiveLinkedEraAccounts(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
       .thenReturn(Future.successful(Seq(userTargetOnlyLinkedAccount)))
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("email")))
-      .thenReturn(
-        Future.successful(
-          samUsers.filter(u => !u.id.equals(userTargetOnly.id)).map(user => user.id.value -> user.email.value).toMap
-        )
-      )
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
       .thenReturn(
         Future.successful(
