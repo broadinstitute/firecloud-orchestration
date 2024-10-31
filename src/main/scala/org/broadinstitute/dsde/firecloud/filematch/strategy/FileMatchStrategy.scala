@@ -6,6 +6,6 @@ import java.nio.file.Path
 
 trait FileMatchStrategy {
 
-  def matchFirstFile(filename: Path): FileMatchResult
+  def matchFirstFile(path: Path): FileMatchResult
 
 }

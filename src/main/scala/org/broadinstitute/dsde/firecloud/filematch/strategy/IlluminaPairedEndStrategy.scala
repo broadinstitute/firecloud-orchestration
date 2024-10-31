@@ -27,18 +27,18 @@ object IlluminaPairedEndStrategy {
 }
 
 class IlluminaPairedEndStrategy extends FileMatchStrategy {
-  override def matchFirstFile(filename: Path): FileMatchResult = {
-    val foundMatch = FILE_ENDINGS.find { case ((key, _)) => filename.toString.endsWith(key) }
+  override def matchFirstFile(path: Path): FileMatchResult = {
+    val foundMatch = FILE_ENDINGS.find { case (key, _) => path.toString.endsWith(key) }
 
     foundMatch match {
       case Some((key, value)) =>
         // generate the id: strip the suffix from the filename.
-        val id = filename.getFileName.toString.replace(key, "")
+        val id = path.getFileName.toString.replace(key, "")
         // generate the second filename: replace the first suffix with the second suffix
-        val secondFile = new java.io.File(filename.toString.replace(key, value))
-        SuccessfulMatchResult(filename, secondFile.toPath, id)
+        val secondFile = new java.io.File(path.toString.replace(key, value))
+        SuccessfulMatchResult(path, secondFile.toPath, id)
 
-      case None => FailedMatchResult(filename)
+      case None => FailedMatchResult(path)
     }
   }
 }
