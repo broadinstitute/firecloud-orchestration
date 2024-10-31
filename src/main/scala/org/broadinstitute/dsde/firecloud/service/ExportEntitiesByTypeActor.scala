@@ -9,10 +9,16 @@ import akka.util.{ByteString, Timeout}
 import better.files.File
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.filematch.result.{
+  FailedMatchResult,
+  FileMatchResult,
+  PartialMatchResult,
+  SuccessfulMatchResult
+}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
 import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.FileMatchingOptions
-import org.broadinstitute.dsde.firecloud.utils.{FileMatcher, PairMatch, TSVFormatter}
+import org.broadinstitute.dsde.firecloud.utils.{FileMatcher, TSVFormatter}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
@@ -399,28 +405,31 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       // transform the list of GcsObjectName to a list of java.nio.Path
       val pathList: List[Path] = fileList.map(gcsObject => new java.io.File(gcsObject.value).toPath)
 
-//      // generate a map of filename-with-no-directories -> absolute gs:// url to filename
-//      val urlmap: Map[String, String] = fileList.map { file =>
-//        file.value.split('/').reverse.head -> s"gs://${workspaceBucket.value}/${file.value}"
-//      }.toMap
-//
-//      val filenames = urlmap.keys.toList
-
       // perform the pairing
-      val pairs: List[PairMatch] = new FileMatcher().pairPaths(pathList)
+      val pairs: List[FileMatchResult] = new FileMatcher().pairPaths(pathList)
 
       // TSV headers
       val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "read1", "read2")
 
       // transform the matched pairs into entities
-      val entities: List[Entity] = pairs.map { pair =>
-        val attributes = Map(
-          AttributeName.withDefaultNS("read1") -> AttributeString(pair.mainFile.toString),
-          AttributeName.withDefaultNS("read2") -> AttributeString(
-            pair.matchedFile.map(_.toString).getOrElse("")
+      val entities: List[Entity] = pairs.map {
+        case SuccessfulMatchResult(firstFile, secondFile, id) =>
+          val attributes = Map(
+            AttributeName.withDefaultNS("read1") -> AttributeString(firstFile.toString),
+            AttributeName.withDefaultNS("read2") -> AttributeString(secondFile.toString)
           )
-        )
-        Entity(pair.id.getOrElse(pair.mainFile.toString), entityType, attributes)
+          Entity(id, entityType, attributes)
+        case PartialMatchResult(firstFile, id) =>
+          val attributes = Map(
+            AttributeName.withDefaultNS("read1") -> AttributeString(firstFile.toString)
+          )
+          Entity(id, entityType, attributes)
+        case FailedMatchResult(firstFile) =>
+          val attributes = Map(
+            AttributeName.withDefaultNS("read1") -> AttributeString(firstFile.toString)
+          )
+          Entity(firstFile.toString, entityType, attributes)
+
       }
 
       val headerString = entityHeaders.mkString("\t") + "\n"

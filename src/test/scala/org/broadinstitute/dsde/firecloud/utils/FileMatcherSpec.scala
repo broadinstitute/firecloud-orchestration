@@ -1,5 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
+import org.broadinstitute.dsde.firecloud.filematch.result.{FailedMatchResult, PartialMatchResult, SuccessfulMatchResult}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -11,8 +12,8 @@ class FileMatcherSpec extends AnyFreeSpec with Matchers {
         val input = List("Sample1_01.fastq.gz", "Sample1_02.fastq.gz", "Sample2_01.fastq.gz", "Sample2_02.fastq.gz")
 
         val expected = List(
-          PairMatch("Sample1_01.fastq.gz", Option("Sample1_02.fastq.gz"), Option("Sample1")),
-          PairMatch("Sample2_01.fastq.gz", Option("Sample2_02.fastq.gz"), Option("Sample2"))
+          SuccessfulMatchResult.fromStrings("Sample1_01.fastq.gz", "Sample1_02.fastq.gz", "Sample1"),
+          SuccessfulMatchResult.fromStrings("Sample2_01.fastq.gz", "Sample2_02.fastq.gz", "Sample2")
         )
         val actual = new FileMatcher().pairFiles(input)
 
@@ -22,10 +23,10 @@ class FileMatcherSpec extends AnyFreeSpec with Matchers {
         val input = List("Sample1_01.fastq.gz", "Sample2_01.fastq.gz", "Sample3_01.fastq.gz", "Sample4_01.fastq.gz")
 
         val expected = List(
-          PairMatch("Sample1_01.fastq.gz", None, Option("Sample1")),
-          PairMatch("Sample2_01.fastq.gz", None, Option("Sample2")),
-          PairMatch("Sample3_01.fastq.gz", None, Option("Sample3")),
-          PairMatch("Sample4_01.fastq.gz", None, Option("Sample4"))
+          PartialMatchResult.fromStrings("Sample1_01.fastq.gz", "Sample1"),
+          PartialMatchResult.fromStrings("Sample2_01.fastq.gz", "Sample2"),
+          PartialMatchResult.fromStrings("Sample3_01.fastq.gz", "Sample3"),
+          PartialMatchResult.fromStrings("Sample4_01.fastq.gz", "Sample4")
         )
         val actual = new FileMatcher().pairFiles(input)
 
@@ -35,9 +36,9 @@ class FileMatcherSpec extends AnyFreeSpec with Matchers {
         val input = List("Sample1_01.fastq.gz", "Sample2_01.fastq.gz", "Sample1_02.fastq.gz", "Sample4_01.fastq.gz")
 
         val expected = List(
-          PairMatch("Sample1_01.fastq.gz", Option("Sample1_02.fastq.gz"), Option("Sample1")),
-          PairMatch("Sample2_01.fastq.gz", None, Option("Sample2")),
-          PairMatch("Sample4_01.fastq.gz", None, Option("Sample4"))
+          SuccessfulMatchResult.fromStrings("Sample1_01.fastq.gz", "Sample1_02.fastq.gz", "Sample1"),
+          PartialMatchResult.fromStrings("Sample2_01.fastq.gz", "Sample2"),
+          PartialMatchResult.fromStrings("Sample4_01.fastq.gz", "Sample4")
         )
         val actual = new FileMatcher().pairFiles(input)
 
@@ -52,10 +53,10 @@ class FileMatcherSpec extends AnyFreeSpec with Matchers {
         )
 
         val expected = List(
-          PairMatch("Sample1_01.fastq.gz", Option("Sample1_02.fastq.gz"), Option("Sample1")),
-          PairMatch("Sample2_01.fastq.gz", None, Option("Sample2")),
-          PairMatch("anotherfile.txt", None, None),
-          PairMatch("my-cat-picture.jpg", None, None)
+          SuccessfulMatchResult.fromStrings("Sample1_01.fastq.gz", "Sample1_02.fastq.gz", "Sample1"),
+          PartialMatchResult.fromStrings("Sample2_01.fastq.gz", "Sample2"),
+          FailedMatchResult.fromString("anotherfile.txt"),
+          FailedMatchResult.fromString("my-cat-picture.jpg")
         )
         val actual = new FileMatcher().pairFiles(input)
 
