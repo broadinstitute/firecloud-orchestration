@@ -26,7 +26,7 @@ object IlluminaPairedEndStrategy {
   )
 }
 
-class IlluminaPairedEndStrategy extends FileMatchStrategy {
+class IlluminaPairedEndStrategy extends FileRecognitionStrategy {
   override def matchFirstFile(path: Path): FileMatchResult = {
     val foundMatch = FILE_ENDINGS.find { case (key, _) => path.toString.endsWith(key) }
 

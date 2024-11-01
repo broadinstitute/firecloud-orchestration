@@ -7,7 +7,11 @@ import java.nio.file.Path
 /**
   * MatchResult indicating that the file successfully hit a known pattern.
   */
-case class SuccessfulMatchResult(firstFile: Path, secondFile: Path, id: String) extends FileMatchResult {}
+case class SuccessfulMatchResult(firstFile: Path, secondFile: Path, id: String) extends FileMatchResult {
+
+  def toPartial: PartialMatchResult = PartialMatchResult(firstFile, id)
+
+}
 
 @VisibleForTesting
 object SuccessfulMatchResult {

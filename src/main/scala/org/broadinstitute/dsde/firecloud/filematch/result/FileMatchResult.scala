@@ -1,6 +1,10 @@
 package org.broadinstitute.dsde.firecloud.filematch.result
 
+import java.nio.file.Path
+
 /**
   * Marker trait for failed/successful file-matching results
   */
-trait FileMatchResult {}
+trait FileMatchResult {
+  def firstFile: Path
+}

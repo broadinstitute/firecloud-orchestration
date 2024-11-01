@@ -4,7 +4,7 @@ import org.broadinstitute.dsde.firecloud.filematch.result.FileMatchResult
 
 import java.nio.file.Path
 
-trait FileMatchStrategy {
+trait FileRecognitionStrategy {
 
   def matchFirstFile(path: Path): FileMatchResult
 
