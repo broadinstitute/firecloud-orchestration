@@ -120,5 +120,5 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   }
 
   override def listBucket(bucketName: GcsBucketName, prefix: Option[String], recursive: Boolean): List[GcsObjectName] =
-    ???
+    List()
 }
