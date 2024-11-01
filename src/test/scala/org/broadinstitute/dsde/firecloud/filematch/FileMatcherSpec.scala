@@ -1,4 +1,4 @@
-package org.broadinstitute.dsde.firecloud.utils
+package org.broadinstitute.dsde.firecloud.filematch
 
 import org.broadinstitute.dsde.firecloud.filematch.result.{FailedMatchResult, PartialMatchResult, SuccessfulMatchResult}
 import org.scalatest.freespec.AnyFreeSpec

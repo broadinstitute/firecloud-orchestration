@@ -5,14 +5,35 @@ import org.broadinstitute.dsde.firecloud.filematch.strategy.IlluminaPairedEndStr
 
 import java.nio.file.Path
 
-/*
-Sample1_01.fastq.gz -> Sample1_02.fastq.gz
-sample01_1.fastq.gz -> sample01_2.fastq.gz
-sample01_R1.fastq.gz -> sample01_R2.fastq.gz
-sample01_F.fastq.gz -> sample01_R.fastq.gz
-sample01_R1.fastq -> sample01_R2.fastq
-SampleName_S1_L001_R1_001.fastq.gz -> SampleName_S1_L001_R2_001.fastq.gz
- */
+/**
+  * Naming conventions for Illumina single end and paired end read patterns. Examples of files recognized:
+  *
+  * Sample1_01.fastq.gz -> Sample1_02.fastq.gz
+  * sample01_1.fastq.gz -> sample01_2.fastq.gz
+  * sample01_R1.fastq.gz -> sample01_R2.fastq.gz
+  * sample01_F.fastq.gz -> sample01_R.fastq.gz
+  * sample01_R1.fastq -> sample01_R2.fastq
+  * SampleName_S1_L001_R1_001.fastq.gz -> SampleName_S1_L001_R2_001.fastq.gz
+  */
+class IlluminaPairedEndStrategy extends FileRecognitionStrategy {
+  override def matchFirstFile(path: Path): FileMatchResult = {
+    // search known patterns for a "read1" file
+    val foundMatch = FILE_ENDINGS.find { case (key, _) => path.toString.endsWith(key) }
+
+    foundMatch match {
+      // we found a "read1"
+      case Some((key, value)) =>
+        // generate the id: strip the suffix from the filename.
+        val id = path.getFileName.toString.replace(key, "")
+        // generate the second filename: replace the first suffix with the second suffix
+        val secondFile = new java.io.File(path.toString.replace(key, value))
+        SuccessfulMatchResult(path, secondFile.toPath, id)
+
+      // the file is not recognized
+      case None => FailedMatchResult(path)
+    }
+  }
+}
 
 object IlluminaPairedEndStrategy {
   // if the first file ends with ${key}, then the second file should end with ${value}
@@ -24,21 +45,4 @@ object IlluminaPairedEndStrategy {
     "_R1.fastq" -> "_R2.fastq",
     "_R1_001.fastq.gz" -> "_R2_001.fastq.gz"
   )
-}
-
-class IlluminaPairedEndStrategy extends FileRecognitionStrategy {
-  override def matchFirstFile(path: Path): FileMatchResult = {
-    val foundMatch = FILE_ENDINGS.find { case (key, _) => path.toString.endsWith(key) }
-
-    foundMatch match {
-      case Some((key, value)) =>
-        // generate the id: strip the suffix from the filename.
-        val id = path.getFileName.toString.replace(key, "")
-        // generate the second filename: replace the first suffix with the second suffix
-        val secondFile = new java.io.File(path.toString.replace(key, value))
-        SuccessfulMatchResult(path, secondFile.toPath, id)
-
-      case None => FailedMatchResult(path)
-    }
-  }
 }

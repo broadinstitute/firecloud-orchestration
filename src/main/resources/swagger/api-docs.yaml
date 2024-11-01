@@ -3703,13 +3703,7 @@ paths:
         content:
           'application/json':
             schema:
-              type: object
-              required:
-                - prefix
-              properties:
-                prefix:
-                  type: string
-                  description: bucket prefix in which to look
+              $ref: '#/components/schemas/FileMatchingOptions'
         required: true
       responses:
         200:
@@ -7511,6 +7505,28 @@ components:
     ExtendedEnabled:
       allOf:
         - $ref: '#/components/schemas/Enabled'
+    FileMatchingOptions:
+      type: object
+      required:
+        - prefix
+      properties:
+        prefix:
+          type: string
+          description: |
+            Bucket prefix in which to look. If `recursive` is false, this must include a trailing
+            slash when specifying a subdirectory.
+        read1Name:
+          type: string
+          description: column name to use for the primary "read 1" file
+          default: read1
+        read2Name:
+          type: string
+          description: column name to use for the matching "read 2" file
+          default: read2
+        recursive:
+          type: boolean
+          description: whether to list files in subdirectories of the prefix
+          default: true
     FireCloudPermission:
       required:
         - role

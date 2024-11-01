@@ -1,7 +1,6 @@
-package org.broadinstitute.dsde.firecloud.utils
+package org.broadinstitute.dsde.firecloud.filematch
 
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.filematch.result
 import org.broadinstitute.dsde.firecloud.filematch.result.{FailedMatchResult, FileMatchResult, SuccessfulMatchResult}
 import org.broadinstitute.dsde.firecloud.filematch.strategy.{FileRecognitionStrategy, IlluminaPairedEndStrategy}
 

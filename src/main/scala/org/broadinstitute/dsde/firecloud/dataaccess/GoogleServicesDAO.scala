@@ -41,5 +41,5 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
 
   def getBucket(bucketName: String, petKey: String): Option[Bucket]
 
-  def listBucket(bucketName: GcsBucketName, prefix: Option[String]): List[GcsObjectName]
+  def listBucket(bucketName: GcsBucketName, prefix: Option[String], recursive: Boolean): List[GcsObjectName]
 }

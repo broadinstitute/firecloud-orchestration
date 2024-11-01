@@ -9,6 +9,8 @@ import akka.util.{ByteString, Timeout}
 import better.files.File
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.filematch.{FileMatcher, FileMatchingOptions}
+import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptionsFormat.fileMatchingOptionsFormat
 import org.broadinstitute.dsde.firecloud.filematch.result.{
   FailedMatchResult,
   FileMatchResult,
@@ -16,9 +18,8 @@ import org.broadinstitute.dsde.firecloud.filematch.result.{
   SuccessfulMatchResult
 }
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
-import org.broadinstitute.dsde.firecloud.service.ExportEntitiesByTypeActor.FileMatchingOptions
-import org.broadinstitute.dsde.firecloud.utils.{FileMatcher, TSVFormatter}
+import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
 import org.broadinstitute.dsde.rawls.model._
@@ -59,18 +60,6 @@ object ExportEntitiesByTypeActor {
       exportArgs.model,
       system
     )
-
-  // *******************************************************************************************************************
-  // POC of file-matching for AJ-2025
-  // *******************************************************************************************************************
-  import spray.json.DefaultJsonProtocol._
-
-  case class FileMatchingOptions(prefix: String)
-
-  implicit val fileMatchingOptionsFormat: RootJsonFormat[FileMatchingOptions] = jsonFormat1(FileMatchingOptions)
-  // *******************************************************************************************************************
-  // POC of file-matching for AJ-2025:
-  // *******************************************************************************************************************
 }
 
 /**
@@ -395,12 +384,18 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   // those files based on Illumina single end and paired end read patterns
   // *******************************************************************************************************************
 
-  def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] =
+  def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] = {
+    // generate defaults for options
+    val read1Name = matchingOptions.read1Name.getOrElse("read1")
+    val read2Name = matchingOptions.read2Name.getOrElse("read2")
+    val recursive = matchingOptions.recursive.getOrElse(true)
+
     // retrieve workspace so we can get its bucket
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
       val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
       // list all files in bucket which match matchingOptions.prefix
-      val fileList: List[GcsObjectName] = googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix))
+      val fileList: List[GcsObjectName] =
+        googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix), recursive)
 
       // transform the list of GcsObjectName to a list of java.nio.Path
       val pathList: List[Path] = fileList.map(gcsObject => new java.io.File(gcsObject.value).toPath)
@@ -409,24 +404,24 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       val pairs: List[FileMatchResult] = new FileMatcher().pairPaths(pathList)
 
       // TSV headers
-      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", "read1", "read2")
+      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", read1Name, read2Name)
 
       // transform the matched pairs into entities
       val entities: List[Entity] = pairs.map {
         case SuccessfulMatchResult(firstFile, secondFile, id) =>
           val attributes = Map(
-            AttributeName.withDefaultNS("read1") -> AttributeString(firstFile.toString),
-            AttributeName.withDefaultNS("read2") -> AttributeString(secondFile.toString)
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(firstFile.toString),
+            AttributeName.withDefaultNS(read2Name) -> AttributeString(secondFile.toString)
           )
           Entity(id, entityType, attributes)
         case PartialMatchResult(firstFile, id) =>
           val attributes = Map(
-            AttributeName.withDefaultNS("read1") -> AttributeString(firstFile.toString)
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(firstFile.toString)
           )
           Entity(id, entityType, attributes)
         case FailedMatchResult(firstFile) =>
           val attributes = Map(
-            AttributeName.withDefaultNS("read1") -> AttributeString(firstFile.toString)
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(firstFile.toString)
           )
           Entity(firstFile.toString, entityType, attributes)
 
@@ -440,5 +435,6 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
       headerString + rowString
     }
+  }
 
 }
