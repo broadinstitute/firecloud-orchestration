@@ -1,27 +1,26 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{`Content-Disposition`, Connection, ContentDispositionTypes}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{`Content-Disposition`, Connection, ContentDispositionTypes}
 import akka.stream._
 import akka.stream.scaladsl.{Source => AkkaSource, _}
 import akka.util.{ByteString, Timeout}
 import better.files.File
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
-import org.broadinstitute.dsde.firecloud.filematch.{FileMatcher, FileMatchingOptions}
-import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptionsFormat.fileMatchingOptionsFormat
 import org.broadinstitute.dsde.firecloud.filematch.result.{
   FailedMatchResult,
   FileMatchResult,
   PartialMatchResult,
   SuccessfulMatchResult
 }
+import org.broadinstitute.dsde.firecloud.filematch.{FileMatcher, FileMatchingOptions}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
+import org.broadinstitute.dsde.rawls.StringValidationUtils
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import spray.json._
@@ -81,7 +80,10 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 model: Option[String],
                                 argSystem: ActorSystem
 )(implicit protected val executionContext: ExecutionContext)
-    extends LazyLogging {
+    extends LazyLogging
+    with StringValidationUtils {
+
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ExportEntitiesByTypeActor.getClass.getName)
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
@@ -389,6 +391,11 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     val read1Name = matchingOptions.read1Name.getOrElse("read1")
     val read2Name = matchingOptions.read2Name.getOrElse("read2")
     val recursive = matchingOptions.recursive.getOrElse(true)
+
+    validateUserDefinedString(read1Name)
+    validateUserDefinedString(read2Name)
+    validateAttributeName(AttributeName.fromDelimitedName(read1Name), entityType)
+    validateAttributeName(AttributeName.fromDelimitedName(read2Name), entityType)
 
     // retrieve workspace so we can get its bucket
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
