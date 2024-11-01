@@ -164,12 +164,9 @@ class NihService(val samDao: SamDAO,
       subjectIds <- getCurrentNihUsernameMap(thurloeDao) map { mapping =>
         mapping.collect { case (fcUser, nihUser) if allowlistEraUsernames contains nihUser => fcUser }.toSeq
       }
-
-      // Sam APIs don't consume subject IDs. Now we must look up the emails in Thurloe...
-      members <- thurloeDao.getAllUserValuesForKey("email").map { keyValues =>
-        keyValues.view.filterKeys(subjectId => subjectIds.contains(subjectId)).values.map(WorkbenchEmail).toList
-      }
-    } yield members.toSet
+      // The users from Sam for the linked accounts on the allowlist
+      users <- samDao.getUsersForIds(subjectIds.map(WorkbenchUserId))(getAdminAccessToken)
+    } yield users.map(user => WorkbenchEmail(user.userEmail)).toSet
 
   // This syncs the specified allowlist in full
   private def syncNihAllowlistAllUsers(nihAllowlist: NihAllowlist): Future[Unit] = {

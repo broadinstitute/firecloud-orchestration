@@ -47,7 +47,7 @@ import java.nio.charset.StandardCharsets
 import java.security.{KeyPairGenerator, PrivateKey}
 import java.time.Instant
 import java.util.{Base64, UUID}
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Random, Success}
 
@@ -69,13 +69,17 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
 
+  // DateTimes must be modified in seconds instead of days to match implementation
+  val secondsIn30Days = 30.days.toSeconds.toInt
+
   var userNoAllowlistsLinkedAccount =
-    LinkedEraAccount(userNoAllowlists.id.value, "nihUsername1", new DateTime().plusDays(30))
+    LinkedEraAccount(userNoAllowlists.id.value, "nihUsername1", new DateTime().plusSeconds(secondsIn30Days))
   var userTcgaAndTargetLinkedAccount =
-    LinkedEraAccount(userTcgaAndTarget.id.value, "nihUsername2", new DateTime().plusDays(30))
-  var userTcgaOnlyLinkedAccount = LinkedEraAccount(userTcgaOnly.id.value, "nihUsername3", new DateTime().plusDays(30))
+    LinkedEraAccount(userTcgaAndTarget.id.value, "nihUsername2", new DateTime().plusSeconds(secondsIn30Days))
+  var userTcgaOnlyLinkedAccount =
+    LinkedEraAccount(userTcgaOnly.id.value, "nihUsername3", new DateTime().plusSeconds(secondsIn30Days))
   var userTargetOnlyLinkedAccount =
-    LinkedEraAccount(userTargetOnly.id.value, "nihUsername4", new DateTime().plusDays(30))
+    LinkedEraAccount(userTargetOnly.id.value, "nihUsername4", new DateTime().plusSeconds(secondsIn30Days))
 
   val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly)
   val linkedAccounts = Seq(userNoAllowlistsLinkedAccount,
@@ -240,12 +244,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   it should "sync all users by combining responses from ECM and Thurloe if they contain different users" in {
     when(ecmDao.getActiveLinkedEraAccounts(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
       .thenReturn(Future.successful(Seq(userTargetOnlyLinkedAccount)))
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("email")))
-      .thenReturn(
-        Future.successful(
-          samUsers.filter(u => !u.id.equals(userTargetOnly.id)).map(user => user.id.value -> user.email.value).toMap
-        )
-      )
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
       .thenReturn(
         Future.successful(
@@ -590,8 +588,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
         )
       }
     )
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("email")))
-      .thenReturn(Future.successful(samUsers.map(user => user.id.value -> user.email.value).toMap))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
       .thenReturn(Future.successful(linkedAccountsBySamUserId.map(tup => (tup._1.value, tup._2.linkedExternalId))))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime"))).thenReturn(
@@ -635,7 +631,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
 
   private def jwtForUser(linkedEraAccount: LinkedEraAccount): JWTWrapper = {
     val expiresInTheFuture: Long = linkedEraAccount.linkExpireTime.getMillis / 1000L
-    val issuedAt = Instant.ofEpochMilli(linkedEraAccount.linkExpireTime.minusDays(30).getMillis).getEpochSecond
+    val issuedAt =
+      Instant.ofEpochMilli(linkedEraAccount.linkExpireTime.minusSeconds(secondsIn30Days).getMillis).getEpochSecond
     val validStr = Jwt.encode(
       JwtClaim(s"""{"eraCommonsUsername": "${linkedEraAccount.linkedExternalId}"}""")
         .issuedAt(issuedAt)
