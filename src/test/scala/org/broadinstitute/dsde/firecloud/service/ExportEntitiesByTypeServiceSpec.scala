@@ -309,7 +309,7 @@ class ExportEntitiesByTypeServiceSpec
     List(true, false) foreach { recursive =>
       s"should pass on recursive flag '$recursive' to bucket listing" in {
         val fileMatchingOptions = FileMatchingOptions("prefix", recursive = Option(recursive))
-        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv/frombucket",
+        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/paired-tsv",
              fileMatchingOptions
         ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
@@ -326,7 +326,7 @@ class ExportEntitiesByTypeServiceSpec
 
     s"should default recursive flag to true if omitted" in {
       val fileMatchingOptions = FileMatchingOptions("prefix", recursive = None)
-      Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv/frombucket",
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/paired-tsv",
            fileMatchingOptions
       ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
         exportEntitiesRoutes
@@ -343,7 +343,7 @@ class ExportEntitiesByTypeServiceSpec
     "should use read1/read2 column names if specified" in {
       val fileMatchingOptions =
         FileMatchingOptions("prefix", read1Name = Option("my-col-1"), read2Name = Option("column-two"))
-      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/tsv/frombucket",
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
            fileMatchingOptions
       ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
         exportEntitiesRoutes
@@ -356,7 +356,7 @@ class ExportEntitiesByTypeServiceSpec
 
     "should default read1/read2 column names to 'read1' and 'read2' if omitted" in {
       val fileMatchingOptions = FileMatchingOptions("prefix", read1Name = None, read2Name = None)
-      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/tsv/frombucket",
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
            fileMatchingOptions
       ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
         exportEntitiesRoutes
@@ -369,7 +369,7 @@ class ExportEntitiesByTypeServiceSpec
 
     "should set a content-type of tab-separated-values on the response" in {
       val fileMatchingOptions = FileMatchingOptions("prefix")
-      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/tsv/frombucket",
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
            fileMatchingOptions
       ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
         exportEntitiesRoutes
@@ -387,7 +387,7 @@ class ExportEntitiesByTypeServiceSpec
       )
       when(mockitoGoogleServicesDao.listBucket(any(), any(), any())).thenReturn(bucketListResponse)
       val fileMatchingOptions = FileMatchingOptions("prefix")
-      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/tsv/frombucket",
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
            fileMatchingOptions
       ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
         exportEntitiesRoutes

@@ -67,7 +67,7 @@ trait ExportEntitiesApiService
               }
             }
         }
-    } ~ path("api" / "workspaces" / Segment / Segment / "entities" / Segment / "tsv" / "frombucket") {
+    } ~ path("api" / "workspaces" / Segment / Segment / "entities" / Segment / "paired-tsv") {
       (workspaceNamespace, workspaceName, entityType) =>
         requireUserInfo() { userInfo =>
           post {

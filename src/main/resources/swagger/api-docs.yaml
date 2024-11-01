@@ -3688,12 +3688,16 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv/frombucket:
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/paired-tsv:
     post:
       tags:
         - Entities
       summary: |
-        Generate TSV of paired files in the workspace's bucket
+        Download a TSV of files in the workspace's bucket, paired by naming convention
+      description: |
+        Lists the files in the workspace's bucket, filtered to a specified prefix. Then,
+        attempts to pair those files to each other based on well-known naming conventions.
+        Downloads a TSV containing the result of those pairings.
       operationId: bucketPairedTSV
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
@@ -3704,6 +3708,19 @@ paths:
           'application/json':
             schema:
               $ref: '#/components/schemas/FileMatchingOptions'
+            examples:
+              minimally-required:
+                value:
+                  prefix: my-bucket-prefix
+              disable-recursion:
+                value:
+                  prefix: my-bucket-prefix/
+                  recursive: false
+              rename-columns:
+                value:
+                  prefix: my-bucket-prefix
+                  read1Name: my-column-name-one
+                  read2Name: my-column-name-two
         required: true
       responses:
         200:
