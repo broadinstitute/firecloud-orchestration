@@ -86,6 +86,7 @@ trait ExportEntitiesApiService
         }
     }
 
+  // given the contents of a TSV, generate a HttpResponse with the appropriate headers to download that TSV file.
   private def asDownloadableTsv(contents: String, filename: String) = HttpResponse(
     entity =
       HttpEntity.apply(ContentType.apply(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`), contents),
@@ -94,8 +95,5 @@ trait ExportEntitiesApiService
       `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> filename))
     )
   )
-  // *******************************************************************************************************************
-  // POC of file-matching for AJ-2025
-  // *******************************************************************************************************************
 
 }

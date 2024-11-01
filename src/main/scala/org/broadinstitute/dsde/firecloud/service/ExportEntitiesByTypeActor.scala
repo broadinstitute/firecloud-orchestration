@@ -384,12 +384,14 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       response.results
     }
 
-  // *******************************************************************************************************************
-  // POC of file-matching for AJ-2025:
-  // Given a workspace and bucket prefix, list all files in the workspace's bucket that match the prefix. Then, pair
-  // those files based on Illumina single end and paired end read patterns
-  // *******************************************************************************************************************
-
+  /**
+    * Perform file-matching for this workspace's bucket. Lists the files in the bucket, filtered by a bucket prefix,
+    * then executes `FileMatcher.pairPaths` on those files. Finally, creates a TSV out of the paired results.
+    *
+    * @see [[FileMatcher]]
+    * @param matchingOptions configuration options for file matching
+    * @return contents of the resultant TSV
+    */
   def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] = {
     // generate defaults for options
     val read1Name = matchingOptions.read1Name.getOrElse("read1")
@@ -455,6 +457,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     }
   }
 
+  // helper to turn a file path into a fully-qualified gs:// url
   private def qualifyBucketFile(file: Path, workspaceBucket: GcsBucketName): String =
     s"gs://${workspaceBucket.value}/$file"
 

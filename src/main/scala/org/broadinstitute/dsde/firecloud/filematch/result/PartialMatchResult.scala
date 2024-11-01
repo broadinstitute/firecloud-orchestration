@@ -5,7 +5,7 @@ import com.google.common.annotations.VisibleForTesting
 import java.nio.file.Path
 
 /**
-  * MatchResult indicating that the file successfully hit a known pattern, but no paired file could be found.
+  * FileMatchResult indicating that the file successfully hit a known pattern, but no paired file could be found.
   */
 case class PartialMatchResult(firstFile: Path, id: String) extends FileMatchResult {}
 

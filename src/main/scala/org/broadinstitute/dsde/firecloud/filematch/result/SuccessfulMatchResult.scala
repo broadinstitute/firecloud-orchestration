@@ -5,12 +5,11 @@ import com.google.common.annotations.VisibleForTesting
 import java.nio.file.Path
 
 /**
-  * MatchResult indicating that the file successfully hit a known pattern.
+  * FileMatchResult indicating that the file successfully hit a known pattern.
   */
 case class SuccessfulMatchResult(firstFile: Path, secondFile: Path, id: String) extends FileMatchResult {
-
+  // convert this SuccessfulMatchResult to a PartialMatchResult
   def toPartial: PartialMatchResult = PartialMatchResult(firstFile, id)
-
 }
 
 @VisibleForTesting

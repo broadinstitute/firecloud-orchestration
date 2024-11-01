@@ -5,7 +5,7 @@ import com.google.common.annotations.VisibleForTesting
 import java.nio.file.Path
 
 /**
-  * MatchResult indicating that the file did not hit on any known pattern.
+  * FileMatchResult indicating that the file did not hit on any known pattern.
   */
 case class FailedMatchResult(firstFile: Path) extends FileMatchResult {}
 

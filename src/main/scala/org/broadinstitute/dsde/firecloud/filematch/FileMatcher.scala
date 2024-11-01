@@ -74,14 +74,12 @@ class FileMatcher extends LazyLogging {
     * @param pathList the list of files to inspect
     * @return pairing results
     */
-  private def findFirstFiles(pathList: List[Path]): List[SuccessfulMatchResult] = {
-    val firstFiles: List[result.SuccessfulMatchResult] = pathList.collect { path =>
+  private def findFirstFiles(pathList: List[Path]): List[SuccessfulMatchResult] =
+    pathList.collect { path =>
       tryPairingStrategies(path) match {
         case success: SuccessfulMatchResult => success
       }
     }
-    firstFiles
-  }
 
   /**
     * find every path in the incoming pathList that is recognized as a "read 2" by our known patterns
@@ -104,14 +102,14 @@ class FileMatcher extends LazyLogging {
   /**
     * Attempt all the configured file recognition strategies against the supplied file.
     *
-    * @param mainFile the file to try to recognize
+    * @param file the file to try to recognize
     * @return SuccessfulMatchResult if the file is recognized; FailedMatchResult if not
     */
-  private def tryPairingStrategies(mainFile: Path): FileMatchResult = {
+  private def tryPairingStrategies(file: Path): FileMatchResult = {
     // does the current file hit on any of our file-matching patterns?
     // Iterate over the matching strategies and return the first successful match result.
     val strategyHit = matchingStrategies.collectFirst(strategy =>
-      strategy.matchFirstFile(mainFile) match {
+      strategy.matchFirstFile(file) match {
         case success: SuccessfulMatchResult => success
       }
     )
@@ -119,7 +117,7 @@ class FileMatcher extends LazyLogging {
       // The current file is recognized by one of our recognition strategies
       case Some(desiredResult: SuccessfulMatchResult) => desiredResult
       // the current file is not recognized
-      case _ => FailedMatchResult(mainFile)
+      case _ => FailedMatchResult(file)
     }
   }
 
