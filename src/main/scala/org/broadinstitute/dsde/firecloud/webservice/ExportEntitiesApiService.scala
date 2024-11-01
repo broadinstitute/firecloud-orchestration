@@ -78,18 +78,18 @@ trait ExportEntitiesApiService
               complete {
                 exportEntitiesByTypeConstructor(exportArgs).matchBucketFiles(matchingOptions) map { pairs =>
                   // download the TSV as an attachment:
-//                    RequestCompleteWithHeaders(
-//                      (OK, pairs),
-//                      `Content-Type`.apply(
-//                        ContentType.apply(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-//                      ),
-//                      `Content-Disposition`.apply(ContentDispositionTypes.attachment,
-//                                                  Map("filename" -> "filematching.tsv")
-//                      )
-//                    )
+                  RequestCompleteWithHeaders(
+                    (OK, pairs),
+                    `Content-Type`.apply(
+                      ContentType.apply(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
+                    ),
+                    `Content-Disposition`.apply(ContentDispositionTypes.attachment,
+                                                Map("filename" -> "filematching.tsv")
+                    )
+                  )
 
                   // for easy debugging: output the TSV as text
-                  RequestComplete(OK, pairs)
+//                  RequestComplete(OK, pairs)
                 }
               }
             }

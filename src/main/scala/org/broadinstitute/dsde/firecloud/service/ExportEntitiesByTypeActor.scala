@@ -40,14 +40,17 @@ case class ExportEntitiesByTypeArguments(
   model: Option[String]
 )
 
-object ExportEntitiesByTypeActor {
+object ExportEntitiesByTypeActor extends StringValidationUtils {
 
   sealed trait ExportEntitiesByTypeMessage
   case object ExportEntities extends ExportEntitiesByTypeMessage
 
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ExportEntitiesByTypeActor.getClass.getName)
+
   def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit
     executionContext: ExecutionContext
-  ) =
+  ) = {
+    validateUserDefinedString(exportArgs.entityType)
     new ExportEntitiesByTypeActor(
       app.rawlsDAO,
       app.googleServicesDAO,
@@ -59,6 +62,7 @@ object ExportEntitiesByTypeActor {
       exportArgs.model,
       system
     )
+  }
 }
 
 /**
@@ -400,15 +404,21 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // retrieve workspace so we can get its bucket
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
       val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
+
       // list all files in bucket which match matchingOptions.prefix
+      logger.info("listing bucket files ...")
       val fileList: List[GcsObjectName] =
         googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix), recursive)
+
+      logger.info(s"found ${fileList.length} files")
 
       // transform the list of GcsObjectName to a list of java.nio.Path
       val pathList: List[Path] = fileList.map(gcsObject => new java.io.File(gcsObject.value).toPath)
 
       // perform the pairing
+      logger.info("starting pairing analysis ...")
       val pairs: List[FileMatchResult] = new FileMatcher().pairPaths(pathList)
+      logger.info(s"completed pairing; result is ${pairs.length} rows")
 
       // TSV headers
       val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", read1Name, read2Name)
@@ -417,21 +427,22 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       val entities: List[Entity] = pairs.map {
         case SuccessfulMatchResult(firstFile, secondFile, id) =>
           val attributes = Map(
-            AttributeName.withDefaultNS(read1Name) -> AttributeString(firstFile.toString),
-            AttributeName.withDefaultNS(read2Name) -> AttributeString(secondFile.toString)
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(qualifyBucketFile(firstFile, workspaceBucket)),
+            AttributeName.withDefaultNS(read2Name) -> AttributeString(qualifyBucketFile(secondFile, workspaceBucket))
           )
           Entity(id, entityType, attributes)
         case PartialMatchResult(firstFile, id) =>
           val attributes = Map(
-            AttributeName.withDefaultNS(read1Name) -> AttributeString(firstFile.toString)
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(qualifyBucketFile(firstFile, workspaceBucket))
           )
           Entity(id, entityType, attributes)
         case FailedMatchResult(firstFile) =>
           val attributes = Map(
-            AttributeName.withDefaultNS(read1Name) -> AttributeString(firstFile.toString)
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(qualifyBucketFile(firstFile, workspaceBucket))
           )
-          Entity(firstFile.toString, entityType, attributes)
-
+          // can't use the file path directly as an entity id; it can contain slashes or other illegal chars
+          val id = firstFile.toString.replaceAll("[^A-z0-9_-]", "_")
+          Entity(id, entityType, attributes)
       }
 
       val headerString = entityHeaders.mkString("\t") + "\n"
@@ -443,5 +454,8 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       headerString + rowString
     }
   }
+
+  private def qualifyBucketFile(file: Path, workspaceBucket: GcsBucketName): String =
+    s"gs://${workspaceBucket.value}/$file"
 
 }
