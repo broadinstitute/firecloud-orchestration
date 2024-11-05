@@ -3688,6 +3688,55 @@ paths:
           description: Internal Server Error
           content: {}
       x-passthrough: false
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/paired-tsv:
+    post:
+      tags:
+        - Entities
+      summary: |
+        Download a TSV of files in the workspace's bucket, paired by naming convention
+      description: |
+        Lists the files in the workspace's bucket, filtered to a specified prefix. Then,
+        attempts to pair those files to each other based on well-known naming conventions.
+        Downloads a TSV containing the result of those pairings.
+      operationId: bucketPairedTSV
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/entityTypeParam'
+      requestBody:
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/FileMatchingOptions'
+            examples:
+              minimally-required:
+                value:
+                  prefix: my-bucket-prefix
+              disable-recursion:
+                value:
+                  prefix: my-bucket-prefix/
+                  recursive: false
+              rename-columns:
+                value:
+                  prefix: my-bucket-prefix
+                  read1Name: my-column-name-one
+                  read2Name: my-column-name-two
+        required: true
+      responses:
+        200:
+          description: URL to saved file
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Workspace or entity type does not exist
+          content: {}
+        500:
+          description: Internal Server Error
+          content: {}
+      x-passthrough: false
   /api/workspaces/{workspaceNamespace}/{workspaceName}/entityQuery/{entityType}:
     get:
       tags:
@@ -7473,6 +7522,28 @@ components:
     ExtendedEnabled:
       allOf:
         - $ref: '#/components/schemas/Enabled'
+    FileMatchingOptions:
+      type: object
+      required:
+        - prefix
+      properties:
+        prefix:
+          type: string
+          description: |
+            Bucket prefix in which to look. If `recursive` is false, this must include a trailing
+            slash when specifying a subdirectory.
+        read1Name:
+          type: string
+          description: column name to use for the primary "read 1" file
+          default: read1
+        read2Name:
+          type: string
+          description: column name to use for the matching "read 2" file
+          default: read2
+        recursive:
+          type: boolean
+          description: whether to list files in subdirectories of the prefix
+          default: true
     FireCloudPermission:
       required:
         - role
