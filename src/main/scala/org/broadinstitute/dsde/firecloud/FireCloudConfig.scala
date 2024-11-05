@@ -153,6 +153,7 @@ object FireCloudConfig {
     lazy val supportDomain = firecloud.getString("supportDomain")
     lazy val supportPrefix = firecloud.getString("supportPrefix")
     lazy val userAdminAccount = firecloud.getString("userAdminAccount")
+    lazy val maxFileMatchingFileCount = firecloud.getInt("max-filematching-bucket-files")
   }
 
   object Shibboleth {

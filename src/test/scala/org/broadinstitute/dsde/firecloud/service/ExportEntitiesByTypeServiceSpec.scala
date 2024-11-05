@@ -10,13 +10,20 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import better.files.File
+import org.apache.commons.lang3.StringUtils
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
+import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptions
+import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptionsFormat.fileMatchingOptionsFormat
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{reset, spy, times, verify}
+import org.mockito.Mockito.{reset, spy, times, verify, when}
 import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.duration._
@@ -296,6 +303,127 @@ class ExportEntitiesByTypeServiceSpec
           // gs://bucketName/tsvexport/sample/sample-1727724455587.tsv
           result should fullyMatch regex """gs:\/\/bucketName\/tsvexport\/sample\/sample-[0-9]{13}.tsv"""
         }
+      }
+    }
+
+  }
+
+  "ExportEntitiesApiService-filematching" - {
+    List(true, false) foreach { recursive =>
+      s"should pass on recursive flag '$recursive' to bucket listing" in {
+        val fileMatchingOptions = FileMatchingOptions("prefix", recursive = Option(recursive))
+        Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/paired-tsv",
+             fileMatchingOptions
+        ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+          exportEntitiesRoutes
+        ) ~> check {
+          handled should be(true)
+          status should be(OK)
+          verify(mockitoGoogleServicesDao, times(1)).listBucket(any[GcsBucketName],
+                                                                any[Option[String]],
+                                                                ArgumentMatchers.eq(recursive)
+          )
+        }
+      }
+    }
+
+    s"should default recursive flag to true if omitted" in {
+      val fileMatchingOptions = FileMatchingOptions("prefix", recursive = None)
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/paired-tsv",
+           fileMatchingOptions
+      ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+        exportEntitiesRoutes
+      ) ~> check {
+        handled should be(true)
+        status should be(OK)
+        verify(mockitoGoogleServicesDao, times(1)).listBucket(any[GcsBucketName],
+                                                              any[Option[String]],
+                                                              ArgumentMatchers.eq(true)
+        )
+      }
+    }
+
+    "should use read1/read2 column names if specified" in {
+      val fileMatchingOptions =
+        FileMatchingOptions("prefix", read1Name = Option("my-col-1"), read2Name = Option("column-two"))
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
+           fileMatchingOptions
+      ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+        exportEntitiesRoutes
+      ) ~> check {
+        handled should be(true)
+        status should be(OK)
+        responseAs[String] should startWith("entity:my-entity-type_id\tmy-col-1\tcolumn-two")
+      }
+    }
+
+    "should default read1/read2 column names to 'read1' and 'read2' if omitted" in {
+      val fileMatchingOptions = FileMatchingOptions("prefix", read1Name = None, read2Name = None)
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
+           fileMatchingOptions
+      ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+        exportEntitiesRoutes
+      ) ~> check {
+        handled should be(true)
+        status should be(OK)
+        responseAs[String] should startWith("entity:my-entity-type_id\tread1\tread2")
+      }
+    }
+
+    "should set a content-type of tab-separated-values on the response" in {
+      val fileMatchingOptions = FileMatchingOptions("prefix")
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
+           fileMatchingOptions
+      ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+        exportEntitiesRoutes
+      ) ~> check {
+        handled should be(true)
+        status should be(OK)
+        contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
+      }
+    }
+
+    s"should fully-qualify file paths and sanitize ids in the response" in {
+      val bucketListResponse = List(
+        GcsObjectName("unit-test/ExportEntitiesByTypeServiceSpec/file1"),
+        GcsObjectName("unit-test/ExportEntitiesByTypeServiceSpec/file2")
+      )
+      when(mockitoGoogleServicesDao.listBucket(any(), any(), any())).thenReturn(bucketListResponse)
+      val fileMatchingOptions = FileMatchingOptions("prefix")
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
+           fileMatchingOptions
+      ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+        exportEntitiesRoutes
+      ) ~> check {
+        handled should be(true)
+        status should be(OK)
+
+        val expected =
+          "entity:my-entity-type_id\tread1\tread2\n" +
+            "unit-test_ExportEntitiesByTypeServiceSpec_file1\tgs://bucketName/unit-test/ExportEntitiesByTypeServiceSpec/file1\t\n" +
+            "unit-test_ExportEntitiesByTypeServiceSpec_file2\tgs://bucketName/unit-test/ExportEntitiesByTypeServiceSpec/file2\t\n"
+
+        responseAs[String] shouldBe expected
+      }
+    }
+
+    s"should throw an error if the bucket contains too many files" in {
+      val configuredMax = FireCloudConfig.FireCloud.maxFileMatchingFileCount
+      val bucketListResponse: List[GcsObjectName] =
+        Range.apply(0, configuredMax + 1).map(idx => GcsObjectName(s"file$idx")).toList
+
+      when(mockitoGoogleServicesDao.listBucket(any(), any(), any())).thenReturn(bucketListResponse)
+      val fileMatchingOptions = FileMatchingOptions("prefix")
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
+           fileMatchingOptions
+      ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+        exportEntitiesRoutes
+      ) ~> check {
+        handled should be(true)
+        status should be(BadRequest)
+        contentType shouldEqual ContentTypes.`application/json`
+        val actualError = responseAs[ErrorReport]
+        actualError.message should startWith("Too many files in bucket")
       }
     }
 
