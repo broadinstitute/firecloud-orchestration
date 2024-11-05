@@ -7820,40 +7820,45 @@ components:
           format: int32
           default: 0
     MethodQuery:
+      required:
+        - namespace
+        - name
+        - payload
+        - entityType
       type: object
       properties:
         namespace:
           type: string
           description: Namespace which contains AgoraEntity.
-          default: YOUR_NAMESPACE
+          example: YOUR_NAMESPACE
         name:
           type: string
           description: Name of the AgoraEntity.
-          default: BWA
+          example: BWA
         synopsis:
           type: string
           description: Synopsis which contains AgoraEntity.
-          default: Quickly aligns short nucleotide sequences.
+          example: Quickly aligns short nucleotide sequences.
         snapshotComment:
           type: string
           description: Snapshot comment of AgoraEntity
-          default: Improved spline reticulation
+          example: Improved spline reticulation
         documentation:
           type: string
           description: Documentation of the AgoraEntity.
-          default: |
+          example: |
             BWA is a software package for mapping low-divergent sequences
             against a large reference genome, such as the human genome.
             It consists of three algorithms: BWA-backtrack, BWA-SW and BWA-MEM.
         payload:
           type: string
           description: Payload of method -- must be in WDL format
-          default: |
+          example: |
             task wc {File in_file command { cat ${in_file} | wc -l } output { Int count = read_int(stdout()) }}
         entityType:
           type: string
           description: Type of the AgoraEntity -- Task or Workflow.
-          default: Task
+          example: Task
     MethodShort:
       required:
         - managers
