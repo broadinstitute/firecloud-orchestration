@@ -99,6 +99,9 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     case None => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.FIRECLOUD)
   }
 
+  // maximum allowed count of files in a bucket for the file-matching API
+  private val maxFileMatchingFileCount = FireCloudConfig.FireCloud.maxFileMatchingFileCount
+
   def ExportEntities = streamEntities()
 
   /**
@@ -412,6 +415,12 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       val fileList: List[GcsObjectName] =
         googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix), recursive)
 
+      // sanity check
+      if (fileList.length > maxFileMatchingFileCount) {
+        throw new FireCloudExceptionWithErrorReport(errorReport =
+          ErrorReport(StatusCodes.BadRequest, s"Too many files in bucket (${fileList.length}); cannot continue.")
+        )
+      }
       logger.info(s"found ${fileList.length} files")
 
       // transform the list of GcsObjectName to a list of java.nio.Path

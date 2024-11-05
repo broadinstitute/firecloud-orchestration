@@ -11,12 +11,15 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import better.files.File
 import org.apache.commons.lang3.StringUtils
+import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
 import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptions
 import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptionsFormat.fileMatchingOptionsFormat
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.webservice.{CookieAuthedApiService, ExportEntitiesApiService}
+import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.WorkspaceJsonSupport.ErrorReportFormat
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -403,6 +406,27 @@ class ExportEntitiesByTypeServiceSpec
         responseAs[String] shouldBe expected
       }
     }
+
+    s"should throw an error if the bucket contains too many files" in {
+      val configuredMax = FireCloudConfig.FireCloud.maxFileMatchingFileCount
+      val bucketListResponse: List[GcsObjectName] =
+        Range.apply(0, configuredMax + 1).map(idx => GcsObjectName(s"file$idx")).toList
+
+      when(mockitoGoogleServicesDao.listBucket(any(), any(), any())).thenReturn(bucketListResponse)
+      val fileMatchingOptions = FileMatchingOptions("prefix")
+      Post("/api/workspaces/broad-dsde-dev/valid/entities/my-entity-type/paired-tsv",
+           fileMatchingOptions
+      ) ~> dummyUserIdHeaders("1234") ~> sealRoute(
+        exportEntitiesRoutes
+      ) ~> check {
+        handled should be(true)
+        status should be(BadRequest)
+        contentType shouldEqual ContentTypes.`application/json`
+        val actualError = responseAs[ErrorReport]
+        actualError.message should startWith("Too many files in bucket")
+      }
+    }
+
   }
 
   val validCookieFireCloudEntitiesLargeSampleTSVPath =
