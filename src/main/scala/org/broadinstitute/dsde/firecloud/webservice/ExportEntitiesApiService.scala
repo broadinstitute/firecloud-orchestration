@@ -1,10 +1,15 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes.OK
+import akka.http.scaladsl.model.headers.{`Content-Disposition`, Connection, ContentDispositionTypes}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.lang3.StringUtils
+import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptions
+import org.broadinstitute.dsde.firecloud.filematch.FileMatchingOptionsFormat.fileMatchingOptionsFormat
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{ExportEntitiesByTypeActor, ExportEntitiesByTypeArguments}
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -16,7 +21,8 @@ trait ExportEntitiesApiService
     extends Directives
     with RequestBuilding
     with StandardUserInfoDirectives
-    with LazyLogging {
+    with LazyLogging
+    with SprayJsonSupport {
 
   val exportEntitiesByTypeConstructor: ExportEntitiesByTypeArguments => ExportEntitiesByTypeActor
 
@@ -61,5 +67,33 @@ trait ExportEntitiesApiService
               }
             }
         }
+    } ~ path("api" / "workspaces" / Segment / Segment / "entities" / Segment / "paired-tsv") {
+      (workspaceNamespace, workspaceName, entityType) =>
+        requireUserInfo() { userInfo =>
+          post {
+            entity(as[FileMatchingOptions]) { matchingOptions =>
+              val exportArgs =
+                ExportEntitiesByTypeArguments(userInfo, workspaceNamespace, workspaceName, entityType, None, None)
+
+              complete {
+                exportEntitiesByTypeConstructor(exportArgs).matchBucketFiles(matchingOptions) map { pairs =>
+                  // download the TSV as an attachment:
+                  asDownloadableTsv(pairs, s"$entityType.tsv")
+                }
+              }
+            }
+          }
+        }
     }
+
+  // given the contents of a TSV, generate a HttpResponse with the appropriate headers to download that TSV file.
+  private def asDownloadableTsv(contents: String, filename: String) = HttpResponse(
+    entity =
+      HttpEntity.apply(ContentType.apply(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`), contents),
+    headers = List(
+      Connection("Keep-Alive"),
+      `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> filename))
+    )
+  )
+
 }
