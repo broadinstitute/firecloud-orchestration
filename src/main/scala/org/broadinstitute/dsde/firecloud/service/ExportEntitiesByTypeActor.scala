@@ -1,23 +1,31 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{`Content-Disposition`, Connection, ContentDispositionTypes}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{`Content-Disposition`, Connection, ContentDispositionTypes}
 import akka.stream._
 import akka.stream.scaladsl.{Source => AkkaSource, _}
 import akka.util.{ByteString, Timeout}
 import better.files.File
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{GoogleServicesDAO, RawlsDAO}
+import org.broadinstitute.dsde.firecloud.filematch.result.{
+  FailedMatchResult,
+  FileMatchResult,
+  PartialMatchResult,
+  SuccessfulMatchResult
+}
+import org.broadinstitute.dsde.firecloud.filematch.{FileMatcher, FileMatchingOptions}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.{UserInfo, _}
+import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.utils.TSVFormatter
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.rawls.model.WorkspaceAccessLevels.WorkspaceAccessLevel
+import org.broadinstitute.dsde.rawls.StringValidationUtils
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import spray.json._
 
+import java.nio.file.Path
 import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,14 +40,17 @@ case class ExportEntitiesByTypeArguments(
   model: Option[String]
 )
 
-object ExportEntitiesByTypeActor {
+object ExportEntitiesByTypeActor extends StringValidationUtils {
 
   sealed trait ExportEntitiesByTypeMessage
   case object ExportEntities extends ExportEntitiesByTypeMessage
 
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ExportEntitiesByTypeActor.getClass.getName)
+
   def constructor(app: Application, system: ActorSystem)(exportArgs: ExportEntitiesByTypeArguments)(implicit
     executionContext: ExecutionContext
-  ) =
+  ) = {
+    validateUserDefinedString(exportArgs.entityType)
     new ExportEntitiesByTypeActor(
       app.rawlsDAO,
       app.googleServicesDAO,
@@ -51,6 +62,7 @@ object ExportEntitiesByTypeActor {
       exportArgs.model,
       system
     )
+  }
 }
 
 /**
@@ -72,7 +84,10 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 model: Option[String],
                                 argSystem: ActorSystem
 )(implicit protected val executionContext: ExecutionContext)
-    extends LazyLogging {
+    extends LazyLogging
+    with StringValidationUtils {
+
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource(ExportEntitiesByTypeActor.getClass.getName)
 
   implicit val timeout: Timeout = Timeout(1 minute)
   implicit val userInfo: UserInfo = argUserInfo
@@ -83,6 +98,9 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     // if no model is specified, use the previous behavior - assume firecloud model
     case None => ModelSchemaRegistry.getModelForSchemaType(SchemaTypes.FIRECLOUD)
   }
+
+  // maximum allowed count of files in a bucket for the file-matching API
+  private val maxFileMatchingFileCount = FireCloudConfig.FireCloud.maxFileMatchingFileCount
 
   def ExportEntities = streamEntities()
 
@@ -368,5 +386,88 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     rawlsDAO.queryEntitiesOfType(workspaceNamespace, workspaceName, entityType, query) map { response =>
       response.results
     }
+
+  /**
+    * Perform file-matching for this workspace's bucket. Lists the files in the bucket, filtered by a bucket prefix,
+    * then executes `FileMatcher.pairPaths` on those files. Finally, creates a TSV out of the paired results.
+    *
+    * @see [[FileMatcher]]
+    * @param matchingOptions configuration options for file matching
+    * @return contents of the resultant TSV
+    */
+  def matchBucketFiles(matchingOptions: FileMatchingOptions): Future[String] = {
+    // generate defaults for options
+    val read1Name = matchingOptions.read1Name.getOrElse("read1")
+    val read2Name = matchingOptions.read2Name.getOrElse("read2")
+    val recursive = matchingOptions.recursive.getOrElse(true)
+
+    validateUserDefinedString(read1Name)
+    validateUserDefinedString(read2Name)
+    validateAttributeName(AttributeName.fromDelimitedName(read1Name), entityType)
+    validateAttributeName(AttributeName.fromDelimitedName(read2Name), entityType)
+
+    // retrieve workspace so we can get its bucket
+    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspaceResponse =>
+      val workspaceBucket = GcsBucketName(workspaceResponse.workspace.bucketName)
+
+      // list all files in bucket which match matchingOptions.prefix
+      logger.info("listing bucket files ...")
+      val fileList: List[GcsObjectName] =
+        googleServicesDao.listBucket(workspaceBucket, Option(matchingOptions.prefix), recursive)
+
+      // sanity check
+      if (fileList.length > maxFileMatchingFileCount) {
+        throw new FireCloudExceptionWithErrorReport(errorReport =
+          ErrorReport(StatusCodes.BadRequest, s"Too many files in bucket (${fileList.length}); cannot continue.")
+        )
+      }
+      logger.info(s"found ${fileList.length} files")
+
+      // transform the list of GcsObjectName to a list of java.nio.Path
+      val pathList: List[Path] = fileList.map(gcsObject => new java.io.File(gcsObject.value).toPath)
+
+      // perform the pairing
+      logger.info("starting pairing analysis ...")
+      val pairs: List[FileMatchResult] = new FileMatcher().pairPaths(pathList)
+      logger.info(s"completed pairing; result is ${pairs.length} rows")
+
+      // TSV headers
+      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", read1Name, read2Name)
+
+      // transform the matched pairs into entities
+      val entities: List[Entity] = pairs.map {
+        case SuccessfulMatchResult(firstFile, secondFile, id) =>
+          val attributes = Map(
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(qualifyBucketFile(firstFile, workspaceBucket)),
+            AttributeName.withDefaultNS(read2Name) -> AttributeString(qualifyBucketFile(secondFile, workspaceBucket))
+          )
+          Entity(id, entityType, attributes)
+        case PartialMatchResult(firstFile, id) =>
+          val attributes = Map(
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(qualifyBucketFile(firstFile, workspaceBucket))
+          )
+          Entity(id, entityType, attributes)
+        case FailedMatchResult(firstFile) =>
+          val attributes = Map(
+            AttributeName.withDefaultNS(read1Name) -> AttributeString(qualifyBucketFile(firstFile, workspaceBucket))
+          )
+          // can't use the file path directly as an entity id; it can contain slashes or other illegal chars
+          val id = firstFile.toString.replaceAll("[^A-z0-9_-]", "_")
+          Entity(id, entityType, attributes)
+      }
+
+      val headerString = entityHeaders.mkString("\t") + "\n"
+
+      // transform the entities into a TSV
+      val rows = TSVFormatter.makeEntityRows(entityType, entities, entityHeaders)
+      val rowString = rows.map(_.mkString("\t")).mkString("\n") + "\n"
+
+      headerString + rowString
+    }
+  }
+
+  // helper to turn a file path into a fully-qualified gs:// url
+  private def qualifyBucketFile(file: Path, workspaceBucket: GcsBucketName): String =
+    s"gs://${workspaceBucket.value}/$file"
 
 }
