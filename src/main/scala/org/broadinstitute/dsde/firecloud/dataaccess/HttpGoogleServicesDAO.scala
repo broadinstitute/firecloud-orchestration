@@ -400,4 +400,22 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
     getScopedServiceAccountCredentials(firecloudAdminSACreds, authScopes)
       .refreshAccessToken()
       .getTokenValue
+
+  override def listBucket(bucketName: GcsBucketName,
+                          prefix: Option[String],
+                          recursive: Boolean = true
+  ): List[GcsObjectName] = {
+    // listObjectsWithPrefix handles paginating through results if there are more results than
+    // the `maxPageSize` setting.
+    val listAttempt = getStorageResource.use { storageService =>
+      storageService
+        .listObjectsWithPrefix(bucketName, prefix.getOrElse(""), maxPageSize = 2000, isRecursive = recursive)
+        .compile
+        .toList
+    }
+
+    // execute the upload
+    listAttempt.unsafeRunSync()
+  }
+
 }
