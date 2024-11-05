@@ -40,4 +40,6 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit]
 
   def getBucket(bucketName: String, petKey: String): Option[Bucket]
+
+  def listBucket(bucketName: GcsBucketName, prefix: Option[String], recursive: Boolean): List[GcsObjectName]
 }
