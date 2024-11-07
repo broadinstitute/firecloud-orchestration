@@ -157,7 +157,7 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
             catalog = Some(false),
             newWorkspace,
             Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-            Some(WorkspaceBucketOptions(false)),
+            Some(WorkspaceBucketOptions(false, MockRawlsDAO.bucketLocation)),
             Some(Set.empty),
             None
           )
@@ -171,7 +171,7 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
             catalog = Some(false),
             unpublishsuccess,
             Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-            Some(WorkspaceBucketOptions(false)),
+            Some(WorkspaceBucketOptions(false, MockRawlsDAO.bucketLocation)),
             Some(Set.empty),
             None
           )
@@ -185,7 +185,7 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
             catalog = Some(false),
             unpublishfailure,
             Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-            Some(WorkspaceBucketOptions(false)),
+            Some(WorkspaceBucketOptions(false, MockRawlsDAO.bucketLocation)),
             Some(Set.empty),
             None
           )
@@ -199,7 +199,7 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
             catalog = Some(false),
             newWorkspace,
             Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-            Some(WorkspaceBucketOptions(false)),
+            Some(WorkspaceBucketOptions(false, MockRawlsDAO.bucketLocation)),
             Some(Set.empty),
             None
           )

@@ -151,6 +151,8 @@ class WorkspaceApiServiceSpec
 
   val dummyUserId = "1234"
 
+  val bucketLocation = "us-central1"
+
   val protectedRawlsWorkspace = WorkspaceDetails(
     "attributes",
     "att",
@@ -230,7 +232,7 @@ class WorkspaceApiServiceSpec
     catalog = Some(false),
     protectedRawlsWorkspace,
     Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-    Some(WorkspaceBucketOptions(false)),
+    Some(WorkspaceBucketOptions(false, bucketLocation)),
     Some(Set.empty),
     None
   )
@@ -241,7 +243,7 @@ class WorkspaceApiServiceSpec
     catalog = Some(false),
     authDomainRawlsWorkspace,
     Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-    Some(WorkspaceBucketOptions(false)),
+    Some(WorkspaceBucketOptions(false, bucketLocation)),
     Some(Set.empty),
     None
   )
@@ -252,7 +254,7 @@ class WorkspaceApiServiceSpec
     catalog = Some(false),
     nonAuthDomainRawlsWorkspace,
     Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-    Some(WorkspaceBucketOptions(false)),
+    Some(WorkspaceBucketOptions(false, bucketLocation)),
     Some(Set.empty),
     None
   )
@@ -1518,18 +1520,6 @@ class WorkspaceApiServiceSpec
             status should be(OK)
             // 256000000000 / (1024 * 1024 * 1024) *0.01
             responseAs[WorkspaceStorageCostEstimate].estimate should be("$2.38")
-          }
-        }
-      }
-
-      "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for different europe east 1 region." in {
-          Get(europeWest1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should be(OK)
-            // 256000000000 / (1024 * 1024 * 1024) *0.02
-            responseAs[WorkspaceStorageCostEstimate].estimate should be("$4.77")
           }
         }
       }

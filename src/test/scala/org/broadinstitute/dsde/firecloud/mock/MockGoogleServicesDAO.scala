@@ -105,11 +105,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option(
     "user-email@something.com"
   )
-  override def getBucket(bucketName: String, petKey: String): Option[Bucket] =
-    bucketName match {
-      case "usBucket"          => Option(new Bucket().setName("usBucket").setLocation("US"))
-      case "europeWest1Bucket" => Option(new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1"))
-    }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 
