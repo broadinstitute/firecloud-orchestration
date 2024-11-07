@@ -12,7 +12,6 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.util.health.Subsystems
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
-import org.joda.time.DateTime
 
 import scala.concurrent.Future
 

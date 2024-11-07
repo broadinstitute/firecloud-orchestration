@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import cats.implicits.catsSyntaxOptionId
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -25,7 +24,6 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
 }
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}

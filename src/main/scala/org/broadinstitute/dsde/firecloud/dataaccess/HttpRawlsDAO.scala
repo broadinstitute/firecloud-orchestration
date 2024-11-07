@@ -3,7 +3,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
@@ -26,7 +25,6 @@ import org.broadinstitute.dsde.rawls.model.{
   _
 }
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
-import org.joda.time.DateTime
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 

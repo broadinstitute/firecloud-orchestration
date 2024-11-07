@@ -2,9 +2,8 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.http.scaladsl.model.HttpResponse
 import better.files.File
-import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
-import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, GoogleProjectId}
+import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
