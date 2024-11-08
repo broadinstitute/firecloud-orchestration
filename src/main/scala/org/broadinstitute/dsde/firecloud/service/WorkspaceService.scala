@@ -24,7 +24,6 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
 }
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
-import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -65,30 +64,21 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
   implicit val userToken: WithAccessToken = argUserToken
 
   def getStorageCostEstimate(workspaceNamespace: String,
-                             workspaceName: String
-  ): Future[RequestComplete[WorkspaceStorageCostEstimate]] =
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
-      samDao.getPetServiceAccountKeyForUser(userToken,
-                                            GoogleProject(workspaceResponse.workspace.googleProject.value)
-      ) flatMap { petKey =>
-        googleServicesDAO.getBucket(workspaceResponse.workspace.bucketName, petKey) match {
-          case Some(bucket) =>
-            rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName).zip(googleServicesDAO.fetchPriceList) map {
-              case (usage, priceList) =>
-                val rate = priceList.prices.cpBigstoreStorage.getOrElse(bucket.getLocation.toLowerCase(),
-                                                                        priceList.prices.cpBigstoreStorage("us")
-                )
-                // Convert bytes to GB since rate is based on GB.
-                val estimate: BigDecimal = BigDecimal(usage.usageInBytes) / (1024 * 1024 * 1024) * rate
-                RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", usage.lastUpdated))
-            }
-          case None =>
-            throw new FireCloudExceptionWithErrorReport(
-              ErrorReport(StatusCodes.InternalServerError, "Unable to fetch bucket to calculate storage cost")
-            )
-        }
-      }
-    }
+                             workspaceName: String,
+                             userProject: Option[GoogleProjectId]
+  ): Future[RequestComplete[WorkspaceStorageCostEstimate]] = for {
+    bucketUsage <- rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName)
+    priceList <- googleServicesDAO.fetchPriceList
+    bucketOptions <- rawlsDAO.getBucketOptions(workspaceNamespace, workspaceName, userProject)
+  } yield {
+    val rate = priceList.prices.cpBigstoreStorage.getOrElse(
+      bucketOptions.location.toLowerCase,
+      priceList.prices.cpBigstoreStorage("us")
+    )
+    // Convert bytes to GB since rate is based on GB.
+    val estimate: BigDecimal = BigDecimal(bucketUsage.usageInBytes) / (1024 * 1024 * 1024) * rate
+    RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", bucketUsage.lastUpdated))
+  }
 
   def updateWorkspaceAttributes(workspaceNamespace: String,
                                 workspaceName: String,

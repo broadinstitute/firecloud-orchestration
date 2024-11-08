@@ -12,7 +12,6 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUp
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.util.health.Subsystems
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
-import org.joda.time.DateTime
 
 import scala.concurrent.Future
 
@@ -51,6 +50,10 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
     FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage"
   )
 
+  lazy val rawlsBucketOptionsQueryString = "?userProject=%s"
+  def rawlsBucketOptionsUrl(workspaceNamespace: String, workspaceName: String): String =
+    encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketOptions")
+
   def rawlsEntitiesOfTypeUrl(workspaceNamespace: String, workspaceName: String, entityType: String): String = encodeUri(
     FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/entities/$entityType"
   )
@@ -60,6 +63,10 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
   def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse]
+
+  def getBucketOptions(ns: String, name: String, userProject: Option[GoogleProjectId])(implicit
+    userToken: WithAccessToken
+  ): Future[WorkspaceBucketOptions]
 
   def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]]
 

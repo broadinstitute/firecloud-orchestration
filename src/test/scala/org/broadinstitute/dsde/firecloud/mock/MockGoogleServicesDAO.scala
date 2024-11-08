@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.mock
 
 import akka.http.scaladsl.model.HttpResponse
 import better.files.File
-import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
@@ -105,11 +104,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def addMemberToAnonymizedGoogleGroup(groupName: String, targetUserEmail: String): Option[String] = Option(
     "user-email@something.com"
   )
-  override def getBucket(bucketName: String, petKey: String): Option[Bucket] =
-    bucketName match {
-      case "usBucket"          => Option(new Bucket().setName("usBucket").setLocation("US"))
-      case "europeWest1Bucket" => Option(new Bucket().setName("europeWest1").setLocation("EUROPE-WEST1"))
-    }
 
   def status: Future[SubsystemStatus] = Future(SubsystemStatus(ok = true, messages = None))
 

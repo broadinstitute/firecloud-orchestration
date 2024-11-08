@@ -17,7 +17,6 @@ import com.google.api.services.directory.model.{Group, Member}
 import com.google.api.services.directory.{Directory, DirectoryScopes}
 import com.google.api.services.pubsub.model.{PublishRequest, PubsubMessage}
 import com.google.api.services.pubsub.{Pubsub, PubsubScopes}
-import com.google.api.services.storage.model.Bucket
 import com.google.api.services.storage.{Storage, StorageScopes}
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
@@ -36,7 +35,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import spray.json.{DefaultJsonProtocol, _}
 
-import java.io.{ByteArrayInputStream, FileInputStream}
+import java.io.FileInputStream
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
@@ -221,26 +220,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
                                       new HttpCredentialsAdapter(getBucketServiceAccountCredential)
     ).setApplicationName(appName).build()
     storage.objects().get(bucketName, objectKey).executeMediaAsInputStream
-  }
-
-  def getBucket(bucketName: String, petKey: String): Option[Bucket] = {
-    val keyStream = new ByteArrayInputStream(petKey.getBytes)
-    val credential =
-      getScopedServiceAccountCredentials(ServiceAccountCredentials.fromStream(keyStream), storageReadOnly)
-
-    val storage = new Storage.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential))
-      .setApplicationName(appName)
-      .build()
-
-    Try(executeGoogleRequest[Bucket](storage.buckets().get(bucketName))) match {
-      case Failure(ex) =>
-        // handle this case so we can give a good log message. In the future we may handle this
-        // differently, such as returning an empty list.
-        logger.warn(s"could not get $bucketName", ex)
-        throw ex
-      case Success(response) =>
-        return Option(response)
-    }
   }
 
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {

@@ -4695,6 +4695,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
         - $ref: '#/components/parameters/workspaceNameParam'
+        - $ref: '#/components/parameters/userProjectQueryParam'
       responses:
         200:
           description: Successful Request
@@ -10415,6 +10416,14 @@ components:
       in: path
       description: Submission ID
       required: true
+      schema:
+        type: string
+    userProjectQueryParam:
+      name: userProject
+      in: query
+      description: |
+        When specified, bill google storage requests to this project
+      required: false
       schema:
         type: string
     workflowIdParam:

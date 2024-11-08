@@ -151,6 +151,8 @@ class WorkspaceApiServiceSpec
 
   val dummyUserId = "1234"
 
+  val bucketLocation = "us-central1"
+
   val protectedRawlsWorkspace = WorkspaceDetails(
     "attributes",
     "att",
@@ -230,7 +232,7 @@ class WorkspaceApiServiceSpec
     catalog = Some(false),
     protectedRawlsWorkspace,
     Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-    Some(WorkspaceBucketOptions(false)),
+    Some(WorkspaceBucketOptions(false, bucketLocation)),
     Some(Set.empty),
     None
   )
@@ -241,7 +243,7 @@ class WorkspaceApiServiceSpec
     catalog = Some(false),
     authDomainRawlsWorkspace,
     Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-    Some(WorkspaceBucketOptions(false)),
+    Some(WorkspaceBucketOptions(false, bucketLocation)),
     Some(Set.empty),
     None
   )
@@ -252,7 +254,7 @@ class WorkspaceApiServiceSpec
     catalog = Some(false),
     nonAuthDomainRawlsWorkspace,
     Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-    Some(WorkspaceBucketOptions(false)),
+    Some(WorkspaceBucketOptions(false, bucketLocation)),
     Some(Set.empty),
     None
   )
