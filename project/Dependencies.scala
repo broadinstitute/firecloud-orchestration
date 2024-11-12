@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.9.3"
   val akkaHttpV = "10.6.3"
-  val jacksonV = "2.17.1"
-  val jacksonHotfixV = "2.17.1" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.17.3"
+  val jacksonHotfixV = "2.17.3" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.114.Final"
   val workbenchLibsHash = "3e0cf25" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
@@ -27,7 +27,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-databind"           % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
     "org.yaml"                   % "snakeyaml"                  % "2.3",
-    "org.apache.commons"         % "commons-compress"           % "1.26.2", // workbench-libs libraries pull this in
+    "org.apache.commons"         % "commons-compress"           % "1.27.1", // workbench-libs libraries pull this in
     "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20240918-2.0.0", // from workbench-google2
     "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20240709-2.0.0" // from workbench-google2
   )
@@ -48,7 +48,7 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.218-SNAP")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.229-SNAP")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
