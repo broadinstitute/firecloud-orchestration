@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.http.scaladsl.model.HttpResponse
 import better.files.File
-import com.google.api.services.storage.model.Bucket
 import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
@@ -38,8 +37,6 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   override def serviceName: Subsystem = GoogleServicesDAO.serviceName
 
   def publishMessages(fullyQualifiedTopic: String, messages: Seq[String]): Future[Unit]
-
-  def getBucket(bucketName: String, petKey: String): Option[Bucket]
 
   def listBucket(bucketName: GcsBucketName, prefix: Option[String], recursive: Boolean): List[GcsObjectName]
 }

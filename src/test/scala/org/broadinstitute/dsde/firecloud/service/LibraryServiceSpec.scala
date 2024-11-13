@@ -110,6 +110,8 @@ class LibraryServiceSpec
     state = WorkspaceState.Ready
   )
 
+  val bucketLocation = "us-central1"
+
   val DULAdditionalJsObject =
     """
       |{
@@ -354,7 +356,7 @@ class LibraryServiceSpec
           Some(false),
           testWorkspace.copy(attributes = Some(Map(discoverableWSAttribute -> AttributeValueList(Seq.empty)))),
           Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-          Some(WorkspaceBucketOptions(false)),
+          Some(WorkspaceBucketOptions(false, bucketLocation)),
           Some(Set.empty),
           None
         )
@@ -372,7 +374,7 @@ class LibraryServiceSpec
             Some(Map(discoverableWSAttribute -> AttributeValueList(Seq(AttributeString("group1")))))
           ),
           Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-          Some(WorkspaceBucketOptions(false)),
+          Some(WorkspaceBucketOptions(false, bucketLocation)),
           Some(Set.empty),
           None
         )
@@ -398,7 +400,7 @@ class LibraryServiceSpec
             )
           ),
           Some(WorkspaceSubmissionStats(None, None, runningSubmissionsCount = 0)),
-          Some(WorkspaceBucketOptions(false)),
+          Some(WorkspaceBucketOptions(false, bucketLocation)),
           Some(Set.empty),
           None
         )
