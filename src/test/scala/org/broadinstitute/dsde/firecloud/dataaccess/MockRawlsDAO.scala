@@ -200,7 +200,7 @@ class MockRawlsDAO extends RawlsDAO {
   private val rawlsWorkspaceWithAttributes = WorkspaceDetails(
     "attributes",
     "att",
-    "id",
+    "00000000-0000-0000-0000-000000000000",
     "", // bucketname
     Some("wf-collection"),
     DateTime.now(),
