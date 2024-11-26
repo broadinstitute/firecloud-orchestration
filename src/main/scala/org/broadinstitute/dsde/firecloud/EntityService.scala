@@ -351,8 +351,8 @@ class EntityService(rawlsDAO: RawlsDAO,
                runningOnly: Boolean,
                userInfo: UserInfo
   ): Future[List[CwdsListResponse]] =
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
-      cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+    rawlsDAO.getWorkspaceId(workspaceNamespace, workspaceName)(userInfo) map { workspaceId =>
+      cwdsDAO.listJobsV1(workspaceId.toString, runningOnly)(userInfo)
     } recover { case apiEx: ApiException =>
       throw wrapCwdsException(apiEx)
     }
@@ -362,8 +362,8 @@ class EntityService(rawlsDAO: RawlsDAO,
              jobId: String,
              userInfo: UserInfo
   ): Future[CwdsListResponse] =
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
-      val cwdsResponse = cwdsDAO.getJobV1(workspace.workspace.workspaceId, jobId)(userInfo)
+    rawlsDAO.getWorkspaceId(workspaceNamespace, workspaceName)(userInfo) map { workspaceId =>
+      val cwdsResponse = cwdsDAO.getJobV1(workspaceId.toString, jobId)(userInfo)
       logger.info(s"Found job $jobId in cWDS")
       cwdsResponse
     } recover { case apiEx: ApiException =>
