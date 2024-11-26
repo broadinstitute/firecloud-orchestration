@@ -200,7 +200,7 @@ class MockRawlsDAO extends RawlsDAO {
   private val rawlsWorkspaceWithAttributes = WorkspaceDetails(
     "attributes",
     "att",
-    "id",
+    "00000000-0000-0000-0000-000000000000",
     "", // bucketname
     Some("wf-collection"),
     DateTime.now(),
@@ -562,6 +562,11 @@ class MockRawlsDAO extends RawlsDAO {
           )
         )
     }
+
+  override def getWorkspaceId(ns: String, name: String)(implicit
+    userToken: WithAccessToken
+  ): Future[UUID] =
+    getWorkspace(ns, name) map { workspaceResponse => UUID.fromString(workspaceResponse.workspace.workspaceId) }
 
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] =
     Future.successful(

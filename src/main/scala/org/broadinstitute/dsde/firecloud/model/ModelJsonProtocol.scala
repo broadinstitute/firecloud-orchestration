@@ -378,4 +378,8 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
   }
 
   implicit val impShareFormat: RootJsonFormat[Share] = jsonFormat4(Share)
+
+  implicit val impWorkspaceIdFormat: RootJsonFormat[WorkspaceId] = jsonFormat1(WorkspaceId)
+  implicit val impWorkspaceIdResponseFormat: RootJsonFormat[WorkspaceIdResponse] = jsonFormat1(WorkspaceIdResponse)
+
 }

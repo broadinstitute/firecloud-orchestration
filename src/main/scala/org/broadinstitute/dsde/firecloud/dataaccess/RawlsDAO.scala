@@ -13,6 +13,7 @@ import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.util.health.Subsystems
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 
+import java.util.UUID
 import scala.concurrent.Future
 
 /**
@@ -71,6 +72,8 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]]
 
   def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse]
+
+  def getWorkspaceId(ns: String, name: String)(implicit userToken: WithAccessToken): Future[UUID]
 
   def patchWorkspaceAttributes(ns: String, name: String, attributes: Seq[AttributeUpdateOperation])(implicit
     userToken: WithAccessToken
