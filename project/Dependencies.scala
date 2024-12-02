@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.9.3"
   val akkaHttpV = "10.6.3"
-  val jacksonV = "2.18.1"
-  val jacksonHotfixV = "2.18.1" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.18.2"
+  val jacksonHotfixV = "2.18.2" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.115.Final"
   val workbenchLibsHash = "3e0cf25" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
@@ -44,7 +44,7 @@ object Dependencies {
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.2",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.12",
-    "io.sentry"                      % "sentry-logback"      % "7.18.0",
+    "io.sentry"                      % "sentry-logback"      % "7.18.1",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
