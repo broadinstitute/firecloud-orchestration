@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpResponse, StatusCode, StatusCodes}
 import com.google.cloud.storage.StorageException
 import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.FILETYPE_RAWLS
-
 import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockRawlsDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -58,15 +57,28 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     val tsvParticipants = FileUtils.readAllTextFromResource("testfiles/tsv/ADD_PARTICIPANTS.txt")
     val tsvMembership = FileUtils.readAllTextFromResource("testfiles/tsv/MEMBERSHIP_SAMPLE_SET.tsv")
     val tsvUpdate = FileUtils.readAllTextFromResource("testfiles/tsv/UPDATE_SAMPLES.txt")
+    val tsvParticipantsNoPrefix = FileUtils.readAllTextFromResource("testfiles/tsv/PARTICIPANTS_NO_PREFIX.txt")
+    val tsvParticipantsNoSuffix = FileUtils.readAllTextFromResource("testfiles/tsv/PARTICIPANTS_NO_SUFFIX.txt")
+    val tsvParticipantsNoPrefixOrSuffix =
+      FileUtils.readAllTextFromResource("testfiles/tsv/PARTICIPANTS_NO_PREFIX_OR_SUFFIX.txt")
+
     val tsvInvalid = FileUtils.readAllTextFromResource("testfiles/tsv/TEST_INVALID_COLUMNS.txt")
 
     val userToken: UserInfo = UserInfo("me@me.com", OAuth2BearerToken(""), 3600, "111")
 
     // (tsvType, tsvData)
-    val asyncTSVs = List(("upsert", tsvParticipants), ("membership", tsvMembership), ("update", tsvUpdate))
+    val asyncTSVs =
+      List(
+        ("upsert", tsvParticipants),
+        ("upsert", tsvParticipantsNoPrefix),
+        ("upsert", tsvParticipantsNoSuffix),
+        ("upsert", tsvParticipantsNoPrefixOrSuffix),
+        ("membership", tsvMembership),
+        ("update", tsvUpdate)
+      )
 
     asyncTSVs foreach { case (tsvType, tsvData) =>
-      s"should return Accepted with an import jobId for (async=true + $tsvType TSV)" in {
+      s"should return Accepted with an import jobId for (async=true + $tsvType TSV) [${tsvData.hashCode}]" in {
         val testCwdsDao = new SuccessfulCwdsDAO
         val entityService = getEntityService(cwdsDAO = testCwdsDao)
         val response =
@@ -88,13 +100,17 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
 
     // (tsvType, expectedEntityType, tsvData)
-    val goodTSVs = List(("upsert", "participant", tsvParticipants),
-                        ("membership", "sample_set", tsvMembership),
-                        ("update", "sample", tsvUpdate)
+    val goodTSVs = List(
+      ("upsert", "participant", tsvParticipants),
+      ("upsert", "participant", tsvParticipantsNoPrefix),
+      ("upsert", "participant", tsvParticipantsNoSuffix),
+      ("upsert", "participant", tsvParticipantsNoPrefixOrSuffix),
+      ("membership", "sample_set", tsvMembership),
+      ("update", "sample", tsvUpdate)
     )
 
     goodTSVs foreach { case (tsvType, expectedEntityType, tsvData) =>
-      s"should return OK with the entity type for (async=false + $tsvType TSV)" in {
+      s"should return OK with the entity type for (async=false + $tsvType TSV) [${tsvData.hashCode}]" in {
         val entityService = getEntityService()
         val response =
           entityService
@@ -103,7 +119,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         response shouldBe RequestComplete(StatusCodes.OK, expectedEntityType)
       }
 
-      s"should call the appropriate upsert/update method for (async=false + $tsvType TSV)" in {
+      s"should call the appropriate upsert/update method for (async=false + $tsvType TSV) [${tsvData.hashCode}]" in {
         val mockedRawlsDAO = mockito[MockRawlsDAO] // mocking the mock
         when(
           mockedRawlsDAO.batchUpdateEntities(any[String], any[String], any[String], any[Seq[EntityUpdateDefinition]])(
@@ -144,7 +160,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
       }
 
-      s"should send $expectedEntityType tsv to cWDS with appropriate options" in {
+      s"should send $expectedEntityType tsv to cWDS with appropriate options [${tsvData.hashCode}]" in {
         // set up mocks
         val cwdsDAO = mockito[MockCwdsDAO]
         val rawlsDAO = mockito[MockRawlsDAO]
