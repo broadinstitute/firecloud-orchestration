@@ -12,7 +12,8 @@ trait PassthroughApiService extends Directives with StreamingPassthrough {
   val passthroughRoutes: Route = concat(
     pathPrefix("ga4gh")(streamingPassthrough(s"$agora/ga4gh")),
     pathPrefix("api" / "billing")(streamingPassthrough(s"$rawls/api/billing")),
-    pathPrefix("api" / "notifications")(streamingPassthrough(s"$rawls/api/notifications"))
+    pathPrefix("api" / "notifications")(streamingPassthrough(s"$rawls/api/notifications")),
+    pathPrefix("api" / "workspaces")(streamingPassthrough(s"$rawls/api/workspaces"))
   )
 
 }
