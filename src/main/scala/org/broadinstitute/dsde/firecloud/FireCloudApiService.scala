@@ -70,7 +70,6 @@ trait FireCloudApiService
     with OauthApiService
     with RegisterApiService
     with WorkspaceApiService
-    with WorkspaceV2ApiService
     with MethodConfigurationApiService
     with SubmissionApiService
     with StatusApiService
@@ -213,7 +212,6 @@ trait FireCloudApiService
       userServiceRoutes ~
       managedGroupServiceRoutes ~
       workspaceRoutes ~
-      workspaceV2Routes ~
       statusRoutes ~
       pathPrefix("api") {
         apiRoutes
