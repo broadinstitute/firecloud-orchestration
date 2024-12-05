@@ -3,6 +3,7 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
@@ -28,6 +29,7 @@ import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
@@ -90,6 +92,13 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     authedRequestToObject[WorkspaceResponse](Get(getWorkspaceUrl(ns, name)))
+
+  override def getWorkspaceId(ns: String, name: String)(implicit userToken: WithAccessToken): Future[UUID] = {
+    val targetUri = Uri(getWorkspaceUrl(ns, name)).withQuery(Query(("fields", "workspace.workspaceId")))
+    authedRequestToObject[WorkspaceIdResponse](Get(targetUri)) map { resp: WorkspaceIdResponse =>
+      resp.workspace.workspaceId
+    }
+  }
 
   override def patchWorkspaceAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(
     implicit userToken: WithAccessToken

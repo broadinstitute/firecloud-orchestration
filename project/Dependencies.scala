@@ -3,9 +3,9 @@ import sbt._
 object Dependencies {
   val akkaV = "2.9.3"
   val akkaHttpV = "10.6.3"
-  val jacksonV = "2.17.3"
-  val jacksonHotfixV = "2.17.3" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.114.Final"
+  val jacksonV = "2.18.2"
+  val jacksonHotfixV = "2.18.2" // for when only some of the Jackson libs have hotfix releases
+  val nettyV = "4.1.115.Final"
   val workbenchLibsHash = "3e0cf25" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -29,7 +29,7 @@ object Dependencies {
     "org.yaml"                   % "snakeyaml"                  % "2.3",
     "org.apache.commons"         % "commons-compress"           % "1.27.1", // workbench-libs libraries pull this in
     "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20240918-2.0.0", // from workbench-google2
-    "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20241029-2.0.0" // from workbench-google2
+    "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20241113-2.0.0" // from workbench-google2
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -42,13 +42,13 @@ object Dependencies {
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.1",
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.2",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.12",
-    "io.sentry"                      % "sentry-logback"      % "7.16.0",
+    "io.sentry"                      % "sentry-logback"      % "7.18.1",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.229-SNAP")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.248-SNAP")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
@@ -56,11 +56,11 @@ object Dependencies {
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.36-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.8-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.296",
+    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.325",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.8-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.44.0-20240725.201427-1" excludeAll(excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.1.14" excludeAll(excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.0" excludeAll(excludeSpringBoot, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -96,7 +96,7 @@ object Dependencies {
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
     "org.mock-server"                % "mockserver-netty-no-dependencies"    % "5.15.0"  % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.26" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.27" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }

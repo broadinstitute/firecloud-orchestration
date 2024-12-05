@@ -160,8 +160,8 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
         when(cwdsDAO.isEnabled).thenReturn(true)
         when(cwdsDAO.getSupportedFormats).thenReturn(List("pfb", "tdrexport", "rawlsjson"))
-        when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo]))
-          .thenReturn(Future.successful(workspaceResponse))
+        when(rawlsDAO.getWorkspaceId(any[String], any[String])(any[UserInfo]))
+          .thenReturn(Future.successful(UUID.fromString(workspaceResponse.workspace.workspaceId)))
 
         entityService
           .importEntitiesFromTSV("workspaceNamespace", "workspaceName", tsvData, dummyUserInfo("token"), true)
@@ -176,7 +176,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
         val capturedRequest = argumentCaptor.getValue
         capturedRequest.options should be(Some(ImportOptions(None, Some(tsvType != "update"))))
         verify(rawlsDAO, times(1))
-          .getWorkspace(any[String], any[String])(any[UserInfo])
+          .getWorkspaceId(any[String], any[String])(any[UserInfo])
 
       }
     }
@@ -289,8 +289,8 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
       when(cwdsDAO.importV1(any[String], any[AsyncImportRequest])(any[UserInfo])).thenReturn(genericJob)
 
-      when(rawlsDAO.getWorkspace(any[String], any[String])(any[UserInfo]))
-        .thenReturn(Future.successful(workspaceResponse))
+      when(rawlsDAO.getWorkspaceId(any[String], any[String])(any[UserInfo]))
+        .thenReturn(Future.successful(UUID.fromString(workspaceResponse.workspace.workspaceId)))
 
       // create input
       val input = AsyncImportRequest(url = "https://example.com", filetype = importFiletype)
@@ -302,7 +302,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       verify(cwdsDAO, times(1))
         .importV1(any[String], any[AsyncImportRequest])(any[UserInfo])
       verify(rawlsDAO, times(1))
-        .getWorkspace(any[String], any[String])(any[UserInfo])
+        .getWorkspaceId(any[String], any[String])(any[UserInfo])
     }
 
   }

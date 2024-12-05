@@ -203,12 +203,12 @@ class EntityService(rawlsDAO: RawlsDAO,
   ): Future[PerRequestMessage] = {
     import spray.json._
     val dataBytes = rawlsCalls.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8)
-    getWorkspaceId(workspaceNamespace, workspaceName, userInfo) map { workspaceId =>
+    rawlsDAO.getWorkspaceId(workspaceNamespace, workspaceName)(userInfo) map { workspaceId =>
       val bucketToWrite = GcsBucketName(FireCloudConfig.Cwds.bucket)
       val fileToWrite = GcsObjectName(s"to-cwds/${workspaceId}/${java.util.UUID.randomUUID()}.json")
       val gcsPath = writeDataToGcs(bucketToWrite, fileToWrite, dataBytes)
       val importRequest = getRawlsJsonImportRequest(gcsPath, isUpsert)
-      importToCWDS(workspaceNamespace, workspaceName, workspaceId, userInfo, importRequest)
+      importToCWDS(workspaceNamespace, workspaceName, workspaceId.toString, userInfo, importRequest)
     }
   }
 
@@ -219,9 +219,6 @@ class EntityService(rawlsDAO: RawlsDAO,
 
   private def getRawlsJsonImportRequest(gcsPath: String, isUpsert: Boolean): AsyncImportRequest =
     AsyncImportRequest(gcsPath, FILETYPE_RAWLS, Some(ImportOptions(None, Some(isUpsert))))
-
-  private def getWorkspaceId(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[String] =
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo).map(_.workspace.workspaceId)
 
   private def importToCWDS(workspaceNamespace: String,
                            workspaceName: String,
@@ -339,8 +336,8 @@ class EntityService(rawlsDAO: RawlsDAO,
     if (importRequest.filetype.isEmpty)
       throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "filetype must be specified"))
 
-    getWorkspaceId(workspaceNamespace, workspaceName, userInfo) map { workspaceId =>
-      importToCWDS(workspaceNamespace, workspaceName, workspaceId, userInfo, importRequest)
+    rawlsDAO.getWorkspaceId(workspaceNamespace, workspaceName)(userInfo) map { workspaceId =>
+      importToCWDS(workspaceNamespace, workspaceName, workspaceId.toString, userInfo, importRequest)
     } recover { case apiEx: ApiException =>
       throw wrapCwdsException(apiEx)
     }
@@ -351,8 +348,8 @@ class EntityService(rawlsDAO: RawlsDAO,
                runningOnly: Boolean,
                userInfo: UserInfo
   ): Future[List[CwdsListResponse]] =
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
-      cwdsDAO.listJobsV1(workspace.workspace.workspaceId, runningOnly)(userInfo)
+    rawlsDAO.getWorkspaceId(workspaceNamespace, workspaceName)(userInfo) map { workspaceId =>
+      cwdsDAO.listJobsV1(workspaceId.toString, runningOnly)(userInfo)
     } recover { case apiEx: ApiException =>
       throw wrapCwdsException(apiEx)
     }
@@ -362,8 +359,8 @@ class EntityService(rawlsDAO: RawlsDAO,
              jobId: String,
              userInfo: UserInfo
   ): Future[CwdsListResponse] =
-    rawlsDAO.getWorkspace(workspaceNamespace, workspaceName)(userInfo) map { workspace =>
-      val cwdsResponse = cwdsDAO.getJobV1(workspace.workspace.workspaceId, jobId)(userInfo)
+    rawlsDAO.getWorkspaceId(workspaceNamespace, workspaceName)(userInfo) map { workspaceId =>
+      val cwdsResponse = cwdsDAO.getJobV1(workspaceId.toString, jobId)(userInfo)
       logger.info(s"Found job $jobId in cWDS")
       cwdsResponse
     } recover { case apiEx: ApiException =>
