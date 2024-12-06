@@ -263,8 +263,8 @@ object MockTSVStrings {
   ).newlineSeparated
 
   val windowsNewline = List(
-    List("foo", "bar").tabbed,
-    List("baz", "biz").tabbed
+    List("foo".quoted, "bar".quoted).tabbed,
+    List("baz".quoted, "biz".quoted).tabbed
   ).windowsNewlineSeparated
 
   val missingFields1 = List(
@@ -310,8 +310,9 @@ object MockTSVLoadFiles {
   val validEmptyStrWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("")))
   val validRemoveWSAttribute = TSVLoadFile("workspace", Seq("a1"), Seq(Seq("__DELETE__")))
   val validRemoveAddAttribute = TSVLoadFile("workspace", Seq("a1", "a2"), Seq(Seq("__DELETE__", "v2")))
-  val validQuotedValues = TSVLoadFile("foo", Seq("foo", "bar"), Seq(Seq("baz", "biz")))
-  val validQuotedValuesWithTabs = TSVLoadFile("foo", Seq("foo", "bar"), Seq(Seq("baz", "this\thas\ttabs")))
+  val validQuotedValues = TSVLoadFile("\"foo\"", Seq("\"foo\"", "\"bar\""), Seq(Seq("\"baz\"", "\"biz\"")))
+  val validQuotedValuesWithTabs =
+    TSVLoadFile("\"foo\"", Seq("\"foo\"", "\"bar\""), Seq(Seq("\"baz\"", "\"this\thas\ttabs\"")))
   val validNamespacedAttributes =
     TSVLoadFile("foo", Seq("foo", "tag:foo", "bar", "tag:bar"), Seq(Seq("1", "2", "3", "4"), Seq("5", "6", "7", "8")))
   val missingFields1 = TSVLoadFile("foo", Seq("foo", "bar", "baz"), Seq(Seq("biz", "", "buz")))
