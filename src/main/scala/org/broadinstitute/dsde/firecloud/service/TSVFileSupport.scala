@@ -179,6 +179,15 @@ trait TSVFileSupport {
   Creates an AttributeValue whose implementation is more closely tied to the value of the input.
    */
   def stringToTypedAttribute(value: String): Attribute =
+    // if this value starts and ends with a quote, it should always be treated as a string
+    if (value.startsWith("\"") && value.endsWith("\"")) {
+      AttributeString(value.substring(1, value.length - 1))
+    } else {
+      // else, inspect the value to find an appropriate datatype
+      toAttribute(value)
+    }
+
+  def toAttribute(value: String): Attribute =
     Try(java.lang.Integer.parseInt(value)) match {
       case Success(intValue) => AttributeNumber(intValue)
       case Failure(_) =>

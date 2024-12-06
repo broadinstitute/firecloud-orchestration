@@ -2,9 +2,9 @@ package org.broadinstitute.dsde.firecloud.utils
 
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.TsvTypes
+import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
 
-object TSVFormatter {
+object TSVFormatter extends TSVFileSupport {
 
   // for serializing entity references
   val attributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
@@ -76,7 +76,13 @@ object TSVFormatter {
     // it even works for AttributeEntityReferenceList
     val intermediateString = attribute match {
       case ref: AttributeEntityReference => attributeFormat.write(ref).compactPrint
-      case _                             => AttributeStringifier(attribute)
+      case str: AttributeString          =>
+        // if this string looks like a non-string datatype, such as '0005', surround it with quotes so it remains a string.
+        toAttribute(str.value) match {
+          case _: AttributeString => str.value
+          case _                  => s"\"${str.value}\""
+        }
+      case _ => AttributeStringifier(attribute)
     }
     tsvSafeString(intermediateString)
   }

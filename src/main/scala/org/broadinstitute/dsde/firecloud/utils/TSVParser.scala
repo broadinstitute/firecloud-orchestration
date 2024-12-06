@@ -29,6 +29,8 @@ object TSVParser {
     // empty string. These replace all nulls with the empty string.
     settings.setNullValue("")
     settings.setEmptyValue("")
+    // Configures the parser to keep enclosing quote characters in the values parsed from the input.
+    settings.setKeepQuotes(true)
     new CsvParser(settings)
   }
 

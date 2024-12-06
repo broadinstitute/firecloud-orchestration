@@ -117,6 +117,11 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       Double.MaxValue.toString -> AttributeNumber(Double.MaxValue)
     )
     val stringTestCases = List("", "string", "true525600", ",")
+    val quotedStringTestCases = Map(
+      "\"0005\"" -> AttributeString("0005"),
+      "\"true\"" -> AttributeString("true"),
+      "\"embedded\ttabs\"" -> AttributeString("embedded\ttabs")
+    )
     val referenceTestCases = Map(
       """{"entityType":"targetType","entityName":"targetName"}""" -> AttributeEntityReference("targetType",
                                                                                               "targetName"
@@ -150,6 +155,14 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
     "should detect entity references when applicable" in {
       referenceTestCases foreach { case (input, expected) =>
         withClue(s"should handle potential reference: $input") {
+          stringToTypedAttribute(input) shouldBe expected
+        }
+      }
+    }
+
+    "should teat any quoted values in the TSV as strings" in {
+      quotedStringTestCases foreach { case (input, expected) =>
+        withClue(s"should handle quoted string: $input") {
           stringToTypedAttribute(input) shouldBe expected
         }
       }

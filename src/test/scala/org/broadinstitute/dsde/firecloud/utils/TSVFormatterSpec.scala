@@ -259,6 +259,8 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
     val tsvSafeAttributeTestData = Map(
       AttributeString("foo") -> "foo",
       AttributeString(""""quoted string"""") -> """"quoted string"""",
+      AttributeString("0005") -> """"0005"""", // string that looks like a number should be quoted
+      AttributeString("true") -> """"true"""", // string that looks like a boolean should be quoted
       AttributeNumber(123.45) -> "123.45",
       AttributeBoolean(true) -> "true",
       AttributeBoolean(false) -> "false",
