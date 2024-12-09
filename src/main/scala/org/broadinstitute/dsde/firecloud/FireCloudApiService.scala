@@ -71,20 +71,18 @@ trait FireCloudApiService
     with RegisterApiService
     with WorkspaceApiService
     with WorkspaceV2ApiService
-    with NotificationsApiService
     with MethodConfigurationApiService
-    with BillingApiService
     with SubmissionApiService
     with StatusApiService
     with MethodsApiService
-    with Ga4ghApiService
     with UserApiService
     with ShareLogApiService
     with ManagedGroupApiService
     with CromIamApiService
     with HealthApiService
     with StaticNotebooksApiService
-    with PerimeterApiService {
+    with PerimeterApiService
+    with PassthroughApiService {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
 
@@ -184,7 +182,6 @@ trait FireCloudApiService
           methodConfigurationRoutes ~
           submissionServiceRoutes ~
           nihRoutes ~
-          billingServiceRoutes ~
           shareLogServiceRoutes ~
           staticNotebooksRoutes ~
           perimeterServiceRoutes
@@ -217,14 +214,14 @@ trait FireCloudApiService
       managedGroupServiceRoutes ~
       workspaceRoutes ~
       workspaceV2Routes ~
-      notificationsRoutes ~
       statusRoutes ~
-      ga4ghRoutes ~
       pathPrefix("api") {
         apiRoutes
       } ~
       // insecure cookie-authed routes
-      cookieAuthedRoutes
+      cookieAuthedRoutes ~
+      // wildcard passthrough routes. These must be last to allow other routes to override them.
+      passthroughRoutes
   }
 
 }

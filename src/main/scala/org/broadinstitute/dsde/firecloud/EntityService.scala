@@ -283,14 +283,15 @@ class EntityService(rawlsDAO: RawlsDAO,
                             deleteEmptyValues: Boolean = false
   ): Future[PerRequestMessage] = {
 
-    def stripEntityType(entityTypeString: String): String = {
-      val entityType = entityTypeString.stripSuffix("_id")
-      if (entityType == entityTypeString)
-        throw new FireCloudExceptionWithErrorReport(errorReport =
-          ErrorReport(StatusCodes.BadRequest, "Invalid first column header, entity type should end in _id")
-        )
-      entityType
-    }
+    /**
+      * Translates a TSV column name into an entity type, by removing a trailing "_id" if one exists.
+      *   - "myvalue_id" becomes "myvalue"
+      *   - "myvalue" remains unchanged as "myvalue"
+      * @param entityTypeString the column name from which to extract an entity type
+      * @return the calculated entity type
+      */
+    def stripEntityType(entityTypeString: String): String =
+      entityTypeString.stripSuffix("_id")
 
     withTSVFile(tsvString) { tsv =>
       val (tsvType, entityType) = tsv.firstColumnHeader.split(":") match {
