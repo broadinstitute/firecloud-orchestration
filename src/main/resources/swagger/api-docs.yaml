@@ -9588,13 +9588,15 @@ components:
             - GcpBucketSoftDelete
             - GcpBucketRequesterPays
             - SeparateSubmissionFinalOutputs
+            - UseCromwellGcpBatchBackend
         config:
           description: The configuration of the workspace setting
           oneOf:
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketLifecycleConfig'
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketSoftDeleteConfig'
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketRequesterPaysConfig'
-            - $ref: '#/components/schemas/WorkspaceSettingSeparateSubmissionFinalOutputs'
+            - $ref: '#/components/schemas/WorkspaceSettingSeparateSubmissionFinalOutputsConfig'
+            - $ref: '#/components/schemas/WorkspaceSettingUseCromwellGcpBatchBackendConfig'
     WorkspaceSettingGcpBucketLifecycleConfig:
       required:
         - rules
@@ -9653,7 +9655,7 @@ components:
         enabled:
           type: boolean
           description: Enabled status to set for requester pays
-    WorkspaceSettingSeparateSubmissionFinalOutputs:
+    WorkspaceSettingSeparateSubmissionFinalOutputsConfig:
       required:
         - enabled
       type: object
@@ -9661,6 +9663,14 @@ components:
         enabled:
           type: boolean
           description: Whether submission final outputs should be separated from intermediate outputs
+    WorkspaceSettingUseCromwellGcpBatchBackendConfig:
+      required:
+        - enabled
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Whether workflows submitted to Cromwell should be run using Cromwell's GCP Batch backend
     WorkspaceSubmissionStats:
       required:
         - runningSubmissionsCount
