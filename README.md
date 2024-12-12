@@ -144,4 +144,13 @@ Example of specifying options when running benchmarks (this example sets 3 itera
 sbt "bench/Jmh/run -i 3 -wi 2 -f 1"
 ```
 
+Running benchmarks takes a while, especially when specifying more iterations/warmups/forks.
+Of course, using more iterations/warmups/forks is also more accurate. Benchmark output is fairly verbose;
+look for the final summary that will look something like:
+```
+[info] Benchmark                                    Mode  Cnt         Score           Error  Units
+[info] TsvFormatterBenchmark.tsvSafeStringNoTab    thrpt    3  85746770.866 ± 112486692.134  ops/s
+[info] TsvFormatterBenchmark.tsvSafeStringWithTab  thrpt    3  30601083.552 ±  53318975.049  ops/s
+```
+
 
