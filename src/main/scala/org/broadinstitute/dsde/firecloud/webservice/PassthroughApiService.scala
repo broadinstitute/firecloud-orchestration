@@ -18,12 +18,7 @@ trait PassthroughApiService extends Directives with StreamingPassthrough {
     pathPrefix("api" / "servicePerimeters")(streamingPassthrough(s"$rawls/api/servicePerimeters")),
     pathPrefix("api" / "workspaces")(streamingPassthrough(s"$rawls/api/workspaces")),
     pathPrefix("ga4gh")(streamingPassthrough(s"$agora/ga4gh")),
-    pathPrefix("register" / "user" / "v1" / "termsofservice")(
-      streamingPassthrough(s"$sam/register/user/v1/termsofservice")
-    ),
-    pathPrefix("register" / "user" / "v2" / "self" / "termsOfServiceDetails")(
-      streamingPassthrough(s"$sam/register/user/v2/self/termsOfServiceDetails")
-    ),
+    pathPrefix("register" / "user")(streamingPassthrough(s"$sam/register/user")),
     // TODO: /tos is deprecated in Sam but not in Orch?
     pathPrefix("tos")(streamingPassthrough(s"$sam/tos"))
   )
