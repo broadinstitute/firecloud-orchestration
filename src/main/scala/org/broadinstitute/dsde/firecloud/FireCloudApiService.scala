@@ -71,7 +71,6 @@ trait FireCloudApiService
     with RegisterApiService
     with WorkspaceApiService
     with MethodConfigurationApiService
-    with SubmissionApiService
     with StatusApiService
     with MethodsApiService
     with UserApiService
@@ -178,7 +177,6 @@ trait FireCloudApiService
           profileRoutes ~
           cromIamApiServiceRoutes ~
           methodConfigurationRoutes ~
-          submissionServiceRoutes ~
           nihRoutes ~
           shareLogServiceRoutes ~
           staticNotebooksRoutes
