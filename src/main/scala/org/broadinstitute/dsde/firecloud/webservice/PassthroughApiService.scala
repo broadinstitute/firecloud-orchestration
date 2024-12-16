@@ -24,7 +24,7 @@ trait PassthroughApiService extends Directives with StreamingPassthrough {
     pathPrefix("api" / "template")(streamingPassthrough(s"$rawls/api/methodconfigs/template")),
     // Sam
     pathPrefix("api" / "proxyGroup")(streamingPassthrough(s"$sam/api/google/user/proxyGroup")),
-    pathPrefix("register")(streamingPassthrough(s"$sam/register")),
+    pathPrefix("register")(streamingPassthrough(s"$sam/register/user")),
     pathPrefix("tos")(streamingPassthrough(s"$sam/tos")),
 
     // any /api routes not otherwise defined will pass through to Rawls
