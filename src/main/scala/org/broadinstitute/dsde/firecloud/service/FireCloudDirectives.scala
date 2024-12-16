@@ -41,7 +41,7 @@ object FireCloudDirectiveUtils {
 trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
 
   @deprecated(message = "Use streamingPassthrough instead", since = "2024-11-16")
-  // 13 usages + 2 usages in test
+  // 8 usages + 2 usages in test
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route =
     passthrough(Uri(unencodedPath), methods: _*)
 

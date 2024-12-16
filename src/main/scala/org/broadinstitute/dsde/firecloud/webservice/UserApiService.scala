@@ -99,30 +99,13 @@ trait UserApiService
       }
     } ~
       pathPrefix("api") {
-        pathPrefix("profile" / "billing") {
-          pathEnd {
-            get {
-              passthrough(UserApiService.billingUrl, HttpMethods.GET)
+        path("profile" / "importstatus") {
+          get {
+            requireUserInfo() { userInfo =>
+              complete(userServiceConstructor(userInfo).importPermission())
             }
-          } ~
-            path(Segment) { projectName =>
-              get {
-                passthrough(UserApiService.billingProjectUrl(projectName), HttpMethods.GET)
-              }
-            }
+          }
         } ~
-          path("profile" / "billingAccounts") {
-            get {
-              passthrough(UserApiService.billingAccountsUrl, HttpMethods.GET)
-            }
-          } ~
-          path("profile" / "importstatus") {
-            get {
-              requireUserInfo() { userInfo =>
-                complete(userServiceConstructor(userInfo).importPermission())
-              }
-            }
-          } ~
           path("profile" / "terra") {
             requireUserInfo() { userInfo =>
               requireEnabledUser(userInfo) {
@@ -137,24 +120,14 @@ trait UserApiService
                   }
               }
             }
-          } ~
-          pathPrefix("proxyGroup") {
-            path(Segment) { email =>
-              passthrough(UserApiService.samUserProxyGroupURL(email), HttpMethods.GET)
-            }
           }
       } ~
       pathPrefix("register") {
-        pathEnd {
-          get {
-            passthrough(UserApiService.samRegisterUserURL, HttpMethods.GET)
+        path("userinfo") {
+          requireUserInfo() { userInfo =>
+            complete(userServiceConstructor(userInfo).getUserProfileGoogle)
           }
         } ~
-          path("userinfo") {
-            requireUserInfo() { userInfo =>
-              complete(userServiceConstructor(userInfo).getUserProfileGoogle)
-            }
-          } ~
           pathPrefix("profile") {
             // GET /profile - get all keys for current user
             pathEnd {

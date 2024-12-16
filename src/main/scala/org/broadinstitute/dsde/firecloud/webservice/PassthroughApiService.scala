@@ -15,10 +15,12 @@ trait PassthroughApiService extends Directives with StreamingPassthrough {
     pathPrefix("api" / "configurations")(streamingPassthrough(s"$agora/api/v1/configurations")),
     pathPrefix("api" / "methods")(streamingPassthrough(s"$agora/api/v1/methods")),
     pathPrefix("api" / "notifications")(streamingPassthrough(s"$rawls/api/notifications")),
+    pathPrefix("api" / "profile" / "billing")(streamingPassthrough(s"$rawls/api/user/billing")),
+    pathPrefix("api" / "proxyGroup")(streamingPassthrough(s"$sam/api/google/user/proxyGroup")),
     pathPrefix("api" / "servicePerimeters")(streamingPassthrough(s"$rawls/api/servicePerimeters")),
     pathPrefix("api" / "workspaces")(streamingPassthrough(s"$rawls/api/workspaces")),
     pathPrefix("ga4gh")(streamingPassthrough(s"$agora/ga4gh")),
-    pathPrefix("register" / "user")(streamingPassthrough(s"$sam/register/user")),
+    pathPrefix("register")(streamingPassthrough(s"$sam/register")),
     // TODO: /tos is deprecated in Sam but not in Orch?
     pathPrefix("tos")(streamingPassthrough(s"$sam/tos"))
   )
