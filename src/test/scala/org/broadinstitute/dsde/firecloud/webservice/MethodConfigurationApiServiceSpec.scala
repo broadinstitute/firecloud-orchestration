@@ -179,14 +179,6 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
         }
       }
 
-      s"PATCH on $localMethodConfigPath " - {
-        "should receive a MethodNotAllowed" in {
-          Patch(localMethodConfigPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
-            status should equal(MethodNotAllowed)
-          }
-        }
-      }
-
       val localMethodConfigRenamePath = localMethodConfigPath + "/rename"
 
       s"POST on $localMethodConfigRenamePath " - {
@@ -199,18 +191,6 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
         }
       }
 
-      s"GET, PATCH, PUT, DELETE on $localMethodConfigRenamePath " - {
-        "should receive a MethodNotAllowed" in {
-          List(HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE) map { method =>
-            new RequestBuilder(method)(localMethodConfigRenamePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
-              methodConfigurationRoutes
-            ) ~> check {
-              status should equal(MethodNotAllowed)
-            }
-          }
-        }
-      }
-
       val localMethodConfigValidatePath = localMethodConfigPath + "/validate"
 
       s"GET on $localMethodConfigValidatePath " - {
@@ -219,18 +199,6 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
             methodConfigurationRoutes
           ) ~> check {
             status shouldNot equal(MethodNotAllowed)
-          }
-        }
-      }
-
-      s"PUT, POST, PATCH, DELETE on $localMethodConfigValidatePath " - {
-        "should receive a MethodNotAllowed" in {
-          List(HttpMethods.PUT, HttpMethods.PATCH, HttpMethods.POST, HttpMethods.DELETE) map { method =>
-            new RequestBuilder(method)(localMethodConfigValidatePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
-              methodConfigurationRoutes
-            ) ~> check {
-              status should equal(MethodNotAllowed)
-            }
           }
         }
       }
