@@ -193,7 +193,6 @@ trait FireCloudApiService
 
   def route: server.Route = routeWrappers {
     cromIamEngineRoutes ~
-      tosRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
       exportEntitiesRoutes ~
