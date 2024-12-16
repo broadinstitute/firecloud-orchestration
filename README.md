@@ -119,3 +119,38 @@ In order to debug in Intellij:
 5. Run the local firecloud docker with `./config/docker-rsync-local-orch.sh` from the root directory
 6. In Intellij, choose your debug configuration and run 'debug'.
 
+
+
+## Benchmarking
+
+Benchmarks reside in the [benchmarks](benchmarks) subdirectory,
+and are accessible via an `sbt` subproject named `bench`.
+
+Benchmarks are powered by [JMH](https://github.com/openjdk/jmh)
+and integrated into sbt using the [sbt-jmh plugin](https://github.com/sbt/sbt-jmh).
+
+To execute benchmarks:
+```
+sbt bench/Jmh/run
+```
+
+To see options for running benchmarks:
+```
+sbt "bench/Jmh/run -h"
+```
+Example of specifying options when running benchmarks (this example sets 3 iterations,
+2 warmup iterations, and one fork):
+```
+sbt "bench/Jmh/run -i 3 -wi 2 -f 1"
+```
+
+Running benchmarks takes a while, especially when specifying more iterations/warmups/forks.
+Of course, using more iterations/warmups/forks is also more accurate. Benchmark output is fairly verbose;
+look for the final summary that will look something like:
+```
+[info] Benchmark                                    Mode  Cnt         Score           Error  Units
+[info] TsvFormatterBenchmark.tsvSafeStringNoTab    thrpt    3  85746770.866 ± 112486692.134  ops/s
+[info] TsvFormatterBenchmark.tsvSafeStringWithTab  thrpt    3  30601083.552 ±  53318975.049  ops/s
+```
+
+
