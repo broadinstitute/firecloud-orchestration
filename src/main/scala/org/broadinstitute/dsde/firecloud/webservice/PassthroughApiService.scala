@@ -15,6 +15,7 @@ trait PassthroughApiService extends Directives with StreamingPassthrough {
     pathPrefix("api" / "configurations")(streamingPassthrough(s"$agora/api/v1/configurations")),
     pathPrefix("api" / "methods")(streamingPassthrough(s"$agora/api/v1/methods")),
     pathPrefix("api" / "notifications")(streamingPassthrough(s"$rawls/api/notifications")),
+    pathPrefix("api" / "servicePerimeters")(streamingPassthrough(s"$rawls/api/servicePerimeters")),
     pathPrefix("api" / "workspaces")(streamingPassthrough(s"$rawls/api/workspaces"))
   )
 
