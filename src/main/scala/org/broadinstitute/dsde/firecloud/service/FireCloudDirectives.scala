@@ -40,12 +40,14 @@ object FireCloudDirectiveUtils {
 
 trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonClient {
 
+  @deprecated(message = "Use streamingPassthrough instead", since = "2024-11-16")
+  // 18 usages + 2 usages in test
   def passthrough(unencodedPath: String, methods: HttpMethod*): Route =
     passthrough(Uri(unencodedPath), methods: _*)
 
   // Danger: it is a common mistake to pass in a URI that omits the query parameters included in the original request to Orch.
   // To preserve the query, extract it and attach it to the passthrough URI using `.withQuery(query)`.
-  def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
+  private def passthrough(uri: Uri, methods: HttpMethod*): Route = methods map { inMethod =>
     generateExternalHttpRequestForMethod(uri, inMethod)
   } reduce (_ ~ _)
 

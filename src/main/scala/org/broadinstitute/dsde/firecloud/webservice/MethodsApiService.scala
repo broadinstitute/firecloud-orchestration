@@ -37,112 +37,50 @@ trait MethodsApiService extends MethodsApiServiceUrls with FireCloudDirectives w
         case "configurations" => remoteConfigurationsUrl
       }
 
-      pathEnd {
-        (get | post) {
-          extract(_.request.method) { method =>
-            extract(_.request.uri.query()) { query =>
-              // only pass query params for GETs
-              val targetUri =
-                if (method == HttpMethods.GET)
-                  Uri(passthroughBase).withQuery(query)
-                else
-                  Uri(passthroughBase)
-              passthrough(targetUri, method)
-            }
-          }
-        }
-      } ~
-        pathPrefix(Segment / Segment / IntNumber) { (namespace, name, snapshotId) =>
-          pathEnd {
-            (get | delete) {
-              extract(_.request.method) { method =>
-                extract(_.request.uri.query()) { query =>
-                  // only pass query params for GETs
-                  val baseUri = Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId")
-                  val targetUri =
-                    if (method == HttpMethods.GET)
-                      baseUri.withQuery(query)
-                    else
-                      baseUri
-                  passthrough(targetUri, method)
-                }
-              }
+      pathPrefix(Segment / Segment / IntNumber) { (namespace, name, snapshotId) =>
+        path("permissions") {
+          val url = s"$passthroughBase/${urlify(namespace, name)}/$snapshotId/permissions"
+          get {
+            requireUserInfo() { userInfo =>
+              // pass to AgoraPermissionHandler
+              complete(agoraPermissionService(userInfo).getAgoraPermission(url))
             }
           } ~
-            path("permissions") {
-              val url = s"$passthroughBase/${urlify(namespace, name)}/$snapshotId/permissions"
-              get {
-                requireUserInfo() { userInfo =>
-                  // pass to AgoraPermissionHandler
-                  complete(agoraPermissionService(userInfo).getAgoraPermission(url))
-                }
-              } ~
-                post {
-                  // explicitly pull in the json-extraction error handler from ModelJsonProtocol
-                  handleRejections(entityExtractionRejectionHandler) {
-                    // take the body of the HTTP POST and construct a FireCloudPermission from it
-                    entity(as[List[FireCloudPermission]]) { fireCloudPermissions =>
-                      requireUserInfo() { userInfo =>
-                        complete {
-                          agoraPermissionService(userInfo).createAgoraPermission(
-                            url,
-                            fireCloudPermissions.map(_.toAgoraPermission)
-                          )
-                        }
-                      }
+            post {
+              // explicitly pull in the json-extraction error handler from ModelJsonProtocol
+              handleRejections(entityExtractionRejectionHandler) {
+                // take the body of the HTTP POST and construct a FireCloudPermission from it
+                entity(as[List[FireCloudPermission]]) { fireCloudPermissions =>
+                  requireUserInfo() { userInfo =>
+                    complete {
+                      agoraPermissionService(userInfo).createAgoraPermission(
+                        url,
+                        fireCloudPermissions.map(_.toAgoraPermission)
+                      )
                     }
                   }
                 }
+              }
             }
         }
+      }
     } ~
       // routes that are only valid for methods
       pathPrefix("methods") {
-        val passthroughBase = remoteMethodsUrl
-        path("definitions") {
-          get {
-            passthrough(s"$passthroughBase/definitions", HttpMethods.GET)
-          }
-        } ~
-          path("permissions") {
-            put {
-              handleRejections(entityExtractionRejectionHandler) {
-                entity(as[List[MethodAclPair]]) { fireCloudPermissions =>
-                  val agoraPermissions = fireCloudPermissions map { fc =>
-                    EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
-                  }
-                  requireUserInfo() { userInfo =>
-                    complete(agoraPermissionService(userInfo).batchInsertAgoraPermissions(agoraPermissions))
-                  }
+        path("permissions") {
+          put {
+            handleRejections(entityExtractionRejectionHandler) {
+              entity(as[List[MethodAclPair]]) { fireCloudPermissions =>
+                val agoraPermissions = fireCloudPermissions map { fc =>
+                  EntityAccessControlAgora(Method(fc.method), fc.acls.map(_.toAgoraPermission))
+                }
+                requireUserInfo() { userInfo =>
+                  complete(agoraPermissionService(userInfo).batchInsertAgoraPermissions(agoraPermissions))
                 }
               }
             }
-          } ~
-          pathPrefix(Segment / Segment) { (namespace, name) =>
-            path("configurations") {
-              get {
-                passthrough(s"$passthroughBase/${urlify(namespace, name)}/configurations", HttpMethods.GET)
-              }
-            } ~
-              pathPrefix(IntNumber) { snapshotId =>
-                pathEnd {
-                  post {
-                    extract(_.request.uri.query()) { query =>
-                      passthrough(Uri(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId").withQuery(query),
-                                  HttpMethods.POST
-                      )
-                    }
-                  }
-                } ~
-                  path("configurations") {
-                    get {
-                      passthrough(s"$passthroughBase/${urlify(namespace, name)}/$snapshotId/configurations",
-                                  HttpMethods.GET
-                      )
-                    }
-                  }
-              }
           }
+        }
       }
 
   /* special handling of url encoding for agora entity namespace/name here.
