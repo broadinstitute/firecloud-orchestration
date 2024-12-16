@@ -1,12 +1,27 @@
-import Settings._
-import Testing._
+import Settings.*
+import Testing.*
+import pl.project13.scala.sbt.JmhPlugin
 import spray.revolver.RevolverPlugin
 
 lazy val root = project.in(file("."))
-  .settings(rootSettings:_*)
+  .settings(rootSettings *)
   .withTestSettings
 
 enablePlugins(RevolverPlugin)
+
+// JMH subproject for benchmarking
+lazy val bench = project.in(file("benchmarks"))
+  .dependsOn(root % "compile->compile")
+  .disablePlugins(RevolverPlugin)
+  .enablePlugins(JmhPlugin)
+  .settings(
+    scalaVersion  := (root / scalaVersion).value,
+    // rewire tasks, so that 'bench/Jmh/run' automatically invokes 'bench/Jmh/compile'
+    // and 'bench/Jmh/compile' invokes root's 'compile'
+    Jmh / compile := (Jmh / compile).dependsOn(Compile / compile).value,
+    Jmh / run := (Jmh / run).dependsOn(Jmh / compile).evaluated
+  )
+
 
 Revolver.enableDebugging(port = 5051, suspend = false)
 
