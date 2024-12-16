@@ -56,9 +56,6 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
         }
       }
     } ~
-      path("version" / "executionEngine") {
-        passthrough(FireCloudConfig.Rawls.executionEngineVersionUrl, HttpMethods.GET)
-      } ~
       pathPrefix("api") {
         pathPrefix("workspaces") {
           pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
