@@ -281,12 +281,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                       }
                     }
                   }
-                } ~
-                  get {
-                    requireUserInfo() { _ =>
-                      passthrough(workspacePath + "/acl", HttpMethods.GET)
-                    }
-                  }
+                }
               } ~
               path("catalog") {
                 get {
