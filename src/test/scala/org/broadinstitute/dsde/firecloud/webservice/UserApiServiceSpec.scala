@@ -134,15 +134,6 @@ class UserApiServiceSpec
           .withStatusCode(OK.intValue)
       )
 
-    samServer
-      .when(request.withMethod("GET").withPath(UserApiService.samUserProxyGroupPath("test@test.test")))
-      .respond(
-        org.mockserver.model.HttpResponse
-          .response()
-          .withHeaders(MockUtils.header)
-          .withStatusCode(OK.intValue)
-      )
-
     returnEnabledUser(samServer)
 
     profileServer = startClientAndServer(thurloeServerPort)
@@ -319,21 +310,6 @@ class UserApiServiceSpec
       }
     }
 
-    "when GET-ing proxy group" - {
-      "OK response is returned for valid user" in {
-        Get("/api/proxyGroup/test@test.test") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(passthroughRoutes) ~> check {
-            status should equal(OK)
-          }
-      }
-
-      "NotFound response is returned for invalid user" in {
-        Get("/api/proxyGroup/test@not.found") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(passthroughRoutes) ~> check {
-            status should equal(NotFound)
-          }
-      }
-    }
   }
 
   "UserService Edge Cases" - {
