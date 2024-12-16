@@ -7,7 +7,7 @@ import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.FireCloudDirectives
-import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives}
+import org.broadinstitute.dsde.firecloud.utils.{RestJsonClient, StandardUserInfoDirectives, StreamingPassthrough}
 import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
 
@@ -93,6 +93,7 @@ trait MethodConfigurationApiService
     extends FireCloudDirectives
     with SprayJsonSupport
     with StandardUserInfoDirectives
+    with StreamingPassthrough
     with RestJsonClient {
 
   final private val ApiPrefix = "workspaces"
@@ -141,43 +142,15 @@ trait MethodConfigurationApiService
             }
           }
         } ~ pathPrefix(Segment / Segment) { (configNamespace, configName) =>
-          pathEnd {
-            passthrough(
-              encodeUri(
-                MethodConfigurationApiService.remoteMethodConfigUrl(workspaceNamespace,
-                                                                    workspaceName,
-                                                                    configNamespace,
-                                                                    configName
-                )
-              ),
-              HttpMethods.GET,
-              HttpMethods.PUT,
-              HttpMethods.POST,
-              HttpMethods.DELETE
+          streamingPassthrough(
+            encodeUri(
+              MethodConfigurationApiService.remoteMethodConfigUrl(workspaceNamespace,
+                                                                  workspaceName,
+                                                                  configNamespace,
+                                                                  configName
+              )
             )
-          } ~
-            path("rename") {
-              passthrough(encodeUri(
-                            MethodConfigurationApiService.remoteMethodConfigRenameUrl(workspaceNamespace,
-                                                                                      workspaceName,
-                                                                                      configNamespace,
-                                                                                      configName
-                            )
-                          ),
-                          HttpMethods.POST
-              )
-            } ~
-            path("validate") {
-              passthrough(encodeUri(
-                            MethodConfigurationApiService.remoteMethodConfigValidateUrl(workspaceNamespace,
-                                                                                        workspaceName,
-                                                                                        configNamespace,
-                                                                                        configName
-                            )
-                          ),
-                          HttpMethods.GET
-              )
-            }
+          )
         }
       }
     }
