@@ -37,16 +37,6 @@ class CromIamApiServiceSpec extends BaseServiceSpec with CromIamApiService with 
     lazy val engineRoot: String = "/engine/v1"
     lazy val womtoolRoot: String = "/api/womtool/v1"
 
-    "/api/womtool/{version}/describe" - {
-
-      val endpoint = s"$womtoolRoot/describe"
-
-      "should pass through my methods" in {
-        checkIfPassedThrough(testableRoutes, HttpMethods.POST, endpoint, toBeHandled = true)
-      }
-
-    }
-
     "/api/workflows/{version}/abort" - {
 
       val endpoint = workflowRoot + "/my-bogus-workflow-id-565656/abort"

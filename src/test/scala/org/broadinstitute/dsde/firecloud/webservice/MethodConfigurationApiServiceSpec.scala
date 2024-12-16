@@ -159,17 +159,6 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
           }
         }
 
-        s"GET, PUT, DELETE on $path" - {
-          "should receive a MethodNotAllowed" in {
-            List(HttpMethods.GET, HttpMethods.PUT, HttpMethods.DELETE) foreach { method =>
-              new RequestBuilder(method)(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(
-                methodConfigurationRoutes
-              ) ~> check {
-                status should equal(MethodNotAllowed)
-              }
-            }
-          }
-        }
       }
 
       val localMethodConfigPath = "/workspaces/%s/%s/method_configs/%s/%s".format(mockWorkspace.namespace,

@@ -12,6 +12,12 @@ import org.broadinstitute.dsde.rawls.model.WorkspaceName
 import org.slf4j.LoggerFactory
 
 object MethodConfigurationApiService {
+  val remoteTemplatePath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/template"
+  val remoteTemplateURL = FireCloudConfig.Rawls.baseUrl + remoteTemplatePath
+
+  val remoteInputsOutputsPath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/inputsOutputs"
+  val remoteInputsOutputsURL = FireCloudConfig.Rawls.baseUrl + remoteInputsOutputsPath
+
   val remoteCopyFromMethodRepoConfigPath = FireCloudConfig.Rawls.authPrefix + "/methodconfigs/copyFromMethodRepo"
   val remoteCopyFromMethodRepoConfigUrl = FireCloudConfig.Rawls.baseUrl + remoteCopyFromMethodRepoConfigPath
 
