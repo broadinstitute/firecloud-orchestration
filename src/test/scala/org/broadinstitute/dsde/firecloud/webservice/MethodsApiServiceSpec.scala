@@ -19,7 +19,7 @@ import org.broadinstitute.dsde.firecloud.model.UserInfo
 
 import scala.concurrent.ExecutionContext
 
-final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with MethodsApiService {
+final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with PassthroughApiService {
 
   def actorRefFactory: ActorSystem = system
 
@@ -42,29 +42,33 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
     those are tested elsewhere
    */
   val testCases = Seq(
-    Api("/configurations", GET, "/api/v1/configurations", allowQueryParams = true),
-    Api("/configurations", POST, "/api/v1/configurations", allowQueryParams = false),
-    Api("/configurations/namespace/name/1", GET, "/api/v1/configurations/namespace/name/1", allowQueryParams = true),
-    Api("/configurations/namespace/name/1",
+    Api("/api/configurations", GET, "/api/v1/configurations", allowQueryParams = true),
+    Api("/api/configurations", POST, "/api/v1/configurations", allowQueryParams = true),
+    Api("/api/configurations/namespace/name/1",
+        GET,
+        "/api/v1/configurations/namespace/name/1",
+        allowQueryParams = true
+    ),
+    Api("/api/configurations/namespace/name/1",
         DELETE,
         "/api/v1/configurations/namespace/name/1",
-        allowQueryParams = false
+        allowQueryParams = true
     ),
-    Api("/methods", GET, "/api/v1/methods", allowQueryParams = true),
-    Api("/methods", POST, "/api/v1/methods", allowQueryParams = false),
-    Api("/methods/namespace/name/1", GET, "/api/v1/methods/namespace/name/1", allowQueryParams = true),
-    Api("/methods/namespace/name/1", DELETE, "/api/v1/methods/namespace/name/1", allowQueryParams = false),
-    Api("/methods/namespace/name/1", POST, "/api/v1/methods/namespace/name/1", allowQueryParams = true),
-    Api("/methods/namespace/name/1/configurations",
+    Api("/api/methods", GET, "/api/v1/methods", allowQueryParams = true),
+    Api("/api/methods", POST, "/api/v1/methods", allowQueryParams = true),
+    Api("/api/methods/namespace/name/1", GET, "/api/v1/methods/namespace/name/1", allowQueryParams = true),
+    Api("/api/methods/namespace/name/1", DELETE, "/api/v1/methods/namespace/name/1", allowQueryParams = true),
+    Api("/api/methods/namespace/name/1", POST, "/api/v1/methods/namespace/name/1", allowQueryParams = true),
+    Api("/api/methods/namespace/name/1/configurations",
         GET,
         "/api/v1/methods/namespace/name/1/configurations",
-        allowQueryParams = false
+        allowQueryParams = true
     ),
-    Api("/methods/definitions", GET, "/api/v1/methods/definitions", allowQueryParams = false),
-    Api("/methods/namespace/name/configurations",
+    Api("/api/methods/definitions", GET, "/api/v1/methods/definitions", allowQueryParams = true),
+    Api("/api/methods/namespace/name/configurations",
         GET,
         "/api/v1/methods/namespace/name/configurations",
-        allowQueryParams = false
+        allowQueryParams = true
     )
   )
 
@@ -108,7 +112,7 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
       s"should succeed on ${api.verb.toString} to ${api.localPath}" in {
         // always send query params to the orch endpoint, to simulate an end user manually adding them.
         // we'll check inside the test whether or not the query params are sent through to agora.
-        new RequestBuilder(api.verb)(api.localPath + "?foo=bar&baz=qux") ~> methodsApiServiceRoutes ~> check {
+        new RequestBuilder(api.verb)(api.localPath + "?foo=bar&baz=qux") ~> passthroughRoutes ~> check {
           assertResult(mockSuccessResponseCode) {
             status
           }
@@ -124,16 +128,6 @@ final class MethodsApiServiceSpec extends BaseServiceSpec with ServiceSpec with 
           }
           assertResult(api.allowQueryParams, s"passthrough should $queryParamMsg query params") {
             passthroughResult(2).toBoolean
-          }
-        }
-      }
-    }
-    // negative tests
-    negativeCases foreach { neg =>
-      neg._2 foreach { verb =>
-        s"should reject a ${verb.toString} to ${neg._1}" in {
-          new RequestBuilder(verb)(neg._1) ~> methodsApiServiceRoutes ~> check {
-            assert(!handled)
           }
         }
       }
