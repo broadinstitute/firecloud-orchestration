@@ -23,6 +23,7 @@ class UserApiServiceSpec
     extends BaseServiceSpec
     with SamMockserverUtils
     with RegisterApiService
+    with PassthroughApiService
     with UserApiService
     with SprayJsonSupport {
 
@@ -130,15 +131,6 @@ class UserApiServiceSpec
           .response()
           .withHeaders(MockUtils.header)
           .withBody(userStatus)
-          .withStatusCode(OK.intValue)
-      )
-
-    samServer
-      .when(request.withMethod("GET").withPath(UserApiService.samUserProxyGroupPath("test@test.test")))
-      .respond(
-        org.mockserver.model.HttpResponse
-          .response()
-          .withHeaders(MockUtils.header)
           .withStatusCode(OK.intValue)
       )
 
@@ -318,21 +310,6 @@ class UserApiServiceSpec
       }
     }
 
-    "when GET-ing proxy group" - {
-      "OK response is returned for valid user" in {
-        Get("/api/proxyGroup/test@test.test") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-            status should equal(OK)
-          }
-      }
-
-      "NotFound response is returned for invalid user" in {
-        Get("/api/proxyGroup/test@not.found") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
-            status should equal(NotFound)
-          }
-      }
-    }
   }
 
   "UserService Edge Cases" - {

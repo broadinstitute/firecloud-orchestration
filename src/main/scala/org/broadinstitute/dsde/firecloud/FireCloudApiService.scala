@@ -71,7 +71,6 @@ trait FireCloudApiService
     with RegisterApiService
     with WorkspaceApiService
     with MethodConfigurationApiService
-    with SubmissionApiService
     with StatusApiService
     with MethodsApiService
     with UserApiService
@@ -80,7 +79,6 @@ trait FireCloudApiService
     with CromIamApiService
     with HealthApiService
     with StaticNotebooksApiService
-    with PerimeterApiService
     with PassthroughApiService {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -179,11 +177,9 @@ trait FireCloudApiService
           profileRoutes ~
           cromIamApiServiceRoutes ~
           methodConfigurationRoutes ~
-          submissionServiceRoutes ~
           nihRoutes ~
           shareLogServiceRoutes ~
-          staticNotebooksRoutes ~
-          perimeterServiceRoutes
+          staticNotebooksRoutes
       }
 
   val routeWrappers: Directive[Unit] =
@@ -195,7 +191,6 @@ trait FireCloudApiService
 
   def route: server.Route = routeWrappers {
     cromIamEngineRoutes ~
-      tosRoutes ~
       exportEntitiesRoutes ~
       cromIamEngineRoutes ~
       exportEntitiesRoutes ~
