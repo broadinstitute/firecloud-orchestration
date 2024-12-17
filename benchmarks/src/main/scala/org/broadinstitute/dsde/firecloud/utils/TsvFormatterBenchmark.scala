@@ -1,15 +1,58 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import org.broadinstitute.dsde.firecloud.utils.TsvFormatterBenchmark.Inputs
+import org.broadinstitute.dsde.firecloud.model.{FlexibleModelSchema, ModelSchema}
+import org.broadinstitute.dsde.firecloud.utils.TsvFormatterBenchmark.EntityData
+import org.broadinstitute.dsde.rawls.model._
 import org.openjdk.jmh.annotations.{Benchmark, Scope, State}
 import org.openjdk.jmh.infra.Blackhole
 
 object TsvFormatterBenchmark {
 
   @State(Scope.Thread)
-  class Inputs {
-    val inputNoTab = "foo"
-    val inputWithTab = "foo\tbar"
+  class EntityData {
+    val entityType: String = "sample"
+
+    val model: ModelSchema = FlexibleModelSchema
+
+    val headers: IndexedSeq[String] = IndexedSeq("sample_id", "col1", "col2", "fourth", "last")
+
+    val entities: Seq[Entity] = Seq(
+      Entity(
+        "1",
+        entityType,
+        Map(
+          AttributeName.withDefaultNS("col1") -> AttributeString("foo"),
+          AttributeName.withDefaultNS("col2") -> AttributeBoolean(true),
+          AttributeName.withDefaultNS("fourth") -> AttributeNumber(42),
+          AttributeName.withDefaultNS("last") -> AttributeString("gs://some-bucket/somefile.ext")
+        )
+      ),
+      Entity(
+        "0005",
+        entityType,
+        Map(
+          AttributeName.withDefaultNS("col1") -> AttributeString("bar"),
+          AttributeName.withDefaultNS("col2") -> AttributeBoolean(false),
+          AttributeName.withDefaultNS("fourth") -> AttributeNumber(98.765),
+          AttributeName.withDefaultNS("last") -> AttributeEntityReference("targetType", "targetName")
+        )
+      ),
+      Entity(
+        "789",
+        entityType,
+        Map(
+          AttributeName.withDefaultNS("col1") -> AttributeString("baz\tqux"),
+          AttributeName.withDefaultNS("col2") -> AttributeBoolean(true),
+          AttributeName.withDefaultNS("fourth") -> AttributeNumber(-123.45),
+          AttributeName.withDefaultNS("last") -> AttributeValueList(
+            Seq(AttributeString("gs://some-bucket/somefile1.ext"),
+                AttributeString("gs://some-bucket/somefile2.ext"),
+                AttributeString("gs://some-bucket/somefile3.ext")
+            )
+          )
+        )
+      )
+    )
   }
 
 }
@@ -17,15 +60,9 @@ object TsvFormatterBenchmark {
 class TsvFormatterBenchmark {
 
   @Benchmark
-  def tsvSafeStringNoTab(blackHole: Blackhole, inputs: Inputs): String = {
-    val result = TSVFormatter.tsvSafeString(inputs.inputNoTab)
-    blackHole.consume(result)
-    result
-  }
-
-  @Benchmark
-  def tsvSafeStringWithTab(blackHole: Blackhole, inputs: Inputs): String = {
-    val result = TSVFormatter.tsvSafeString(inputs.inputWithTab)
+  def makeEntityRows(blackHole: Blackhole, entityData: EntityData): IndexedSeq[IndexedSeq[String]] = {
+    val result =
+      TSVFormatter.makeEntityRows(entityData.entityType, entityData.entities, entityData.headers)(entityData.model)
     blackHole.consume(result)
     result
   }
