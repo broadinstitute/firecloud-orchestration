@@ -32,7 +32,7 @@ trait CookieAuthedApiService extends Directives with RequestBuilding with LazyLo
         post {
           formFields(Symbol("FCtoken"), Symbol("attributeNames").?, Symbol("model").?) {
             (tokenValue, attributeNamesString, modelString) =>
-              val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+              val attributeNames = attributeNamesString.map(_.split(",").toList)
               val userInfo = dummyUserInfo(tokenValue)
               val exportArgs = ExportEntitiesByTypeArguments(userInfo,
                                                              workspaceNamespace,
@@ -50,7 +50,7 @@ trait CookieAuthedApiService extends Directives with RequestBuilding with LazyLo
           get {
             cookie("FCtoken") { tokenCookie =>
               parameters(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
-                val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+                val attributeNames = attributeNamesString.map(_.split(",").toList)
                 val userInfo = dummyUserInfo(tokenCookie.value)
                 val exportArgs = ExportEntitiesByTypeArguments(userInfo,
                                                                workspaceNamespace,

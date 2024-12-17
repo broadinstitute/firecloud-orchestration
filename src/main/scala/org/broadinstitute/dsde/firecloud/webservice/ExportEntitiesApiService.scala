@@ -35,7 +35,7 @@ trait ExportEntitiesApiService
         requireUserInfo() { userInfo =>
           get {
             parameters(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
-              val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+              val attributeNames = attributeNamesString.map(_.split(",").toList)
               val exportArgs = ExportEntitiesByTypeArguments(userInfo,
                                                              workspaceNamespace,
                                                              workspaceName,
@@ -50,7 +50,7 @@ trait ExportEntitiesApiService
           } ~
             post {
               formFields(Symbol("attributeNames").?, Symbol("model").?) { (attributeNamesString, modelString) =>
-                val attributeNames = attributeNamesString.map(_.split(",").toIndexedSeq)
+                val attributeNames = attributeNamesString.map(_.split(",").toList)
                 val model = if (modelString.nonEmpty && StringUtils.isBlank(modelString.get)) None else modelString
                 val exportArgs = ExportEntitiesByTypeArguments(userInfo,
                                                                workspaceNamespace,

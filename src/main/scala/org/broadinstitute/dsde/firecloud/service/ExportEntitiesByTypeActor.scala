@@ -36,7 +36,7 @@ case class ExportEntitiesByTypeArguments(
   workspaceNamespace: String,
   workspaceName: String,
   entityType: String,
-  attributeNames: Option[IndexedSeq[String]],
+  attributeNames: Option[List[String]],
   model: Option[String]
 )
 
@@ -80,7 +80,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
                                 workspaceNamespace: String,
                                 workspaceName: String,
                                 entityType: String,
-                                attributeNames: Option[IndexedSeq[String]],
+                                attributeNames: Option[List[String]],
                                 model: Option[String],
                                 argSystem: ActorSystem
 )(implicit protected val executionContext: ExecutionContext)
@@ -213,7 +213,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
 
   private def streamSingularType(entityQueries: Seq[EntityQuery],
                                  metadata: EntityTypeMetadata,
-                                 entityHeaders: IndexedSeq[String]
+                                 entityHeaders: List[String]
   ): Future[File] = {
     val tempEntityFile: File = File.newTemporaryFile(prefix = entityType)
     val entitySink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempEntityFile.path)
@@ -275,9 +275,9 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
     val membershipSink: Sink[ByteString, Future[IOResult]] = FileIO.toPath(tempMembershipFile.path)
 
     // Headers
-    val entityHeaders: IndexedSeq[String] =
+    val entityHeaders: List[String] =
       TSVFormatter.makeEntityHeaders(entityType, metadata.attributeNames, attributeNames)
-    val membershipHeaders: IndexedSeq[String] = TSVFormatter.makeMembershipHeaders(entityType)
+    val membershipHeaders: List[String] = TSVFormatter.makeMembershipHeaders(entityType)
 
     // Run the Split Entity Flow that pipes entities through the two flows to the two file sinks
     // Result of this will be a tuple of Future[IOResult] that represents the success or failure of
@@ -432,7 +432,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
       logger.info(s"completed pairing; result is ${pairs.length} rows")
 
       // TSV headers
-      val entityHeaders: IndexedSeq[String] = IndexedSeq(s"entity:${entityType}_id", read1Name, read2Name)
+      val entityHeaders: List[String] = List(s"entity:${entityType}_id", read1Name, read2Name)
 
       // transform the matched pairs into entities
       val entities: List[Entity] = pairs.map {
