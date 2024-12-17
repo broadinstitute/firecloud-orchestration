@@ -40,29 +40,19 @@ object TSVFormatter {
     * Generate a row of values in the same order as the headers.
     *
     * @param entity The Entity object to extract data from
-    * @param headerValues List of ordered header values to determine order of values
+    * @param headerAttributes List of ordered header values to determine order of values
     * @return IndexedSeq of ordered data fields
     */
-  private def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
-    val rowMap: Map[Int, String] = entity.attributes map { case (attributeName, attribute) =>
-      val columnPosition = headerValues.indexOf(AttributeName.toDelimitedName(attributeName))
-      val cellValue = tsvSafeAttribute(attribute)
-      columnPosition -> cellValue
-    }
-    // If there are entities that don't have a value for which there is a known header, that will
-    // be missing in the row. Fill up those positions with empty strings in that case.
-    val completedRowMap: IndexedSeq[(Int, String)] =
-      IndexedSeq.range(1, headerValues.size).map { i =>
-        (i, rowMap.getOrElse(i, ""))
+  private def makeRow(entity: Entity, headerAttributes: IndexedSeq[AttributeName]): IndexedSeq[String] =
+    // first column of the TSV is always the entity name
+    IndexedSeq(tsvSafeString(entity.name)) ++
+      // remainder of columns are attributes of the entity, or "" if not found on this entity
+      headerAttributes.tail.map { colname =>
+        entity.attributes.get(colname) match {
+          case Some(attrValue) => tsvSafeAttribute(attrValue)
+          case None            => ""
+        }
       }
-
-    // This rowMap manipulation:
-    //  1. sorts the position-value map by the key
-    //  2. converts it to a seq of tuples
-    //  3. pulls out the second element of the tuple (column value)
-    //  4. resulting in a seq of the column values sorted by the column position
-    entity.name +: completedRowMap.sortBy(_._1).map(_._2).toIndexedSeq
-  }
 
   /**
     * Given an Attribute, creates a string that is safe to output into a TSV as a cell value.
@@ -201,10 +191,14 @@ object TSVFormatter {
     } else {
       entities
     }
+
+    // headers as AttributeNames
+    val headerAttributes: IndexedSeq[AttributeName] = headers.map(AttributeName.fromDelimitedName)
+
     // Turn them into rows
     filteredEntities
       .filter(_.entityType == entityType)
-      .map(entity => makeRow(entity, headers))
+      .map(entity => makeRow(entity, headerAttributes))
       .toIndexedSeq
   }
 
