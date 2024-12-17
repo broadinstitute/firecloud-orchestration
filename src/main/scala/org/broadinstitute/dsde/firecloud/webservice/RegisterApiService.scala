@@ -68,40 +68,4 @@ trait RegisterApiService
       }
     }
 
-  val tosRoutes: Route =
-    pathPrefix("tos") {
-      path("text") {
-        passthrough(samTosTextUrl, GET)
-      }
-    } ~
-      pathPrefix("register" / "user") {
-        pathPrefix("v1" / "termsofservice") {
-          pathEndOrSingleSlash {
-            post {
-              requireUserInfo() { _ =>
-                passthrough(samTosBaseUrl, POST)
-              }
-            } ~
-              delete {
-                requireUserInfo() { _ =>
-                  passthrough(samTosBaseUrl, DELETE)
-                }
-              }
-          } ~
-            path("status") {
-              get {
-                requireUserInfo() { _ =>
-                  passthrough(samTosStatusUrl, GET)
-                }
-              }
-            }
-        } ~
-          pathPrefix("v2" / "self" / "termsOfServiceDetails") {
-            get {
-              requireUserInfo() { _ =>
-                passthrough(samTosDetailsUrl, GET)
-              }
-            }
-          }
-      }
 }

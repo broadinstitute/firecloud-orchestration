@@ -13,7 +13,6 @@ trait CromIamApiService
     with StreamingPassthrough {
 
   lazy val workflowRoot: String = FireCloudConfig.CromIAM.authUrl + "/workflows/v1"
-  lazy val womtoolRoute: String = FireCloudConfig.CromIAM.authUrl + "/womtool/v1"
   lazy val engineRoot: String = FireCloudConfig.CromIAM.baseUrl + "/engine/v1"
   lazy val rawlsWorkflowRoot: String = FireCloudConfig.Rawls.authUrl + "/workflows"
 
@@ -46,18 +45,7 @@ trait CromIamApiService
       streamingPassthrough(Uri.Path(localBase) -> Uri(workflowRoot))
     }
 
-  val womToolRoute: Route =
-    pathPrefix("womtool" / Segment) { _ =>
-      path("describe") {
-        pathEnd {
-          post {
-            passthrough(s"$womtoolRoute/describe", HttpMethods.POST)
-          }
-        }
-      }
-    }
-
-  val cromIamApiServiceRoutes = rawlsServiceRoute ~ cromIamServiceRoutes ~ womToolRoute
+  val cromIamApiServiceRoutes = rawlsServiceRoute ~ cromIamServiceRoutes
 
   val cromIamEngineRoutes: Route =
     pathPrefix("engine" / Segment) { _ =>
