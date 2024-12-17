@@ -36,6 +36,14 @@ object TSVFormatter extends TSVFileSupport {
       entity.copy(attributes = attributes)
     }
 
+  private def makeRow(entity: Entity, headerAttributes: IndexedSeq[AttributeName]): IndexedSeq[String] =
+    headerAttributes.map { colname =>
+      entity.attributes.get(colname) match {
+        case Some(attrValue) => tsvSafeAttribute(attrValue)
+        case None            => ""
+      }
+    }
+
   /**
     * Generate a row of values in the same order as the headers.
     *
@@ -43,16 +51,16 @@ object TSVFormatter extends TSVFileSupport {
     * @param headerValues List of ordered header values to determine order of values
     * @return IndexedSeq of ordered data fields
     */
-  private def makeRow(entity: Entity, headerValues: IndexedSeq[String]): IndexedSeq[String] = {
+  private def makeRow(entity: Entity, headerIndexes: Map[AttributeName, Int]): IndexedSeq[String] = {
     val rowMap: Map[Int, String] = entity.attributes map { case (attributeName, attribute) =>
-      val columnPosition = headerValues.indexOf(AttributeName.toDelimitedName(attributeName))
+      val columnPosition = headerIndexes(attributeName)
       val cellValue = tsvSafeAttribute(attribute)
       columnPosition -> cellValue
     }
     // If there are entities that don't have a value for which there is a known header, that will
     // be missing in the row. Fill up those positions with empty strings in that case.
     val completedRowMap: IndexedSeq[(Int, String)] =
-      IndexedSeq.range(1, headerValues.size).map { i =>
+      IndexedSeq.range(1, headerIndexes.size).map { i =>
         (i, rowMap.getOrElse(i, ""))
       }
 
@@ -71,21 +79,19 @@ object TSVFormatter extends TSVFileSupport {
     * @param value The input attribute to make safe
     * @return the safe value
     */
-  def tsvSafeAttribute(attribute: Attribute): String = {
+  def tsvSafeAttribute(attribute: Attribute): String =
     // AttributeStringifier works for everything except single entity references;
     // it even works for AttributeEntityReferenceList
-    val intermediateString = attribute match {
+    attribute match {
       case ref: AttributeEntityReference => attributeFormat.write(ref).compactPrint
       case str: AttributeString          =>
         // if this string looks like a non-string datatype, such as '0005', surround it with quotes so it remains a string.
         toAttribute(str.value) match {
-          case _: AttributeString => str.value
-          case _                  => s"\"${str.value}\""
+          case x: AttributeString if !str.value.contains(TSVParser.DELIMITER) => str.value
+          case _                                                              => s"\"${str.value}\""
         }
-      case _ => AttributeStringifier(attribute)
+      case _ => tsvSafeString(AttributeStringifier(attribute))
     }
-    tsvSafeString(intermediateString)
-  }
 
   /**
     * Creates a string that is safe to output into a TSV as a cell value.
@@ -207,10 +213,18 @@ object TSVFormatter extends TSVFileSupport {
     } else {
       entities
     }
+    // map of header->columnIndex for faster lookup inside makeRow
+    val headerIndexes: Map[AttributeName, Int] = headers.zipWithIndex.map { case (hdr, idx) =>
+      AttributeName.fromDelimitedName(hdr) -> idx
+    }.toMap
+
+    // headers as AttributeNames
+    val headerAttributes: IndexedSeq[AttributeName] = headers.map(AttributeName.fromDelimitedName)
+
     // Turn them into rows
     filteredEntities
       .filter(_.entityType == entityType)
-      .map(entity => makeRow(entity, headers))
+      .map(entity => makeRow(entity, headerAttributes))
       .toIndexedSeq
   }
 
