@@ -14,7 +14,7 @@ object TsvFormatterBenchmark {
 
     val model: ModelSchema = FlexibleModelSchema
 
-    val headers: IndexedSeq[String] = IndexedSeq("sample_id", "col1", "col2", "fourth", "last")
+    val headers: List[String] = List("sample_id", "col1", "col2", "fourth", "last")
 
     val entities: Seq[Entity] = Seq(
       Entity(
@@ -60,7 +60,7 @@ object TsvFormatterBenchmark {
 class TsvFormatterBenchmark {
 
   @Benchmark
-  def makeEntityRows(blackHole: Blackhole, entityData: EntityData): IndexedSeq[IndexedSeq[String]] = {
+  def makeEntityRows(blackHole: Blackhole, entityData: EntityData): List[List[String]] = {
     val result =
       TSVFormatter.makeEntityRows(entityData.entityType, entityData.entities, entityData.headers)(entityData.model)
     blackHole.consume(result)

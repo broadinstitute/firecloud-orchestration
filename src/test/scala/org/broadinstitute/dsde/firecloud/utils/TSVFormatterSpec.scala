@@ -83,7 +83,7 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
         )
         results.head should be("entity:sample_id")
 
-        val results2 = testEntityDataSet("sample", sampleList, Option(IndexedSeq.empty))
+        val results2 = testEntityDataSet("sample", sampleList, Option(List.empty))
         results2 should contain theSameElementsAs Seq("entity:sample_id",
                                                       "sample_type",
                                                       "header_1",
@@ -92,7 +92,7 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
         )
         results2.head should be("entity:sample_id")
 
-        val results3 = testEntityDataSet("sample", sampleList, Option(IndexedSeq("")))
+        val results3 = testEntityDataSet("sample", sampleList, Option(List("")))
         results3 should contain theSameElementsAs Seq("entity:sample_id",
                                                       "sample_type",
                                                       "header_1",
@@ -102,10 +102,10 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
         results3.head should be("entity:sample_id")
 
         Seq(
-          IndexedSeq("header_2", "does_not_exist", "header_1"),
-          IndexedSeq("header_2", "sample_id", "header_1"),
-          IndexedSeq("header_1", "header_2"),
-          IndexedSeq("header_1")
+          List("header_2", "does_not_exist", "header_1"),
+          List("header_2", "sample_id", "header_1"),
+          List("header_1", "header_2"),
+          List("header_1")
         ).foreach { requestedHeaders =>
           val resultsWithSpecificHeaders =
             testEntityDataSet("sample", sampleList, Option(requestedHeaders), TsvTypes.UPDATE)
@@ -115,7 +115,7 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
 
         testEntityDataSet("sample",
                           sampleList,
-                          Option(IndexedSeq("participant"))
+                          Option(List("participant"))
         ) should contain theSameElementsInOrderAs Seq("entity:sample_id", "participant")
 
       }
@@ -287,7 +287,7 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
 
   private def testEntityDataSet(entityType: String,
                                 entities: List[Entity],
-                                requestedHeaders: Option[IndexedSeq[String]],
+                                requestedHeaders: Option[List[String]],
                                 tsvType: TsvType = TsvTypes.ENTITY
   ) = {
 
@@ -323,7 +323,7 @@ class TSVFormatterSpec extends AnyFreeSpec with ScalaFutures with Matchers with 
   ): Unit = {
     val tsvHeaders = TSVFormatter.makeMembershipHeaders(entityType)
     val tsvRows = TSVFormatter.makeMembershipRows(entityType, entities)
-    val tsv = TSVFormatter.exportToString(tsvHeaders, tsvRows.toIndexedSeq)
+    val tsv = TSVFormatter.exportToString(tsvHeaders, tsvRows)
     tsv shouldNot be(empty)
 
     val lines: List[String] = Source.fromString(tsv).getLines().toList

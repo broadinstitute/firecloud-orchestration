@@ -1,8 +1,11 @@
 package org.broadinstitute.dsde.firecloud.utils
 
+import com.google.common.annotations.VisibleForTesting
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.TsvTypes
+
+import scala.collection.LinearSeq
 
 object TSVFormatter {
 
@@ -12,11 +15,12 @@ object TSVFormatter {
   /**
     * Generate file content from headers and rows.
     *
-    * @param headers IndexedSeq of header string values
-    * @param rows IndexedSeq of rows, each row an IndexedSeq of string values
+    * @param headers List of header string values
+    * @param rows List of rows, each row a List of string values
     * @return Headers and rows combined.
     */
-  def exportToString(headers: IndexedSeq[String], rows: IndexedSeq[IndexedSeq[String]]): String = {
+  @VisibleForTesting
+  def exportToString(headers: List[String], rows: List[List[String]]): String = {
     val headerString: String = headers.mkString("\t") + "\n"
     val rowsString: String = rows.map(_.mkString("\t")).mkString("\n")
     headerString + rowsString + "\n"
@@ -40,12 +44,12 @@ object TSVFormatter {
     * Generate a row of values in the same order as the headers.
     *
     * @param entity The Entity object to extract data from
-    * @param headerAttributes List of ordered header values to determine order of values
-    * @return IndexedSeq of ordered data fields
+    * @param headerAttributes ordered header values to determine order of values
+    * @return ordered data fields
     */
-  private def makeRow(entity: Entity, headerAttributes: IndexedSeq[AttributeName]): IndexedSeq[String] =
+  private def makeRow(entity: Entity, headerAttributes: List[AttributeName]): List[String] =
     // first column of the TSV is always the entity name
-    IndexedSeq(tsvSafeString(entity.name)) ++
+    List(tsvSafeString(entity.name)) ++
       // remainder of columns are attributes of the entity, or "" if not found on this entity
       headerAttributes.tail.map { colname =>
         entity.attributes.get(colname) match {
@@ -89,11 +93,11 @@ object TSVFormatter {
     * Generate a header for a membership file.
     *
     * @param entityType The EntityType
-    * @return IndexedSeq of header Strings
+    * @return ordered header Strings
     */
-  def makeMembershipHeaders(entityType: String)(implicit modelSchema: ModelSchema): IndexedSeq[String] =
-    IndexedSeq[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id",
-                       modelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))
+  def makeMembershipHeaders(entityType: String)(implicit modelSchema: ModelSchema): List[String] =
+    List[String](s"${TsvTypes.MEMBERSHIP}:${entityType}_id",
+                 modelSchema.getCollectionMemberType(entityType).get.getOrElse(entityType.replace("_set", ""))
     )
 
   /**
@@ -105,9 +109,9 @@ object TSVFormatter {
     */
   def makeMembershipRows(entityType: String, entities: Seq[Entity])(implicit
     modelSchema: ModelSchema
-  ): Seq[IndexedSeq[String]] = {
+  ): List[List[String]] = {
     val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType, modelSchema), modelSchema)
-    entities
+    entities.toList
       .filter {
         _.entityType == entityType
       }
@@ -120,10 +124,10 @@ object TSVFormatter {
           }
           .flatMap {
             case (_, AttributeEntityReference(`entityType`, entityName)) =>
-              Seq(IndexedSeq[String](entity.name, entityName))
+              List(List[String](entity.name, entityName))
             case (_, AttributeEntityReferenceList(refs)) =>
-              refs.map(ref => IndexedSeq[String](entity.name, ref.entityName))
-            case _ => Seq.empty
+              refs.toList.map(ref => List[String](entity.name, ref.entityName))
+            case _ => List.empty
           }
       }
   }
@@ -136,9 +140,9 @@ object TSVFormatter {
     * @param requestedHeaders Which, if any, columns were requested. If none, return allHeaders (subject to sanitization)
     * @return Entity name as first column header, followed by matching entity attribute labels
     */
-  def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[IndexedSeq[String]])(
-    implicit modelSchema: ModelSchema
-  ): IndexedSeq[String] = {
+  def makeEntityHeaders(entityType: String, allHeaders: Seq[String], requestedHeaders: Option[List[String]])(implicit
+    modelSchema: ModelSchema
+  ): List[String] = {
     // will throw exception if firecloud model was requested and the entity type
     val memberPlural = pluralizeMemberType(memberTypeFromEntityType(entityType, modelSchema), modelSchema)
 
@@ -169,7 +173,7 @@ object TSVFormatter {
         s"${TsvTypes.UPDATE}:${entityType}_id"
       case _ => s"${TsvTypes.ENTITY}:${entityType}_id"
     }
-    (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toIndexedSeq
+    (entityHeader +: requestedHeadersSansId.getOrElse(filteredAllHeaders)).toList
   }
 
   /**
@@ -180,9 +184,9 @@ object TSVFormatter {
     * @param headers The universe of available column headers
     * @return Ordered list of rows, each row entry value ordered by its corresponding header position
     */
-  def makeEntityRows(entityType: String, entities: Seq[Entity], headers: IndexedSeq[String])(implicit
+  def makeEntityRows(entityType: String, entities: Seq[Entity], headers: List[String])(implicit
     modelSchema: ModelSchema
-  ): IndexedSeq[IndexedSeq[String]] = {
+  ): List[List[String]] = {
     // if we have a set entity, we need to filter out the attribute array of the members so that we only
     // have top-level attributes to construct columns from.
     val filteredEntities = if (modelSchema.isCollectionType(entityType)) {
@@ -193,13 +197,12 @@ object TSVFormatter {
     }
 
     // headers as AttributeNames
-    val headerAttributes: IndexedSeq[AttributeName] = headers.map(AttributeName.fromDelimitedName)
+    val headerAttributes: List[AttributeName] = headers.map(AttributeName.fromDelimitedName)
 
     // Turn them into rows
-    filteredEntities
+    filteredEntities.toList
       .filter(_.entityType == entityType)
       .map(entity => makeRow(entity, headerAttributes))
-      .toIndexedSeq
   }
 
   def memberTypeFromEntityType(entityType: String, modelSchema: ModelSchema): String =
