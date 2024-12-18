@@ -116,7 +116,7 @@ class TSVFileSupportSpec extends AnyFreeSpec with TSVFileSupport {
       Double.MinPositiveValue.toString -> AttributeNumber(Double.MinPositiveValue),
       Double.MaxValue.toString -> AttributeNumber(Double.MaxValue)
     )
-    val stringTestCases = List("", "string", "true525600", ",")
+    val stringTestCases = List("", "string", "true525600", ",", "\"")
     val referenceTestCases = Map(
       """{"entityType":"targetType","entityName":"targetName"}""" -> AttributeEntityReference("targetType",
                                                                                               "targetName"
