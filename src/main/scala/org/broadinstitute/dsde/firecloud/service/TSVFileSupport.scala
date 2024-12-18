@@ -179,8 +179,8 @@ trait TSVFileSupport {
   Creates an AttributeValue whose implementation is more closely tied to the value of the input.
    */
   def stringToTypedAttribute(value: String): Attribute =
-    // if this value starts and ends with a quote, it should always be treated as a string
-    if (value.startsWith("\"") && value.endsWith("\"")) {
+    if (value.length > 1 && value.startsWith("\"") && value.endsWith("\"")) {
+      // if this value starts and ends with a quote, it should always be treated as a string
       AttributeString(value.substring(1, value.length - 1))
     } else {
       // else, inspect the value to find an appropriate datatype
@@ -197,54 +197,44 @@ trait TSVFileSupport {
     val trimmed = value.trim
     // empty string
     if (trimmed.isEmpty) {
-      return AttributeString(value)
-    }
-    // find the first character of the inbound cell
-    val firstChar = trimmed.charAt(0)
+      AttributeString(value)
+    } else {
+      // find the first character of the inbound cell
+      val firstChar = trimmed.charAt(0)
 
-    // first char doesn't match any known starters; this is a string
-    if (!possibleNonStrings.contains(firstChar)) {
-      return AttributeString(value)
-    }
-
-    // could this be a number?
-    if (possibleNumbers.contains(firstChar)) {
-      Try(java.lang.Integer.parseInt(value)) match {
-        case Success(intValue) => return AttributeNumber(intValue)
-        case Failure(_) =>
-          Try(java.lang.Double.parseDouble(value)) match {
-            // because we represent AttributeNumber as a BigDecimal, and BigDecimal has no concept of infinity or NaN,
-            // if we find infinite/NaN numbers here, don't save them as AttributeNumber; instead let them fall through
-            // to AttributeString.
-            case Success(doubleValue)
-                if !Double.NegativeInfinity.equals(doubleValue)
-                  && !Double.PositiveInfinity.equals(doubleValue)
-                  && !Double.NaN.equals(doubleValue)
-                  && !matchesLiteral(value) =>
-              return AttributeNumber(doubleValue)
-            case _ => // noop
+      // using the first character, try to convert the cell to a number, boolean, or reference
+      val maybeNonString: Option[Attribute] = firstChar match {
+        // first char doesn't match any known starters; this is a string
+        case _ if !possibleNonStrings.contains(firstChar) => Some(AttributeString(value))
+        // could this be a number?
+        case _ if possibleNumbers.contains(firstChar) =>
+          Try(java.lang.Integer.parseInt(value)) match {
+            case Success(intValue) => Some(AttributeNumber(intValue))
+            case Failure(_) =>
+              Try(java.lang.Double.parseDouble(value)) match {
+                // because we represent AttributeNumber as a BigDecimal, and BigDecimal has no concept of infinity or NaN,
+                // if we find infinite/NaN numbers here, don't save them as AttributeNumber; instead let them fall through
+                // to AttributeString.
+                case Success(doubleValue)
+                    if !Double.NegativeInfinity.equals(doubleValue)
+                      && !Double.PositiveInfinity.equals(doubleValue)
+                      && !Double.NaN.equals(doubleValue)
+                      && !matchesLiteral(value) =>
+                  Some(AttributeNumber(doubleValue))
+                case _ => None
+              }
           }
+        // could this be a boolean?
+        case _ if possibleBooleans.contains(firstChar) =>
+          Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")).toOption.map(AttributeBoolean)
+        // could this be a boolean?
+        case _ if possibleReferences.contains(firstChar) =>
+          Try(value.parseJson.convertTo[AttributeEntityReference]).toOption
       }
-    }
 
-    // could this be a boolean?
-    if (possibleBooleans.contains(firstChar)) {
-      Try(BooleanUtils.toBoolean(value.toLowerCase, "true", "false")) match {
-        case Success(booleanValue) => return AttributeBoolean(booleanValue)
-        case _                     => // noop
-      }
+      // if we didn't find one of the other attributes, it's a string.
+      maybeNonString.getOrElse(AttributeString(value))
     }
-
-    // could this be a reference?
-    if (possibleReferences.contains(firstChar)) {
-      Try(value.parseJson.convertTo[AttributeEntityReference]) match {
-        case Success(ref) => return ref
-        case _            => // noop
-      }
-    }
-
-    // it's a string.
-    AttributeString(value)
   }
 
   def checkForJson(value: String): Attribute =
