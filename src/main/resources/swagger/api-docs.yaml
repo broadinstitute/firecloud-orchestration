@@ -6186,6 +6186,7 @@ paths:
       x-codegen-request-body-name: profile
   /register/userinfo:
     get:
+      deprecated: true
       tags:
         - Profile
       summary: Passes through to Google's userinfo API and returns its response
