@@ -25,6 +25,7 @@ trait PassthroughApiService extends Directives with StreamingPassthrough {
     pathPrefix("version" / "executionEngine")(streamingPassthrough(s"$rawls/version/executionEngine")),
     // Sam
     pathPrefix("api" / "proxyGroup")(streamingPassthrough(s"$sam/api/google/user/proxyGroup")),
+    pathPrefix("register" / "user")(streamingPassthrough(s"$sam/register/user")),
     pathPrefix("register")(streamingPassthrough(s"$sam/register/user")),
     pathPrefix("tos")(streamingPassthrough(s"$sam/tos")),
 
