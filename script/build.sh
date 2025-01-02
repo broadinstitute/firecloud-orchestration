@@ -96,7 +96,7 @@ function make_jar()
 
     docker run --rm -e GIT_MODEL_HASH=${GIT_MODEL_HASH} \
         -v $PWD:/working -w /working -v jar-cache:/root/.ivy -v jar-cache:/root/.ivy2 \
-        sbtscala/scala-sbt:eclipse-temurin-17.0.13_11_1.10.5_2.13.15 /working/src/docker/install.sh /working
+        sbtscala/scala-sbt:eclipse-temurin-17.0.13_11_1.10.7_2.13.15 /working/src/docker/install.sh /working
 }
 
 function docker_cmd()
