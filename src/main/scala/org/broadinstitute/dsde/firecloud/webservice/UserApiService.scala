@@ -187,7 +187,10 @@ trait UserApiService
         }
       case x =>
         // if we get any other error from Sam, pass that error on
-        respondWithErrorReport(x.intValue, "Unexpected response validating registration: " + x.toString, requestContext)
+        respondWithErrorReport(statusCodeFrom(x.intValue),
+                               "Unexpected response validating registration: " + x.toString,
+                               requestContext
+        )
     }
 
   private def handleOkResponse(regInfo: RegistrationInfoV2,
@@ -232,7 +235,7 @@ trait UserApiService
               }
             }
           case x =>
-            respondWithErrorReport(x.intValue,
+            respondWithErrorReport(statusCodeFrom(x.intValue),
                                    "Unexpected response validating registration: " + x.toString,
                                    requestContext
             )

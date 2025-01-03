@@ -55,8 +55,11 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     override def write(code: StatusCode): JsValue = JsNumber(code.intValue)
 
     override def read(json: JsValue): StatusCode = json match {
-      case JsNumber(n) => n.intValue
-      case _           => throw DeserializationException("unexpected json type")
+      case JsNumber(n) =>
+        Try(StatusCode.int2StatusCode(n.intValue)).getOrElse(
+          throw DeserializationException(s"unexpected code value: ${n.intValue}")
+        )
+      case _ => throw DeserializationException("unexpected json type")
     }
   }
 

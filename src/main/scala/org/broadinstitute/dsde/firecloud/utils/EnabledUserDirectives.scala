@@ -18,7 +18,7 @@ import org.broadinstitute.dsde.workbench.util.FutureSupport.toFutureTry
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-trait EnabledUserDirectives extends LazyLogging with SprayJsonSupport {
+trait EnabledUserDirectives extends LazyLogging with SprayJsonSupport with StatusCodeUtils {
 
   // Hardcode an ErrorReportSource to allow differentiating between enabled-user errors and other errors.
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource("Orchestration-enabled-check")
@@ -58,7 +58,7 @@ trait EnabledUserDirectives extends LazyLogging with SprayJsonSupport {
             s"ApiException exception checking enabled status for user ${userInfo.userEmail}: (${apiex.getMessage}) while calling $uri",
             apiex
           )
-          val code = StatusCode.int2StatusCode(apiex.getCode)
+          val code = statusCodeFrom(apiex.getCode)
           if (code == StatusCodes.NotFound) {
             throwErrorReport(StatusCodes.Unauthorized, "User is not registered.")
           } else {
@@ -99,9 +99,7 @@ trait EnabledUserDirectives extends LazyLogging with SprayJsonSupport {
               case Failure(_)         => response
             }
             throw new FireCloudExceptionWithErrorReport(
-              ErrorReport(StatusCode.int2StatusCode(statusCode),
-                          s"Sam call to $functionName failed with error '$stringErrMsg'"
-              )
+              ErrorReport(statusCodeFrom(statusCode), s"Sam call to $functionName failed with error '$stringErrMsg'")
             )
           }
       }
