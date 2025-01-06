@@ -43,12 +43,12 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
-    "ch.qos.logback"                 % "logback-classic"     % "1.5.15",
-    "io.sentry"                      % "sentry-logback"      % "7.19.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.16",
+    "io.sentry"                      % "sentry-logback"      % "7.19.1",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.266-SNAP")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.269-SNAP")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
