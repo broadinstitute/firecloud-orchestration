@@ -1,6 +1,6 @@
 package org.broadinstitute.dsde.firecloud.utils
 
-import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
 
 import scala.util.Try
