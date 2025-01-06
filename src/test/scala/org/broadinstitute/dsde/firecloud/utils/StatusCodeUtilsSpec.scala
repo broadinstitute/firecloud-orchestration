@@ -28,7 +28,7 @@ class StatusCodeUtilsSpec extends AnyFlatSpec with StatusCodeUtils {
       val actual = statusCodeFrom(intCode)
       actual.intValue() shouldBe intCode
       actual.isSuccess() shouldBe false
-      actual.defaultMessage() shouldBe "unknown status"
+      actual.defaultMessage() shouldBe s"unknown status $intCode"
     }
   }
 

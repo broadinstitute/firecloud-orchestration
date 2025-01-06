@@ -58,7 +58,7 @@ trait EnabledUserDirectives extends LazyLogging with SprayJsonSupport with Statu
             s"ApiException exception checking enabled status for user ${userInfo.userEmail}: (${apiex.getMessage}) while calling $uri",
             apiex
           )
-          val code = statusCodeFrom(apiex.getCode)
+          val code = statusCodeFrom(apiex.getCode, Option(StatusCodes.InternalServerError))
           if (code == StatusCodes.NotFound) {
             throwErrorReport(StatusCodes.Unauthorized, "User is not registered.")
           } else {
@@ -99,7 +99,9 @@ trait EnabledUserDirectives extends LazyLogging with SprayJsonSupport with Statu
               case Failure(_)         => response
             }
             throw new FireCloudExceptionWithErrorReport(
-              ErrorReport(statusCodeFrom(statusCode), s"Sam call to $functionName failed with error '$stringErrMsg'")
+              ErrorReport(statusCodeFrom(statusCode, Option(StatusCodes.InternalServerError)),
+                          s"Sam call to $functionName failed with error '$stringErrMsg'"
+              )
             )
           }
       }

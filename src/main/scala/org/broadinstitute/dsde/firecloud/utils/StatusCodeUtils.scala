@@ -20,8 +20,8 @@ trait StatusCodeUtils {
     Try(StatusCode.int2StatusCode(intCode)).getOrElse(
       default.getOrElse(
         StatusCodes.custom(intCode,
-                           reason = "unknown status",
-                           defaultMessage = "unknown status",
+                           reason = s"unknown status $intCode",
+                           defaultMessage = s"unknown status $intCode",
                            isSuccess = false,
                            allowsEntity = true
         )
