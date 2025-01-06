@@ -24,14 +24,17 @@ class StatusCodeUtilsSpec extends AnyFlatSpec with StatusCodeUtils {
   val unknownCodes: List[Int] = List(-1, 0, 42, 222, 555)
 
   unknownCodes.foreach { intCode =>
-    it should s"default unknown code $intCode to InternalServerError" in {
-      statusCodeFrom(intCode) shouldBe InternalServerError
+    it should s"create a custom status code $intCode for unknown values" in {
+      val actual = statusCodeFrom(intCode)
+      actual.intValue() shouldBe intCode
+      actual.isSuccess() shouldBe false
+      actual.defaultMessage() shouldBe "unknown status"
     }
   }
 
   unknownCodes.foreach { intCode =>
     it should s"default unknown code $intCode to the caller-supplied default" in {
-      statusCodeFrom(intCode, ImATeapot) shouldBe ImATeapot
+      statusCodeFrom(intCode, Option(ImATeapot)) shouldBe ImATeapot
     }
   }
 
