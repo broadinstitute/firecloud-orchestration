@@ -11,7 +11,7 @@ import org.broadinstitute.dsde.firecloud.model.{ModelSchema, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.service.TsvTypes.TsvType
 import org.broadinstitute.dsde.firecloud.service.{TSVFileSupport, TsvTypes}
-import org.broadinstitute.dsde.firecloud.utils.TSVLoadFile
+import org.broadinstitute.dsde.firecloud.utils.{StatusCodeUtils, TSVLoadFile}
 import org.broadinstitute.dsde.rawls.model._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName}
 import org.databiosphere.workspacedata.client.ApiException
@@ -59,6 +59,7 @@ class EntityService(rawlsDAO: RawlsDAO,
                     modelSchema: ModelSchema
 )(implicit val executionContext: ExecutionContext)
     extends TSVFileSupport
+    with StatusCodeUtils
     with LazyLogging {
 
   val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -379,7 +380,7 @@ class EntityService(rawlsDAO: RawlsDAO,
     }
     // if human-readable message extraction fails, just default to the ApiException message
     val errMsg = Try(extractMessage(apiEx.getResponseBody)).toOption.getOrElse(apiEx.getMessage)
-    new FireCloudExceptionWithErrorReport(ErrorReport(apiEx.getCode, errMsg))
+    new FireCloudExceptionWithErrorReport(ErrorReport(statusCodeFrom(apiEx.getCode), errMsg))
   }
 
   def getEntitiesWithType(workspaceNamespace: String,

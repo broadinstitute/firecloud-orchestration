@@ -13,6 +13,7 @@ import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project._
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
 import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
+import org.broadinstitute.dsde.firecloud.utils.StatusCodeUtils
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
 import org.broadinstitute.dsde.rawls.model._
@@ -25,7 +26,7 @@ import spray.json._
 import scala.util.{Failure, Success, Try}
 
 //noinspection TypeAnnotation,RedundantNewCaseClass
-object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
+object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with StatusCodeUtils {
   import spray.json.DefaultJsonProtocol._
 
   def optionalEntryIntReader(fieldName: String, data: Map[String, JsValue]): Option[Int] =
@@ -55,7 +56,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport {
     override def write(code: StatusCode): JsValue = JsNumber(code.intValue)
 
     override def read(json: JsValue): StatusCode = json match {
-      case JsNumber(n) => n.intValue
+      case JsNumber(n) => statusCodeFrom(n.intValue)
       case _           => throw DeserializationException("unexpected json type")
     }
   }
