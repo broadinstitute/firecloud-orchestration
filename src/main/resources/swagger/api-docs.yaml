@@ -2739,6 +2739,7 @@ paths:
       summary: workflow queue status
       description: List workflow counts by queueing state
       operationId: workflowQueueStatus
+      deprecated: true
       responses:
         200:
           description: Successful Request
