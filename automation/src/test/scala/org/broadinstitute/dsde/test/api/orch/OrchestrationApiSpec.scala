@@ -1,6 +1,5 @@
 package org.broadinstitute.dsde.test.api.orch
 
-
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.dsde.test.OrchConfig
 import org.broadinstitute.dsde.workbench.auth.AuthToken
@@ -18,19 +17,13 @@ import org.scalatest.time.{Minutes, Seconds, Span}
 import java.time.Instant
 import java.util.UUID
 
-
-class OrchestrationApiSpec
-  extends AnyFreeSpec
-    with Matchers
-    with ScalaFutures
-    with Eventually {
+class OrchestrationApiSpec extends AnyFreeSpec with Matchers with ScalaFutures with Eventually {
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)))
   val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
-  def nowPrint(text: String): Unit = {
+  def nowPrint(text: String): Unit =
     println(s"${Instant.now} : $text")
-  }
 
   "Orchestration" - {
     "should link an eRA Commons account with access to the TARGET closed-access dataset" ignore {
@@ -51,14 +44,14 @@ class OrchestrationApiSpec
       finally resetNihLinkToInactive()
     }
 
-  "should link an eRA Commons account with access to none of the supported closed-access datasets" in {
-    val user = UserPool.chooseAuthDomainUser
-    implicit val userToken: AuthToken = user.makeAuthToken()
+    "should link an eRA Commons account with access to none of the supported closed-access datasets" in {
+      val user = UserPool.chooseAuthDomainUser
+      implicit val userToken: AuthToken = user.makeAuthToken()
 
-    Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
-    try verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
-    finally resetNihLinkToInactive()
-  }
+      Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
+      try verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
+      finally resetNihLinkToInactive()
+    }
 
     "should sync the whitelist and remove a user who no longer has access to either closed-access dataset" ignore {
       val user = UserPool.chooseAuthDomainUser
@@ -73,8 +66,8 @@ class OrchestrationApiSpec
     }
   }
 
-  //We need to reset the user's link to a state where it doesn't have access to any of the datasets
-  //To do so, we will link with a JWT that doesn't have access to any datasets and then sync both whitelists
+  // We need to reset the user's link to a state where it doesn't have access to any of the datasets
+  // To do so, we will link with a JWT that doesn't have access to any datasets and then sync both whitelists
   private def resetNihLinkToInactive()(implicit authToken: AuthToken) = {
     Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
 
@@ -83,7 +76,9 @@ class OrchestrationApiSpec
     verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
   }
 
-  private def verifyDatasetPermissions(expectedPermissions: Set[NihDatasetPermission])(implicit authToken: AuthToken) = {
+  private def verifyDatasetPermissions(
+    expectedPermissions: Set[NihDatasetPermission]
+  )(implicit authToken: AuthToken) = {
     // Sam caches group membership for a minute (but not in fiab) so may need to wait
     implicit val patienceConfig = PatienceConfig(Span(2, Minutes), Span(10, Seconds))
     eventually {

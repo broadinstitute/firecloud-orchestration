@@ -61,14 +61,13 @@ class MethodsApiServiceMultiACLSpec
 
     // BAD INPUTS
     "when posting malformed data" - {
-      "BadRequest is returned" in {
+      "BadRequest is returned" in
         // endpoint expects a JsArray; send it a JsObject and expect BadRequest.
         Put(localMethodPermissionsPath, JsObject(Map("foo" -> JsString("bar")))) ~> dummyAuthHeaders ~> sealRoute(
           methodsApiServiceRoutes
         ) ~> check {
           status should equal(BadRequest)
         }
-      }
     }
 
   }

@@ -41,23 +41,20 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
 
   "Status endpoint" - {
     allHttpMethodsExcept(GET) foreach { method =>
-      s"should reject ${method.toString} method" in {
+      s"should reject ${method.toString} method" in
         new RequestBuilder(method)(statusPath) ~> statusRoutes ~> check {
           assert(!handled)
         }
-      }
     }
-    "should return OK for an unauthenticated GET" in {
+    "should return OK for an unauthenticated GET" in
       Get(statusPath) ~> statusRoutes ~> check {
         assert(status == OK)
       }
-    }
-    "should deserialize to a StatusCheckResponse" in {
+    "should deserialize to a StatusCheckResponse" in
       Get(statusPath) ~> statusRoutes ~> check {
         responseAs[StatusCheckResponse]
       }
-    }
-    "should contain all the subsystems we care about" in {
+    "should contain all the subsystems we care about" in
       Get(statusPath) ~> statusRoutes ~> check {
         val statusCheckResponse = responseAs[StatusCheckResponse]
         // changing the values of expectedSystems may affect the orch liveness probe
@@ -65,7 +62,6 @@ class StatusApiServiceSpec extends BaseServiceSpec with StatusApiService with Sp
         val expectedSystems = Set(Agora, GoogleBuckets, LibraryIndex, OntologyIndex, Rawls, Sam, Thurloe)
         assertResult(expectedSystems)(statusCheckResponse.systems.keySet)
       }
-    }
   }
 
 }

@@ -217,7 +217,7 @@ final class RegisterApiServiceSpec
       //
       // These tests will fail if GET /register/profile is put behind requireEnabledUser().
       List("enabled", "disabled", "unregistered") foreach { testCase =>
-        s"should succeed for a(n) $testCase user" in {
+        s"should succeed for a(n) $testCase user" in
           Get("/register/profile") ~> dummyUserIdHeaders(userId = testCase, token = testCase) ~> sealRoute(
             userServiceRoutes
           ) ~> check {
@@ -225,7 +225,6 @@ final class RegisterApiServiceSpec
               status should be(OK)
             }
           }
-        }
       }
     }
   }

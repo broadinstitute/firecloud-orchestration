@@ -209,30 +209,27 @@ class UserApiServiceSpec
   "UserService" - {
 
     "when calling GET for the user registration service" - {
-      "MethodNotAllowed response is not returned" in {
+      "MethodNotAllowed response is not returned" in
         Get("/register") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug("/register: " + status)
           status shouldNot equal(MethodNotAllowed)
         }
-      }
     }
 
     "when calling GET for user refresh token date service" - {
-      "MethodNotAllowed response is not returned" in {
+      "MethodNotAllowed response is not returned" in
         Get("/api/profile/refreshTokenDate") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           status shouldNot equal(MethodNotAllowed)
         }
-      }
     }
 
     "when GET-ting all profile information" - {
-      "MethodNotAllowed response is not returned" in {
+      "MethodNotAllowed response is not returned" in
         Get(s"/$ApiPrefix") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           log.debug(s"GET /$ApiPrefix: " + status)
           status shouldNot equal(MethodNotAllowed)
         }
-      }
-      "if anonymousGroup KVP does not exist, it gets assigned" in {
+      "if anonymousGroup KVP does not exist, it gets assigned" in
         Get("/register/profile") ~> dummyUserIdHeaders(uniqueId) ~> sealRoute(userServiceRoutes) ~> check {
           assert(
             entityAs[String].parseJson
@@ -243,8 +240,7 @@ class UserApiServiceSpec
               .equals(Option("new-google-group@support.something.firecloud.org"))
           )
         }
-      }
-      "if anonymousGroup key exists but value is empty, a new group gets assigned, and MethodNotAllowed is not returned" in {
+      "if anonymousGroup key exists but value is empty, a new group gets assigned, and MethodNotAllowed is not returned" in
         Get("/register/profile") ~> dummyUserIdHeaders(userWithEmptyGoogleGroup) ~> sealRoute(
           userServiceRoutes
         ) ~> check {
@@ -258,8 +254,7 @@ class UserApiServiceSpec
           )
           status shouldNot equal(MethodNotAllowed)
         }
-      }
-      "existing anonymousGroup is not overwritten, and MethodNotAllowed is not returned" in {
+      "existing anonymousGroup is not overwritten, and MethodNotAllowed is not returned" in
         Get("/register/profile") ~> dummyUserIdHeaders(userWithGoogleGroup) ~> sealRoute(userServiceRoutes) ~> check {
           assert(
             entityAs[String].parseJson
@@ -271,8 +266,7 @@ class UserApiServiceSpec
           )
           status shouldNot equal(MethodNotAllowed)
         }
-      }
-      "a user with no contact email still gets assigned a new anonymousGroup, and MethodNotAllowed is not returned" in {
+      "a user with no contact email still gets assigned a new anonymousGroup, and MethodNotAllowed is not returned" in
         Get("/register/profile") ~> dummyUserIdHeaders(userWithNoContactEmail) ~> sealRoute(
           userServiceRoutes
         ) ~> check {
@@ -286,17 +280,15 @@ class UserApiServiceSpec
           )
           status shouldNot equal(MethodNotAllowed)
         }
-      }
     }
 
     "when POST-ting a complete profile" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Post(s"/$ApiPrefix", fullProfile) ~> dummyUserIdHeaders(uniqueId) ~>
-          sealRoute(registerRoutes) ~> check {
-            log.debug(s"POST /$ApiPrefix: " + status)
-            status should equal(OK)
-          }
-      }
+        sealRoute(registerRoutes) ~> check {
+          log.debug(s"POST /$ApiPrefix: " + status)
+          status should equal(OK)
+        }
     }
 
     "when POST-ting an incomplete profile" - {
@@ -367,13 +359,12 @@ class UserApiServiceSpec
   "UserService /me endpoint tests" - {
 
     "when calling /me without Authorization header" - {
-      "Unauthorized response is returned" in {
+      "Unauthorized response is returned" in
         Get(s"/me") ~> sealRoute(userServiceRoutes) ~> check {
           val result = Await.result(Unmarshal(response.entity).to[String], Duration.Inf)
           assert(result.contains("No authorization header in request"))
           status should equal(Unauthorized)
         }
-      }
     }
 
     "when calling /me and sam returns 401" - {

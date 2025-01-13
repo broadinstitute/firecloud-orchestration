@@ -35,9 +35,8 @@ class ResearchPurposeSearchUseCasesSpec
   "Library research purpose PO use cases" - {
 
     "Elastic Search" - {
-      "Index exists" in {
+      "Index exists" in
         assert(searchDAO.indexExists())
-      }
     }
 
     "Research purpose C: Cancer (DOID:162)" - {

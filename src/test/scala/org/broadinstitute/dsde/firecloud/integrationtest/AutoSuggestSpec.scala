@@ -33,9 +33,8 @@ class AutoSuggestSpec
 
   "Library integration" - {
     "Elastic Search" - {
-      "Index exists" in {
+      "Index exists" in
         assert(searchDAO.indexExists())
-      }
     }
 
     "Text search autocomplete suggestions correctness" - {

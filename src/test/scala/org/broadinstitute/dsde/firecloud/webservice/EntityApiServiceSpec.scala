@@ -67,35 +67,32 @@ class EntityApiServiceSpec extends BaseServiceSpec with EntityApiService with Sp
   "EntityService" - {
 
     "when calling POST on valid copy entities" - {
-      "Created response is returned" in {
+      "Created response is returned" in
         Post(validFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           entityRoutes
         ) ~> check {
           status should be(Created)
         }
-      }
     }
 
     "when calling POST on invalid copy entities" - {
-      "NotFound response is returned" in {
+      "NotFound response is returned" in
         Post(validFireCloudEntitiesCopyPath, invalidEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           entityRoutes
         ) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
-      }
     }
 
     "when calling POST on copy entities in an unknown workspace" - {
-      "NotFound response is returned with an ErrorReport" in {
+      "NotFound response is returned with an ErrorReport" in
         Post(invalidFireCloudEntitiesCopyPath, validEntityCopy) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           entityRoutes
         ) ~> check {
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
-      }
     }
   }
 

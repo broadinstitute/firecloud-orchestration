@@ -33,9 +33,8 @@ class ResearchPurposeSearchSpec
   "Library research-purpose-aware search" - {
 
     "Elastic Search" - {
-      "Index exists" in {
+      "Index exists" in
         assert(searchDAO.indexExists())
-      }
     }
 
     "Research purpose for aggregate analysis (NAGR)" - {

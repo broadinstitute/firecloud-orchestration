@@ -75,7 +75,7 @@ class ExportEntitiesByTypeServiceSpec
   "ExportEntitiesApiService-ExportEntitiesByType" - {
 
     "when an exception occurs in a paged query response, the response should be handled appropriately" - {
-      "FireCloudException is contained in response chunks" in {
+      "FireCloudException is contained in response chunks" in
         // Exception case is generated from the entity query call which is inside of the akka stream code.
         Get(page3ExceptionFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
@@ -84,11 +84,10 @@ class ExportEntitiesByTypeServiceSpec
           val strResp = responseAs[String]
           strResp should include("FireCloudException")
         }
-      }
     }
 
     "when an exception occurs, the response should be handled appropriately" - {
-      "InternalServerError is returned" in {
+      "InternalServerError is returned" in
         // Exception case is generated from the entity query call which is inside of the akka stream code.
         Get(exceptionFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
@@ -97,7 +96,6 @@ class ExportEntitiesByTypeServiceSpec
           status should be(InternalServerError)
           errorReportCheck("Rawls", InternalServerError)
         }
-      }
     }
 
     "when calling GET on exporting a valid entity type with filtered attributes" - {
@@ -119,7 +117,7 @@ class ExportEntitiesByTypeServiceSpec
     }
 
     "when calling GET on exporting a non-FC model entity type with all attributes" - {
-      "OK response is returned and attributes are included and model is flexible" in {
+      "OK response is returned and attributes are included and model is flexible" in
         Get(nonModelEntitiesBigQueryTSVPath + "?model=flexible") ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -132,19 +130,17 @@ class ExportEntitiesByTypeServiceSpec
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           responseAs[String].contains("query_str") should be(true)
         }
-      }
-      "400 response is returned is model is firecloud" in {
+      "400 response is returned is model is firecloud" in
         Get(nonModelEntitiesBigQueryTSVPath + "?model=firecloud") ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
           handled should be(true)
           status should be(BadRequest)
         }
-      }
     }
 
     "when calling GET on exporting a non-FC model entity type with selected attributes" - {
-      "OK response is returned and file is entity type when model is flexible" in {
+      "OK response is returned and file is entity type when model is flexible" in
         Get(nonModelEntitiesPairTSVPath + "?attributeNames=names&model=flexible") ~> dummyUserIdHeaders(
           "1234"
         ) ~> sealRoute(exportEntitiesRoutes) ~> check {
@@ -158,22 +154,20 @@ class ExportEntitiesByTypeServiceSpec
           responseAs[String].startsWith("entity:") should be(true)
           responseAs[String].contains("names") should be(true)
         }
-      }
     }
 
     "when calling GET on exporting a non-FC model entity set type with all attributes" - {
-      "400 response is returned when model defaults to firecloud" in {
+      "400 response is returned when model defaults to firecloud" in
         Get(nonModelEntitiesBigQuerySetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
           handled should be(true)
           status should be(BadRequest)
         }
-      }
     }
 
     "when calling GET on exporting LARGE (20K) sample TSV" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Get(largeFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -185,11 +179,10 @@ class ExportEntitiesByTypeServiceSpec
           )
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
-      }
     }
 
     "when calling GET on exporting LARGE (5K) sample set file" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Get(largeFireCloudEntitiesSampleSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -203,11 +196,10 @@ class ExportEntitiesByTypeServiceSpec
             `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample_set.zip"))
           ) should be(true)
         }
-      }
     }
 
     "when calling GET on exporting a valid collection type" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Get(validFireCloudEntitiesSampleSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -220,11 +212,10 @@ class ExportEntitiesByTypeServiceSpec
           )
           contentType shouldEqual ContentTypes.`application/octet-stream`
         }
-      }
     }
 
     "when calling GET on exporting a valid entity type" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Get(validFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -237,22 +228,20 @@ class ExportEntitiesByTypeServiceSpec
           )
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
-      }
     }
 
     "when calling GET on exporting an invalid collection type" - {
-      "NotFound response is returned" in {
+      "NotFound response is returned" in
         Get(invalidFireCloudEntitiesParticipantSetTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
           handled should be(true)
           status should be(NotFound)
         }
-      }
     }
 
     "when calling GET on exporting an invalid entity type" - {
-      "NotFound response is returned" in {
+      "NotFound response is returned" in
         Get(invalidFireCloudEntitiesSampleTSVPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -260,7 +249,6 @@ class ExportEntitiesByTypeServiceSpec
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
-      }
     }
 
   }
@@ -271,7 +259,7 @@ class ExportEntitiesByTypeServiceSpec
   "ExportEntitiesApiService-save to bucket" - {
 
     "when calling GET on exporting a valid collection type" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Post("/api/workspaces/broad-dsde-dev/valid/entities/sample_set/tsv") ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -285,11 +273,10 @@ class ExportEntitiesByTypeServiceSpec
           // gs://bucketName/tsvexport/sample_set/sample_set-1727724455587.zip
           result should fullyMatch regex """gs:\/\/bucketName\/tsvexport\/sample_set\/sample_set-[0-9]{13}.zip"""
         }
-      }
     }
 
     "when calling GET on exporting a valid entity type" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Post("/api/workspaces/broad-dsde-dev/valid/entities/sample/tsv") ~> dummyUserIdHeaders("1234") ~> sealRoute(
           exportEntitiesRoutes
         ) ~> check {
@@ -303,7 +290,6 @@ class ExportEntitiesByTypeServiceSpec
           // gs://bucketName/tsvexport/sample/sample-1727724455587.tsv
           result should fullyMatch regex """gs:\/\/bucketName\/tsvexport\/sample\/sample-[0-9]{13}.tsv"""
         }
-      }
     }
 
   }
@@ -446,7 +432,7 @@ class ExportEntitiesByTypeServiceSpec
   "CookieAuthedApiService-ExportEntitiesByType" - {
 
     "when an exception occurs in a paged query response, the response should be handled appropriately" - {
-      "FireCloudException is contained in response chunks" in {
+      "FireCloudException is contained in response chunks" in
         // Exception case is generated from the entity query call which is inside of the akka stream code.
         Post(page3ExceptionCookieFireCloudEntitiesSampleTSVPath,
              FormData(Map("FCtoken" -> "token"))
@@ -455,11 +441,10 @@ class ExportEntitiesByTypeServiceSpec
           val strResp = responseAs[String]
           strResp should include("FireCloudException")
         }
-      }
     }
 
     "when an exception occurs, the response should be handled appropriately" - {
-      "InternalServerError is returned" in {
+      "InternalServerError is returned" in
         // Exception case is generated from the entity query call which is inside of the akka stream code.
         Post(exceptionCookieFireCloudEntitiesSampleTSVPath, FormData(Map("FCtoken" -> "token"))) ~> dummyUserIdHeaders(
           "1234"
@@ -468,11 +453,10 @@ class ExportEntitiesByTypeServiceSpec
           status should be(InternalServerError)
           errorReportCheck("Rawls", InternalServerError)
         }
-      }
     }
 
     "when calling POST on exporting a valid entity type with filtered attributes" - {
-      "OK response is returned and attributes are filtered" in {
+      "OK response is returned and attributes are filtered" in
         Post(validCookieFireCloudEntitiesLargeSampleTSVPath,
              FormData(Map("FCtoken" -> "token", "attributeNames" -> filterProps.mkString(",")))
         ) ~> dummyUserIdHeaders("1234") ~> sealRoute(cookieAuthedRoutes) ~> check {
@@ -485,11 +469,10 @@ class ExportEntitiesByTypeServiceSpec
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
           validateProps(response.entity)
         }
-      }
     }
 
     "when calling POST on exporting LARGE (20K) sample TSV" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Post(validCookieFireCloudEntitiesLargeSampleTSVPath, FormData(Map("FCtoken" -> "token"))) ~> sealRoute(
           cookieAuthedRoutes
         ) ~> check {
@@ -502,11 +485,10 @@ class ExportEntitiesByTypeServiceSpec
           )
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
-      }
     }
 
     "when calling POST on exporting a valid collection type" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Post(validCookieFireCloudEntitiesSampleSetTSVPath, FormData(Map("FCtoken" -> "token"))) ~> sealRoute(
           cookieAuthedRoutes
         ) ~> check {
@@ -518,11 +500,10 @@ class ExportEntitiesByTypeServiceSpec
             `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample_set.zip"))
           ) should be(true)
         }
-      }
     }
 
     "when calling POST on exporting a valid entity type" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Post(validCookieFireCloudEntitiesSampleTSVPath, FormData(Map("FCtoken" -> "token"))) ~> sealRoute(
           cookieAuthedRoutes
         ) ~> check {
@@ -535,22 +516,20 @@ class ExportEntitiesByTypeServiceSpec
           )
           contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
         }
-      }
     }
 
     "when calling POST on exporting an invalid collection type" - {
-      "NotFound response is returned" in {
+      "NotFound response is returned" in
         Post(invalidCookieFireCloudEntitiesParticipantSetTSVPath, FormData(Map("FCtoken" -> "token"))) ~> sealRoute(
           cookieAuthedRoutes
         ) ~> check {
           handled should be(true)
           status should be(NotFound)
         }
-      }
     }
 
     "when calling POST on exporting an invalid entity type" - {
-      "NotFound response is returned" in {
+      "NotFound response is returned" in
         Post(invalidCookieFireCloudEntitiesSampleTSVPath, FormData(Map("FCtoken" -> "token"))) ~> sealRoute(
           cookieAuthedRoutes
         ) ~> check {
@@ -558,7 +537,6 @@ class ExportEntitiesByTypeServiceSpec
           status should be(NotFound)
           errorReportCheck("Rawls", NotFound)
         }
-      }
     }
 
     "when calling PUT, PATCH, DELETE on export path" - {
@@ -577,21 +555,20 @@ class ExportEntitiesByTypeServiceSpec
     }
 
     "when calling GET on exporting a valid entity type with filtered attributes" - {
-      "OK response is returned and attributes are filtered" in {
+      "OK response is returned and attributes are filtered" in
         Get(s"$validCookieFireCloudEntitiesLargeSampleTSVPath?attributeNames=${filterProps.mkString(",")}") ~>
-          dummyUserIdHeaders("1234") ~>
-          dummyCookieAuthHeaders ~>
-          sealRoute(cookieAuthedRoutes) ~> check {
-            handled should be(true)
-            status should be(OK)
-            headers.contains(Connection("Keep-Alive")) should be(true)
-            headers should contain(
-              `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv"))
-            )
-            contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
-            validateProps(response.entity)
-          }
-      }
+        dummyUserIdHeaders("1234") ~>
+        dummyCookieAuthHeaders ~>
+        sealRoute(cookieAuthedRoutes) ~> check {
+          handled should be(true)
+          status should be(OK)
+          headers.contains(Connection("Keep-Alive")) should be(true)
+          headers should contain(
+            `Content-Disposition`.apply(ContentDispositionTypes.attachment, Map("filename" -> "sample.tsv"))
+          )
+          contentType shouldEqual ContentType(MediaTypes.`text/tab-separated-values`, HttpCharsets.`UTF-8`)
+          validateProps(response.entity)
+        }
     }
   }
 

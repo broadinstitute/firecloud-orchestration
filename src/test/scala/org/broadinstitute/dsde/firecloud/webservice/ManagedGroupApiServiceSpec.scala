@@ -23,12 +23,11 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
   "ManagedGroupApiService" - {
 
     "when GET-ting my group membership" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Get("/api/groups") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-            status should equal(OK)
-          }
-      }
+        dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
+          status should equal(OK)
+        }
     }
 
     "when POST-ing to create a group" - {
@@ -102,12 +101,11 @@ class ManagedGroupApiServiceSpec extends BaseServiceSpec with ManagedGroupApiSer
     }
 
     "when POST-ing to request access to a group" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Post("/api/groups/example-group/requestAccess") ~>
-          dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
-            status should equal(NoContent)
-          }
-      }
+        dummyUserIdHeaders(uniqueId) ~> sealRoute(managedGroupServiceRoutes) ~> check {
+          status should equal(NoContent)
+        }
     }
   }
 }

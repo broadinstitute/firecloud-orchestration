@@ -32,9 +32,8 @@ class SortSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with Laz
 
   "Library integration" - {
     "Elastic Search" - {
-      "Index exists" in {
+      "Index exists" in
         assert(searchDAO.indexExists())
-      }
     }
     "search with no sort (or filter) criteria" - {
       "returns all results in engine-defined order" in {

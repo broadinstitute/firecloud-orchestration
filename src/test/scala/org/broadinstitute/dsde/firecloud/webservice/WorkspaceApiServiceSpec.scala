@@ -420,13 +420,12 @@ class WorkspaceApiServiceSpec
 
   "Workspace Non-passthrough Tests" - {
 
-    "OK status is returned from PATCH on /workspaces/%s/%s/acl" in {
+    "OK status is returned from PATCH on /workspaces/%s/%s/acl" in
       Patch(aclPath,
             List(WorkspaceACLUpdate("dummy@test.org", WorkspaceAccessLevels.NoAccess, Some(false)))
       ) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
       }
-    }
 
     "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
       val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
@@ -502,20 +501,18 @@ class WorkspaceApiServiceSpec
         }
       }
       "when calling GET" - {
-        "should be OK as reader" in {
+        "should be OK as reader" in
           new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
             workspaceRoutes
           ) ~> check {
             status should equal(OK)
           }
-        }
-        "should be OK as writer" in {
+        "should be OK as writer" in
           new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders(
             dummyUserId
           ) ~> sealRoute(workspaceRoutes) ~> check {
             status should equal(OK)
           }
-        }
       }
     }
 
@@ -534,69 +531,62 @@ class WorkspaceApiServiceSpec
       }
 
       "when calling POST on the workspaces/*/*/importEntities path" - {
-        "should 400 Bad Request if the TSV type is missing" in {
+        "should 400 Bad Request if the TSV type is missing" in
           (Post(tsvImportPath, MockTSVFormData.missingTSVType)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
-        }
 
-        "should 400 Bad Request if the TSV type is nonsense" in {
+        "should 400 Bad Request if the TSV type is nonsense" in
           (Post(tsvImportPath, MockTSVFormData.nonexistentTSVType)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
-        }
 
-        "should 400 Bad Request if the TSV entity type doesn't end in _id" in {
+        "should 400 Bad Request if the TSV entity type doesn't end in _id" in
           (Post(tsvImportPath, MockTSVFormData.malformedEntityType)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
             errorReportCheck("FireCloud", BadRequest)
           }
-        }
 
         "a membership-type TSV" - {
-          "should 400 Bad Request if the entity type is unknown" in {
+          "should 400 Bad Request if the entity type is unknown" in
             (Post(tsvImportPath, MockTSVFormData.membershipUnknownFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
-          "should 400 Bad Request if the entity type is not a collection type" in {
+          "should 400 Bad Request if the entity type is not a collection type" in
             (Post(tsvImportPath, MockTSVFormData.membershipNotCollectionType)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
-          "should 400 Bad Request if the collection members header is missing" in {
+          "should 400 Bad Request if the collection members header is missing" in
             (Post(tsvImportPath, MockTSVFormData.membershipMissingMembersHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
-          "should 400 Bad Request if it contains other headers than its collection members" in {
+          "should 400 Bad Request if it contains other headers than its collection members" in
             (Post(tsvImportPath, MockTSVFormData.membershipExtraAttributes)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
           "should 200 OK if it has the correct headers and valid internals" in {
             stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
@@ -627,49 +617,44 @@ class WorkspaceApiServiceSpec
         }
 
         "an entity-type TSV" - {
-          "should 400 Bad Request if the entity type is unknown calling default import" in {
+          "should 400 Bad Request if the entity type is unknown calling default import" in
             (Post(tsvImportPath, MockTSVFormData.entityUnknownFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
-          "should 200 OK if the entity type is unknown and calling flexible import" in {
+          "should 200 OK if the entity type is unknown and calling flexible import" in
             (Post(tsvImportFlexiblePath, MockTSVFormData.entityUnknownFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(OK)
             }
-          }
 
-          "should 400 Bad Request if it contains duplicated entities to update" in {
+          "should 400 Bad Request if it contains duplicated entities to update" in
             (Post(tsvImportPath, MockTSVFormData.entityHasDupes)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
-          "should 400 Bad Request if it contains collection member headers" in {
+          "should 400 Bad Request if it contains collection member headers" in
             (Post(tsvImportPath, MockTSVFormData.entityHasCollectionMembers)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
-          "should 400 Bad Request if it is missing required attribute headers" in {
+          "should 400 Bad Request if it is missing required attribute headers" in
             (Post(tsvImportPath, MockTSVFormData.entityUpdateMissingRequiredAttrs)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
           "should 200 OK if there's no data" in {
             stubRawlsService(HttpMethods.POST, batchUpsertPath, NoContent)
@@ -718,14 +703,13 @@ class WorkspaceApiServiceSpec
         }
 
         "an update-type TSV" - {
-          "should 400 BadRequest if the entity type is non-FC model with calling default import" in {
+          "should 400 BadRequest if the entity type is non-FC model with calling default import" in
             (Post(tsvImportPath, MockTSVFormData.updateNonModelFirstColumnHeader)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
           "should 200 OK if the entity type is non-FC model when calling the flexible import" in {
             stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
@@ -736,23 +720,21 @@ class WorkspaceApiServiceSpec
             }
           }
 
-          "should 400 Bad Request if it contains duplicated entities to update" in {
+          "should 400 Bad Request if it contains duplicated entities to update" in
             (Post(tsvImportPath, MockTSVFormData.updateHasDupes)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
-          "should 400 Bad Request if it contains collection member headers" in {
+          "should 400 Bad Request if it contains collection member headers" in
             (Post(tsvImportPath, MockTSVFormData.updateHasCollectionMembers)
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               errorReportCheck("FireCloud", BadRequest)
             }
-          }
 
           "should 200 OK even if it is missing required attribute headers" in {
             stubRawlsService(HttpMethods.POST, s"$workspacesPath/entities/batchUpdate", NoContent)
@@ -829,24 +811,22 @@ class WorkspaceApiServiceSpec
 
     "WorkspaceService importPFB Tests" - {
 
-      "should bubble up 400 from cwds" in {
+      "should bubble up 400 from cwds" in
         (Post(pfbImportPath, PFBImportRequest("https://bad.request.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(BadRequest)
           responseAs[String] should include("Bad request as reported by cwds")
         }
-      }
 
-      "should bubble up 403 from cwds" in {
+      "should bubble up 403 from cwds" in
         (Post(pfbImportPath, PFBImportRequest("https://forbidden.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
           ~> sealRoute(workspaceRoutes)) ~> check {
           status should equal(Forbidden)
           responseAs[String] should include("Missing Authorization: Bearer token in header")
         }
-      }
-      "should propagate any other errors from cWDS" in {
+      "should propagate any other errors from cWDS" in
         // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
         (Post(pfbImportPath, PFBImportRequest("https://its.lawsuit.time.avro"))
           ~> dummyUserIdHeaders(dummyUserId)
@@ -854,7 +834,6 @@ class WorkspaceApiServiceSpec
           status should equal(UnavailableForLegalReasons)
           responseAs[String] should include("cwds message")
         }
-      }
 
       "should 202 (Accepted) if everything validated and cwds request was accepted" in {
 
@@ -883,24 +862,22 @@ class WorkspaceApiServiceSpec
       List(FILETYPE_PFB, FILETYPE_TDR) foreach { filetype =>
         s"for filetype $filetype" - {
 
-          "should bubble up 400 from cwds" in {
+          "should bubble up 400 from cwds" in
             (Post(importJobPath, AsyncImportRequest("https://bad.request.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(BadRequest)
               responseAs[String] should include("Bad request as reported by cwds")
             }
-          }
 
-          "should bubble up 403 from cwds" in {
+          "should bubble up 403 from cwds" in
             (Post(importJobPath, AsyncImportRequest("https://forbidden.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
               ~> sealRoute(workspaceRoutes)) ~> check {
               status should equal(Forbidden)
               responseAs[String] should include("Missing Authorization: Bearer token in header")
             }
-          }
-          "should propagate any other errors from cWDS" in {
+          "should propagate any other errors from cWDS" in
             // we use UnavailableForLegalReasons as a proxy for "some error we didn't expect"
             (Post(importJobPath, AsyncImportRequest("https://its.lawsuit.time.avro", filetype))
               ~> dummyUserIdHeaders(dummyUserId)
@@ -908,7 +885,6 @@ class WorkspaceApiServiceSpec
               status should equal(UnavailableForLegalReasons)
               responseAs[String] should include("cwds message")
             }
-          }
 
           "should 202 (Accepted) if everything validated and import request was accepted" in {
 
@@ -948,15 +924,14 @@ class WorkspaceApiServiceSpec
       }
 
       "when calling PATCH on workspaces/*/*/updateAttributes path" - {
-        "should 400 Bad Request if the payload is malformed" in {
+        "should 400 Bad Request if the payload is malformed" in
           (Patch(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
           }
-        }
 
-        "should 200 OK if the payload is ok" in {
+        "should 200 OK if the payload is ok" in
           (Patch(
             updateAttributesPath,
             HttpEntity(
@@ -975,10 +950,8 @@ class WorkspaceApiServiceSpec
             status should equal(OK)
             assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
-        }
 
-        "should republish if the document is already published" in {
-
+        "should republish if the document is already published" in
           (Patch(
             workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace,
                                                               WorkspaceApiServiceSpec.publishedWorkspace.name
@@ -1001,7 +974,6 @@ class WorkspaceApiServiceSpec
                    "Should have republished this published WS when changing attributes"
             )
           }
-        }
 
       }
     }
@@ -1020,15 +992,14 @@ class WorkspaceApiServiceSpec
       }
 
       "when calling PATCH on workspaces/*/*/setAttributes path" - {
-        "should 400 Bad Request if the payload is malformed" in {
+        "should 400 Bad Request if the payload is malformed" in
           (Patch(setAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(BadRequest)
           }
-        }
 
-        "should 200 OK if the payload is ok" in {
+        "should 200 OK if the payload is ok" in
           (Patch(
             setAttributesPath,
             HttpEntity(
@@ -1043,10 +1014,8 @@ class WorkspaceApiServiceSpec
             status should equal(OK)
             assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
-        }
 
-        "should republish if the document is already published" in {
-
+        "should republish if the document is already published" in
           (Patch(
             workspacesRoot + "/%s/%s/setAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace,
                                                            WorkspaceApiServiceSpec.publishedWorkspace.name
@@ -1065,58 +1034,51 @@ class WorkspaceApiServiceSpec
                    "Should have republished this published WS when changing attributes"
             )
           }
-        }
 
       }
 
       "when calling POST on the workspaces/*/*/importAttributesTSV path" - {
-        "should 200 OK if it has the correct headers and valid internals" in {
+        "should 200 OK if it has the correct headers and valid internals" in
           (Post(tsvAttributesImportPath, MockTSVFormData.addNewWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(OK)
             })
-        }
 
-        "should 400 Bad Request if first row does not start with \"workspace\"" in {
+        "should 400 Bad Request if first row does not start with \"workspace\"" in
           (Post(tsvAttributesImportPath, MockTSVFormData.wrongHeaderWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(BadRequest)
             })
-        }
 
-        "should 400 Bad Request if there are more names than values" in {
+        "should 400 Bad Request if there are more names than values" in
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyNamesWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(BadRequest)
             })
-        }
 
-        "should 400 Bad Request if there are more values than names" in {
+        "should 400 Bad Request if there are more values than names" in
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyValuesWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(BadRequest)
             })
-        }
 
-        "should 400 Bad Request if there are more than 2 rows" in {
+        "should 400 Bad Request if there are more than 2 rows" in
           (Post(tsvAttributesImportPath, MockTSVFormData.tooManyRowsWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(BadRequest)
             })
-        }
 
-        "should 400 Bad Request if there are fewer than 2 rows" in {
+        "should 400 Bad Request if there are fewer than 2 rows" in
           (Post(tsvAttributesImportPath, MockTSVFormData.tooFewRowsWorkspaceAttributes)
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes) ~> check {
               status should equal(BadRequest)
             })
-        }
 
       }
     }
@@ -1135,7 +1097,7 @@ class WorkspaceApiServiceSpec
       }
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for us region" in {
+        "should return 200 with result for us region" in
           Get(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
             workspaceRoutes
           ) ~> check {
@@ -1143,11 +1105,10 @@ class WorkspaceApiServiceSpec
             // 256000000000 / (1024 * 1024 * 1024) *0.01
             responseAs[WorkspaceStorageCostEstimate].estimate should be("$2.38")
           }
-        }
       }
 
       "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for different europe east 1 region." in {
+        "should return 200 with result for different europe east 1 region." in
           Get(europeWest1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
             workspaceRoutes
           ) ~> check {
@@ -1155,7 +1116,6 @@ class WorkspaceApiServiceSpec
             // 256000000000 / (1024 * 1024 * 1024) *0.02
             responseAs[WorkspaceStorageCostEstimate].estimate should be("$4.77")
           }
-        }
       }
     }
   }

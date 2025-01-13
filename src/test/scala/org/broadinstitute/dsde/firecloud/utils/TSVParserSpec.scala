@@ -6,11 +6,10 @@ import org.broadinstitute.dsde.firecloud.mock.{MockTSVLoadFiles, MockTSVStrings}
 import org.broadinstitute.dsde.firecloud.model.FirecloudModelSchema
 
 class TSVParserSpec extends AnyFlatSpec {
-  "TSV parser" should "throw an exception when given an empty file to parse" in {
+  "TSV parser" should "throw an exception when given an empty file to parse" in
     intercept[RuntimeException] {
       TSVParser.parse(MockTSVStrings.empty)
     }
-  }
 
   "TSV parser" should "throw an exception when given a bunch of blank lines to parse" in {
     intercept[RuntimeException] {

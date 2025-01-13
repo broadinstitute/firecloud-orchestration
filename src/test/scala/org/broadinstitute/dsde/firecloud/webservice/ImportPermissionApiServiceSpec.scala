@@ -34,61 +34,54 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
         checkIfPassedThrough(userServiceRoutes, method, endpoint, toBeHandled = false)
       }
     }
-    "should accept GET" in {
+    "should accept GET" in
       Get(endpoint) ~> dummyUserIdHeaders("foo", "noWorkspaces;noProjects") ~> userServiceRoutes ~> check {
         assert(handled)
       }
-    }
-    "should return billingProject: true if user has at least one billing project" in {
+    "should return billingProject: true if user has at least one billing project" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "noWorkspaces;hasProjects") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
         status should equal(OK)
         responseAs[UserImportPermission].billingProject shouldBe true
       }
-    }
-    "should return billingProject: false if user has no billing projects" in {
+    "should return billingProject: false if user has no billing projects" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "noWorkspaces;noProjects") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
         status should equal(OK)
         responseAs[UserImportPermission].billingProject shouldBe false
       }
-    }
-    "should return billingProject: false if user has billing projects, but none that are ready" in {
+    "should return billingProject: false if user has billing projects, but none that are ready" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "noWorkspaces;projectsNotReady") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
         status should equal(OK)
         responseAs[UserImportPermission].billingProject shouldBe false
       }
-    }
-    "should return writableWorkspace: true if user has a writable workspace" in {
+    "should return writableWorkspace: true if user has a writable workspace" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "hasWorkspaces;noProjects") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
         status should equal(OK)
         responseAs[UserImportPermission].writableWorkspace shouldBe true
       }
-    }
-    "should return writableWorkspace: false if user has no workspaces" in {
+    "should return writableWorkspace: false if user has no workspaces" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "noWorkspaces;noProjects") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
         status should equal(OK)
         responseAs[UserImportPermission].writableWorkspace shouldBe false
       }
-    }
-    "should return writableWorkspace: false if user has workspaces, but none that are writable" in {
+    "should return writableWorkspace: false if user has workspaces, but none that are writable" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "onlyReadableWorkspaces;noProjects") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
         status should equal(OK)
         responseAs[UserImportPermission].writableWorkspace shouldBe false
       }
-    }
 
-    "should return both writableWorkspace: true and billingProject: true if both conditions are satisfied" in {
+    "should return both writableWorkspace: true and billingProject: true if both conditions are satisfied" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "hasWorkspaces;hasProjects") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
@@ -96,8 +89,7 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
         responseAs[UserImportPermission].billingProject shouldBe true
         responseAs[UserImportPermission].writableWorkspace shouldBe true
       }
-    }
-    "should return both writableWorkspace: false and billingProject: false if both conditions failed" in {
+    "should return both writableWorkspace: false and billingProject: false if both conditions failed" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "onlyReadableWorkspaces;projectsNotReady") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
@@ -105,9 +97,8 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
         responseAs[UserImportPermission].billingProject shouldBe false
         responseAs[UserImportPermission].writableWorkspace shouldBe false
       }
-    }
 
-    "should propagate an error if the call to get workspaces fails" in {
+    "should propagate an error if the call to get workspaces fails" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "thisWillError;hasProjects") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
@@ -115,8 +106,7 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
         val err: ErrorReport = responseAs[ErrorReport]
         err.message shouldBe "intentional exception for getWorkspaces catchall case"
       }
-    }
-    "should propagate an error if the call to get billing projects fails" in {
+    "should propagate an error if the call to get billing projects fails" in
       Get(endpoint) ~> dummyUserIdHeaders("userid", "hasWorkspaces;thisWillError") ~> sealRoute(
         userServiceRoutes
       ) ~> check {
@@ -124,7 +114,6 @@ class ImportPermissionApiServiceSpec extends BaseServiceSpec with UserApiService
         val err: ErrorReport = responseAs[ErrorReport]
         err.message shouldBe "intentional exception for getProjects catchall case"
       }
-    }
   }
 
 }
