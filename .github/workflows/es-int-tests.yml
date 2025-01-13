@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: sbt/setup-sbt@v1
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -33,6 +35,5 @@ jobs:
         run: ./docker/run-es.sh start
 
       - name: Execute Tests
-        uses: sbt/setup-sbt@v1
         run: sbt clean "IntegrationTest / test"
 

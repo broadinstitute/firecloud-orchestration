@@ -12,6 +12,7 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+      - uses: sbt/setup-sbt@v1
         with:
           fetch-depth: 2
           ref: ${{ github.event.pull_request.head.sha }}
@@ -24,6 +25,5 @@ jobs:
           cache: sbt
 
       - name: Check formatting for modified files
-        uses: sbt/setup-sbt@v1
         run: |
           sbt scalafmtCheckAll
