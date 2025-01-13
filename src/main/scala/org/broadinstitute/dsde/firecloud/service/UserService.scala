@@ -210,9 +210,4 @@ class UserService(rawlsDAO: RawlsDAO,
     }
   }
 
-  def getUserProfileGoogle: Future[PerRequestMessage] =
-    googleServicesDAO.getUserProfile(userToken).map { resp =>
-      RequestComplete(resp)
-    }
-
 }

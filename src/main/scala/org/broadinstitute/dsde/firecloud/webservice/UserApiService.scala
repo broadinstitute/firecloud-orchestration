@@ -123,23 +123,18 @@ trait UserApiService
           }
       } ~
       pathPrefix("register") {
-        path("userinfo") {
-          requireUserInfo() { userInfo =>
-            complete(userServiceConstructor(userInfo).getUserProfileGoogle)
-          }
-        } ~
-          pathPrefix("profile") {
-            // GET /profile - get all keys for current user
-            pathEnd {
-              get {
-                requireUserInfo() { userInfo =>
-                  complete {
-                    userServiceConstructor(userInfo).getAllUserKeys
-                  }
+        pathPrefix("profile") {
+          // GET /profile - get all keys for current user
+          pathEnd {
+            get {
+              requireUserInfo() { userInfo =>
+                complete {
+                  userServiceConstructor(userInfo).getAllUserKeys
                 }
               }
             }
           }
+        }
       }
 
   private def respondWithErrorReport(statusCode: StatusCode,
