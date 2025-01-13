@@ -24,5 +24,6 @@ jobs:
           cache: sbt
 
       - name: Check formatting for modified files
+        uses: sbt/setup-sbt@v1
         run: |
           sbt scalafmtCheckAll

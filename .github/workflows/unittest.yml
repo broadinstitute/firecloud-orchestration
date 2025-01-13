@@ -33,6 +33,7 @@ jobs:
         cache: 'sbt'
 
     - name: Run tests
+      uses: sbt/setup-sbt@v1
       env:
         AGORA_URL_ROOT:  http://localhost:8989
         RAWLS_URL_ROOT: http://localhost:8990
