@@ -28,7 +28,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
     "org.yaml"                   % "snakeyaml"                  % "2.3",
     "org.apache.commons"         % "commons-compress"           % "1.27.1", // workbench-libs libraries pull this in
-    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20241212-2.0.0", // from workbench-google2
+    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20241231-2.0.0", // from workbench-google2
     "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20241210-2.0.0" // from workbench-google2
   )
 
@@ -44,7 +44,7 @@ object Dependencies {
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.16",
-    "io.sentry"                      % "sentry-logback"      % "7.19.1",
+    "io.sentry"                      % "sentry-logback"      % "7.20.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -96,7 +96,7 @@ object Dependencies {
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
     "org.mock-server"                % "mockserver-netty-no-dependencies"    % "5.15.0"  % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.28" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.29" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }

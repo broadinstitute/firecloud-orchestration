@@ -192,14 +192,13 @@ class StreamingPassthroughSpec
       streamingPassthrough(Uri(s"http://localhost:$localMockserverPort/statuscode/checker"))
 
     testableStatusCodes foreach { codeUnderTest =>
-      s"should reply with remote-system ${codeUnderTest.intValue} (${codeUnderTest.reason()}) responses" in {
+      s"should reply with remote-system ${codeUnderTest.intValue} (${codeUnderTest.reason()}) responses" in
         Get(s"/${codeUnderTest.intValue}") ~> testRoute ~> check {
           status shouldBe codeUnderTest
           if (codeUnderTest.allowsEntity()) {
             responseAs[String] shouldBe codeUnderTest.reason
           }
         }
-      }
     }
   }
 

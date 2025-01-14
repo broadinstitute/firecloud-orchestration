@@ -217,7 +217,7 @@ class LibraryApiServiceSpec
       // make sure we're using the right deserializer for this block of tests
       implicit val attributeFormat: AttributeFormat = new AttributeFormat with PlainArrayAttributeListSerializer
 
-      "will return just library attrs if the workspace has multiple attribute namespaces" in {
+      "will return just library attrs if the workspace has multiple attribute namespaces" in
         Get(setMetadataPath("publishedowner")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           val meta = responseAs[AttributeMap]
@@ -225,34 +225,30 @@ class LibraryApiServiceSpec
           val expected: AttributeMap = Map(AttributeName("library", "projectName") -> AttributeString("testing"))
           assertResult(expected)(meta)
         }
-      }
-      "complete data can be retrieved for a valid workspace" in {
+      "complete data can be retrieved for a valid workspace" in
         Get(setMetadataPath("libraryValid")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           val meta = responseAs[AttributeMap]
           val expected = new MockRawlsDAO().unpublishedRawlsWorkspaceLibraryValid.attributes.get
           assertResult(expected)(meta)
         }
-      }
-      "will return empty set if no metadata exists" in {
+      "will return empty set if no metadata exists" in
         Get(setMetadataPath("attributes")) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
           status should equal(OK)
           val meta = responseAs[AttributeMap]
           assert(meta.isEmpty)
         }
-      }
     }
 
     "when calling publish" - {
       "POST on " + publishedPath() - {
-        "should return No Content for already published workspace " in {
+        "should return No Content for already published workspace " in
           new RequestBuilder(HttpMethods.POST)(publishedPath("publishedwriter")) ~> dummyUserIdHeaders(
             "1234"
           ) ~> sealRoute(libraryRoutes) ~> check {
             status should equal(NoContent)
           }
-        }
-        "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in {
+        "should return OK and invoke indexDocument for unpublished workspace with valid dataset" in
           new RequestBuilder(HttpMethods.POST)(publishedPath("libraryValid")) ~> dummyUserIdHeaders(
             "1234"
           ) ~> sealRoute(libraryRoutes) ~> check {
@@ -260,8 +256,7 @@ class LibraryApiServiceSpec
             assert(this.searchDao.indexDocumentInvoked.get(), "indexDocument should have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should not have been invoked")
           }
-        }
-        "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in {
+        "should return BadRequest and not invoke indexDocument for unpublished workspace with invalid dataset" in
           new RequestBuilder(HttpMethods.POST)(publishedPath()) ~> dummyUserIdHeaders("1234") ~> sealRoute(
             libraryRoutes
           ) ~> check {
@@ -269,17 +264,15 @@ class LibraryApiServiceSpec
             assert(!this.searchDao.indexDocumentInvoked.get(), "indexDocument should not have been invoked")
             assert(!this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should not have been invoked")
           }
-        }
       }
       "DELETE on " + publishedPath() - {
-        "should be No Content for unpublished workspace" in {
+        "should be No Content for unpublished workspace" in
           new RequestBuilder(HttpMethods.DELETE)(publishedPath("unpublishedwriter")) ~> dummyUserIdHeaders(
             "1234"
           ) ~> sealRoute(libraryRoutes) ~> check {
             status should equal(NoContent)
           }
-        }
-        "as return OK and invoke deleteDocument for published workspace" in {
+        "as return OK and invoke deleteDocument for published workspace" in
           new RequestBuilder(HttpMethods.DELETE)(publishedPath("publishedowner")) ~> dummyUserIdHeaders(
             "1234"
           ) ~> sealRoute(libraryRoutes) ~> check {
@@ -287,7 +280,6 @@ class LibraryApiServiceSpec
             assert(this.searchDao.deleteDocumentInvoked.get(), "deleteDocument should have been invoked")
             assert(!this.searchDao.indexDocumentInvoked.get(), "indexDocument should not have been invoked")
           }
-        }
       }
     }
     "when retrieving datasets" - {
@@ -333,7 +325,7 @@ class LibraryApiServiceSpec
         }
       }
       "GET on " + libraryPopulateSuggestPath - {
-        "should return autcomplete suggestions" in {
+        "should return autcomplete suggestions" in
           new RequestBuilder(HttpMethods.GET)(
             libraryPopulateSuggestPath + "library:datasetOwner?q=aha"
           ) ~> dummyUserIdHeaders("1234") ~> sealRoute(libraryRoutes) ~> check {
@@ -343,10 +335,9 @@ class LibraryApiServiceSpec
             assert(respdata.contains("library:datasetOwner"))
             assert(respdata.contains("aha"))
           }
-        }
       }
       "GET on " + libraryGroupsPath - {
-        "should return the all broad users group" in {
+        "should return the all broad users group" in
           new RequestBuilder(HttpMethods.GET)(libraryGroupsPath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
             libraryRoutes
           ) ~> check {
@@ -354,27 +345,24 @@ class LibraryApiServiceSpec
             val respdata = Await.result(Unmarshal(response).to[Seq[String]], Duration.Inf)
             assert(respdata.toSet == FireCloudConfig.ElasticSearch.discoverGroupNames.asScala.toSet)
           }
-        }
       }
     }
 
     "when working with Library discoverable groups" - {
-      "should return the right groups on get" in {
+      "should return the right groups on get" in
         Get(setDiscoverableGroupsPath("libraryValid", "unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           libraryRoutes
         ) ~> check {
           status should equal(OK)
           assertResult(List("group1", "group2"))(responseAs[List[String]])
         }
-      }
-      "should return an empty array if no groups are assigned" in {
+      "should return an empty array if no groups are assigned" in
         Get(setDiscoverableGroupsPath("publishedwriter", "unittest")) ~> dummyUserIdHeaders("1234") ~> sealRoute(
           libraryRoutes
         ) ~> check {
           status should equal(OK)
           assertResult(List.empty[String])(responseAs[List[String]])
         }
-      }
     }
 
     "when querying research purpose" - {

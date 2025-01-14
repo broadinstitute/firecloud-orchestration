@@ -53,30 +53,26 @@ class WorkspaceTagsServiceSpec
 
   "Workspace tag APIs" - {
     "when GET-ting tags" - {
-      "should return the pre-existing tags" in {
+      "should return the pre-existing tags" in
         Get(workspaceTagsPath("threetags")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should be(OK)
           responseAs[List[String]] should be(List("bar", "baz", "foo"))
         }
-      }
-      "should return a single tag as a list" in {
+      "should return a single tag as a list" in
         Get(workspaceTagsPath("onetag")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should be(OK)
           responseAs[List[String]] should be(List("wibble"))
         }
-      }
-      "should extract tags out of mixed attributes" in {
+      "should extract tags out of mixed attributes" in
         Get(workspaceTagsPath("mixedattrs")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should be(OK)
           responseAs[List[String]] should be(List("blep", "boop"))
         }
-      }
-      "should return empty list if no tags" in {
+      "should return empty list if no tags" in
         Get(workspaceTagsPath("notags")) ~> dummyUserIdHeaders("1234") ~> sealRoute(workspaceRoutes) ~> check {
           status should be(OK)
           responseAs[List[String]] should be(List.empty[String])
         }
-      }
     }
     "when PUT-ting tags" - {
       "should reject a bad payload" in {
@@ -85,40 +81,35 @@ class WorkspaceTagsServiceSpec
           status should be(BadRequest)
         }
       }
-      "should set multiple tags" in {
+      "should set multiple tags" in
         testPut(
           List("two", "four", "six"),
           List("four", "six", "two")
         )
-      }
-      "should set a single tag" in {
+      "should set a single tag" in
         testPut(
           List("single"),
           List("single")
         )
-      }
-      "should set the empty list" in {
+      "should set the empty list" in
         testPut(
           List.empty[String],
           List.empty[String]
         )
-      }
-      "should overwrite tags" in {
+      "should overwrite tags" in
         testPut(
           List("first", "pass"),
           List("first", "pass"),
           List("second", "should", "overwrite"),
           List("overwrite", "second", "should")
         )
-      }
-      "should overwrite the empty list" in {
+      "should overwrite the empty list" in
         testPut(
           List("first", "pass"),
           List("first", "pass"),
           List.empty[String],
           List.empty[String]
         )
-      }
     }
     "when PATCH-ing tags" - {
       "should reject a bad payload" in {
@@ -127,64 +118,56 @@ class WorkspaceTagsServiceSpec
           status should be(BadRequest)
         }
       }
-      "should set multiple tags from scratch" in {
+      "should set multiple tags from scratch" in
         testPatch(
           List("two", "four", "six"),
           List("four", "six", "two")
         )
-      }
-      "should set a single tag from scratch" in {
+      "should set a single tag from scratch" in
         testPatch(
           List("single"),
           List("single")
         )
-      }
-      "should set the empty list from scratch" in {
+      "should set the empty list from scratch" in
         testPatch(
           List.empty[String],
           List.empty[String]
         )
-      }
-      "should add tags when none exist" in {
+      "should add tags when none exist" in
         testPatch(
           List.empty[String],
           List.empty[String],
           List("second", "should", "create"),
           List("create", "second", "should")
         )
-      }
-      "should add tags to pre-existing" in {
+      "should add tags to pre-existing" in
         testPatch(
           List("first", "pass"),
           List("first", "pass"),
           List("second", "should", "append"),
           List("append", "first", "pass", "second", "should")
         )
-      }
-      "should merge when patching tag values that already exist" in {
+      "should merge when patching tag values that already exist" in
         testPatch(
           List("first", "pass"),
           List("first", "pass"),
           List("second", "pass", "merges"),
           List("first", "merges", "pass", "second")
         )
-      }
-      "should change nothing if all tags already exist" in {
+      "should change nothing if all tags already exist" in
         testPatch(
           List("existing", "tags"),
           List("existing", "tags"),
           List("existing", "tags"),
           List("existing", "tags")
         )
-      }
-      "should change nothing when adding the empty list" in {
+      "should change nothing when adding the empty list" in
         testPatch(
           List("first", "pass"),
           List("first", "pass"),
           List.empty[String],
           List("first", "pass")
         )
-      }
     }
     "when DELETE-ing tags" - {
       "should reject a bad payload" in {
@@ -193,64 +176,56 @@ class WorkspaceTagsServiceSpec
           status should be(BadRequest)
         }
       }
-      "removing multiple tags from scratch should be the empty list" in {
+      "removing multiple tags from scratch should be the empty list" in
         testDelete(
           List("two", "four", "six"),
           List.empty[String]
         )
-      }
-      "removing a single tag from scratch should be the empty list" in {
+      "removing a single tag from scratch should be the empty list" in
         testDelete(
           List("single"),
           List.empty[String]
         )
-      }
-      "removing the empty list from scratch should be the empty list" in {
+      "removing the empty list from scratch should be the empty list" in
         testDelete(
           List.empty[String],
           List.empty[String]
         )
-      }
-      "removing all pre-existing tags should be the empty list" in {
+      "removing all pre-existing tags should be the empty list" in
         testDelete(
           List("pre", "existing", "tags"),
           List("existing", "pre", "tags"),
           List("pre", "existing", "tags"),
           List.empty[String]
         )
-      }
-      "removing tags that don't already exist should change nothing" in {
+      "removing tags that don't already exist should change nothing" in
         testDelete(
           List("I", "am", "here"),
           List("am", "here", "I"),
           List("you", "are", "not"),
           List("am", "here", "I")
         )
-      }
-      "removing the empty list should change nothing" in {
+      "removing the empty list should change nothing" in
         testDelete(
           List("what", "is", "love"),
           List("is", "love", "what"),
           List.empty[String],
           List("is", "love", "what")
         )
-      }
-      "removing some of the tags that already exist should leave the rest untouched" in {
+      "removing some of the tags that already exist should leave the rest untouched" in
         testDelete(
           List("potatoes", "beans", "cauliflower"),
           List("beans", "cauliflower", "potatoes"),
           List("cauliflower"),
           List("beans", "potatoes")
         )
-      }
-      "removing a partially-overlapping set should do the right thing" in {
+      "removing a partially-overlapping set should do the right thing" in
         testDelete(
           List("a", "b", "c", "d", "e"),
           List("a", "b", "c", "d", "e"),
           List("c", "d", "e", "f", "g"),
           List("a", "b")
         )
-      }
     }
   }
 

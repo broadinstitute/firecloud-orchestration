@@ -29,9 +29,8 @@ class TextSearchSpec
 
   "Library integration" - {
     "Elastic Search" - {
-      "Index exists" in {
+      "Index exists" in
         assert(searchDAO.indexExists())
-      }
     }
     "search for 'brca'" - {
       "should find just the two BRCA datasets" in {

@@ -41,9 +41,8 @@ class OntologySearchSpec
 
   "Library integration ontology-aware search" - {
     "Elastic Search" - {
-      "Index exists" in {
+      "Index exists" in
         assert(searchDAO.indexExists())
-      }
     }
     "search for 'disease'" - {
       "should find all datasets with an ontology node" in {

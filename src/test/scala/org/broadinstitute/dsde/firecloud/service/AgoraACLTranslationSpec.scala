@@ -112,65 +112,57 @@ class AgoraACLTranslationSpec extends AnyFreeSpec {
     }
 
     "when working with an empty user Agora" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objAgora = AgoraPermission(Some(""), Some(ListOwner))
           val objFC = objAgora.toFireCloudPermission
         }
-      }
     }
     "when working with a whitespace user Agora" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objAgora = AgoraPermission(Some("    "), Some(ListOwner))
           val objFC = objAgora.toFireCloudPermission
         }
-      }
     }
     "when working with a None user Agora" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objAgora = AgoraPermission(None, Some(ListOwner))
           val objFC = objAgora.toFireCloudPermission
         }
-      }
     }
 
     // EDGE CASES, FC->AGORA
     "when trying to work with an unknown role FC" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objFC = FireCloudPermission(email.get, "OWNERtypo")
         }
-      }
     }
     "when trying to work with an empty string role FC" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objFC = FireCloudPermission(email.get, "")
         }
-      }
     }
     "when trying to work with a whitespace role FC" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objFC = FireCloudPermission(email.get, "    ")
         }
-      }
     }
     "when trying to work with an empty string user FC" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objFC = FireCloudPermission("", Owner)
         }
-      }
     }
     "when trying to work with a whitespace user FC" - {
-      "should throw IllegalArgumentException" in {
+      "should throw IllegalArgumentException" in
         intercept[IllegalArgumentException] {
           val objFC = FireCloudPermission("    ", Owner)
         }
-      }
     }
   }
 

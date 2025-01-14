@@ -155,33 +155,29 @@ class EnabledUserDirectivesSpec
   }
 
   "requireEnabledUser" - {
-    "should allow enabled users" in {
+    "should allow enabled users" in
       Get() ~> userEnabledRoute(enabledUser) ~> check {
         status shouldBe StatusCodes.OK
         responseAs[String] shouldBe "route was successful"
       }
-    }
-    "should 401 for disabled users" in {
+    "should 401 for disabled users" in
       Get() ~> userEnabledRoute(disabledUser) ~> check {
         status shouldBe StatusCodes.Unauthorized
         val err = responseAs[ErrorReport]
         err.message shouldBe "User is disabled."
       }
-    }
-    "should 401 for unregistered users" in {
+    "should 401 for unregistered users" in
       Get() ~> userEnabledRoute(unregisteredUser) ~> check {
         status shouldBe StatusCodes.Unauthorized
         val err = responseAs[ErrorReport]
         err.message shouldBe "User is not registered."
       }
-    }
-    "should bubble up exceptions encountered while calling Sam" in {
+    "should bubble up exceptions encountered while calling Sam" in
       Get() ~> userEnabledRoute(samApiExceptionUser) ~> check {
         status shouldBe StatusCodes.ImATeapot
         val err = responseAs[ErrorReport]
         err.message should include(s"Client Error (${StatusCodes.ImATeapot.intValue})")
       }
-    }
   }
 
 }

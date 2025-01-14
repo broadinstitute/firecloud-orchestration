@@ -44,9 +44,8 @@ class DataUseRestrictionSearchSpec
   "Library Data Use Restriction Indexing" - {
 
     "Elastic Search" - {
-      "Index exists" in {
+      "Index exists" in
         assert(searchDAO.indexExists())
-      }
     }
 
     "Data Use Restriction Search" - {

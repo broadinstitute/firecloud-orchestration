@@ -279,15 +279,12 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   }
 
   "EntityService.importJob" - {
-    "should send tdrexport to cWDS" in {
+    "should send tdrexport to cWDS" in
       importJobTestImpl(importFiletype = "tdrexport")
-    }
-    "should send pfb to cWDS" in {
+    "should send pfb to cWDS" in
       importJobTestImpl(importFiletype = "pfb")
-    }
-    "should send rawlsjson to cWDS" in {
+    "should send rawlsjson to cWDS" in
       importJobTestImpl(importFiletype = "rawlsjson")
-    }
 
     def importJobTestImpl(importFiletype: String) = {
       // set up mocks

@@ -2,3 +2,6 @@
 
 # scalafmt mass change
 3686bb47a5b215733a46c3393a51e950fcaa635f
+
+# Scala Steward: Reformat with scalafmt 3.8.4
+c7a758f4143587c0355fee5580523cf7be0ead66

@@ -162,7 +162,7 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
 
       "when there are library data use restriction fields" - {
 
-        "dataset should have a fully populated data use restriction attribute" in {
+        "dataset should have a fully populated data use restriction attribute" in
           allDatasets.map { ds =>
             val ontologyDAO = new MockOntologyDAO
             val attrs: Map[AttributeName, Attribute] =
@@ -172,9 +172,8 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
             val dur = makeDurFromWorkspace(ds, ontologyDAO)
             dur shouldNot be(null)
           }
-        }
 
-        "dur should have appropriate gender codes populated" in {
+        "dur should have appropriate gender codes populated" in
           genderDatasets.map { ds =>
             val ontologyDAO = new MockOntologyDAO
             val dur: DataUseRestriction = makeDurFromWorkspace(ds, ontologyDAO)
@@ -192,9 +191,8 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
               dur.`RS-M` should be(false)
             }
           }
-        }
 
-        "dur should have appropriate NAGR code populated" in {
+        "dur should have appropriate NAGR code populated" in
           nagrDatasets.map { ds =>
             val ontologyDAO = new MockOntologyDAO
             val dur: DataUseRestriction = makeDurFromWorkspace(ds, ontologyDAO)
@@ -204,7 +202,6 @@ class DataUseRestrictionSupportSpec extends AnyFreeSpec with Matchers with DataU
               dur.NAGR should be(false)
             }
           }
-        }
 
         "dataset should have a true value for the consent code for which it was specified" in {
           val durs: Map[String, DataUseRestriction] = booleanDatasets.flatMap { ds =>

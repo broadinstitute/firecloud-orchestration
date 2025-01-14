@@ -49,15 +49,14 @@ final class ShareLogApiServiceSpec
     ShareLogService.constructor(app.copy(shareLogDAO = localShareLogDao))
 
   "ShareLogApiService" - {
-    "when getting all sharees" in {
+    "when getting all sharees" in
       Get(getShareesPath) ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(shareLogServiceRoutes) ~> check {
         assertResult(OK)(status)
         responseAs[Seq[String]] should contain theSameElementsAs ElasticSearchShareLogDAOSpecFixtures.fixtureShares.map(
           _.sharee
         )
       }
-    }
-    "when getting workspace sharees" in {
+    "when getting workspace sharees" in
       Get(makeGetShareesPath(ShareType.WORKSPACE)) ~> getUserHeaders("fake1", "fake1@gmail.com") ~> sealRoute(
         shareLogServiceRoutes
       ) ~> check {
@@ -66,6 +65,5 @@ final class ShareLogApiServiceSpec
           _.sharee
         )
       }
-    }
   }
 }

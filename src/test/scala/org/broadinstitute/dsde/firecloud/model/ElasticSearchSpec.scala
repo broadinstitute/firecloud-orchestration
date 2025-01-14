@@ -145,16 +145,14 @@ class ElasticSearchSpec extends AnyFreeSpec with Assertions {
 
     }
     "when marshalling to json" - {
-      "using toJson" in {
+      "using toJson" in
         assertResult(modelJsonStr) {
           modelObject.toJson.toString
         }
-      }
-      "using impESPropertyFields" in {
+      "using impESPropertyFields" in
         assertResult(modelJsonStr) {
           impESPropertyFields.write(modelObject).toString
         }
-      }
     }
   }
 
@@ -185,16 +183,14 @@ class ElasticSearchSpec extends AnyFreeSpec with Assertions {
       }
     }
     "when marshalling to json" - {
-      "using toJson" in {
+      "using toJson" in
         assertResult(modelJsonStr) {
           modelObject.toJson.toString
         }
-      }
-      "using impESPropertyFields" in {
+      "using impESPropertyFields" in
         assertResult(modelJsonStr) {
           impESPropertyFields.write(modelObject).toString
         }
-      }
     }
   }
 

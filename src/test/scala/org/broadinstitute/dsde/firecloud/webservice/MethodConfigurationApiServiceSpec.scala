@@ -152,11 +152,10 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
     "when calling the passthrough service" - {
       List(localTemplatePath, localInputsOutputsPath) foreach { path =>
         s"POST on $path" - {
-          "should not receive a MethodNotAllowed" in {
+          "should not receive a MethodNotAllowed" in
             Post(path) ~> dummyUserIdHeaders("1234") ~> sealRoute(methodConfigurationRoutes) ~> check {
               status shouldNot equal(MethodNotAllowed)
             }
-          }
         }
 
       }
@@ -182,25 +181,23 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
       val localMethodConfigRenamePath = localMethodConfigPath + "/rename"
 
       s"POST on $localMethodConfigRenamePath " - {
-        "should not receive a MethodNotAllowed" in {
+        "should not receive a MethodNotAllowed" in
           Post(localMethodConfigRenamePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
             methodConfigurationRoutes
           ) ~> check {
             status shouldNot equal(MethodNotAllowed)
           }
-        }
       }
 
       val localMethodConfigValidatePath = localMethodConfigPath + "/validate"
 
       s"GET on $localMethodConfigValidatePath " - {
-        "should not receive a MethodNotAllowed" in {
+        "should not receive a MethodNotAllowed" in
           Get(localMethodConfigValidatePath) ~> dummyUserIdHeaders("1234") ~> sealRoute(
             methodConfigurationRoutes
           ) ~> check {
             status shouldNot equal(MethodNotAllowed)
           }
-        }
       }
 
     }
@@ -219,13 +216,12 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
       )
 
       s"when calling POST on the $validCopyFromRepoUrl path with valid workspace and configuration data" - {
-        "Created response is returned" in {
+        "Created response is returned" in
           Post(validCopyFromRepoUrl, configurationCopyFormData) ~> dummyUserIdHeaders("1234") ~> sealRoute(
             methodConfigurationRoutes
           ) ~> check {
             status should equal(Created)
           }
-        }
       }
 
       s"GET, PUT, PATCH, DELETE on $validCopyFromRepoUrl " - {
@@ -254,13 +250,12 @@ class MethodConfigurationApiServiceSpec extends ServiceSpec with MethodConfigura
       )
 
       s"when calling POST on the $validCopyToRepoUrl path with valid workspace and configuration data" - {
-        "Created response is returned" in {
+        "Created response is returned" in
           Post(validCopyToRepoUrl, configurationPublishFormData) ~> dummyUserIdHeaders("1234") ~> sealRoute(
             methodConfigurationRoutes
           ) ~> check {
             status should equal(Created)
           }
-        }
       }
 
       s"GET, PUT, PATCH, DELETE on $validCopyToRepoUrl " - {
