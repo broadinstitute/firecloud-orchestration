@@ -14,16 +14,14 @@ class HealthApiServiceSpec extends ServiceSpec with HealthApiService {
 
   "HealthApiService" - {
     "when GET-ting the health service endpoint" - {
-      "OK response is returned" in {
+      "OK response is returned" in
         Get("/health") ~> sealRoute(healthServiceRoutes) ~> check {
           status should equal(OK)
         }
-      }
-      "Service Unavailable response is returned" in {
+      "Service Unavailable response is returned" in
         Get("/error") ~> sealRoute(healthServiceRoutes) ~> check {
           status should equal(ServiceUnavailable)
         }
-      }
     }
   }
 

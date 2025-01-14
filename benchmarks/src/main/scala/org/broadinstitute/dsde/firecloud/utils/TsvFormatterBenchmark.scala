@@ -45,9 +45,10 @@ object TsvFormatterBenchmark {
           AttributeName.withDefaultNS("col2") -> AttributeBoolean(true),
           AttributeName.withDefaultNS("fourth") -> AttributeNumber(-123.45),
           AttributeName.withDefaultNS("last") -> AttributeValueList(
-            Seq(AttributeString("gs://some-bucket/somefile1.ext"),
-                AttributeString("gs://some-bucket/somefile2.ext"),
-                AttributeString("gs://some-bucket/somefile3.ext")
+            Seq(
+              AttributeString("gs://some-bucket/somefile1.ext"),
+              AttributeString("gs://some-bucket/somefile2.ext"),
+              AttributeString("gs://some-bucket/somefile3.ext")
             )
           )
         )

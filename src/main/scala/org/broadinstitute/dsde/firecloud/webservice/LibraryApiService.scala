@@ -93,11 +93,10 @@ trait LibraryApiService
                         }
                       }
                     }
-                  } ~ {
+                  } ~
                     get {
                       complete(libraryServiceConstructor(userInfo).getLibraryMetadata(namespace, name))
                     }
-                  }
                 } ~
                   path("discoverableGroups") {
                     put {

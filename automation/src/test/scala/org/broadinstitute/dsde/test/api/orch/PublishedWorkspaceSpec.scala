@@ -15,15 +15,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import spray.json._
 
+class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Matchers with Eventually with RandomUtil {
 
-class PublishedWorkspaceSpec
-  extends AnyFreeSpec
-    with WorkspaceFixtures
-    with Matchers
-    with Eventually
-    with RandomUtil {
-
-  implicit override val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
+  implicit override val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(2, Seconds)))
   val billingAccountId: String = ServiceTestConfig.Projects.billingAccountId
 
   "a user with publish permissions" - {
@@ -36,7 +31,6 @@ class PublishedWorkspaceSpec
 
         withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_workspace") { workspaceName =>
-
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
             Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
             Orchestration.library.publishWorkspace(billingProject, workspaceName)
@@ -86,8 +80,7 @@ class PublishedWorkspaceSpec
                     isVisibleInLibrary(clonedWorkspaceName) shouldBe false
                   }
                 }
-              }
-              finally Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
+              } finally Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
             }
           }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
         }
@@ -106,16 +99,18 @@ class PublishedWorkspaceSpec
 
               val clonedWorkspaceName = workspaceName + "_clone"
               Orchestration.workspaces.clone(billingProject, workspaceName, billingProject, clonedWorkspaceName)
-              try {
-                //Verify default group "All users"
-                //In swagger you make sure that getDiscoverableGroup endpoint shows []
-                withClue(s"Get api/library/${billingProject}/${clonedWorkspaceName}/discoverableGroups endpoint shows []") {
+              try
+                // Verify default group "All users"
+                // In swagger you make sure that getDiscoverableGroup endpoint shows []
+                withClue(
+                  s"Get api/library/${billingProject}/${clonedWorkspaceName}/discoverableGroups endpoint shows []"
+                ) {
                   eventually {
-                    val accessGroup: Seq[String] = Orchestration.library.getDiscoverableGroups(billingProject, clonedWorkspaceName)
+                    val accessGroup: Seq[String] =
+                      Orchestration.library.getDiscoverableGroups(billingProject, clonedWorkspaceName)
                     accessGroup.size shouldBe 0
                   }
                 }
-              }
               finally Orchestration.workspaces.delete(billingProject, clonedWorkspaceName)
             }
           }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
@@ -130,7 +125,6 @@ class PublishedWorkspaceSpec
 
         withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_consentcodes") { workspaceName =>
-
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName) ++ LibraryData.consentCodes
             Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
             Orchestration.library.publishWorkspace(billingProject, workspaceName)
@@ -153,7 +147,6 @@ class PublishedWorkspaceSpec
 
         withTemporaryBillingProject(billingAccountId, users = List(curatorUser.email).some) { billingProject =>
           withWorkspace(billingProject, "PublishedWorkspaceSpec_tags", attributes = Some(tags)) { workspaceName =>
-
             val data = LibraryData.metadataBasic + ("library:datasetName" -> workspaceName)
             Orchestration.library.setLibraryAttributes(billingProject, workspaceName, data)
             Orchestration.library.publishWorkspace(billingProject, workspaceName)
@@ -170,7 +163,6 @@ class PublishedWorkspaceSpec
     }
   }
 
-
   /**
     *
     * @return True: workspace is visible in library table
@@ -182,7 +174,9 @@ class PublishedWorkspaceSpec
     total == 1
   }
 
-  private def getDatasetFieldValues(workspaceName: String, fieldName: String)(implicit token: AuthToken): List[String] = {
+  private def getDatasetFieldValues(workspaceName: String,
+                                    fieldName: String
+  )(implicit token: AuthToken): List[String] = {
     import DefaultJsonProtocol._
     val datasetMap: String = Orchestration.library.searchPublishedLibraryDataset(workspaceName)
     val results: JsValue = datasetMap.parseJson.asJsObject.fields("results")

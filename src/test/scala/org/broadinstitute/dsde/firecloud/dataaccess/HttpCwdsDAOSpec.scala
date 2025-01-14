@@ -49,11 +49,10 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         }
       }
 
-      "should cover all possible statuses" in {
+      "should cover all possible statuses" in
         GenericJob.StatusEnum.values().foreach { enumValue =>
           cwdsDao.toCwdsStatus(enumValue) should not be "Unknown" // and should not throw
         }
-      }
     }
 
     "toCwdsListResponse" - {
