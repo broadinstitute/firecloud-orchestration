@@ -2,11 +2,15 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Authority, Host, Query}
+import com.google.pubsub.v1.{ProjectSubscriptionName, TopicName}
 import com.typesafe.config.{Config, ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihAllowlist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
+import org.broadinstitute.dsde.workbench.google2.SubscriberConfig
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
@@ -142,6 +146,16 @@ object FireCloudConfig {
     private lazy val externalCreds = config.getConfig("externalCreds")
     lazy val baseUrl: String = externalCreds.getString("baseUrl")
     lazy val enabled: Boolean = externalCreds.getBoolean("enabled")
+    lazy val subscriberConfig = SubscriberConfig(
+      Auth.firecloudAdminSAJsonFile,
+      TopicName.of(externalCreds.getString("topicProject"), externalCreds.getString("topicName")),
+      Option(ProjectSubscriptionName.of(FireCloud.serviceProject, externalCreds.getString("subscriptionName"))),
+      FiniteDuration(externalCreds.getDuration("ackDeadLine").toMillis(), TimeUnit.MILLISECONDS),
+      None,
+      None,
+      None
+    )
+    lazy val subscriberQueueSize: Int = externalCreds.getInt("subscriberQueueSize")
   }
 
   object FireCloud {

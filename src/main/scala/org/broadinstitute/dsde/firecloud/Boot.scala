@@ -2,96 +2,134 @@ package org.broadinstitute.dsde.firecloud
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import cats.effect.IO
+import cats.effect.std.Queue
+import cats.effect.{IO, Resource}
 import cats.effect.unsafe.IORuntime
 import com.typesafe.scalalogging.LazyLogging
+import fs2.Stream
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
-import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{ExternalCredsMessage, ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.DisabledServiceFactory
+import org.broadinstitute.dsde.workbench.google2.GoogleSubscriber
 import org.broadinstitute.dsde.workbench.oauth2.{ClientId, OpenIDConnectConfiguration}
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
+import org.broadinstitute.dsde.workbench.util2.messaging.{CloudSubscriber, ReceivedMessage}
 import org.elasticsearch.client.transport.TransportClient
+import org.typelevel.log4cats.StructuredLogger
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 object Boot extends App with LazyLogging {
 
   private def startup(): Unit = {
-    // we need an ActorSystem to host our application in
-    implicit val system: ActorSystem = ActorSystem("FireCloud-Orchestration-API")
-
-    val app: Application = buildApplication
-
-    val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService =
-      AgoraPermissionService.constructor(app)
-    val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor =
-      ExportEntitiesByTypeActor.constructor(app, system)
-    val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
-    val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
-    val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
-    val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
-    val nihServiceConstructor: () => NihService = NihService.constructor(app)
-    val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
-    val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
-    val permissionReportServiceConstructor: (UserInfo) => PermissionReportService =
-      PermissionReportService.constructor(app)
-    val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
-    val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
-    val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService = ManagedGroupService.constructor(app)
-
-    // Boot HealthMonitor actor
-    val healthChecks = new HealthChecks(app)
-    val healthMonitorChecks = healthChecks.healthMonitorChecks
-    val healthMonitor =
-      system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)(healthMonitorChecks), "health-monitor")
-    system.scheduler.scheduleWithFixedDelay(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
-
-    val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
-
-    val runningService: Future[Unit] = for {
-      oauth2Config <- OpenIDConnectConfiguration[IO](
-        FireCloudConfig.Auth.authorityEndpoint,
-        ClientId(FireCloudConfig.Auth.oidcClientId),
-        extraAuthParams = Some("prompt=login"),
-        authorityEndpointWithGoogleBillingScope = FireCloudConfig.Auth.authorityEndpointWithGoogleBillingScope
-      ).unsafeToFuture()(IORuntime.global)
-
-      service <- Future {
-        new FireCloudApiServiceImpl(
-          agoraPermissionServiceConstructor,
-          exportEntitiesByTypeActorConstructor,
-          entityServiceConstructor,
-          libraryServiceConstructor,
-          ontologyServiceConstructor,
-          namespaceServiceConstructor,
-          nihServiceConstructor,
-          registerServiceConstructor,
-          workspaceServiceConstructor,
-          statusServiceConstructor,
-          permissionReportServiceConstructor,
-          userServiceConstructor,
-          shareLogServiceConstructor,
-          managedGroupServiceConstructor,
-          oauth2Config
+    implicit val slogger: StructuredLogger[IO] = org.typelevel.log4cats.slf4j.Slf4jLogger.getLogger[IO]
+    val processesResource = for {
+      service <- fireCloudApiServiceResource()
+      externalCredsSubscriber <- createExternalCredsSubscriber()
+    } yield {
+      implicit val system: ActorSystem = service.system
+      List(
+        externalCredsSubscriber.messages.evalMap { msg =>
+          service.nihServiceConstructor().processExternalCredsMessage(msg)
+        },
+        Stream.eval(externalCredsSubscriber.start),
+        Stream.eval(
+          IO.fromFuture(
+            IO(
+              Http()
+                .newServerAt("0.0.0.0", 8080)
+                .bindFlow(service.route)
+                .recover { case t: Throwable =>
+                  logger.error("FATAL - failure starting http server", t)
+                }
+            )
+          )
         )
+      )
+    }
+
+    processesResource
+      .use { processes =>
+        Stream
+          .emits(processes)
+          .covary[IO]
+          .parJoin(processes.length)
+          .handleErrorWith(error => Stream.emit(logger.error("FATAL - error starting Firecloud Orchestration", error)))
+          .compile
+          .drain
       }
-
-      binding <- Http().newServerAt("0.0.0.0", 8080).bind(service.route)
-      _ <- binding.whenTerminated
-
-    } yield {}
-
-    runningService
-      .recover { case t: Throwable =>
-        logger.error("FATAL - error starting Firecloud Orchestration", t)
-      }
-      .flatMap(_ => system.terminate())
+      .unsafeRunSync()(IORuntime.global)
   }
+
+  private def fireCloudApiServiceResource(): Resource[IO, FireCloudApiService] =
+    Resource.make {
+      // we need an ActorSystem to host our application in
+      implicit val system: ActorSystem = ActorSystem("FireCloud-Orchestration-API")
+
+      val app: Application = buildApplication
+
+      val agoraPermissionServiceConstructor: (UserInfo) => AgoraPermissionService =
+        AgoraPermissionService.constructor(app)
+      val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor =
+        ExportEntitiesByTypeActor.constructor(app, system)
+      val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
+      val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
+      val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
+      val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
+      val nihServiceConstructor: () => NihService = NihService.constructor(app)
+      val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
+      val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(app)
+      val permissionReportServiceConstructor: (UserInfo) => PermissionReportService =
+        PermissionReportService.constructor(app)
+      val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
+      val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
+      val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService =
+        ManagedGroupService.constructor(app)
+
+      // Boot HealthMonitor actor
+      val healthChecks = new HealthChecks(app)
+      val healthMonitorChecks = healthChecks.healthMonitorChecks
+      val healthMonitor =
+        system.actorOf(HealthMonitor.props(healthMonitorChecks().keySet)(healthMonitorChecks), "health-monitor")
+      system.scheduler.scheduleWithFixedDelay(3.seconds, 1.minute, healthMonitor, HealthMonitor.CheckAll)
+
+      val statusServiceConstructor: () => StatusService = StatusService.constructor(healthMonitor)
+
+      for {
+        oauth2Config <- OpenIDConnectConfiguration[IO](
+          FireCloudConfig.Auth.authorityEndpoint,
+          ClientId(FireCloudConfig.Auth.oidcClientId),
+          extraAuthParams = Some("prompt=login"),
+          authorityEndpointWithGoogleBillingScope = FireCloudConfig.Auth.authorityEndpointWithGoogleBillingScope
+        )
+
+        service <- IO {
+          new FireCloudApiServiceImpl(
+            agoraPermissionServiceConstructor,
+            exportEntitiesByTypeActorConstructor,
+            entityServiceConstructor,
+            libraryServiceConstructor,
+            ontologyServiceConstructor,
+            namespaceServiceConstructor,
+            nihServiceConstructor,
+            registerServiceConstructor,
+            workspaceServiceConstructor,
+            statusServiceConstructor,
+            permissionReportServiceConstructor,
+            userServiceConstructor,
+            shareLogServiceConstructor,
+            managedGroupServiceConstructor,
+            oauth2Config
+          )
+        }
+      } yield service
+    } { service =>
+      IO.fromFuture(IO(service.system.terminate())).void
+    }
 
   private def buildApplication(implicit system: ActorSystem) = {
     // can't be disabled
@@ -152,6 +190,29 @@ object Boot extends App with LazyLogging {
                 ecmDAO
     )
   }
+
+  private def createExternalCredsSubscriber()(implicit
+    logger: StructuredLogger[IO]
+  ): Resource[IO, CloudSubscriber[IO, ExternalCredsMessage]] =
+    if (FireCloudConfig.ExternalCreds.enabled) {
+      import ExternalCredsMessage.externalCredsMessageDecoder
+      for {
+        queue <- Resource.eval(
+          Queue.bounded[IO, ReceivedMessage[ExternalCredsMessage]](FireCloudConfig.ExternalCreds.subscriberQueueSize)
+        )
+        subscriber <- GoogleSubscriber.resource[IO, ExternalCredsMessage](
+          FireCloudConfig.ExternalCreds.subscriberConfig,
+          queue
+        )
+      } yield subscriber
+    } else {
+      logger.info("External Creds service is disabled, not subscribing to messages")
+      Resource.pure[IO, CloudSubscriber[IO, ExternalCredsMessage]](new CloudSubscriber[IO, ExternalCredsMessage] {
+        override def start: IO[Unit] = IO.unit
+        override def stop: IO[Unit] = IO.unit
+        override def messages: fs2.Stream[IO, ReceivedMessage[ExternalCredsMessage]] = fs2.Stream.empty
+      })
+    }
 
   private def whenEnabled[T: ClassTag](enabled: Boolean, realService: => T): T =
     if (enabled) {
