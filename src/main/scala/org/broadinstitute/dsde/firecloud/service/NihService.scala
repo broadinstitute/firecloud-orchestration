@@ -3,7 +3,9 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
-import cats.effect.IO
+import cats.effect.kernel.Outcome.Succeeded
+import cats.effect.{IO, Outcome}
+import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess.{
   ExternalCredsDAO,
@@ -23,6 +25,7 @@ import org.broadinstitute.dsde.firecloud.{
   FireCloudExceptionWithErrorReport
 }
 import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.workbench.client.sam.model.{BulkMembershipUpdateRequestV2, PolicyMembershipUpdate}
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 import org.broadinstitute.dsde.workbench.util2.messaging.ReceivedMessage
 import org.slf4j.LoggerFactory
@@ -30,8 +33,10 @@ import pdi.jwt.{Jwt, JwtAlgorithm}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import java.util
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 case class NihStatus(linkedNihUsername: Option[String] = None,
@@ -68,10 +73,79 @@ class NihService(val samDao: SamDAO,
 
   private val nihAllowlists: Set[NihAllowlist] = FireCloudConfig.Nih.whitelists
 
-  def processExternalCredsMessage(externalCredsMessage: ReceivedMessage[ExternalCredsMessage]): IO[Unit] =
-    IO {
-      logger.info("Processing external creds message: " + externalCredsMessage.msg)
+  def processExternalCredsMessage(externalCredsMessage: ReceivedMessage[ExternalCredsMessage]): IO[Unit] = {
+    val groupUpdateIO = for {
+      visas <- IO.fromFuture(
+        IO(
+          ecmDao.getVisas(
+            externalCredsMessage.msg.providerName,
+            externalCredsMessage.msg.userId,
+            FireCloudConfig.Nih.rasIssuer,
+            FireCloudConfig.Nih.rasVisaType,
+            getAdminAccessToken
+          )
+        )
+      )
+      userDbGapPermissions = extractDbGapPermissionsFromVisas(visas)
+      groupUpdates = determineGroupUpdates(externalCredsMessage.msg.userId, userDbGapPermissions)
+      _ <- ensureGroupsExists(groupUpdates)
+      _ <- logMessageHandling(groupUpdates, externalCredsMessage.msg)
+      _ <- IO.fromFuture(IO(samDao.bulkUpdateGroups(groupUpdates, getAdminAccessToken)))
+    } yield externalCredsMessage.ackHandler.ack()
+
+    groupUpdateIO.handleError { e =>
+      logger.error(s"Error processing ${externalCredsMessage.msg}: ${e.getMessage}", e)
+      externalCredsMessage.ackHandler.nack()
     }
+  }
+
+  private def logMessageHandling(groupUpdates: List[BulkMembershipUpdateRequestV2], message: ExternalCredsMessage) =
+    IO {
+      val (addGroups, removeGroups) =
+        groupUpdates.partition(_.getPolicyUpdates.asScala.exists(Option(_).forall(_.getRemoveUserIds.isEmpty)))
+      logger.info(
+        s"Handling $message, adding to groups: [${addGroups.map(_.getResourceId).mkString(", ")}], removing from groups: [${removeGroups.map(_.getResourceId).mkString(", ")}]"
+      )
+    }
+
+  private def ensureGroupsExists(groupUpdates: List[BulkMembershipUpdateRequestV2]): IO[Unit] =
+    for {
+      groups <- IO.fromFuture(IO(samDao.listGroups(getAdminAccessToken)))
+      missingGroupNames = groupUpdates.map(_.getResourceId.toLowerCase()).toSet -- groups
+        .map(_.groupName.toLowerCase)
+        .toSet
+      _ <- missingGroupNames.toList.traverse { groupName =>
+        IO.fromFuture(IO(samDao.createGroup(WorkbenchGroupName(groupName))(getAdminAccessToken)))
+      }
+    } yield ()
+
+  private def determineGroupUpdates(userId: String, userDbGapPermissions: Seq[DbGapPermission]) =
+    FireCloudConfig.Nih.dbGapPermissionToGroup.map { case (permission, group) =>
+      val policyMembershipUpdate = new PolicyMembershipUpdate().policyName("member")
+      if (userDbGapPermissions.contains(permission)) {
+        policyMembershipUpdate.addAddUserIdsItem(userId)
+      } else {
+        policyMembershipUpdate.addRemoveUserIdsItem(userId)
+      }
+      new BulkMembershipUpdateRequestV2()
+        .resourceTypeName("managed-group")
+        .resourceId(group)
+        .addPolicyUpdatesItem(policyMembershipUpdate)
+    }.toList
+
+  private def extractDbGapPermissionsFromVisas(visas: Seq[AnyRef]) =
+    for {
+      visa <- visas
+      visaMap = visa.asInstanceOf[util.Map[String, Object]].asScala
+      dbGapPermissions = visaMap
+        .getOrElse("ras_dbgap_permissions", new util.ArrayList[Object]())
+        .asInstanceOf[util.List[Object]]
+        .asScala
+      dbGapPermission <- dbGapPermissions
+      dbGapPermissionMap = dbGapPermission.asInstanceOf[util.Map[String, Object]].asScala
+    } yield DbGapPermission(PhsId(dbGapPermissionMap("phs_id").asInstanceOf[String]),
+                            ConsentGroup(dbGapPermissionMap("consent_group").asInstanceOf[String])
+    )
 
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] =
     getNihStatusFromEcm(userInfo).flatMap {
@@ -195,7 +269,7 @@ class NihService(val samDao: SamDAO,
 
   private def linkNihAccountEcm(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] =
     ecmDao
-      .putLinkedEraAccount(LinkedEraAccount(userInfo.id, nihLink))(getAdminAccessToken)
+      .putLinkedEraAccount(LinkedEraAccount(userInfo.id, nihLink), getAdminAccessToken)
       .flatMap { _ =>
         logger.info("Successfully linked NIH account in ECM for user " + userInfo.id)
         Future.successful(Success(()))
@@ -218,7 +292,7 @@ class NihService(val samDao: SamDAO,
     } yield ()
 
   private def unlinkNihAccountEcm(userInfo: UserInfo): Future[Unit] =
-    ecmDao.deleteLinkedEraAccount(userInfo)(getAdminAccessToken)
+    ecmDao.deleteLinkedEraAccount(userInfo, getAdminAccessToken)
 
   private def unlinkNihAccountThurloe(userInfo: UserInfo): Future[Unit] = {
     val nihKeys = Set("linkedNihUsername", "linkExpireTime")

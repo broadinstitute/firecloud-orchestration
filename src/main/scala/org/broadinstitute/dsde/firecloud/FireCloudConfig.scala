@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Authority, Host, Query}
 import com.google.pubsub.v1.{ProjectSubscriptionName, TopicName}
 import com.typesafe.config.{Config, ConfigFactory, ConfigObject}
+import org.broadinstitute.dsde.firecloud.model.{ConsentGroup, DbGapPermission, PhsId}
 import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihAllowlist}
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
 import org.broadinstitute.dsde.workbench.google2.SubscriberConfig
@@ -193,6 +194,19 @@ object FireCloudConfig {
       }
     }.toSet
     val enabled = nih.optionalBoolean("enabled").getOrElse(true)
+    lazy val rasVisaType = nih.getString("rasVisaType")
+    lazy val rasIssuer = nih.getString("rasIssuer")
+    lazy val dbGapPermissionToGroup: Map[DbGapPermission, String] = {
+      val dbGapPermissionToGroupConfigs = nih.getConfigList("dbGapPermissionAndGroup")
+
+      dbGapPermissionToGroupConfigs.asScala.collect { config =>
+        val phsId = PhsId(config.getString("phsId"))
+        val consentGroup = ConsentGroup(config.getString("consentGroup"))
+        val groupName = config.getString("groupName")
+
+        DbGapPermission(phsId, consentGroup) -> groupName
+      }.toMap
+    }
   }
 
   object ElasticSearch {

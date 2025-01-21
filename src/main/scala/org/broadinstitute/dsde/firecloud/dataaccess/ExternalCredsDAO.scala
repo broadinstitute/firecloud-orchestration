@@ -8,20 +8,25 @@ import scala.concurrent.Future
 trait ExternalCredsDAO {
 
   @throws(classOf[ApiException])
-  def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]]
+  def getLinkedAccount(userInfo: UserInfo): Future[Option[LinkedEraAccount]]
 
   @throws(classOf[ApiException])
-  def putLinkedEraAccount(linkedEraAccount: LinkedEraAccount)(implicit orchInfo: WithAccessToken): Future[Unit]
+  def putLinkedEraAccount(linkedEraAccount: LinkedEraAccount, orchInfo: WithAccessToken): Future[Unit]
 
   @throws(classOf[ApiException])
-  def deleteLinkedEraAccount(userInfo: UserInfo)(implicit orchInfo: WithAccessToken): Future[Unit]
+  def deleteLinkedEraAccount(userInfo: UserInfo, orchInfo: WithAccessToken): Future[Unit]
 
   @throws(classOf[ApiException])
-  def getLinkedEraAccountForUsername(username: String)(implicit
-    orchInfo: WithAccessToken
-  ): Future[Option[LinkedEraAccount]]
+  def getLinkedEraAccountForUsername(username: String, orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]]
 
   @throws(classOf[ApiException])
-  def getActiveLinkedEraAccounts(implicit orchInfo: WithAccessToken): Future[Seq[LinkedEraAccount]]
+  def getActiveLinkedEraAccounts(orchInfo: WithAccessToken): Future[Seq[LinkedEraAccount]]
 
+  @throws(classOf[ApiException])
+  def getVisas(provider: String,
+               userId: String,
+               issuer: String,
+               visaType: String,
+               orchInfo: WithAccessToken
+  ): Future[Seq[AnyRef]]
 }

@@ -4,10 +4,10 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -27,7 +27,11 @@ import org.broadinstitute.dsde.firecloud.model.{
   WorkbenchUserInfo
 }
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.model.RawlsUserEmail
+import org.broadinstitute.dsde.rawls.{RawlsException, RawlsExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserEmail, WorkspaceJsonSupport}
+import org.broadinstitute.dsde.workbench.client.sam.{ApiCallback, ApiClient, ApiException}
+import org.broadinstitute.dsde.workbench.client.sam.api.{ResourcesApi, UsersApi}
+import org.broadinstitute.dsde.workbench.client.sam.model.BulkMembershipUpdateRequestV2
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
@@ -35,18 +39,24 @@ import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsValue, JsonFormat, RootJsonFormat}
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.util
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 /**
-  * Created by mbemis on 8/21/17.
-  */
+ * Created by mbemis on 8/21/17.
+ */
 class HttpSamDAO(implicit
   val system: ActorSystem,
   val materializer: Materializer,
-  implicit val executionContext: ExecutionContext
+  val executionContext: ExecutionContext
 ) extends SamDAO
     with RestJsonClient
     with SprayJsonSupport {
+
+  val timeout: FiniteDuration = 1.minute
 
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] =
     authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")),
@@ -195,4 +205,63 @@ class HttpSamDAO(implicit
       ok = response.status.isSuccess
       message <- if (ok) Future.successful(None) else Unmarshal(response.entity).to[String].map(Option(_))
     } yield SubsystemStatus(ok, message.map(List(_)))
+
+  override def bulkUpdateGroups(request: List[BulkMembershipUpdateRequestV2], user: WithAccessToken): Future[Unit] = {
+    val sam = new ResourcesApi(newApiClient(user))
+    val callback = new SamApiCallback[Void]("bulkMembershipUpdateV2")
+
+    sam.bulkMembershipUpdateV2Async(request.asJava, callback)
+    callback.future.map(_ => ())
+  }
+
+  private def newApiClient(user: WithAccessToken) = {
+    val apiClient = new ApiClient()
+    apiClient.setAccessToken(user.accessToken.token)
+    apiClient.setBasePath(FireCloudConfig.Sam.baseUrl)
+    apiClient
+  }
+
+  private class SamApiCallback[T](functionName: String) extends ApiCallback[T] {
+    private val promise = Promise[T]()
+
+    override def onFailure(e: ApiException,
+                           statusCode: Int,
+                           responseHeaders: util.Map[String, util.List[String]]
+    ): Unit =
+      try {
+        val response = Option(e.getResponseBody).getOrElse(e.getMessage)
+
+        // attempt to propagate an ErrorReport from Sam. If we can't understand Sam's response as an ErrorReport,
+        // create our own error message.
+        import WorkspaceJsonSupport.ErrorReportFormat
+        import spray.json._
+        val errorReport = Try(response.parseJson.convertTo[ErrorReport]).recover { case _: Throwable =>
+          val sc = Try(StatusCode.int2StatusCode(statusCode)).getOrElse(StatusCodes.InternalServerError)
+          ErrorReport(sc, s"Sam call to $functionName failed with error '$response'", e)
+        }.get
+
+        val exceptionWithErrorReport = new FireCloudExceptionWithErrorReport(errorReport)
+        logger.info(s"Sam call to $functionName failed", exceptionWithErrorReport)
+        promise.failure(exceptionWithErrorReport)
+      } catch {
+        case wtf: Throwable =>
+          logger.info("unexpected exception parsing error response from sam, failing with raw error", wtf)
+          // must be 100% certain that promise.failure is called otherwise the promise will never be fulfilled
+          promise.failure(e)
+      }
+
+    override def onSuccess(result: T, statusCode: Int, responseHeaders: util.Map[String, util.List[String]]): Unit =
+      promise.success(result)
+
+    override def onUploadProgress(bytesWritten: Long, contentLength: Long, done: Boolean): Unit = ()
+
+    override def onDownloadProgress(bytesRead: Long, contentLength: Long, done: Boolean): Unit = ()
+
+    def future: Future[T] = {
+      val timeoutFuture: Future[T] = akka.pattern.after(timeout, system.scheduler)(
+        Future.failed(new RawlsException(s"Sam call to $functionName timed out"))
+      )
+      Future.firstCompletedOf(Seq(promise.future, timeoutFuture))
+    }
+  }
 }

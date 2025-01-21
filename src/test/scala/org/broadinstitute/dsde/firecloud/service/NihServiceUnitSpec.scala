@@ -391,7 +391,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   it should "continue, but return an error of ECM returns an error" in {
     mockShibbolethDAO()
     mockThurloeUsers()
-    when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount])(any[WithAccessToken]))
+    when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount], any[WithAccessToken]))
       .thenReturn(Future.failed(new RuntimeException("ECM is down")))
 
     val user = userTcgaOnly
@@ -459,8 +459,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       linkedAccount.linkExpireTime.minusMillis(linkedAccount.linkExpireTime.getMillisOfSecond)
     )
 
-    verify(ecmDao, times(1)).putLinkedEraAccount(ArgumentMatchers.eq(expectedLinkedAccount))(
-      ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))
+    verify(ecmDao, times(1)).putLinkedEraAccount(ArgumentMatchers.eq(expectedLinkedAccount),
+                                                 ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))
     )
     verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
     verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
@@ -500,8 +500,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
       ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(ecmDao, times(1)).deleteLinkedEraAccount(ArgumentMatchers.eq(userInfo))(
-      ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))
+    verify(ecmDao, times(1)).deleteLinkedEraAccount(ArgumentMatchers.eq(userInfo),
+                                                    ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))
     )
     verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkedNihUsername", userInfo)
     verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkExpireTime", userInfo)
@@ -556,12 +556,12 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       val userInfo = args.getArgument(0).asInstanceOf[UserInfo]
       Future.successful(linkedAccountsBySamUserId.get(WorkbenchUserId(userInfo.id)))
     }
-    when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount])(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
+    when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount], ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
       .thenReturn(Future.successful(()))
-    when(ecmDao.deleteLinkedEraAccount(any[UserInfo])(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
+    when(ecmDao.deleteLinkedEraAccount(any[UserInfo], ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
       .thenReturn(Future.successful(()))
 
-    when(ecmDao.getLinkedEraAccountForUsername(any[String])(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
+    when(ecmDao.getLinkedEraAccountForUsername(any[String], ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
       .thenAnswer { args =>
         val externalId = args.getArgument(0).asInstanceOf[String]
         Future.successful(linkedAccountsByExternalId.get(externalId))

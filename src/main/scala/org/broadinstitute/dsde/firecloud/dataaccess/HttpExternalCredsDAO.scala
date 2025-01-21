@@ -25,7 +25,7 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
       case _ => throw new WorkbenchException(s"Failed to $operation: ${e.getMessage}")
     }
 
-  override def getLinkedAccount(implicit userInfo: UserInfo): Future[Option[LinkedEraAccount]] = Future {
+  override def getLinkedAccount(userInfo: UserInfo): Future[Option[LinkedEraAccount]] = Future {
     val oauthApi: OauthApi = getOauthApi(userInfo.accessToken.token)
     try {
       val linkInfo = oauthApi.getLink(Provider.ERA_COMMONS)
@@ -35,14 +35,13 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
     }
   }
 
-  override def putLinkedEraAccount(
-    linkedEraAccount: LinkedEraAccount
-  )(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
-    val adminApi = getAdminApi(orchInfo.accessToken.token)
-    adminApi.putLinkedAccountWithFakeToken(unapply(linkedEraAccount), Provider.ERA_COMMONS)
-  }
+  override def putLinkedEraAccount(linkedEraAccount: LinkedEraAccount, orchInfo: WithAccessToken): Future[Unit] =
+    Future {
+      val adminApi = getAdminApi(orchInfo.accessToken.token)
+      adminApi.putLinkedAccountWithFakeToken(unapply(linkedEraAccount), Provider.ERA_COMMONS)
+    }
 
-  override def deleteLinkedEraAccount(userInfo: UserInfo)(implicit orchInfo: WithAccessToken): Future[Unit] = Future {
+  override def deleteLinkedEraAccount(userInfo: UserInfo, orchInfo: WithAccessToken): Future[Unit] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
     try
       adminApi.adminDeleteLinkedAccount(userInfo.id, Provider.ERA_COMMONS)
@@ -51,9 +50,9 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
     }
   }
 
-  override def getLinkedEraAccountForUsername(
-    username: String
-  )(implicit orchInfo: WithAccessToken): Future[Option[LinkedEraAccount]] = Future {
+  override def getLinkedEraAccountForUsername(username: String,
+                                              orchInfo: WithAccessToken
+  ): Future[Option[LinkedEraAccount]] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
     try {
       val adminLinkInfo = adminApi.getLinkedAccountForExternalId(Provider.ERA_COMMONS, username)
@@ -63,10 +62,20 @@ class HttpExternalCredsDAO(implicit val executionContext: ExecutionContext) exte
     }
   }
 
-  override def getActiveLinkedEraAccounts(implicit orchInfo: WithAccessToken): Future[Seq[LinkedEraAccount]] = Future {
+  override def getActiveLinkedEraAccounts(orchInfo: WithAccessToken): Future[Seq[LinkedEraAccount]] = Future {
     val adminApi = getAdminApi(orchInfo.accessToken.token)
     val adminLinkInfos = adminApi.getActiveLinkedAccounts(Provider.ERA_COMMONS)
     adminLinkInfos.asScala.map(LinkedEraAccount.apply).toSeq
+  }
+
+  override def getVisas(provider: String,
+                        userId: String,
+                        issuer: String,
+                        visaType: String,
+                        orchInfo: WithAccessToken
+  ): Future[Seq[AnyRef]] = Future {
+    val adminApi = getAdminApi(orchInfo.accessToken.token)
+    adminApi.getVisas(Provider.fromValue(provider), userId, issuer, visaType).asScala.toSeq
   }
 
   private def getApi(accessToken: String): ApiClient = {
