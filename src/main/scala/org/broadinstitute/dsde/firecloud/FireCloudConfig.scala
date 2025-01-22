@@ -107,6 +107,9 @@ object FireCloudConfig {
   object Sam {
     private val sam = config.getConfig("sam")
     val baseUrl = sam.getString("baseUrl")
+
+    val groupResourceType = sam.getString("groupResourceType")
+    val groupMemberPolicy = sam.getString("groupMemberPolicy")
   }
 
   object CromIAM {

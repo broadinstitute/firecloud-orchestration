@@ -33,6 +33,7 @@ import pdi.jwt.{Jwt, JwtAlgorithm}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
+import java.time.Instant
 import java.util
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
@@ -88,7 +89,7 @@ class NihService(val samDao: SamDAO,
       )
       userDbGapPermissions = extractDbGapPermissionsFromVisas(visas)
       groupUpdates = determineGroupUpdates(externalCredsMessage.msg.userId, userDbGapPermissions)
-      _ <- ensureGroupsExists(groupUpdates)
+      _ <- ensureDbGapGroupsExist()
       _ <- logMessageHandling(groupUpdates, externalCredsMessage.msg)
       _ <- IO.fromFuture(IO(samDao.bulkUpdateGroups(groupUpdates, getAdminAccessToken)))
     } yield externalCredsMessage.ackHandler.ack()
@@ -108,12 +109,11 @@ class NihService(val samDao: SamDAO,
       )
     }
 
-  private def ensureGroupsExists(groupUpdates: List[BulkMembershipUpdateRequestV2]): IO[Unit] =
+  private def ensureDbGapGroupsExist(): IO[Unit] =
     for {
       groups <- IO.fromFuture(IO(samDao.listGroups(getAdminAccessToken)))
-      missingGroupNames = groupUpdates.map(_.getResourceId.toLowerCase()).toSet -- groups
-        .map(_.groupName.toLowerCase)
-        .toSet
+      groupNames = groups.map(_.groupName.toLowerCase).toSet
+      missingGroupNames = FireCloudConfig.Nih.dbGapPermissionToGroup.values.toSet -- groupNames
       _ <- missingGroupNames.toList.traverse { groupName =>
         IO.fromFuture(IO(samDao.createGroup(WorkbenchGroupName(groupName))(getAdminAccessToken)))
       }
@@ -121,14 +121,14 @@ class NihService(val samDao: SamDAO,
 
   private def determineGroupUpdates(userId: String, userDbGapPermissions: Seq[DbGapPermission]) =
     FireCloudConfig.Nih.dbGapPermissionToGroup.map { case (permission, group) =>
-      val policyMembershipUpdate = new PolicyMembershipUpdate().policyName("member")
+      val policyMembershipUpdate = new PolicyMembershipUpdate().policyName(FireCloudConfig.Sam.groupMemberPolicy)
       if (userDbGapPermissions.contains(permission)) {
         policyMembershipUpdate.addAddUserIdsItem(userId)
       } else {
         policyMembershipUpdate.addRemoveUserIdsItem(userId)
       }
       new BulkMembershipUpdateRequestV2()
-        .resourceTypeName("managed-group")
+        .resourceTypeName(FireCloudConfig.Sam.groupResourceType)
         .resourceId(group)
         .addPolicyUpdatesItem(policyMembershipUpdate)
     }.toList
@@ -141,10 +141,10 @@ class NihService(val samDao: SamDAO,
         .getOrElse("ras_dbgap_permissions", new util.ArrayList[Object]())
         .asInstanceOf[util.List[Object]]
         .asScala
-      dbGapPermission <- dbGapPermissions
-      dbGapPermissionMap = dbGapPermission.asInstanceOf[util.Map[String, Object]].asScala
-    } yield DbGapPermission(PhsId(dbGapPermissionMap("phs_id").asInstanceOf[String]),
-                            ConsentGroup(dbGapPermissionMap("consent_group").asInstanceOf[String])
+      dbGapPermission <- dbGapPermissions.map(_.asInstanceOf[util.Map[String, Object]].asScala)
+      if dbGapPermission("expiration").asInstanceOf[Long] > Instant.now.getEpochSecond
+    } yield DbGapPermission(PhsId(dbGapPermission("phs_id").asInstanceOf[String]),
+                            ConsentGroup(dbGapPermission("consent_group").asInstanceOf[String])
     )
 
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] =

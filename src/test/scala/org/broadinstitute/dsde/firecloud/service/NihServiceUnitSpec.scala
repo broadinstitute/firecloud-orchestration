@@ -2,6 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import cats.effect.unsafe.implicits.global
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.FireCloudException
 import org.broadinstitute.dsde.firecloud.dataaccess.{
@@ -12,12 +13,16 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{
   ThurloeDAO
 }
 import org.broadinstitute.dsde.firecloud.model.{
+  ConsentGroup,
+  DbGapPermission,
+  ExternalCredsMessage,
   FireCloudKeyValue,
   FireCloudManagedGroupMembership,
   JWTWrapper,
   LinkedEraAccount,
   ManagedGroupRoles,
   NihLink,
+  PhsId,
   ProfileWrapper,
   SamUser,
   UserInfo,
@@ -32,6 +37,8 @@ import org.broadinstitute.dsde.workbench.model.{
   WorkbenchUserId
 }
 import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.workbench.client.sam.model.{BulkMembershipUpdateRequestV2, PolicyMembershipUpdate}
+import org.broadinstitute.dsde.workbench.util2.messaging.{AckHandler, ReceivedMessage}
 import org.joda.time.DateTime
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.ArgumentMatchers.any
@@ -46,6 +53,7 @@ import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import java.security.{KeyPairGenerator, PrivateKey}
 import java.time.Instant
+import java.util
 import java.util.{Base64, UUID}
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -506,6 +514,209 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkedNihUsername", userInfo)
     verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkExpireTime", userInfo)
 
+  }
+
+  /**
+   * Verify that given config with 2 dbgap group and a user with a visa with 1 permission,
+   * the user is added to the group and removed from the other group
+   */
+  "processExternalCredsMessage" should "add and remove user" in {
+    val ackHandler = mock[AckHandler]
+    val provider = "ras"
+    val userId = UUID.randomUUID().toString
+
+    // these match config
+    val addPermission = DbGapPermission(PhsId("phs002409"), ConsentGroup("c1"))
+    val removePermissions = DbGapPermission(PhsId("phs002410"), ConsentGroup("c1"))
+
+    val visa = new java.util.HashMap[String, Object]()
+    val dbGapPermissions = new util.ArrayList[util.HashMap[String, Object]]()
+    visa.put("ras_dbgap_permissions", dbGapPermissions)
+    val permission = new java.util.HashMap[String, Object]()
+    permission.put("phs_id", addPermission.phsId.value)
+    permission.put("consent_group", addPermission.consentGroup.value)
+    permission.put("expiration",
+                   java.lang.Long.valueOf(Instant.now().plusSeconds(60).getEpochSecond) // future expiration
+    )
+    dbGapPermissions.add(permission)
+
+    val orchAdmin = UserInfo(adminAccessToken, "")
+    when(
+      ecmDao.getVisas(provider, userId, FireCloudConfig.Nih.rasIssuer, FireCloudConfig.Nih.rasVisaType, orchAdmin)
+    ).thenReturn(Future.successful(Seq(visa)))
+
+    when(samDao.listGroups(orchAdmin)).thenReturn(Future.successful(FireCloudConfig.Nih.dbGapPermissionToGroup.map {
+      case (_, groupName) => FireCloudManagedGroupMembership(groupName, groupName + "@firecloud.org", "admin")
+    }.toList))
+
+    when(
+      samDao.bulkUpdateGroups(
+        List(
+          new BulkMembershipUpdateRequestV2()
+            .resourceTypeName(FireCloudConfig.Sam.groupResourceType)
+            .resourceId(
+              FireCloudConfig.Nih.dbGapPermissionToGroup(addPermission)
+            )
+            .addPolicyUpdatesItem(
+              new PolicyMembershipUpdate().policyName(FireCloudConfig.Sam.groupMemberPolicy).addAddUserIdsItem(userId)
+            ),
+          new BulkMembershipUpdateRequestV2()
+            .resourceTypeName(FireCloudConfig.Sam.groupResourceType)
+            .resourceId(
+              FireCloudConfig.Nih.dbGapPermissionToGroup(removePermissions)
+            )
+            .addPolicyUpdatesItem(
+              new PolicyMembershipUpdate()
+                .policyName(FireCloudConfig.Sam.groupMemberPolicy)
+                .addRemoveUserIdsItem(userId)
+            )
+        ),
+        orchAdmin
+      )
+    ).thenReturn(Future.successful(()))
+
+    nihService
+      .processExternalCredsMessage(
+        ReceivedMessage[ExternalCredsMessage](ExternalCredsMessage(provider, userId), None, Instant.now(), ackHandler)
+      )
+      .unsafeRunSync()
+
+    verify(ackHandler).ack()
+  }
+
+  /**
+   * same as add and remove user but the permission is expired so the user should be removed from both groups
+   */
+  it should "ignore expired permission" in {
+    val ackHandler = mock[AckHandler]
+    val provider = "ras"
+    val userId = UUID.randomUUID().toString
+
+    // these match config
+    val expiredPermission = DbGapPermission(PhsId("phs002409"), ConsentGroup("c1"))
+    val removePermissions = DbGapPermission(PhsId("phs002410"), ConsentGroup("c1"))
+
+    val visa = new java.util.HashMap[String, Object]()
+    val dbGapPermissions = new util.ArrayList[util.HashMap[String, Object]]()
+    visa.put("ras_dbgap_permissions", dbGapPermissions)
+    val permission = new java.util.HashMap[String, Object]()
+    permission.put("phs_id", expiredPermission.phsId.value)
+    permission.put("consent_group", expiredPermission.consentGroup.value)
+    permission.put("expiration",
+                   java.lang.Long.valueOf(Instant.now().minusSeconds(60).getEpochSecond) // past expiration
+    )
+    dbGapPermissions.add(permission)
+
+    val orchAdmin = UserInfo(adminAccessToken, "")
+    when(
+      ecmDao.getVisas(provider, userId, FireCloudConfig.Nih.rasIssuer, FireCloudConfig.Nih.rasVisaType, orchAdmin)
+    ).thenReturn(Future.successful(Seq(visa)))
+
+    when(samDao.listGroups(orchAdmin)).thenReturn(Future.successful(FireCloudConfig.Nih.dbGapPermissionToGroup.map {
+      case (_, groupName) => FireCloudManagedGroupMembership(groupName, groupName + "@firecloud.org", "admin")
+    }.toList))
+
+    when(
+      samDao.bulkUpdateGroups(
+        List(
+          new BulkMembershipUpdateRequestV2()
+            .resourceTypeName(FireCloudConfig.Sam.groupResourceType)
+            .resourceId(
+              FireCloudConfig.Nih.dbGapPermissionToGroup(expiredPermission)
+            )
+            .addPolicyUpdatesItem(
+              new PolicyMembershipUpdate()
+                .policyName(FireCloudConfig.Sam.groupMemberPolicy)
+                .addRemoveUserIdsItem(userId)
+            ),
+          new BulkMembershipUpdateRequestV2()
+            .resourceTypeName(FireCloudConfig.Sam.groupResourceType)
+            .resourceId(
+              FireCloudConfig.Nih.dbGapPermissionToGroup(removePermissions)
+            )
+            .addPolicyUpdatesItem(
+              new PolicyMembershipUpdate()
+                .policyName(FireCloudConfig.Sam.groupMemberPolicy)
+                .addRemoveUserIdsItem(userId)
+            )
+        ),
+        orchAdmin
+      )
+    ).thenReturn(Future.successful(()))
+
+    nihService
+      .processExternalCredsMessage(
+        ReceivedMessage[ExternalCredsMessage](ExternalCredsMessage(provider, userId), None, Instant.now(), ackHandler)
+      )
+      .unsafeRunSync()
+
+    verify(ackHandler).ack()
+  }
+
+  it should "remove all permissions when no visas" in {
+    val ackHandler = mock[AckHandler]
+    val provider = "ras"
+    val userId = UUID.randomUUID().toString
+
+    val orchAdmin = UserInfo(adminAccessToken, "")
+    when(
+      ecmDao.getVisas(provider, userId, FireCloudConfig.Nih.rasIssuer, FireCloudConfig.Nih.rasVisaType, orchAdmin)
+    ).thenReturn(Future.successful(Seq.empty))
+
+    when(samDao.listGroups(orchAdmin)).thenReturn(Future.successful(FireCloudConfig.Nih.dbGapPermissionToGroup.map {
+      case (_, groupName) => FireCloudManagedGroupMembership(groupName, groupName + "@firecloud.org", "admin")
+    }.toList))
+
+    when(
+      samDao.bulkUpdateGroups(
+        FireCloudConfig.Nih.dbGapPermissionToGroup.map { case (_, groupName) =>
+          new BulkMembershipUpdateRequestV2()
+            .resourceTypeName(FireCloudConfig.Sam.groupResourceType)
+            .resourceId(groupName)
+            .addPolicyUpdatesItem(
+              new PolicyMembershipUpdate()
+                .policyName(FireCloudConfig.Sam.groupMemberPolicy)
+                .addRemoveUserIdsItem(userId)
+            )
+        }.toList,
+        orchAdmin
+      )
+    ).thenReturn(Future.successful(()))
+
+    nihService
+      .processExternalCredsMessage(
+        ReceivedMessage[ExternalCredsMessage](ExternalCredsMessage(provider, userId), None, Instant.now(), ackHandler)
+      )
+      .unsafeRunSync()
+
+    verify(ackHandler).ack()
+  }
+
+  it should "nack when there is an exception" in {
+    val ackHandler = mock[AckHandler]
+    val provider = "ras"
+    val userId = UUID.randomUUID().toString
+
+    val orchAdmin = UserInfo(adminAccessToken, "")
+    when(
+      ecmDao.getVisas(provider, userId, FireCloudConfig.Nih.rasIssuer, FireCloudConfig.Nih.rasVisaType, orchAdmin)
+    ).thenReturn(Future.successful(Seq.empty))
+
+    when(samDao.listGroups(orchAdmin)).thenReturn(Future.successful(FireCloudConfig.Nih.dbGapPermissionToGroup.map {
+      case (_, groupName) => FireCloudManagedGroupMembership(groupName, groupName + "@firecloud.org", "admin")
+    }.toList))
+
+    when(
+      samDao.bulkUpdateGroups(any(), any())
+    ).thenReturn(Future.failed(new RuntimeException("oops")))
+
+    nihService
+      .processExternalCredsMessage(
+        ReceivedMessage[ExternalCredsMessage](ExternalCredsMessage(provider, userId), None, Instant.now(), ackHandler)
+      )
+      .unsafeRunSync()
+
+    verify(ackHandler).nack()
   }
 
   private def mockSamUsers(): Unit = {

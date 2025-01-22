@@ -19,6 +19,7 @@ import org.broadinstitute.dsde.firecloud.model.{
 }
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserEmail}
+import org.broadinstitute.dsde.workbench.client.sam.model.BulkMembershipUpdateRequestV2
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{
   AzureB2CId,
@@ -203,4 +204,6 @@ class MockSamDAO extends SamDAO {
   override def getUsersForIds(samUserIds: Seq[WorkbenchUserId])(implicit
     userInfo: WithAccessToken
   ): Future[Seq[WorkbenchUserInfo]] = Future.successful(Seq())
+
+  override def bulkUpdateGroups(request: List[BulkMembershipUpdateRequestV2], user: WithAccessToken): Future[Unit] = ???
 }
