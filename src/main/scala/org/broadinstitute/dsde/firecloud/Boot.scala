@@ -3,7 +3,7 @@ package org.broadinstitute.dsde.firecloud
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import cats.effect.std.Queue
-import cats.effect.{IO, Resource}
+import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.effect.unsafe.IORuntime
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
@@ -23,9 +23,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-object Boot extends App with LazyLogging {
+object Boot extends IOApp with LazyLogging {
 
-  private def startup(): Unit = {
+  private def startup(): IO[Unit] = {
     implicit val slogger: StructuredLogger[IO] = org.typelevel.log4cats.slf4j.Slf4jLogger.getLogger[IO]
     val processesResource = for {
       service <- fireCloudApiServiceResource()
@@ -68,7 +68,6 @@ object Boot extends App with LazyLogging {
           .compile
           .drain
       }
-      .unsafeRunSync()(IORuntime.global)
   }
 
   private def fireCloudApiServiceResource(): Resource[IO, FireCloudApiService] =
@@ -227,5 +226,5 @@ object Boot extends App with LazyLogging {
       DisabledServiceFactory.newDisabledService
     }
 
-  startup()
+  override def run(args: List[String]): IO[ExitCode] = startup().as(ExitCode.Success)
 }
