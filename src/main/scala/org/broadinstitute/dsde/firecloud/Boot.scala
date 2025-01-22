@@ -216,7 +216,7 @@ object Boot extends IOApp with LazyLogging {
         override def start: IO[Unit] = IO.unit
         override def stop: IO[Unit] = IO.unit
         override def messages: fs2.Stream[IO, ReceivedMessage[ExternalCredsMessage]] =
-          fs2.Stream.never // never prevents early termination
+          fs2.Stream.never(IO.asyncForIO) // never prevents early termination
       })
     }
 
