@@ -33,10 +33,15 @@ object Boot extends App with LazyLogging {
     } yield {
       implicit val system: ActorSystem = service.system
       List(
+        // process for handling messages from the external creds service for RAS passport updates
         externalCredsSubscriber.messages.evalMap { msg =>
           service.nihServiceConstructor().processExternalCredsMessage(msg)
         },
+
+        // start the subscriber
         Stream.eval(externalCredsSubscriber.start),
+
+        // start the http server
         Stream.eval(
           IO.fromFuture(
             IO(
@@ -52,6 +57,7 @@ object Boot extends App with LazyLogging {
       )
     }
 
+    // run all the processes concurrently
     processesResource
       .use { processes =>
         Stream
