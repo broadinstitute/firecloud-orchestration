@@ -215,7 +215,8 @@ object Boot extends IOApp with LazyLogging {
       Resource.pure[IO, CloudSubscriber[IO, ExternalCredsMessage]](new CloudSubscriber[IO, ExternalCredsMessage] {
         override def start: IO[Unit] = IO.unit
         override def stop: IO[Unit] = IO.unit
-        override def messages: fs2.Stream[IO, ReceivedMessage[ExternalCredsMessage]] = fs2.Stream.empty
+        override def messages: fs2.Stream[IO, ReceivedMessage[ExternalCredsMessage]] =
+          fs2.Stream.never // never prevents early termination
       })
     }
 
