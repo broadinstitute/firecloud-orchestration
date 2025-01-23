@@ -142,7 +142,7 @@ class NihService(val samDao: SamDAO,
         .asInstanceOf[util.List[Object]]
         .asScala
       dbGapPermission <- dbGapPermissions.map(_.asInstanceOf[util.Map[String, Object]].asScala)
-      if dbGapPermission("expiration").asInstanceOf[Long] > Instant.now.getEpochSecond
+      if dbGapPermission("expiration").asInstanceOf[Number].longValue() > Instant.now.getEpochSecond
     } yield DbGapPermission(PhsId(dbGapPermission("phs_id").asInstanceOf[String]),
                             ConsentGroup(dbGapPermission("consent_group").asInstanceOf[String])
     )
