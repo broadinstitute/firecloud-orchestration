@@ -22,7 +22,6 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getAdminUserAccessToken: String
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
-  def getUserProfile(accessToken: WithAccessToken)(implicit executionContext: ExecutionContext): Future[HttpResponse]
 
   val fetchPriceList: Future[GooglePriceList]
 

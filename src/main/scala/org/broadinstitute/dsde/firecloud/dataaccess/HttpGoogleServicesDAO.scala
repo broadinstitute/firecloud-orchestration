@@ -2,7 +2,6 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.HttpResponse
 import akka.stream.Materializer
 import better.files.File
 import cats.effect.std.Semaphore
@@ -25,7 +24,6 @@ import fs2.Stream
 import fs2.io.file.{Files, Path}
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpGoogleServicesDAO._
-import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.firecloud.service.FireCloudRequestBuilding
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
 import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
@@ -225,14 +223,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey, "UTF-8"))
-  }
-
-  def getUserProfile(
-    accessToken: WithAccessToken
-  )(implicit executionContext: ExecutionContext): Future[HttpResponse] = {
-    val profileRequest = Get("https://www.googleapis.com/oauth2/v3/userinfo")
-
-    userAuthedRequest(profileRequest)(accessToken)
   }
 
   /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */

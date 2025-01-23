@@ -85,9 +85,6 @@ class MockGoogleServicesDAO extends GoogleServicesDAO {
   override def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath =
     GcsPath(bucketName, objectKey)
 
-  override def getUserProfile(accessToken: WithAccessToken)(implicit
-    executionContext: ExecutionContext
-  ): Future[HttpResponse] = Future.failed(new UnsupportedOperationException)
   override val fetchPriceList: Future[GooglePriceList] =
     Future.successful(
       GooglePriceList(
