@@ -536,7 +536,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     permission.put("phs_id", addPermission.phsId.value)
     permission.put("consent_group", addPermission.consentGroup.value)
     permission.put("expiration",
-                   java.lang.Long.valueOf(Instant.now().plusSeconds(60).getEpochSecond) // future expiration
+                   java.lang.Integer.valueOf(Instant.now().plusSeconds(60).getEpochSecond.intValue) // future expiration
     )
     dbGapPermissions.add(permission)
 
@@ -603,7 +603,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     permission.put("phs_id", expiredPermission.phsId.value)
     permission.put("consent_group", expiredPermission.consentGroup.value)
     permission.put("expiration",
-                   java.lang.Long.valueOf(Instant.now().minusSeconds(60).getEpochSecond) // past expiration
+                   java.lang.Integer.valueOf(Instant.now().minusSeconds(60).getEpochSecond.intValue) // past expiration
     )
     dbGapPermissions.add(permission)
 
