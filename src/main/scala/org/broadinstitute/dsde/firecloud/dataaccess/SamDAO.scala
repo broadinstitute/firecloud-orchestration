@@ -18,6 +18,7 @@ import org.broadinstitute.dsde.firecloud.model.{
   WorkbenchUserInfo
 }
 import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsUserEmail}
+import org.broadinstitute.dsde.workbench.client.sam.model.BulkMembershipUpdateRequestV2
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems
@@ -49,25 +50,34 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
 
   val samManagedGroupsBase: String = FireCloudConfig.Sam.baseUrl + "/api/groups"
   val samManagedGroupBase: String = FireCloudConfig.Sam.baseUrl + "/api/group"
+
   def samManagedGroup(groupName: WorkbenchGroupName): String = samManagedGroupBase + s"/$groupName"
+
   def samManagedGroupRequestAccess(groupName: WorkbenchGroupName): String =
     samManagedGroup(groupName) + "/requestAccess"
+
   def samManagedGroupPolicy(groupName: WorkbenchGroupName, policyName: ManagedGroupRole): String =
     samManagedGroup(groupName) + s"/$policyName"
+
   def samManagedGroupAlterMember(groupName: WorkbenchGroupName,
                                  policyName: ManagedGroupRole,
                                  email: WorkbenchEmail
   ): String = samManagedGroupPolicy(groupName, policyName) + s"/${URLEncoder.encode(email.value, UTF_8.name)}"
 
   val samResourceBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resource"
+
   def samResource(resourceTypeName: String, resourceId: String): String =
     samResourceBase + s"/$resourceTypeName/$resourceId"
+
   def samResourceRoles(resourceTypeName: String, resourceId: String): String =
     samResource(resourceTypeName, resourceId) + "/roles"
+
   def samResourcePolicies(resourceTypeName: String, resourceId: String): String =
     samResource(resourceTypeName, resourceId) + "/policies"
+
   def samResourcePolicy(resourceTypeName: String, resourceId: String, policyName: String): String =
     samResourcePolicies(resourceTypeName, resourceId) + s"/$policyName"
+
   def samResourcePolicyAlterMember(resourceTypeName: String,
                                    resourceId: String,
                                    policyName: String,
@@ -76,11 +86,13 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
     samResourcePolicy(resourceTypeName, resourceId, policyName) + s"/${URLEncoder.encode(email.value, UTF_8.name)}"
 
   val samResourcesBase: String = FireCloudConfig.Sam.baseUrl + s"/api/resources/v1"
+
   def samListResources(resourceTypeName: String): String = samResourcesBase + s"/$resourceTypeName"
 
   def registerUser(termsOfService: Option[String])(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
 
   def registerUserSelf(acceptsTermsOfService: Boolean)(implicit userInfo: WithAccessToken): Future[SamUserResponse]
+
   def getRegistrationStatus(implicit userInfo: WithAccessToken): Future[RegistrationInfo]
 
   def getUserIds(email: RawlsUserEmail)(implicit userInfo: WithAccessToken): Future[UserIdInfo]
@@ -92,33 +104,46 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]]
 
   def createGroup(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit]
+
   def deleteGroup(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit]
+
   def listGroups(implicit userInfo: WithAccessToken): Future[List[FireCloudManagedGroupMembership]]
+
   def getGroupEmail(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[WorkbenchEmail]
+
   def isGroupMember(groupName: WorkbenchGroupName, userInfo: UserInfo): Future[Boolean]
+
   def listGroupPolicyEmails(groupName: WorkbenchGroupName, policyName: ManagedGroupRole)(implicit
     userInfo: WithAccessToken
   ): Future[List[WorkbenchEmail]]
+
   def addGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit
     userInfo: WithAccessToken
   ): Future[Unit]
+
   def removeGroupMember(groupName: WorkbenchGroupName, role: ManagedGroupRole, email: WorkbenchEmail)(implicit
     userInfo: WithAccessToken
   ): Future[Unit]
+
   def overwriteGroupMembers(groupName: WorkbenchGroupName, role: ManagedGroupRole, memberList: List[WorkbenchEmail])(
     implicit userInfo: WithAccessToken
   ): Future[Unit]
+
   def requestGroupAccess(groupName: WorkbenchGroupName)(implicit userInfo: WithAccessToken): Future[Unit]
 
   def addPolicyMember(resourceTypeName: String, resourceId: String, policyName: String, email: WorkbenchEmail)(implicit
     userInfo: WithAccessToken
   ): Future[Unit]
+
   def setPolicyPublic(resourceTypeName: String, resourceId: String, policyName: String, public: Boolean)(implicit
     userInfo: WithAccessToken
   ): Future[Unit]
 
   def getPetServiceAccountTokenForUser(user: WithAccessToken, scopes: Seq[String]): Future[AccessToken]
+
   def getPetServiceAccountKeyForUser(user: WithAccessToken, project: GoogleProject): Future[String]
 
   val serviceName = SamDAO.serviceName
+
+  def bulkUpdateGroups(request: List[BulkMembershipUpdateRequestV2], user: WithAccessToken): Future[Unit]
 }
