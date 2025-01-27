@@ -43,23 +43,20 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
   val expiretimes2 = Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString)
   val expiretimes3 = Map("fcSubjectId1" -> DateUtils.nowMinus24Hours.toString, "fcSubjectId2" -> "not a number")
 
-  "NihService" should "only include unexpired users when handling expired and unexpired users" in {
+  "NihService" should "only include unexpired users when handling expired and unexpired users" in
     assertResult(currentUsernames1) {
       nihService.filterForCurrentUsers(usernames, expiretimes1)
     }
-  }
 
-  it should "not include users with no expiration times" in {
+  it should "not include users with no expiration times" in
     assertResult(Map()) {
       nihService.filterForCurrentUsers(usernames, expiretimes2)
     }
-  }
 
-  it should "not include users with unparseable expiration times" in {
+  it should "not include users with unparseable expiration times" in
     assertResult(Map()) {
       nihService.filterForCurrentUsers(usernames, expiretimes3)
     }
-  }
 
   it should "honor expiration of JWTs" in {
     // Set up a Mock Shibboleth with a public key that matches a private key we have access to

@@ -11,29 +11,25 @@ class TSVParserSpec extends AnyFlatSpec {
       TSVParser.parse(MockTSVStrings.empty)
     }
 
-  "TSV parser" should "throw an exception when given a bunch of blank lines to parse" in {
+  "TSV parser" should "throw an exception when given a bunch of blank lines to parse" in
     intercept[RuntimeException] {
       TSVParser.parse(MockTSVStrings.onlyNewlines)
     }
-  }
 
-  it should "throw an exception when a data line has too many fields" in {
+  it should "throw an exception when a data line has too many fields" in
     intercept[RuntimeException] {
       TSVParser.parse(MockTSVStrings.rowTooLong)
     }
-  }
 
-  it should "throw an exception when a data line has too few fields" in {
+  it should "throw an exception when a data line has too few fields" in
     intercept[RuntimeException] {
       TSVParser.parse(MockTSVStrings.rowTooShort)
     }
-  }
 
-  it should "throw an exception when a data line has extra tabs at the end" in {
+  it should "throw an exception when a data line has extra tabs at the end" in
     intercept[RuntimeException] {
       TSVParser.parse(MockTSVStrings.tooManyTabs)
     }
-  }
 
   it should "load a one-line file" in {
     val parseResult = MockTSVLoadFiles.validOneLine
