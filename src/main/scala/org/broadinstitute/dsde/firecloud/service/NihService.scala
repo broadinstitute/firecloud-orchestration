@@ -45,7 +45,7 @@ case class NihStatus(linkedNihUsername: Option[String] = None,
                      linkExpireTime: Option[Long] = None
 )
 
-case class NihAllowlist(name: String, groupToSync: WorkbenchGroupName, fileName: String)
+case class NihAllowlist(name: String, groupToSync: WorkbenchGroupName, fileName: String, dbGapPermission: DbGapPermission)
 
 case class NihDatasetPermission(name: String, authorized: Boolean)
 
@@ -252,11 +252,13 @@ class NihService(val samDao: SamDAO,
   // This syncs the specified allowlist in full
   private def syncNihAllowlistAllUsers(nihAllowlist: NihAllowlist): Future[Unit] = {
     val allowlistUsers = downloadNihAllowlist(nihAllowlist)
+    val dbGapSamGroup = FireCloudConfig.Nih.dbGapPermissionToGroup.get(nihAllowlist.dbGapPermission).map(WorkbenchGroupName)
 
     for {
+      samEmails <- Future.traverse(dbGapSamGroup.toList)( samDao.getGroupEmail(_)(getAdminAccessToken))
       ecmEmails <- getNihAllowlistTerraEmailsFromEcm(allowlistUsers)
       thurloeEmails <- getNihAllowlistTerraEmailsFromThurloe(allowlistUsers)
-      members = ecmEmails ++ thurloeEmails
+      members = ecmEmails ++ thurloeEmails ++ samEmails
       _ <- ensureAllowlistGroupsExists()
       // The request to Sam to completely overwrite the group with the list of actively linked users on the allowlist
       _ <- samDao.overwriteGroupMembers(nihAllowlist.groupToSync, ManagedGroupRoles.Member, members.toList)(

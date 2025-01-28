@@ -76,6 +76,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaAndTarget = genSamUser();
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
+  val userDbGap = genSamUser();
 
   // DateTimes must be modified in seconds instead of days to match implementation
   val secondsIn30Days = 30.days.toSeconds.toInt
@@ -271,6 +272,54 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
 
     verifyTargetGroupSynced()
   }
+
+  it should "sync all users by combining dbGap group members with ECM and Thurloe" in {
+    when(ecmDao.getActiveLinkedEraAccounts(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
+      .thenReturn(Future.successful(Seq(userTargetOnlyLinkedAccount)))
+    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
+      .thenReturn(
+        Future.successful(
+          linkedAccountsBySamUserId
+            .removed(WorkbenchUserId(userTargetOnlyLinkedAccount.userId))
+            .map(tup => (tup._1.value, tup._2.linkedExternalId))
+        )
+      )
+    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime")))
+      .thenReturn(
+        Future.successful(
+          linkedAccountsBySamUserId
+            .removed(WorkbenchUserId(userTargetOnlyLinkedAccount.userId))
+            .map(tup => (tup._1.value, (tup._2.linkExpireTime.getMillis / 1000L).toString))
+        )
+      )
+    when(samDao.getGroupEmail(any())(any())).thenReturn(
+      Future.successful(
+        userDbGap.email
+      )
+    )
+
+    val emailsToSync = Set(userTcgaAndTarget.email, userTargetOnly.email, userDbGap.email)
+    val nihStatus = Await
+      .result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf)
+      .asInstanceOf[PerRequest.RequestComplete[StatusCode]]
+      .response
+
+    nihStatus should be(StatusCodes.NoContent)
+    verify(googleDao, never()).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
+    verify(googleDao, times(1))
+      .getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "target-whitelist.txt")
+    verify(samDao, times(1)).overwriteGroupMembers(
+      ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync))
+    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+    verify(samDao, never()).overwriteGroupMembers(
+      ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync))
+    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+  }
+
 
   it should "respond with NOT FOUND if no allowlist is found" in {
     val nihStatus = Await
