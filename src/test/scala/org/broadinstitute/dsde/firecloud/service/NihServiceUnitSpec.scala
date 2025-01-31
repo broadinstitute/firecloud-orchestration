@@ -76,7 +76,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaAndTarget = genSamUser();
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
-  val userDbGap = genSamUser();
+  val userDbGapList = genSamUser();
+  val userDbGapGroup = genSamUser();
 
   // DateTimes must be modified in seconds instead of days to match implementation
   val secondsIn30Days = 30.days.toSeconds.toInt
@@ -89,12 +90,26 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     LinkedEraAccount(userTcgaOnly.id.value, "nihUsername3", new DateTime().plusSeconds(secondsIn30Days))
   var userTargetOnlyLinkedAccount =
     LinkedEraAccount(userTargetOnly.id.value, "nihUsername4", new DateTime().plusSeconds(secondsIn30Days))
+  var userDbGapListLinkedAccount =
+    LinkedEraAccount(userDbGapList.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
+  var userDbGapGroupLinkedAccount =
+    LinkedEraAccount(userDbGapGroup.id.value, "nihUsername6", new DateTime().plusSeconds(secondsIn30Days))
 
-  val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly)
-  val linkedAccounts = Seq(userNoAllowlistsLinkedAccount,
-                           userTcgaAndTargetLinkedAccount,
-                           userTcgaOnlyLinkedAccount,
-                           userTargetOnlyLinkedAccount
+  val samUsers = Seq(userNoLinkedAccount,
+                     userNoAllowlists,
+                     userTcgaAndTarget,
+                     userTcgaOnly,
+                     userTargetOnly,
+                     userDbGapList,
+                     userDbGapGroup
+  )
+  val linkedAccounts = Seq(
+    userNoAllowlistsLinkedAccount,
+    userTcgaAndTargetLinkedAccount,
+    userTcgaOnlyLinkedAccount,
+    userTargetOnlyLinkedAccount,
+    userDbGapListLinkedAccount,
+    userDbGapGroupLinkedAccount
   )
 
   val idToSamUser = samUsers.groupBy(_.id).view.mapValues(_.head).toMap
@@ -103,14 +118,18 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     userNoAllowlists.id -> userNoAllowlistsLinkedAccount,
     userTcgaAndTarget.id -> userTcgaAndTargetLinkedAccount,
     userTcgaOnly.id -> userTcgaOnlyLinkedAccount,
-    userTargetOnly.id -> userTargetOnlyLinkedAccount
+    userTargetOnly.id -> userTargetOnlyLinkedAccount,
+    userDbGapList.id -> userDbGapListLinkedAccount,
+    userDbGapGroup.id -> userDbGapGroupLinkedAccount
   )
 
   val linkedAccountsByExternalId = Map(
     userNoAllowlistsLinkedAccount.linkedExternalId -> userNoAllowlistsLinkedAccount,
     userTcgaAndTargetLinkedAccount.linkedExternalId -> userTcgaAndTargetLinkedAccount,
     userTcgaOnlyLinkedAccount.linkedExternalId -> userTcgaOnlyLinkedAccount,
-    userTargetOnlyLinkedAccount.linkedExternalId -> userTargetOnlyLinkedAccount
+    userTargetOnlyLinkedAccount.linkedExternalId -> userTargetOnlyLinkedAccount,
+    userDbGapListLinkedAccount.linkedExternalId -> userDbGapListLinkedAccount,
+    userDbGapGroupLinkedAccount.linkedExternalId -> userDbGapGroupLinkedAccount
   )
 
   val samUserToGroups =
@@ -119,13 +138,15 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       userNoAllowlists.id -> Set("other-group"),
       userTcgaAndTarget.id -> Set("TCGA-dbGaP-Authorized", "TARGET-dbGaP-Authorized", "other-group"),
       userTcgaOnly.id -> Set("TCGA-dbGaP-Authorized", "other-group"),
-      userTargetOnly.id -> Set("TARGET-dbGaP-Authorized", "other-group")
+      userTargetOnly.id -> Set("TARGET-dbGaP-Authorized", "other-group"),
+      userDbGapList.id -> Set("dbgap_phs002409_c1")
     )
 
   val samGroupMemberships =
     Map(
       "TCGA-dbGaP-Authorized" -> Set(userTcgaAndTarget.id, userTcgaOnly.id),
       "TARGET-dbGaP-Authorized" -> Set(userTcgaAndTarget.id, userTargetOnly.id),
+      "dbgap_phs002409_c1" -> Set(userDbGapList.id),
       "this-doesnt-matter" -> Set.empty
     )
 
@@ -135,7 +156,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       UUID.randomUUID().toString -> userNoAllowlists.id,
       UUID.randomUUID().toString -> userTcgaAndTarget.id,
       UUID.randomUUID().toString -> userTcgaOnly.id,
-      UUID.randomUUID().toString -> userTargetOnly.id
+      UUID.randomUUID().toString -> userTargetOnly.id,
+      UUID.randomUUID().toString -> userDbGapList.id
     )
 
   val userToAccessToken = accessTokenToUser.map(_.swap)
@@ -207,7 +229,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   }
 
   private def verifyTargetGroupSynced(): Unit = {
-    val emailsToSync = Set(WorkbenchEmail(userTcgaAndTarget.email.value), WorkbenchEmail(userTargetOnly.email.value))
+    val emailsToSync = Set(userTcgaAndTarget.email, userTargetOnly.email)
     val nihStatus = Await
       .result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf)
       .asInstanceOf[PerRequest.RequestComplete[StatusCode]]
@@ -229,7 +251,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
-  "syncWhitelistAllUsers" should "sync all users for a single allowlist from ECM" in {
+  "syncAllowlistAllUsers" should "sync all users for a single allowlist from ECM" in {
     mockEcmUsers()
     when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
 
@@ -273,43 +295,23 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     verifyTargetGroupSynced()
   }
 
-  it should "sync all users by combining dbGap group members with ECM and Thurloe" in {
+  it should "sync all users by including groups found with consentGroup + phsId" in {
     when(ecmDao.getActiveLinkedEraAccounts(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
-      .thenReturn(Future.successful(Seq(userTargetOnlyLinkedAccount)))
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
-      .thenReturn(
-        Future.successful(
-          linkedAccountsBySamUserId
-            .removed(WorkbenchUserId(userTargetOnlyLinkedAccount.userId))
-            .map(tup => (tup._1.value, tup._2.linkedExternalId))
-        )
-      )
-    when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime")))
-      .thenReturn(
-        Future.successful(
-          linkedAccountsBySamUserId
-            .removed(WorkbenchUserId(userTargetOnlyLinkedAccount.userId))
-            .map(tup => (tup._1.value, (tup._2.linkExpireTime.getMillis / 1000L).toString))
-        )
-      )
-    when(samDao.getGroupEmail(any())(any())).thenReturn(
-      Future.successful(
-        userDbGap.email
-      )
-    )
+      .thenReturn(Future.successful(Seq(userDbGapListLinkedAccount)))
+    when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
 
-    val emailsToSync = Set(userTcgaAndTarget.email, userTargetOnly.email, userDbGap.email)
+    val emailsToSync = Set(userDbGapList.email, userDbGapGroup.email)
     val nihStatus = Await
-      .result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf)
+      .result(nihService.syncAllowlistAllUsers("RAS"), Duration.Inf)
       .asInstanceOf[PerRequest.RequestComplete[StatusCode]]
       .response
 
     nihStatus should be(StatusCodes.NoContent)
     verify(googleDao, never()).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
     verify(googleDao, times(1))
-      .getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "target-whitelist.txt")
+      .getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "dbgap_phs002409_c1_whitelist.txt")
     verify(samDao, times(1)).overwriteGroupMembers(
-      ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
+      ArgumentMatchers.eq(WorkbenchGroupName("dbgap_phs002409_c1")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
       ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync))
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
@@ -319,7 +321,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync))
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
-
 
   it should "respond with NOT FOUND if no allowlist is found" in {
     val nihStatus = Await
@@ -356,6 +357,11 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     )
     when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
       .thenReturn(Future.successful(()))
+    when(samDao.getGroupEmail(any())(any())).thenReturn(
+      Future.successful(
+        userDbGapList.email
+      )
+    )
 
     val ex = intercept[FireCloudException] {
       Await.result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf)
@@ -366,6 +372,11 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   "syncAllNihWhitelistsAllUsers" should "sync all allowlists for all users" in {
     mockEcmUsers()
     when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
+    when(samDao.getGroupEmail(any())(any())).thenReturn(
+      Future.successful(
+        userDbGapList.email
+      )
+    )
 
     val targetEmailsToSync =
       Set(WorkbenchEmail(userTcgaAndTarget.email.value), WorkbenchEmail(userTargetOnly.email.value))
@@ -412,9 +423,11 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     nihStatus.linkedNihUsername should be(Some(linkedAccount.linkedExternalId))
     nihStatus.linkExpireTime should be(Some(linkedAccount.linkExpireTime.getMillis / 1000L))
     nihStatus.datasetPermissions should be(
-      Set(NihDatasetPermission("BROKEN", authorized = false),
-          NihDatasetPermission("TARGET", authorized = false),
-          NihDatasetPermission("TCGA", authorized = true)
+      Set(
+        NihDatasetPermission("BROKEN", authorized = false),
+        NihDatasetPermission("TARGET", authorized = false),
+        NihDatasetPermission("TCGA", authorized = true),
+        NihDatasetPermission("RAS", authorized = false)
       )
     )
 
@@ -808,6 +821,11 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
             .map(user => WorkbenchUserInfo(user.id.value, user.email.value))
         )
       }
+    when(samDao.getGroupEmail(ArgumentMatchers.eq(WorkbenchGroupName("dbgap_phs002409_c1")))(any())).thenReturn(
+      Future.successful(
+        userDbGapGroup.email
+      )
+    )
 
   }
 
@@ -871,6 +889,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
             Seq(userTcgaAndTargetLinkedAccount.linkedExternalId, userTcgaOnlyLinkedAccount.linkedExternalId)
           case "target-whitelist.txt" =>
             Seq(userTcgaAndTargetLinkedAccount.linkedExternalId, userTargetOnlyLinkedAccount.linkedExternalId)
+          case "dbgap_phs002409_c1_whitelist.txt" =>
+            Seq(userDbGapListLinkedAccount.linkedExternalId)
           case "broken-whitelist.txt" => Seq.empty
         }
         new ByteArrayInputStream(nihUsernames.mkString("\n").getBytes(StandardCharsets.UTF_8))
