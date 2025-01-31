@@ -260,10 +260,10 @@ class NihService(val samDao: SamDAO,
       FireCloudConfig.Nih.dbGapPermissionToGroup.get(nihAllowlist.dbGapPermission).map(WorkbenchGroupName)
 
     for {
-      dbGapEmails <- Future.traverse(dbGapSamGroup.toList)(samDao.getGroupEmail(_)(getAdminAccessToken))
+      dbGapGroupEmail <- Future.traverse(dbGapSamGroup.toList)(samDao.getGroupEmail(_)(getAdminAccessToken))
       ecmEmails <- getNihAllowlistTerraEmailsFromEcm(allowlistUsers)
       thurloeEmails <- getNihAllowlistTerraEmailsFromThurloe(allowlistUsers)
-      members = ecmEmails ++ thurloeEmails ++ dbGapEmails
+      members = ecmEmails ++ thurloeEmails ++ dbGapGroupEmail
       _ <- ensureAllowlistGroupsExists()
       // The request to Sam to completely overwrite the group with the list of actively linked users on the allowlist
       _ <- samDao.overwriteGroupMembers(nihAllowlist.groupToSync, ManagedGroupRoles.Member, members.toList)(

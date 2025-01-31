@@ -76,8 +76,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaAndTarget = genSamUser();
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
-  val userDbGapList = genSamUser();
-  val userDbGapGroup = genSamUser();
+  val userDbGap = genSamUser();
+  val dbGapGroupEmail = WorkbenchEmail(UUID.randomUUID().toString + "@email.com")
 
   // DateTimes must be modified in seconds instead of days to match implementation
   val secondsIn30Days = 30.days.toSeconds.toInt
@@ -90,26 +90,22 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     LinkedEraAccount(userTcgaOnly.id.value, "nihUsername3", new DateTime().plusSeconds(secondsIn30Days))
   var userTargetOnlyLinkedAccount =
     LinkedEraAccount(userTargetOnly.id.value, "nihUsername4", new DateTime().plusSeconds(secondsIn30Days))
-  var userDbGapListLinkedAccount =
-    LinkedEraAccount(userDbGapList.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
-  var userDbGapGroupLinkedAccount =
-    LinkedEraAccount(userDbGapGroup.id.value, "nihUsername6", new DateTime().plusSeconds(secondsIn30Days))
+  var userDbGapLinkedAccount =
+    LinkedEraAccount(userDbGap.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
 
   val samUsers = Seq(userNoLinkedAccount,
                      userNoAllowlists,
                      userTcgaAndTarget,
                      userTcgaOnly,
                      userTargetOnly,
-                     userDbGapList,
-                     userDbGapGroup
+                     userDbGap
   )
   val linkedAccounts = Seq(
     userNoAllowlistsLinkedAccount,
     userTcgaAndTargetLinkedAccount,
     userTcgaOnlyLinkedAccount,
     userTargetOnlyLinkedAccount,
-    userDbGapListLinkedAccount,
-    userDbGapGroupLinkedAccount
+    userDbGapLinkedAccount
   )
 
   val idToSamUser = samUsers.groupBy(_.id).view.mapValues(_.head).toMap
@@ -119,8 +115,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     userTcgaAndTarget.id -> userTcgaAndTargetLinkedAccount,
     userTcgaOnly.id -> userTcgaOnlyLinkedAccount,
     userTargetOnly.id -> userTargetOnlyLinkedAccount,
-    userDbGapList.id -> userDbGapListLinkedAccount,
-    userDbGapGroup.id -> userDbGapGroupLinkedAccount
+    userDbGap.id -> userDbGapLinkedAccount
   )
 
   val linkedAccountsByExternalId = Map(
@@ -128,8 +123,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     userTcgaAndTargetLinkedAccount.linkedExternalId -> userTcgaAndTargetLinkedAccount,
     userTcgaOnlyLinkedAccount.linkedExternalId -> userTcgaOnlyLinkedAccount,
     userTargetOnlyLinkedAccount.linkedExternalId -> userTargetOnlyLinkedAccount,
-    userDbGapListLinkedAccount.linkedExternalId -> userDbGapListLinkedAccount,
-    userDbGapGroupLinkedAccount.linkedExternalId -> userDbGapGroupLinkedAccount
+    userDbGapLinkedAccount.linkedExternalId -> userDbGapLinkedAccount
   )
 
   val samUserToGroups =
@@ -139,14 +133,14 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       userTcgaAndTarget.id -> Set("TCGA-dbGaP-Authorized", "TARGET-dbGaP-Authorized", "other-group"),
       userTcgaOnly.id -> Set("TCGA-dbGaP-Authorized", "other-group"),
       userTargetOnly.id -> Set("TARGET-dbGaP-Authorized", "other-group"),
-      userDbGapList.id -> Set("dbgap_phs002409_c1")
+      userDbGap.id -> Set("dbgap_phs002409_c1")
     )
 
   val samGroupMemberships =
     Map(
       "TCGA-dbGaP-Authorized" -> Set(userTcgaAndTarget.id, userTcgaOnly.id),
       "TARGET-dbGaP-Authorized" -> Set(userTcgaAndTarget.id, userTargetOnly.id),
-      "dbgap_phs002409_c1" -> Set(userDbGapList.id),
+      "dbgap_phs002409_c1" -> Set(userDbGap.id),
       "this-doesnt-matter" -> Set.empty
     )
 
@@ -157,7 +151,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       UUID.randomUUID().toString -> userTcgaAndTarget.id,
       UUID.randomUUID().toString -> userTcgaOnly.id,
       UUID.randomUUID().toString -> userTargetOnly.id,
-      UUID.randomUUID().toString -> userDbGapList.id
+      UUID.randomUUID().toString -> userDbGap.id
     )
 
   val userToAccessToken = accessTokenToUser.map(_.swap)
@@ -297,10 +291,10 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
 
   it should "sync all users by including groups found with consentGroup + phsId" in {
     when(ecmDao.getActiveLinkedEraAccounts(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
-      .thenReturn(Future.successful(Seq(userDbGapListLinkedAccount)))
+      .thenReturn(Future.successful(Seq(userDbGapLinkedAccount)))
     when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
 
-    val emailsToSync = Set(userDbGapList.email, userDbGapGroup.email)
+    val emailsToSync = Set(userDbGap.email, dbGapGroupEmail)
     val nihStatus = Await
       .result(nihService.syncAllowlistAllUsers("RAS"), Duration.Inf)
       .asInstanceOf[PerRequest.RequestComplete[StatusCode]]
@@ -357,11 +351,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     )
     when(samDao.createGroup(any[WorkbenchGroupName])(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
       .thenReturn(Future.successful(()))
-    when(samDao.getGroupEmail(any())(any())).thenReturn(
-      Future.successful(
-        userDbGapList.email
-      )
-    )
 
     val ex = intercept[FireCloudException] {
       Await.result(nihService.syncAllowlistAllUsers("TARGET"), Duration.Inf)
@@ -372,11 +361,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   "syncAllNihWhitelistsAllUsers" should "sync all allowlists for all users" in {
     mockEcmUsers()
     when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
-    when(samDao.getGroupEmail(any())(any())).thenReturn(
-      Future.successful(
-        userDbGapList.email
-      )
-    )
 
     val targetEmailsToSync =
       Set(WorkbenchEmail(userTcgaAndTarget.email.value), WorkbenchEmail(userTargetOnly.email.value))
@@ -823,7 +807,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       }
     when(samDao.getGroupEmail(ArgumentMatchers.eq(WorkbenchGroupName("dbgap_phs002409_c1")))(any())).thenReturn(
       Future.successful(
-        userDbGapGroup.email
+        dbGapGroupEmail
       )
     )
 
@@ -890,7 +874,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
           case "target-whitelist.txt" =>
             Seq(userTcgaAndTargetLinkedAccount.linkedExternalId, userTargetOnlyLinkedAccount.linkedExternalId)
           case "dbgap_phs002409_c1_whitelist.txt" =>
-            Seq(userDbGapListLinkedAccount.linkedExternalId)
+            Seq(userDbGapLinkedAccount.linkedExternalId)
           case "broken-whitelist.txt" => Seq.empty
         }
         new ByteArrayInputStream(nihUsernames.mkString("\n").getBytes(StandardCharsets.UTF_8))
