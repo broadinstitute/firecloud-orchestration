@@ -93,13 +93,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   var userDbGapLinkedAccount =
     LinkedEraAccount(userDbGap.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
 
-  val samUsers = Seq(userNoLinkedAccount,
-                     userNoAllowlists,
-                     userTcgaAndTarget,
-                     userTcgaOnly,
-                     userTargetOnly,
-                     userDbGap
-  )
+  val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap)
   val linkedAccounts = Seq(
     userNoAllowlistsLinkedAccount,
     userTcgaAndTargetLinkedAccount,
