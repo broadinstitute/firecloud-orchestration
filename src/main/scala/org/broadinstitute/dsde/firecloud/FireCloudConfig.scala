@@ -192,8 +192,14 @@ object FireCloudConfig {
         val config = configObject.toConfig
         val rawlsGroup = config.getString("rawlsGroup")
         val fileName = config.getString("fileName")
+        val phsId = config.getString("phsId")
+        val consentGroup = config.getString("consentGroup")
 
-        NihAllowlist(name, WorkbenchGroupName(rawlsGroup), fileName)
+        NihAllowlist(name,
+                     WorkbenchGroupName(rawlsGroup),
+                     fileName,
+                     DbGapPermission(PhsId(phsId), ConsentGroup(consentGroup))
+        )
       }
     }.toSet
     val enabled = nih.optionalBoolean("enabled").getOrElse(true)
