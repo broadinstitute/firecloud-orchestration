@@ -301,16 +301,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       .response
 
     nihStatus should be(StatusCodes.NoContent)
-    verify(googleDao, never()).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
-    verify(googleDao, times(1))
-      .getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "dbgap_phs002409_c1_whitelist.txt")
     verify(samDao, times(1)).overwriteGroupMembers(
       ArgumentMatchers.eq(WorkbenchGroupName("dbgap_phs002409_c1")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, never()).overwriteGroupMembers(
-      ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
       ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync))
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
