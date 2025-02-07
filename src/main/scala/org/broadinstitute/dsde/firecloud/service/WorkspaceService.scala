@@ -8,22 +8,14 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{
-  PerRequestMessage,
-  RequestComplete,
-  RequestCompleteWithHeaders
-}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile, TSVParser}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
-  AddListMember,
-  AddUpdateAttribute,
-  AttributeUpdateOperation,
-  RemoveListMember
-}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
+import org.joda.time.DateTime
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -63,21 +55,17 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
 
   implicit val userToken: WithAccessToken = argUserToken
 
+  val priceList = Map("STANDARD" -> 0.02, "NEARLINE" -> 0.01, "COLDLINE" -> 0.004, "ARCHIVE" -> 0.0012, "REGIONAL" -> 0.02, "MULTI-REGIONAL" -> 0.02) //TODO: dma?
+
   def getStorageCostEstimate(workspaceNamespace: String,
                              workspaceName: String,
                              userProject: Option[GoogleProjectId]
   ): Future[RequestComplete[WorkspaceStorageCostEstimate]] = for {
-    bucketUsage <- rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName)
-    priceList <- googleServicesDAO.fetchPriceList
-    bucketOptions <- rawlsDAO.getBucketOptions(workspaceNamespace, workspaceName, userProject)
+    bucketUsage <- rawlsDAO.getBucketUsageV2(workspaceNamespace, workspaceName)
   } yield {
-    val rate = priceList.prices.cpBigstoreStorage.getOrElse(
-      bucketOptions.location.toLowerCase,
-      priceList.prices.cpBigstoreStorage("us")
-    )
     // Convert bytes to GB since rate is based on GB.
-    val estimate: BigDecimal = BigDecimal(bucketUsage.usageInBytes) / (1024 * 1024 * 1024) * rate
-    RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", bucketUsage.lastUpdated))
+    val estimate: BigDecimal = bucketUsage.metrics.map(metric => BigDecimal(metric.valueInBytes)/ (1024 * 1024 * 1024) * priceList(metric.storageClass)).sum
+    RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", Some(DateTime.now())))
   }
 
   def updateWorkspaceAttributes(workspaceNamespace: String,

@@ -51,6 +51,10 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
     FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketUsage"
   )
 
+  def rawlsBucketUsageV2Url(workspaceNamespace: String, workspaceName: String): String = encodeUri(
+    FireCloudConfig.Rawls.workspacesUrl + s"/v2/$workspaceNamespace/$workspaceName/bucketUsage"
+  )
+
   lazy val rawlsBucketOptionsQueryString = "?userProject=%s"
   def rawlsBucketOptionsUrl(workspaceNamespace: String, workspaceName: String): String =
     encodeUri(FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/bucketOptions")
@@ -64,6 +68,8 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
 
   def getBucketUsage(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketUsageResponse]
+
+  def getBucketUsageV2(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketMetricsResponse]
 
   def getBucketOptions(ns: String, name: String, userProject: Option[GoogleProjectId])(implicit
     userToken: WithAccessToken

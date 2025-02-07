@@ -2,7 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceStorageCostEstimate}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
@@ -105,6 +105,17 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       workspaceDeleteResponse.isDefined should be(true)
       workspaceDeleteResponse.get should not include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
       status should be(StatusCodes.Accepted)
+    }
+  }
+
+  "getStorageCostEstimate" - {
+    "should sum all costs" in {
+      val costEstimateResponse = Await
+        .result(ws.getStorageCostEstimate("workspaceNameSpace", "workspaceName", Some(GoogleProjectId("googleProjectId"))), Duration.Inf)
+      //Mock Rawls DAO returns  BucketMetric("COLDLINE", 256000000000d) and BucketMetric("REGIONAL", 102400000d)
+      //The price list has "COLDLINE" -> 0.004 and "REGIONAL" -> 0.02
+      //So the total should be 0.95 + 0.01 = 0.96
+      costEstimateResponse.response.estimate shouldBe "$0.96"
     }
   }
 }
