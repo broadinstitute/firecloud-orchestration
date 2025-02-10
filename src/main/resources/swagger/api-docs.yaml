@@ -9021,8 +9021,14 @@ components:
             type: string
         cost:
           type: number
-          description: The run cost of this workflow
+          description: The run cost of this workflow, if available
           format: float
+        costType:
+          type: string
+          description: The method used to calculate the run cost
+          enum:
+            - Actual
+            - Estimated
       description: ""
     UserCommentUpdateOperation:
       required:
