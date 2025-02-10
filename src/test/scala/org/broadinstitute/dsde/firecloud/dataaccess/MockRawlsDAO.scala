@@ -392,9 +392,11 @@ class MockRawlsDAO extends RawlsDAO {
     Future.successful(BucketUsageResponse(BigInt("256000000000"), Option(new DateTime(0))))
 
   override def getBucketUsageV2(ns: String, name: String)(implicit
-                                                        userInfo: WithAccessToken
+    userInfo: WithAccessToken
   ): Future[BucketMetricsResponse] =
-    Future.successful(BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d))))
+    Future.successful(
+      BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+    )
 
   override def getBucketOptions(ns: String, name: String, userProject: Option[GoogleProjectId] = None)(implicit
     userInfo: WithAccessToken

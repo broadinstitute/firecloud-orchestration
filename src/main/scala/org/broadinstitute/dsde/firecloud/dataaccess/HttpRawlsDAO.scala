@@ -73,7 +73,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
     authedRequestToObject[BucketUsageResponse](Get(rawlsBucketUsageUrl(ns, name)))
 
   override def getBucketUsageV2(ns: String, name: String)(implicit
-                                                        userInfo: WithAccessToken
+    userInfo: WithAccessToken
   ): Future[BucketMetricsResponse] =
     authedRequestToObject[BucketMetricsResponse](Get(rawlsBucketUsageV2Url(ns, name)))
 

@@ -8,11 +8,20 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
-import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete, RequestCompleteWithHeaders}
+import org.broadinstitute.dsde.firecloud.service.PerRequest.{
+  PerRequestMessage,
+  RequestComplete,
+  RequestCompleteWithHeaders
+}
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile, TSVParser}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
-import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{AddListMember, AddUpdateAttribute, AttributeUpdateOperation, RemoveListMember}
+import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
+  AddListMember,
+  AddUpdateAttribute,
+  AttributeUpdateOperation,
+  RemoveListMember
+}
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
@@ -55,7 +64,13 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
 
   implicit val userToken: WithAccessToken = argUserToken
 
-  val priceList = Map("STANDARD" -> 0.02, "NEARLINE" -> 0.01, "COLDLINE" -> 0.004, "ARCHIVE" -> 0.0012, "REGIONAL" -> 0.02, "MULTI-REGIONAL" -> 0.02) //TODO: dma?
+  val priceList = Map("STANDARD" -> 0.02,
+                      "NEARLINE" -> 0.01,
+                      "COLDLINE" -> 0.004,
+                      "ARCHIVE" -> 0.0012,
+                      "REGIONAL" -> 0.02,
+                      "MULTI-REGIONAL" -> 0.02
+  ) // TODO: dra?
 
   def getStorageCostEstimate(workspaceNamespace: String,
                              workspaceName: String,
@@ -64,7 +79,9 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
     bucketUsage <- rawlsDAO.getBucketUsageV2(workspaceNamespace, workspaceName)
   } yield {
     // Convert bytes to GB since rate is based on GB.
-    val estimate: BigDecimal = bucketUsage.metrics.map(metric => BigDecimal(metric.valueInBytes)/ (1024 * 1024 * 1024) * priceList(metric.storageClass)).sum
+    val estimate: BigDecimal = bucketUsage.metrics
+      .map(metric => BigDecimal(metric.valueInBytes) / (1024 * 1024 * 1024) * priceList(metric.storageClass))
+      .sum
     RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", Some(DateTime.now())))
   }
 

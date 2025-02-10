@@ -111,10 +111,13 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   "getStorageCostEstimate" - {
     "should sum all costs" in {
       val costEstimateResponse = Await
-        .result(ws.getStorageCostEstimate("workspaceNameSpace", "workspaceName", Some(GoogleProjectId("googleProjectId"))), Duration.Inf)
-      //Mock Rawls DAO returns  BucketMetric("COLDLINE", 256000000000d) and BucketMetric("REGIONAL", 102400000d)
-      //The price list has "COLDLINE" -> 0.004 and "REGIONAL" -> 0.02
-      //So the total should be 0.95 + 0.01 = 0.96
+        .result(
+          ws.getStorageCostEstimate("workspaceNameSpace", "workspaceName", Some(GoogleProjectId("googleProjectId"))),
+          Duration.Inf
+        )
+      // Mock Rawls DAO returns  BucketMetric("COLDLINE", 256000000000d) and BucketMetric("REGIONAL", 102400000d)
+      // The price list has "COLDLINE" -> 0.004 and "REGIONAL" -> 0.02
+      // So the total should be 0.95 + 0.01 = 0.96
       costEstimateResponse.response.estimate shouldBe "$0.96"
     }
   }
