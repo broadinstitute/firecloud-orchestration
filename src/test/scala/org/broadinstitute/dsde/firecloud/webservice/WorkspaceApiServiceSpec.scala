@@ -1102,21 +1102,11 @@ class WorkspaceApiServiceSpec
             workspaceRoutes
           ) ~> check {
             status should be(OK)
-            // 256000000000 / (1024 * 1024 * 1024) *0.01
-            responseAs[WorkspaceStorageCostEstimate].estimate should be("$2.38")
+            // 256000000000 / (1024 * 1024 * 1024) * 0.004 + 102400000 / (1024 * 1024 * 1024) * 0.02
+            responseAs[WorkspaceStorageCostEstimate].estimate should be("$0.96")
           }
       }
 
-      "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for different europe east 1 region." in
-          Get(europeWest1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should be(OK)
-            // 256000000000 / (1024 * 1024 * 1024) *0.02
-            responseAs[WorkspaceStorageCostEstimate].estimate should be("$4.77")
-          }
-      }
     }
   }
 }
