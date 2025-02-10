@@ -84,7 +84,7 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "10.0.1",
+    "com.github.jwt-scala"          %% "jwt-core"            % "10.0.4",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
