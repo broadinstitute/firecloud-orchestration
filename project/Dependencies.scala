@@ -44,7 +44,7 @@ object Dependencies {
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.16",
-    "io.sentry"                      % "sentry-logback"      % "7.20.1",
+    "io.sentry"                      % "sentry-logback"      % "7.21.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -56,7 +56,7 @@ object Dependencies {
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.36-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.8-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.351",
+    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.353",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.8-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.56.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
@@ -96,7 +96,7 @@ object Dependencies {
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
     "org.mock-server"                % "mockserver-netty-no-dependencies"    % "5.15.0"  % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.29" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.30" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
