@@ -14,7 +14,7 @@ import org.broadinstitute.dsde.firecloud.service.PerRequest.{
   RequestCompleteWithHeaders
 }
 import org.broadinstitute.dsde.firecloud.utils.{PermissionsSupport, TSVFormatter, TSVLoadFile, TSVParser}
-import org.broadinstitute.dsde.firecloud.{Application, FireCloudExceptionWithErrorReport}
+import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
   AddListMember,
@@ -64,25 +64,51 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
 
   implicit val userToken: WithAccessToken = argUserToken
 
-  val priceList = Map("STANDARD" -> 0.02,
-                      "NEARLINE" -> 0.01,
-                      "COLDLINE" -> 0.004,
-                      "ARCHIVE" -> 0.0012,
-                      "REGIONAL" -> 0.02,
-                      "MULTI-REGIONAL" -> 0.02
-  ) // TODO: dra?
+  val storagePriceList = FireCloudConfig.GoogleCloud.storagePriceList
 
   def getStorageCostEstimate(workspaceNamespace: String,
                              workspaceName: String,
                              userProject: Option[GoogleProjectId]
   ): Future[RequestComplete[WorkspaceStorageCostEstimate]] = for {
-    bucketUsage <- rawlsDAO.getBucketUsageV2(workspaceNamespace, workspaceName)
+    bucketUsage <- rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName)
+    priceList <- googleServicesDAO.fetchPriceList
+    bucketOptions <- rawlsDAO.getBucketOptions(workspaceNamespace, workspaceName, userProject)
   } yield {
+    val rate = priceList.prices.cpBigstoreStorage.getOrElse(
+      bucketOptions.location.toLowerCase,
+      priceList.prices.cpBigstoreStorage("us")
+    )
     // Convert bytes to GB since rate is based on GB.
-    val estimate: BigDecimal = bucketUsage.metrics
-      .map(metric => BigDecimal(metric.valueInBytes) / (1024 * 1024 * 1024) * priceList(metric.storageClass))
-      .sum
-    RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", Some(DateTime.now())))
+    val estimate: BigDecimal = BigDecimal(bucketUsage.usageInBytes) / (1024 * 1024 * 1024) * rate
+    RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", bucketUsage.lastUpdated))
+  }
+
+  def getStorageCostEstimateV2(workspaceNamespace: String,
+                               workspaceName: String
+  ): Future[RequestComplete[WorkspaceStorageUsageAndCostEstimate]] = {
+    for {
+      bucketUsage <- rawlsDAO.getBucketUsageV2(workspaceNamespace, workspaceName)
+    } yield {
+      // Convert bytes to GB since rate is based on GB.
+      val (totalBytes, totalEstimate) = bucketUsage.metrics.foldLeft((BigDecimal(0), BigDecimal(0))) {
+        case ((sumBytes, sumEstimate), metric) =>
+          val bytes = BigDecimal(metric.valueInBytes)
+          val estimate = bytes / (1024 * 1024 * 1024) * storagePriceList(metric.storageClass)
+          (sumBytes + metric.valueInBytes, sumEstimate + estimate)
+      }
+      RequestComplete(WorkspaceStorageUsageAndCostEstimate(f"$$$totalEstimate%.2f", totalBytes, Some(DateTime.now())))
+    }
+//    recoverWith {
+//      case e: NoSuchElementException =>
+//        Future.successful(RequestComplete(
+//          StatusCodes.InternalServerError,
+//          ErrorReport(message = s"Unrecognized storage class found: ${e}")
+//        ))
+//      case e: Throwable =>
+//        Future.successful(RequestComplete(StatusCodes.InternalServerError,
+//          ErrorReport(message = s"Error fetching bucket storage metrics: ${e.getMessage}")
+//        ))
+//    }
   }
 
   def updateWorkspaceAttributes(workspaceNamespace: String,

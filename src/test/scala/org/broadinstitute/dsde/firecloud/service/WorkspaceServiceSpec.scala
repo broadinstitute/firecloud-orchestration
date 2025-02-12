@@ -2,12 +2,13 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken, WorkspaceStorageCostEstimate}
+import org.broadinstitute.dsde.firecloud.model.{AccessToken, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{RequestComplete, RequestCompleteWithHeaders}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
 import org.broadinstitute.dsde.rawls.model._
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -120,6 +121,15 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       // So the total should be 0.95 + 0.01 = 0.96
       costEstimateResponse.response.estimate shouldBe "$0.96"
     }
+
+    // TODO either error or return n/a if possible
+    "should error on unexpected storage class" in
+      intercept[NoSuchElementException] {
+        ws.getStorageCostEstimate("workspaceNameSpace",
+                                  "unexpectedStorageClass",
+                                  Some(GoogleProjectId("googleProjectId"))
+        )
+      }
   }
 }
 
@@ -228,6 +238,19 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
       case "unpublishsuccess" => Future(publishedRawlsWorkspaceWithAttributes)
       case "unpublishfailure" => Future(unpublishfailure)
       case _                  => Future(newWorkspace)
+    }
+
+  override def getBucketUsageV2(ns: String, name: String)(implicit
+    userInfo: WithAccessToken
+  ): Future[BucketMetricsResponse] =
+    if (name == "unexpectedStorageClass") {
+      Future.successful(
+        BucketMetricsResponse(Seq(BucketMetric("incorrect", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+      )
+    } else {
+      Future.successful(
+        BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+      )
     }
 
 }

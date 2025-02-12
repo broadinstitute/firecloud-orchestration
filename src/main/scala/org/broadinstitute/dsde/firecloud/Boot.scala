@@ -150,6 +150,13 @@ object Boot extends IOApp with LazyLogging {
     val googleServicesDAO: GoogleServicesDAO = whenEnabled[GoogleServicesDAO](
       FireCloudConfig.GoogleCloud.enabled,
       new HttpGoogleServicesDAO(
+        FireCloudConfig.GoogleCloud.priceListUrl,
+        GooglePriceList(GooglePrices(FireCloudConfig.GoogleCloud.defaultStoragePriceList,
+                                     UsTieredPriceItem(FireCloudConfig.GoogleCloud.defaultEgressPriceList)
+                        ),
+                        "v1",
+                        "1"
+        )
       )
     )
     val shibbolethDAO: ShibbolethDAO =

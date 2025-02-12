@@ -21,6 +21,8 @@ trait GoogleServicesDAO extends ReportsSubsystemStatus {
   def getBucketObjectAsInputStream(bucketName: String, objectKey: String): InputStream
   def getObjectResourceUrl(bucketName: String, objectKey: String): String
 
+  val fetchPriceList: Future[GooglePriceList]
+
   def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, objectContents: Array[Byte]): GcsPath
   def writeObjectAsRawlsSA(bucketName: GcsBucketName, objectKey: GcsObjectName, tempFile: File): GcsPath
 

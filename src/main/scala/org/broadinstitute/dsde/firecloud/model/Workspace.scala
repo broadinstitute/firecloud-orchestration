@@ -99,5 +99,10 @@ case class RawlsGroupMemberList(userEmails: Option[Seq[String]] = None,
 
 case class WorkspaceStorageCostEstimate(estimate: String, lastUpdated: Option[DateTime])
 
+case class WorkspaceStorageUsageAndCostEstimate(estimate: String,
+                                                usageInBytes: BigDecimal,
+                                                lastUpdated: Option[DateTime]
+)
+
 case class WorkspaceId(workspaceId: UUID)
 case class WorkspaceIdResponse(workspace: WorkspaceId)

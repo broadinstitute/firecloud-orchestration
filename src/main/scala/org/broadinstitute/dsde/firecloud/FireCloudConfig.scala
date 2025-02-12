@@ -240,6 +240,30 @@ object FireCloudConfig {
   object GoogleCloud {
     // lazy - only required when google is enabled
     private lazy val googlecloud = config.getConfig("googlecloud")
+    lazy val storagePriceListConf = googlecloud.getConfig("storagePriceList")
+    lazy val storagePriceList = storagePriceListConf
+      .root()
+      .keySet()
+      .asScala
+      .map(key => key -> BigDecimal(storagePriceListConf.getDouble(key)))
+      .toMap
+    lazy val priceListUrl = googlecloud.getString("priceListUrl")
+    lazy val priceListEgressKey = googlecloud.getString("priceListEgressKey")
+    lazy val priceListStorageKey = googlecloud.getString("priceListStorageKey")
+    lazy val defaultStoragePriceListConf = googlecloud.getConfig("defaultStoragePriceList")
+    lazy val defaultStoragePriceList = defaultStoragePriceListConf
+      .root()
+      .keySet()
+      .asScala
+      .map(key => key -> BigDecimal(defaultStoragePriceListConf.getDouble(key)))
+      .toMap
+    lazy val defaultEgressPriceListConf = googlecloud.getConfig("defaultEgressPriceList")
+    lazy val defaultEgressPriceList = defaultEgressPriceListConf
+      .root()
+      .keySet()
+      .asScala
+      .map(key => key.toLong -> BigDecimal(defaultEgressPriceListConf.getDouble(key)))
+      .toMap
     val enabled = googlecloud.optionalBoolean("enabled").getOrElse(true)
   }
 
