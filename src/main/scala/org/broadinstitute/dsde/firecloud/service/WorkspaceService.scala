@@ -24,10 +24,11 @@ import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.{
 }
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport._
 import org.broadinstitute.dsde.rawls.model._
-import org.joda.time.DateTime
+import java.time.Instant
 import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -96,7 +97,9 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
           val estimate = bytes / (1024 * 1024 * 1024) * storagePriceList(metric.storageClass)
           (sumBytes + metric.valueInBytes, sumEstimate + estimate)
       }
-      RequestComplete(WorkspaceStorageUsageAndCostEstimate(f"$$$totalEstimate%.2f", totalBytes, Some(DateTime.now())))
+      RequestComplete(
+        WorkspaceStorageUsageAndCostEstimate(totalEstimate.setScale(2, RoundingMode.HALF_UP), totalBytes, Instant.now)
+      )
     }) recoverWith {
       case e: NoSuchElementException =>
         Future.failed(

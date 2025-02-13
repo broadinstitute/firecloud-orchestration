@@ -3077,6 +3077,8 @@ paths:
       tags:
         - Workspaces
       summary: Get bucket usage
+      deprecated: true
+      description: Deprecated in favor of /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/storageCostEstimate, which returns usage as well as cost
       operationId: getBucketUsage
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'

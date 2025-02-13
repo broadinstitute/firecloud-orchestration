@@ -4,6 +4,7 @@ import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigu
 import org.broadinstitute.dsde.rawls.model._
 import org.joda.time.DateTime
 
+import java.time.Instant
 import java.util.UUID
 
 case class UIWorkspaceResponse(accessLevel: Option[String] = None,
@@ -99,10 +100,7 @@ case class RawlsGroupMemberList(userEmails: Option[Seq[String]] = None,
 
 case class WorkspaceStorageCostEstimate(estimate: String, lastUpdated: Option[DateTime])
 
-case class WorkspaceStorageUsageAndCostEstimate(estimate: String,
-                                                usageInBytes: BigDecimal,
-                                                lastUpdated: Option[DateTime]
-)
+case class WorkspaceStorageUsageAndCostEstimate(estimate: BigDecimal, usageInBytes: BigDecimal, lastUpdated: Instant)
 
 case class WorkspaceId(workspaceId: UUID)
 case class WorkspaceIdResponse(workspace: WorkspaceId)
