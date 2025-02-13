@@ -85,8 +85,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
 
   def getStorageCostEstimateV2(workspaceNamespace: String,
                                workspaceName: String
-  ): Future[WorkspaceStorageUsageAndCostEstimate] = {
-    for {
+  ): Future[RequestComplete[WorkspaceStorageUsageAndCostEstimate]] =
+    (for {
       bucketUsage <- rawlsDAO.getBucketUsageV2(workspaceNamespace, workspaceName)
     } yield {
       // Convert bytes to GB since rate is based on GB.
@@ -96,20 +96,21 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
           val estimate = bytes / (1024 * 1024 * 1024) * storagePriceList(metric.storageClass)
           (sumBytes + metric.valueInBytes, sumEstimate + estimate)
       }
-      WorkspaceStorageUsageAndCostEstimate(f"$$$totalEstimate%.2f", totalBytes, Some(DateTime.now()))
+      RequestComplete(WorkspaceStorageUsageAndCostEstimate(f"$$$totalEstimate%.2f", totalBytes, Some(DateTime.now())))
+    }) recoverWith {
+      case e: NoSuchElementException =>
+        Future.failed(
+          new FireCloudExceptionWithErrorReport(
+            ErrorReport(message = s"Unrecognized storage class found: ${e}")
+          )
+        )
+      case e: Throwable =>
+        Future.failed(
+          new FireCloudExceptionWithErrorReport(
+            ErrorReport(message = s"Error fetching bucket storage metrics: ${e.getMessage}")
+          )
+        )
     }
-//    recoverWith {
-//      case e: NoSuchElementException =>
-//        Future.successful(RequestCompleteWithErrorReport(
-//          StatusCodes.InternalServerError,
-//          s"Unrecognized storage class found: ${e}"
-//        ))
-//      case e: Throwable =>
-//        Future.successful(RequestCompleteWithErrorReport(StatusCodes.InternalServerError,
-//          ErrorReport(message = s"Error fetching bucket storage metrics: ${e.getMessage}")
-//        ))
-//    }
-  }
 
   def updateWorkspaceAttributes(workspaceNamespace: String,
                                 workspaceName: String,
