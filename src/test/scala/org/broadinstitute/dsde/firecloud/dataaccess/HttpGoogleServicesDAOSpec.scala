@@ -38,7 +38,6 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
 
   behavior of "HttpGoogleServicesDAO"
 
-
   it should "default to the cached price list if it cannot fetch/parse one from Google" in {
     val errorGcsDAO = new HttpGoogleServicesDAO(priceListUrl + ".error", defaultPriceList)
 
