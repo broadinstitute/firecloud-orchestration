@@ -28,7 +28,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
     "org.yaml"                   % "snakeyaml"                  % "2.3",
     "org.apache.commons"         % "commons-compress"           % "1.27.1", // workbench-libs libraries pull this in
-    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20241231-2.0.0", // from workbench-google2
+    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20250128-2.0.0", // from workbench-google2
     "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20241210-2.0.0" // from workbench-google2
   )
 
@@ -44,7 +44,7 @@ object Dependencies {
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.16",
-    "io.sentry"                      % "sentry-logback"      % "7.21.0",
+    "io.sentry"                      % "sentry-logback"      % "8.1.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -84,13 +84,13 @@ object Dependencies {
       exclude("org.apache.logging.log4j", "log4j-api")
       exclude("org.apache.logging.log4j", "log4j-core"),
 
-    "com.github.jwt-scala"          %% "jwt-core"            % "10.0.1",
+    "com.github.jwt-scala"          %% "jwt-core"            % "10.0.4",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
-    "com.github.erosb"               % "everit-json-schema"  % "1.14.4",
+    "com.github.erosb"               % "everit-json-schema"  % "1.14.5",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
