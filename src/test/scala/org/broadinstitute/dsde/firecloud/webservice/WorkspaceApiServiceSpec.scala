@@ -1120,7 +1120,8 @@ class WorkspaceApiServiceSpec
           ) ~> check {
             status should be(OK)
             // 256000000000 / (1024 * 1024 * 1024) * 0.004 + 102400000 / (1024 * 1024 * 1024) * 0.02
-            responseAs[WorkspaceStorageCostEstimate].estimate should be(0.96)
+            responseAs[WorkspaceStorageUsageAndCostEstimate].estimate should be(0.96)
+            responseAs[WorkspaceStorageUsageAndCostEstimate].usageInBytes shouldBe 256102400000d
           }
       }
 
