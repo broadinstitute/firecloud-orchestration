@@ -85,7 +85,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
 
   def getStorageCostEstimateV2(workspaceNamespace: String,
                                workspaceName: String
-  ): Future[RequestComplete[WorkspaceStorageUsageAndCostEstimate]] = {
+  ): Future[WorkspaceStorageUsageAndCostEstimate] = {
     for {
       bucketUsage <- rawlsDAO.getBucketUsageV2(workspaceNamespace, workspaceName)
     } yield {
@@ -96,16 +96,16 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
           val estimate = bytes / (1024 * 1024 * 1024) * storagePriceList(metric.storageClass)
           (sumBytes + metric.valueInBytes, sumEstimate + estimate)
       }
-      RequestComplete(WorkspaceStorageUsageAndCostEstimate(f"$$$totalEstimate%.2f", totalBytes, Some(DateTime.now())))
+      WorkspaceStorageUsageAndCostEstimate(f"$$$totalEstimate%.2f", totalBytes, Some(DateTime.now()))
     }
 //    recoverWith {
 //      case e: NoSuchElementException =>
-//        Future.successful(RequestComplete(
+//        Future.successful(RequestCompleteWithErrorReport(
 //          StatusCodes.InternalServerError,
-//          ErrorReport(message = s"Unrecognized storage class found: ${e}")
+//          s"Unrecognized storage class found: ${e}"
 //        ))
 //      case e: Throwable =>
-//        Future.successful(RequestComplete(StatusCodes.InternalServerError,
+//        Future.successful(RequestCompleteWithErrorReport(StatusCodes.InternalServerError,
 //          ErrorReport(message = s"Error fetching bucket storage metrics: ${e.getMessage}")
 //        ))
 //    }

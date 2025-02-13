@@ -4692,6 +4692,8 @@ paths:
         - Workspaces
       summary: Calculate an estimate of the monthly storage cost for the workspace
         bucket
+      deprecated: true
+      description: Deprecated in favor of /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/storageCostEstimate
       operationId: getStorageCostEstimate
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
