@@ -107,6 +107,26 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       status should be(StatusCodes.Accepted)
     }
   }
+
+  "getStorageCostEstimate" - {
+    "should sum all costs" in {
+      val costEstimateResponse = Await
+        .result(
+          ws.getStorageCostEstimateV2("workspaceNameSpace", "workspaceName"),
+          Duration.Inf
+        )
+      // Mock Rawls DAO returns  BucketMetric("COLDLINE", 256000000000d) and BucketMetric("REGIONAL", 102400000d)
+      // The price list has "COLDLINE" -> 0.004 and "REGIONAL" -> 0.02
+      // So the total should be 0.95 + 0.01 = 0.96
+      costEstimateResponse.response.estimate shouldBe 0.96
+      costEstimateResponse.response.usageInBytes shouldBe 256102400000d
+    }
+
+    "should error on unexpected storage class" in
+      intercept[Exception] {
+        Await.result(ws.getStorageCostEstimateV2("workspaceNameSpace", "unexpectedStorageClass"), Duration.Inf)
+      }
+  }
 }
 
 /*
@@ -214,6 +234,19 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
       case "unpublishsuccess" => Future(publishedRawlsWorkspaceWithAttributes)
       case "unpublishfailure" => Future(unpublishfailure)
       case _                  => Future(newWorkspace)
+    }
+
+  override def getBucketUsageV2(ns: String, name: String)(implicit
+    userInfo: WithAccessToken
+  ): Future[BucketMetricsResponse] =
+    if (name == "unexpectedStorageClass") {
+      Future.successful(
+        BucketMetricsResponse(Seq(BucketMetric("incorrect", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+      )
+    } else {
+      Future.successful(
+        BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+      )
     }
 
 }

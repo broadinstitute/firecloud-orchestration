@@ -3077,6 +3077,8 @@ paths:
       tags:
         - Workspaces
       summary: Get bucket usage
+      deprecated: true
+      description: Deprecated in favor of /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/storageCostEstimate, which returns usage as well as cost
       operationId: getBucketUsage
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
@@ -4692,6 +4694,8 @@ paths:
         - Workspaces
       summary: Calculate an estimate of the monthly storage cost for the workspace
         bucket
+      deprecated: true
+      description: Deprecated in favor of /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/storageCostEstimate
       operationId: getStorageCostEstimate
       parameters:
         - $ref: '#/components/parameters/workspaceNamespaceParam'
@@ -5710,6 +5714,30 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
         500:
           $ref: '#/components/responses/RawlsInternalError'
+  /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
+    get:
+      tags:
+        - WorkspacesV2
+      summary: Get current bytes usage and calculate an estimate of the monthly storage cost for the workspace
+        bucket
+      operationId: getStorageCostEstimateV2
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/BucketStorageUsageAndCost'
+        404:
+          description: Workspace not found
+          content: { }
+        500:
+          description: Internal Error
+          content: { }
+      x-passthrough: false
   /cookie-authed/workspaces/{workspaceNamespace}/{workspaceName}/entities/{entityType}/tsv:
     get:
       tags:
@@ -6770,6 +6798,23 @@ components:
           type: string
           format: timestamp
           description: timestamp (UTC) marking the date that the bucket usage was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
+      description: ""
+    BucketStorageUsageAndCost:
+      required:
+        - estimate
+        - usageInBytes
+      type: object
+      properties:
+        estimate:
+          type: string
+          description: The estimated monthly storage cost of the bucket
+        usageInByes:
+          type: integer
+          description: The current storage bucket usage in bytes
+        lastUpdated:
+          type: string
+          format: timestamp
+          description: timestamp (UTC) marking the date that the bucket cost was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
       description: ""
     CallMetadata:
       type: object

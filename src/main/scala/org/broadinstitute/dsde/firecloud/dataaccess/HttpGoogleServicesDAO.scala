@@ -31,12 +31,14 @@ import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectN
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import spray.json.{DefaultJsonProtocol, _}
 
 import java.io.FileInputStream
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
+import spray.json.{DefaultJsonProtocol, _}
+
+case class StoragePriceList(prices: Map[String, BigDecimal])
 
 /** Result from Google's pricing calculator price list
   * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
@@ -47,11 +49,11 @@ case class GooglePriceList(prices: GooglePrices, version: String, updated: Strin
 case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal], cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
 /** Tiered price item containing only US currency.
- *
- * Used for egress, may need to be altered to work with other types in the future.
- * Contains a map of the different tiers of pricing, where the key is the size in GB
- * for that tier and the value is the cost in USD for that tier.
- */
+  *
+  * Used for egress, may need to be altered to work with other types in the future.
+  * Contains a map of the different tiers of pricing, where the key is the size in GB
+  * for that tier and the value is the cost in USD for that tier.
+  */
 case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
 
 object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {

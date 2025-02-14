@@ -378,7 +378,18 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   }
                 }
               }
-          }
+          } ~
+            pathPrefix("v2" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
+              path("storageCostEstimate") {
+                get {
+                  requireUserInfo() { userInfo =>
+                    complete {
+                      workspaceServiceConstructor(userInfo).getStorageCostEstimateV2(workspaceNamespace, workspaceName)
+                    }
+                  }
+                }
+              }
+            }
         }
       }
 }

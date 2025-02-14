@@ -2,17 +2,11 @@ package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.{FILETYPE_PFB, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.dataaccess.{
-  MockCwdsDAO,
-  MockRawlsDAO,
-  MockShareLogDAO,
-  WorkspaceApiServiceSpecShareLogDAO
-}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -124,13 +118,14 @@ class WorkspaceApiServiceSpec
   final private val importJobPath = workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
   final private val importJobStatusPath =
     workspacesRoot + "/%s/%s/importJob".format(workspace.namespace, workspace.name)
-  final private val bucketUsagePath = s"$workspacesPath/bucketUsage"
   final private val usBucketStorageCostEstimatePath =
     workspacesRoot + "/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
   final private val europeWest1storageCostEstimatePath =
     workspacesRoot + "/%s/%s/storageCostEstimate".format("europeWest1BucketWorkspace", workspace.name)
   final private val tagAutocompletePath = s"$workspacesRoot/tags"
   final private val executionEngineVersionPath = "/version/executionEngine"
+  final private val bucketStorageCostEstimateV2Path =
+    workspacesRoot + "/v2/%s/%s/storageCostEstimate".format("usBucketWorkspace", workspace.name)
 
   private def catalogPath(ns: String = workspace.namespace, name: String = workspace.name) =
     workspacesRoot + "/%s/%s/catalog".format(ns, name)
@@ -1117,6 +1112,19 @@ class WorkspaceApiServiceSpec
             responseAs[WorkspaceStorageCostEstimate].estimate should be("$4.77")
           }
       }
+
+      "when calling GET on workspaces/v2/*/*/storageCostEstimate" - {
+        "should return 200 with result" in
+          Get(bucketStorageCostEstimateV2Path) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
+            workspaceRoutes
+          ) ~> check {
+            status should be(OK)
+            // 256000000000 / (1024 * 1024 * 1024) * 0.004 + 102400000 / (1024 * 1024 * 1024) * 0.02
+            responseAs[WorkspaceStorageUsageAndCostEstimate].estimate should be(0.96)
+            responseAs[WorkspaceStorageUsageAndCostEstimate].usageInBytes shouldBe 256102400000d
+          }
+      }
+
     }
   }
 }

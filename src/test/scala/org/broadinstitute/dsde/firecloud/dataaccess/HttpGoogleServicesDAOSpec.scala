@@ -1,17 +1,10 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import java.util.UUID
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpHeader, HttpResponse, StatusCodes}
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import cats.effect.{IO, Resource}
 import com.google.cloud.storage.{BlobInfo, Storage, StorageException}
 import com.google.cloud.storage.Storage.BlobWriteOption
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
-import com.typesafe.config.ConfigFactory
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.workbench.google2.{GoogleStorageInterpreter, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.mockito.ArgumentMatchers.any
@@ -24,12 +17,11 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import java.nio.charset.StandardCharsets
-import scala.concurrent.{Await, ExecutionContext}
-import scala.concurrent.ExecutionContext.global
-import scala.concurrent.duration.Duration
-import cats.effect.Temporal
 import cats.effect.std.Semaphore
+import com.typesafe.config.ConfigFactory
 import fs2.Stream
+import scala.concurrent.duration.Duration
+import scala.concurrent.Await
 
 class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
 
