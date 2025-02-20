@@ -1,15 +1,13 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import akka.http.scaladsl.model.HttpResponse
 import better.files.File
-import org.broadinstitute.dsde.firecloud.model.WithAccessToken
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems.Subsystem
 import org.broadinstitute.dsde.workbench.util.health.{SubsystemStatus, Subsystems}
 
 import java.io.InputStream
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 object GoogleServicesDAO {
   lazy val serviceName = Subsystems.GoogleBuckets
