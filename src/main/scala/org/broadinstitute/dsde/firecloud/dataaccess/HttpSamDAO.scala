@@ -61,7 +61,6 @@ class HttpSamDAO(implicit
   private val dispatcher = new Dispatcher()
   dispatcher.setMaxRequests(1000)
   dispatcher.setMaxRequestsPerHost(100)
-  dispatcher.executorService()
   private val httpClient = new ApiClient().getHttpClient.newBuilder().dispatcher(dispatcher).build()
 
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] =
