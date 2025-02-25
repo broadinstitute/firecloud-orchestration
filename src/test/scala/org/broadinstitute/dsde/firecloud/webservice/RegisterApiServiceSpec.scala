@@ -1,21 +1,16 @@
 package org.broadinstitute.dsde.firecloud.webservice
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import org.broadinstitute.dsde.firecloud.dataaccess.MockThurloeDAO
-import org.broadinstitute.dsde.firecloud.model.{BasicProfile, RegisterRequest, UserInfo, WithAccessToken}
+import org.broadinstitute.dsde.firecloud.dataaccess.{MockSamDAO, MockThurloeDAO}
+import org.broadinstitute.dsde.firecloud.model.{BasicProfile, RegisterRequest, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, RegisterService, UserService}
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NoContent, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, NoContent, OK}
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import org.broadinstitute.dsde.firecloud.HealthChecks.termsOfServiceUrl
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impBasicProfile
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol.impRegisterRequest
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.integration.ClientAndServer.startClientAndServer
-import org.mockserver.model.Header
-import org.mockserver.model.HttpRequest._
-import org.scalatest.BeforeAndAfterAll
 import spray.json.DefaultJsonProtocol
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -26,64 +21,9 @@ final class RegisterApiServiceSpec
     with RegisterApiService
     with UserApiService
     with DefaultJsonProtocol
-    with SprayJsonSupport
-    with BeforeAndAfterAll
-    with SamMockserverUtils {
+    with SprayJsonSupport {
 
   override val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-
-  // mockserver to return an enabled user from Sam
-  var mockSamServer: ClientAndServer = _
-
-  override def afterAll(): Unit = mockSamServer.stop()
-
-  override def beforeAll(): Unit = {
-    mockSamServer = startClientAndServer(MockUtils.samServerPort)
-    // disabled user
-    mockSamServer
-      .when(
-        request
-          .withMethod("GET")
-          .withPath("/register/user/v2/self/info")
-          .withHeader(new Header("Authorization", "Bearer disabled"))
-      )
-      .respond(
-        org.mockserver.model.HttpResponse
-          .response()
-          .withHeaders(MockUtils.header)
-          .withBody("""{
-                      |  "adminEnabled": false,
-                      |  "enabled": false,
-                      |  "userEmail": "disabled@nowhere.com",
-                      |  "userSubjectId": "disabled-id"
-                      |}""".stripMargin)
-          .withStatusCode(OK.intValue)
-      )
-
-    // unregistered user
-    mockSamServer
-      .when(
-        request
-          .withMethod("GET")
-          .withPath("/register/user/v2/self/info")
-          .withHeader(new Header("Authorization", "Bearer unregistered"))
-      )
-      .respond(
-        org.mockserver.model.HttpResponse
-          .response()
-          .withHeaders(MockUtils.header)
-          .withBody("""{
-                      |  "causes": [],
-                      |  "message": "Google Id unregistered-id not found in sam",
-                      |  "source": "sam",
-                      |  "stackTrace": [],
-                      |  "statusCode": 404
-                      |}""".stripMargin)
-          .withStatusCode(NotFound.intValue)
-      )
-
-    returnEnabledUser(mockSamServer)
-  }
 
   override val registerServiceConstructor: () => RegisterService =
     RegisterService.constructor(app.copy(thurloeDAO = new RegisterApiServiceSpecThurloeDAO))
@@ -216,7 +156,7 @@ final class RegisterApiServiceSpec
       // or disabled users, those users would not be able to proceed.
       //
       // These tests will fail if GET /register/profile is put behind requireEnabledUser().
-      List("enabled", "disabled", "unregistered") foreach { testCase =>
+      List("enabled", MockSamDAO.disabledUserToken, MockSamDAO.unregisteredUserToken) foreach { testCase =>
         s"should succeed for a(n) $testCase user" in
           Get("/register/profile") ~> dummyUserIdHeaders(userId = testCase, token = testCase) ~> sealRoute(
             userServiceRoutes

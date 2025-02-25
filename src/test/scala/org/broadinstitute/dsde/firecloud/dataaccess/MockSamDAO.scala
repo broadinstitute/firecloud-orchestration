@@ -207,5 +207,19 @@ class MockSamDAO extends SamDAO {
 
   override def bulkUpdateGroups(request: List[BulkMembershipUpdateRequestV2], user: WithAccessToken): Future[Unit] = ???
 
-  override def getUserStatus(user: WithAccessToken): Future[UserStatusInfo] = Future.successful(new UserStatusInfo().enabled(true))
+  override def getUserStatus(user: WithAccessToken): Future[UserStatusInfo] =
+    user.accessToken.token match {
+      case MockSamDAO.disabledUserToken =>
+        Future.successful(new UserStatusInfo().enabled(false))
+      case MockSamDAO.unregisteredUserToken =>
+        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "User not found")))
+      case _ =>
+        Future.successful(new UserStatusInfo().enabled(true))
+    }
+
+}
+
+object MockSamDAO {
+  val disabledUserToken = "disabled"
+  val unregisteredUserToken = "unregistered"
 }

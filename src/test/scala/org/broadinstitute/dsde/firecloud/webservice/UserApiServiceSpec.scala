@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
+import org.broadinstitute.dsde.firecloud.mock.MockUtils
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -21,7 +21,6 @@ import scala.concurrent.{Await, ExecutionContext}
 
 class UserApiServiceSpec
     extends BaseServiceSpec
-    with SamMockserverUtils
     with RegisterApiService
     with PassthroughApiService
     with UserApiService
@@ -133,8 +132,6 @@ class UserApiServiceSpec
           .withBody(userStatus)
           .withStatusCode(OK.intValue)
       )
-
-    returnEnabledUser(samServer)
 
     profileServer = startClientAndServer(thurloeServerPort)
     // Generate a mock response for all combinations of profile properties
