@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess.MockRawlsDAO
-import org.broadinstitute.dsde.firecloud.mock.{MockUtils, SamMockserverUtils}
 import org.broadinstitute.dsde.firecloud.model.DataUse.ResearchPurposeRequest
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
@@ -33,7 +32,6 @@ import scala.concurrent.{Await, ExecutionContext}
 class LibraryApiServiceSpec
     extends BaseServiceSpec
     with LibraryApiService
-    with SamMockserverUtils
     with BeforeAndAfterEach
     with SprayJsonSupport {
 
@@ -103,17 +101,6 @@ class LibraryApiServiceSpec
       |  "_discoverableByGroups" : ["Group1","Group2"]
       |}
     """.stripMargin
-
-  // mockserver to return an enabled user from Sam
-  var mockSamServer: ClientAndServer = _
-
-  override def beforeAll(): Unit = {
-    mockSamServer = startClientAndServer(MockUtils.samServerPort)
-    returnEnabledUser(mockSamServer)
-  }
-
-  override def afterAll(): Unit =
-    mockSamServer.stop()
 
   override def beforeEach(): Unit =
     searchDao.reset()

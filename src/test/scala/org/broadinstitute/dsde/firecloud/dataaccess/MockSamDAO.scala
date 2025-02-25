@@ -19,7 +19,7 @@ import org.broadinstitute.dsde.firecloud.model.{
 }
 import org.broadinstitute.dsde.workbench.util.health.SubsystemStatus
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserEmail}
-import org.broadinstitute.dsde.workbench.client.sam.model.BulkMembershipUpdateRequestV2
+import org.broadinstitute.dsde.workbench.client.sam.model.{BulkMembershipUpdateRequestV2, UserStatusInfo}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{
   AzureB2CId,
@@ -206,4 +206,20 @@ class MockSamDAO extends SamDAO {
   ): Future[Seq[WorkbenchUserInfo]] = Future.successful(Seq())
 
   override def bulkUpdateGroups(request: List[BulkMembershipUpdateRequestV2], user: WithAccessToken): Future[Unit] = ???
+
+  override def getUserStatus(user: WithAccessToken): Future[UserStatusInfo] =
+    user.accessToken.token match {
+      case MockSamDAO.disabledUserToken =>
+        Future.successful(new UserStatusInfo().enabled(false))
+      case MockSamDAO.unregisteredUserToken =>
+        Future.failed(new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.NotFound, "User not found")))
+      case _ =>
+        Future.successful(new UserStatusInfo().enabled(true))
+    }
+
+}
+
+object MockSamDAO {
+  val disabledUserToken = "disabled"
+  val unregisteredUserToken = "unregistered"
 }

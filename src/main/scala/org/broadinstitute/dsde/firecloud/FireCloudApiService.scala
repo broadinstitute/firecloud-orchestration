@@ -14,6 +14,7 @@ import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, Logg
 import akka.http.scaladsl.server.{Directive, Directive0, ExceptionHandler, RouteResult}
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -234,7 +235,8 @@ class FireCloudApiServiceImpl(
   val userServiceConstructor: (UserInfo) => UserService,
   val shareLogServiceConstructor: () => ShareLogService,
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService,
-  val oidcConfig: OpenIDConnectConfiguration
+  val oidcConfig: OpenIDConnectConfiguration,
+  val samDao: SamDAO
 )(implicit
   val actorRefFactory: ActorRefFactory,
   val executionContext: ExecutionContext,
