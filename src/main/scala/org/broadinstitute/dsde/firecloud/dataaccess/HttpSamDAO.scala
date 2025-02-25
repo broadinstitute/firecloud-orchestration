@@ -222,7 +222,7 @@ class HttpSamDAO(implicit
   override def getUserStatus(user: WithAccessToken): Future[UserStatusInfo] = {
     val apiClient = newApiClient(user)
     val sam = new UsersApi(apiClient)
-    val callback = new SamApiCallback[UserStatusInfo]("getUserEnabled")
+    val callback = new SamApiCallback[UserStatusInfo]("getUserStatusInfo")
     sam.getUserStatusInfoAsync(callback)
     callback.future
   }
