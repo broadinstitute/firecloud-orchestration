@@ -18,7 +18,7 @@ import org.broadinstitute.dsde.firecloud.model.{
   WorkbenchUserInfo
 }
 import org.broadinstitute.dsde.rawls.model.{ErrorReportSource, RawlsUserEmail}
-import org.broadinstitute.dsde.workbench.client.sam.model.BulkMembershipUpdateRequestV2
+import org.broadinstitute.dsde.workbench.client.sam.model.{BulkMembershipUpdateRequestV2, UserStatusInfo}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 import org.broadinstitute.dsde.workbench.util.health.Subsystems
@@ -146,4 +146,6 @@ trait SamDAO extends LazyLogging with ReportsSubsystemStatus {
   val serviceName = SamDAO.serviceName
 
   def bulkUpdateGroups(request: List[BulkMembershipUpdateRequestV2], user: WithAccessToken): Future[Unit]
+
+  def getUserStatus(user: WithAccessToken): Future[UserStatusInfo]
 }

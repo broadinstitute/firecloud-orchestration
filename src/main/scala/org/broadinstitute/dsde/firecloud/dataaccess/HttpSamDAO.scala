@@ -7,6 +7,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
+import okhttp3.Dispatcher
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.model.ErrorReportExtensions.FCErrorReport
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
@@ -27,11 +28,11 @@ import org.broadinstitute.dsde.firecloud.model.{
   WorkbenchUserInfo
 }
 import org.broadinstitute.dsde.firecloud.utils.RestJsonClient
-import org.broadinstitute.dsde.rawls.{RawlsException, RawlsExceptionWithErrorReport}
+import org.broadinstitute.dsde.rawls.RawlsException
 import org.broadinstitute.dsde.rawls.model.{ErrorReport, RawlsUserEmail, WorkspaceJsonSupport}
 import org.broadinstitute.dsde.workbench.client.sam.{ApiCallback, ApiClient, ApiException}
 import org.broadinstitute.dsde.workbench.client.sam.api.{ResourcesApi, UsersApi}
-import org.broadinstitute.dsde.workbench.client.sam.model.BulkMembershipUpdateRequestV2
+import org.broadinstitute.dsde.workbench.client.sam.model.{BulkMembershipUpdateRequestV2, UserStatusInfo}
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
@@ -57,6 +58,11 @@ class HttpSamDAO(implicit
     with SprayJsonSupport {
 
   val timeout: FiniteDuration = 1.minute
+  private val dispatcher = new Dispatcher()
+  dispatcher.setMaxRequests(1000)
+  dispatcher.setMaxRequestsPerHost(100)
+  dispatcher.executorService()
+  private val httpClient = new ApiClient().getHttpClient.newBuilder().dispatcher(dispatcher).build()
 
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] =
     authedRequestToObject[Seq[UserPolicy]](Get(samListResources("workspace")),
@@ -214,8 +220,16 @@ class HttpSamDAO(implicit
     callback.future.map(_ => ())
   }
 
+  override def getUserStatus(user: WithAccessToken): Future[UserStatusInfo] = {
+    val apiClient = newApiClient(user)
+    val sam = new UsersApi(apiClient)
+    val callback = new SamApiCallback[UserStatusInfo]("getUserEnabled")
+    sam.getUserStatusInfoAsync(callback)
+    callback.future
+  }
+
   private def newApiClient(user: WithAccessToken) = {
-    val apiClient = new ApiClient()
+    val apiClient = new ApiClient(httpClient)
     apiClient.setAccessToken(user.accessToken.token)
     apiClient.setBasePath(FireCloudConfig.Sam.baseUrl)
     apiClient
