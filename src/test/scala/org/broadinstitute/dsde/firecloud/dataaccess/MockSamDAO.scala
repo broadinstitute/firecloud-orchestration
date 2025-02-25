@@ -207,5 +207,5 @@ class MockSamDAO extends SamDAO {
 
   override def bulkUpdateGroups(request: List[BulkMembershipUpdateRequestV2], user: WithAccessToken): Future[Unit] = ???
 
-  override def getUserStatus(user: WithAccessToken): Future[UserStatusInfo] = ???
+  override def getUserStatus(user: WithAccessToken): Future[UserStatusInfo] = Future.successful(new UserStatusInfo().enabled(true))
 }
