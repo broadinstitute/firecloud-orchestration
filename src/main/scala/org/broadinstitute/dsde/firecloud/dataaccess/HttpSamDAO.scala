@@ -59,8 +59,8 @@ class HttpSamDAO(implicit
 
   val timeout: FiniteDuration = 1.minute
   private val dispatcher = new Dispatcher()
-  dispatcher.setMaxRequests(1000)
-  dispatcher.setMaxRequestsPerHost(100)
+  dispatcher.setMaxRequests(FireCloudConfig.Sam.maxConcurrentRequests)
+  dispatcher.setMaxRequestsPerHost(FireCloudConfig.Sam.maxConcurrentRequests)
   private val httpClient = new ApiClient().getHttpClient.newBuilder().dispatcher(dispatcher).build()
 
   override def listWorkspaceResources(implicit userInfo: WithAccessToken): Future[Seq[UserPolicy]] =

@@ -110,6 +110,7 @@ object FireCloudConfig {
 
     val groupResourceType = sam.getString("groupResourceType")
     val groupMemberPolicy = sam.getString("groupMemberPolicy")
+    val maxConcurrentRequests = sam.getInt("maxConcurrentRequests")
   }
 
   object CromIAM {
