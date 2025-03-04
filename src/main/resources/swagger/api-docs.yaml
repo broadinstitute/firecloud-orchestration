@@ -8274,11 +8274,16 @@ components:
           description: Method configuration source name
     RawlsBillingProjectResponse:
       required:
+        - id
         - projectName
         - invalidBillingAccount
         - roles
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+          description: the uuid of the project
         projectName:
           type: string
           description: the name of the project
