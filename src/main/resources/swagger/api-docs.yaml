@@ -2688,12 +2688,13 @@ paths:
       x-passthrough: false
   /api/sharelog/sharees:
     get:
+      deprecated: true
       tags:
         - ShareLog
       summary: |
-        Get a list of users with whom current user has shared a Workspace.
+        Deprecated; will be deleted on or after April 7, 2025
       description: |
-        Get a list of users with whom current user has shared a Workspace.
+        Deprecated; will be deleted on or after April 7, 2025
       operationId: getSharees
       responses:
         200:
