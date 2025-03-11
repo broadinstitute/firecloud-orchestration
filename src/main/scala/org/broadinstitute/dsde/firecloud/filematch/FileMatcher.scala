@@ -2,7 +2,11 @@ package org.broadinstitute.dsde.firecloud.filematch
 
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.filematch.result.{FailedMatchResult, FileMatchResult, SuccessfulMatchResult}
-import org.broadinstitute.dsde.firecloud.filematch.strategy.{FileRecognitionStrategy, IlluminaPairedEndStrategy}
+import org.broadinstitute.dsde.firecloud.filematch.strategy.{
+  FileRecognitionStrategy,
+  IlluminaPairedEndStrategy,
+  OntSingleReadStrategy
+}
 
 import java.nio.file.Path
 
@@ -16,7 +20,8 @@ import java.nio.file.Path
 class FileMatcher extends LazyLogging {
 
   // the list of recognition strategies to use
-  private val matchingStrategies: List[FileRecognitionStrategy] = List(new IlluminaPairedEndStrategy())
+  private val matchingStrategies: List[FileRecognitionStrategy] =
+    List(new IlluminaPairedEndStrategy(), new OntSingleReadStrategy())
 
   /**
     * Given a list of files, pair up those files according to our known recognition strategies.
