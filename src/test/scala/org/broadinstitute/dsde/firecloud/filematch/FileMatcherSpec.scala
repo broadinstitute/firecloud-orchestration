@@ -62,6 +62,37 @@ class FileMatcherSpec extends AnyFreeSpec with Matchers {
 
         actual shouldBe expected
       }
+      "should match single read files using OntSingleReadStrategy" in {
+        val input = List("Complete_barcode01.fastq.gz",
+                         "Complete_barcode02.clean.fastq",
+                         "Incomplete_barcode03.fastq.gz",
+                         "Repeat_barcode4.fastq.gz",
+                         "barcode5.fastq.gz"
+        )
+
+        val expected = List(
+          PartialMatchResult.fromStrings("Complete_barcode01.fastq.gz", "Complete_barcode01"),
+          PartialMatchResult.fromStrings("Complete_barcode02.clean.fastq", "Complete_barcode02"),
+          PartialMatchResult.fromStrings("Incomplete_barcode03.fastq.gz", "Incomplete_barcode03"),
+          PartialMatchResult.fromStrings("Repeat_barcode4.fastq.gz", "Repeat_barcode4"),
+          PartialMatchResult.fromStrings("barcode5.fastq.gz", "barcode5")
+        )
+        val actual = new FileMatcher().pairFiles(input)
+
+        actual shouldBe expected
+      }
+      "should return failed match results for unrecognized single read files" in {
+        val input = List("unknown_file.txt", "Complete_barcode01.fasta.gz", "Incomplete_barcode03.bam")
+
+        val expected = List(
+          FailedMatchResult.fromString("Complete_barcode01.fasta.gz"),
+          FailedMatchResult.fromString("Incomplete_barcode03.bam"),
+          FailedMatchResult.fromString("unknown_file.txt")
+        )
+        val actual = new FileMatcher().pairFiles(input)
+
+        actual shouldBe expected
+      }
     }
   }
 
