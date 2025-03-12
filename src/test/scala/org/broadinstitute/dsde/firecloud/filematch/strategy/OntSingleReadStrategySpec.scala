@@ -77,7 +77,8 @@ class OntSingleReadStrategySpec extends AnyFreeSpec with Matchers {
       "barcode.fastq",
       "barcode.fastq.gz",
       "barcode.clean.fastq",
-      "barcode.clean.fastq.gz"
+      "barcode.clean.fastq.gz",
+      "Complete_barcode01.fastq.gz.gz.gz.gz.gz.gz"
     )
 
   "OntSingleReadStrategy" - {

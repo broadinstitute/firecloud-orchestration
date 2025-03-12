@@ -17,5 +17,5 @@ class OntSingleReadStrategy extends FileRecognitionStrategy {
 
 object OntSingleReadStrategy {
   // if the file contains barcode### and ends with .fastq or .fastq.gz, it's an ONT single read file
-  val PATTERN: Regex = "(?i)(.*barcode\\d+).*\\.fastq(?:.gz)*$".r
+  val PATTERN: Regex = """(?i)(.*barcode\d+).*\.fastq(?:.gz)?$""".r
 }
