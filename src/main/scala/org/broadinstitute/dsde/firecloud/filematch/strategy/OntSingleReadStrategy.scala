@@ -8,20 +8,24 @@ import scala.util.matching.Regex
 
 class OntSingleReadStrategy extends FileRecognitionStrategy {
 
+  // Precompile regex patterns: (?i).*barcode\d+.*(\.clean\.fastq|\.clean\.fastq\.gz|\.fastq|\.fastq\.gz)$
+  private val compiledPatterns: Map[String, Regex] = FILE_CONTAIN_ENDINGS.map { case (key, values) =>
+    key -> new Regex(s"(?i).*${Regex.quote(key)}\\d+.*(${values.map(Regex.quote).mkString("|")})$$")
+  }
+
   override def matchFirstFile(path: Path): FileMatchResult = {
     val fileName = path.getFileName.toString
 
-    // Used regex to match the file name containing the key and ending with any of the specified values
-    val foundMatch = FILE_CONTAIN_ENDINGS.find { case (key, values) =>
-      val regex = new Regex(s".*${Regex.quote(key)}.*(${values.map(Regex.quote).mkString("|")})$$")
+    // Use precompiled regex patterns to match the file name
+    val foundMatch = compiledPatterns.find { case (_, regex) =>
       regex.findFirstIn(fileName).isDefined
     }
 
     foundMatch match {
       // we found a "read1"
-      case Some((_, values)) =>
-        // find the matching value
-        val value = values.find(value => fileName.endsWith(value)).get
+      case Some((key, regex)) =>
+        // Extract the matching value directly from the regex match
+        val value = FILE_CONTAIN_ENDINGS(key).find(value => fileName.endsWith(value)).get
         // generate the id: strip the value from the filename.
         val id = fileName.replace(value, "")
         SuccessfulMatchResult(path, Paths.get(""), id)
@@ -33,9 +37,8 @@ class OntSingleReadStrategy extends FileRecognitionStrategy {
 }
 
 object OntSingleReadStrategy {
-  // if the first file contains ${key} and ends with any of the values in the list, then this is a single read file
+  // if the file contains ${key} and ends with any value in the list, it's an ONT single read file
   val FILE_CONTAIN_ENDINGS: Map[String, List[String]] = Map(
-    "Complete_barcode" -> List(".clean.fastq"),
-    "barcode" -> List(".fastq", ".fastq.gz")
+    "barcode" -> List(".clean.fastq", ".clean.fastq.gz", ".fastq", ".fastq.gz")
   )
 }
