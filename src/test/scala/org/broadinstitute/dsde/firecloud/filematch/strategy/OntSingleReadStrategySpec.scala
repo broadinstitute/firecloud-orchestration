@@ -28,11 +28,57 @@ class OntSingleReadStrategySpec extends AnyFreeSpec with Matchers {
                                                         Paths.get(""),
                                                         "Repeat_barcode4"
     ),
-    "barcode5.fastq.gz" -> SuccessfulMatchResult(toPath("barcode5.fastq.gz"), Paths.get(""), "barcode5")
+    "barcode5.fastq.gz" -> SuccessfulMatchResult(toPath("barcode5.fastq.gz"), Paths.get(""), "barcode5"),
+    "Repeat_barcode6.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Repeat_barcode6.clean.fastq.gz"),
+                                                              Paths.get(""),
+                                                              "Repeat_barcode6"
+    ),
+    "Repeat_BARCODE6.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Repeat_BARCODE6.clean.fastq.gz"),
+                                                              Paths.get(""),
+                                                              "Repeat_BARCODE6"
+    ),
+    "Foo_barcode1.fastq" -> SuccessfulMatchResult(toPath("Foo_barcode1.fastq"), Paths.get(""), "Foo_barcode1"),
+    "Foo_barcode1.fastq.gz" -> SuccessfulMatchResult(toPath("Foo_barcode1.fastq.gz"), Paths.get(""), "Foo_barcode1"),
+    "Foo_barcode1.clean.fastq" -> SuccessfulMatchResult(toPath("Foo_barcode1.clean.fastq"),
+                                                        Paths.get(""),
+                                                        "Foo_barcode1"
+    ),
+    "Foo_barcode1.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Foo_barcode1.clean.fastq.gz"),
+                                                           Paths.get(""),
+                                                           "Foo_barcode1"
+    ),
+    "barcode2.fastq" -> SuccessfulMatchResult(toPath("barcode2.fastq"), Paths.get(""), "barcode2"),
+    "barcode2.fastq.gz" -> SuccessfulMatchResult(toPath("barcode2.fastq.gz"), Paths.get(""), "barcode2"),
+    "barcode2.clean.fastq" -> SuccessfulMatchResult(toPath("barcode2.clean.fastq"), Paths.get(""), "barcode2"),
+    "barcode2.clean.fastq.gz" -> SuccessfulMatchResult(toPath("barcode2.clean.fastq.gz"), Paths.get(""), "barcode2"),
+    "Barcode38934278247843.fastq" -> SuccessfulMatchResult(toPath("Barcode38934278247843.fastq"),
+                                                           Paths.get(""),
+                                                           "Barcode38934278247843"
+    ),
+    "Barcode38934278247843.fastq.gz" -> SuccessfulMatchResult(toPath("Barcode38934278247843.fastq.gz"),
+                                                              Paths.get(""),
+                                                              "Barcode38934278247843"
+    ),
+    "Barcode38934278247843.clean.fastq" -> SuccessfulMatchResult(toPath("Barcode38934278247843.clean.fastq"),
+                                                                 Paths.get(""),
+                                                                 "Barcode38934278247843"
+    ),
+    "Barcode38934278247843.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Barcode38934278247843.clean.fastq.gz"),
+                                                                    Paths.get(""),
+                                                                    "Barcode38934278247843"
+    )
   )
 
   val unrecognizedInputs: List[String] =
-    List("unknown_file.txt", "Complete_barcode01.fasta.gz", "Incomplete_barcode03.bam")
+    List(
+      "unknown_file.txt",
+      "Complete_barcode01.fasta.gz",
+      "Incomplete_barcode03.bam",
+      "barcode.fastq",
+      "barcode.fastq.gz",
+      "barcode.clean.fastq",
+      "barcode.clean.fastq.gz"
+    )
 
   "OntSingleReadStrategy" - {
     recognizedTestCases foreach { case (inputString, expectedMatchResult) =>
