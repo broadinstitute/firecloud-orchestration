@@ -16,4 +16,7 @@ case class SuccessfulMatchResult(firstFile: Path, secondFile: Path, id: String) 
 object SuccessfulMatchResult {
   def fromStrings(firstFile: String, secondFile: String, id: String): SuccessfulMatchResult =
     SuccessfulMatchResult(new java.io.File(firstFile).toPath, new java.io.File(secondFile).toPath, id)
+
+  def apply(firstFile: Path, id: String): SuccessfulMatchResult =
+    SuccessfulMatchResult(firstFile, null, id)
 }

@@ -12,59 +12,39 @@ class OntSingleReadStrategySpec extends AnyFreeSpec with Matchers {
 
   // set of input, expected test cases
   val recognizedTestCases: Map[String, SuccessfulMatchResult] = Map(
-    "Complete_barcode01.fastq.gz" -> SuccessfulMatchResult(toPath("Complete_barcode01.fastq.gz"),
-                                                           Paths.get(""),
-                                                           "Complete_barcode01"
-    ),
+    "Complete_barcode01.fastq.gz" -> SuccessfulMatchResult(toPath("Complete_barcode01.fastq.gz"), "Complete_barcode01"),
     "Complete_barcode02.clean.fastq" -> SuccessfulMatchResult(toPath("Complete_barcode02.clean.fastq"),
-                                                              Paths.get(""),
                                                               "Complete_barcode02"
     ),
     "Incomplete_barcode03.fastq.gz" -> SuccessfulMatchResult(toPath("Incomplete_barcode03.fastq.gz"),
-                                                             Paths.get(""),
                                                              "Incomplete_barcode03"
     ),
-    "Repeat_barcode4.fastq.gz" -> SuccessfulMatchResult(toPath("Repeat_barcode4.fastq.gz"),
-                                                        Paths.get(""),
-                                                        "Repeat_barcode4"
-    ),
-    "barcode5.fastq.gz" -> SuccessfulMatchResult(toPath("barcode5.fastq.gz"), Paths.get(""), "barcode5"),
+    "Repeat_barcode4.fastq.gz" -> SuccessfulMatchResult(toPath("Repeat_barcode4.fastq.gz"), "Repeat_barcode4"),
+    "barcode5.fastq.gz" -> SuccessfulMatchResult(toPath("barcode5.fastq.gz"), "barcode5"),
     "Repeat_barcode6.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Repeat_barcode6.clean.fastq.gz"),
-                                                              Paths.get(""),
                                                               "Repeat_barcode6"
     ),
     "Repeat_BARCODE6.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Repeat_BARCODE6.clean.fastq.gz"),
-                                                              Paths.get(""),
                                                               "Repeat_BARCODE6"
     ),
-    "Foo_barcode1.fastq" -> SuccessfulMatchResult(toPath("Foo_barcode1.fastq"), Paths.get(""), "Foo_barcode1"),
-    "Foo_barcode1.fastq.gz" -> SuccessfulMatchResult(toPath("Foo_barcode1.fastq.gz"), Paths.get(""), "Foo_barcode1"),
-    "Foo_barcode1.clean.fastq" -> SuccessfulMatchResult(toPath("Foo_barcode1.clean.fastq"),
-                                                        Paths.get(""),
-                                                        "Foo_barcode1"
-    ),
-    "Foo_barcode1.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Foo_barcode1.clean.fastq.gz"),
-                                                           Paths.get(""),
-                                                           "Foo_barcode1"
-    ),
-    "barcode2.fastq" -> SuccessfulMatchResult(toPath("barcode2.fastq"), Paths.get(""), "barcode2"),
-    "barcode2.fastq.gz" -> SuccessfulMatchResult(toPath("barcode2.fastq.gz"), Paths.get(""), "barcode2"),
-    "barcode2.clean.fastq" -> SuccessfulMatchResult(toPath("barcode2.clean.fastq"), Paths.get(""), "barcode2"),
-    "barcode2.clean.fastq.gz" -> SuccessfulMatchResult(toPath("barcode2.clean.fastq.gz"), Paths.get(""), "barcode2"),
+    "Foo_barcode1.fastq" -> SuccessfulMatchResult(toPath("Foo_barcode1.fastq"), "Foo_barcode1"),
+    "Foo_barcode1.fastq.gz" -> SuccessfulMatchResult(toPath("Foo_barcode1.fastq.gz"), "Foo_barcode1"),
+    "Foo_barcode1.clean.fastq" -> SuccessfulMatchResult(toPath("Foo_barcode1.clean.fastq"), "Foo_barcode1"),
+    "Foo_barcode1.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Foo_barcode1.clean.fastq.gz"), "Foo_barcode1"),
+    "barcode2.fastq" -> SuccessfulMatchResult(toPath("barcode2.fastq"), "barcode2"),
+    "barcode2.fastq.gz" -> SuccessfulMatchResult(toPath("barcode2.fastq.gz"), "barcode2"),
+    "barcode2.clean.fastq" -> SuccessfulMatchResult(toPath("barcode2.clean.fastq"), "barcode2"),
+    "barcode2.clean.fastq.gz" -> SuccessfulMatchResult(toPath("barcode2.clean.fastq.gz"), "barcode2"),
     "Barcode38934278247843.fastq" -> SuccessfulMatchResult(toPath("Barcode38934278247843.fastq"),
-                                                           Paths.get(""),
                                                            "Barcode38934278247843"
     ),
     "Barcode38934278247843.fastq.gz" -> SuccessfulMatchResult(toPath("Barcode38934278247843.fastq.gz"),
-                                                              Paths.get(""),
                                                               "Barcode38934278247843"
     ),
     "Barcode38934278247843.clean.fastq" -> SuccessfulMatchResult(toPath("Barcode38934278247843.clean.fastq"),
-                                                                 Paths.get(""),
                                                                  "Barcode38934278247843"
     ),
     "Barcode38934278247843.clean.fastq.gz" -> SuccessfulMatchResult(toPath("Barcode38934278247843.clean.fastq.gz"),
-                                                                    Paths.get(""),
                                                                     "Barcode38934278247843"
     )
   )
