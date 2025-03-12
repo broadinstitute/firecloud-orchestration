@@ -9,7 +9,7 @@ import scala.util.matching.Regex
 class OntSingleReadStrategy extends FileRecognitionStrategy {
 
   override def matchFirstFile(path: Path): FileMatchResult =
-    path.toString match {
+    path.getFileName.toString match {
       case PATTERN(id) => SuccessfulMatchResult(path, id)
       case _           => FailedMatchResult(path)
     }
