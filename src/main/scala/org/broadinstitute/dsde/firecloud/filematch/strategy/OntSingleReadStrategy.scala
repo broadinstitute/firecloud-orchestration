@@ -9,9 +9,9 @@ import scala.util.matching.Regex
 class OntSingleReadStrategy extends FileRecognitionStrategy {
 
   override def matchFirstFile(path: Path): FileMatchResult =
-    PATTERN.findFirstMatchIn(path.toString) match {
-      case Some(regexMatch) => SuccessfulMatchResult(path, Paths.get(""), regexMatch.group(1))
-      case None             => FailedMatchResult(path)
+    path.toString match {
+      case PATTERN(id) => SuccessfulMatchResult(path, Paths.get(""), id)
+      case _           => FailedMatchResult(path)
     }
 }
 
