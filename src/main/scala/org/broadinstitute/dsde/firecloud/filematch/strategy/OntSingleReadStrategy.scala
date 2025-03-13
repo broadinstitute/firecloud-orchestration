@@ -1,16 +1,16 @@
 package org.broadinstitute.dsde.firecloud.filematch.strategy
 
-import org.broadinstitute.dsde.firecloud.filematch.result.{FailedMatchResult, FileMatchResult, SuccessfulMatchResult}
+import org.broadinstitute.dsde.firecloud.filematch.result.{FailedMatchResult, FileMatchResult, PartialMatchResult}
 import OntSingleReadStrategy.PATTERN
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 import scala.util.matching.Regex
 
 class OntSingleReadStrategy extends FileRecognitionStrategy {
 
   override def matchFirstFile(path: Path): FileMatchResult =
     path.getFileName.toString match {
-      case PATTERN(id) => SuccessfulMatchResult(path, id)
+      case PATTERN(id) => PartialMatchResult(path, id)
       case _           => FailedMatchResult(path)
     }
 }
