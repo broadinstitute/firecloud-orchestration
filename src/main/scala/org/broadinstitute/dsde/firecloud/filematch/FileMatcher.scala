@@ -58,16 +58,13 @@ class FileMatcher extends LazyLogging {
     */
   private def performPairing(pathList: List[Path]): List[FileMatchResult] = {
     // find every path in the incoming pathList that is recognized by one of our known patterns
-    val (successfulMatches, partialMatches) = findFirstFiles(pathList).partition {
-      case _: SuccessfulMatchResult => true
-      case _: PartialMatchResult    => false
-    }
+    val matches = findFirstFiles(pathList)
+    val successfulMatches: List[SuccessfulMatchResult] = matches.collect { case x: SuccessfulMatchResult => x }
+    val partialMatches: List[PartialMatchResult] = matches.collect { case x: PartialMatchResult => x }
 
     // remove the recognized firstFiles and partialMatches from the outstanding pathList
-    val remainingPaths: List[Path] = pathList.diff(
-      successfulMatches.collect { case s: SuccessfulMatchResult => s.firstFile } ++
-        partialMatches.collect { case p: PartialMatchResult => p.firstFile }
-    )
+    val remainingPaths: List[Path] =
+      pathList.diff(successfulMatches.map(_.firstFile) ++ partialMatches.map(_.firstFile))
 
     // process the recognized "read 1" files, and look for their desired pairings in the outstanding pathList.
     // this will result in either SuccessfulMatchResult when the desired pairing is found, or PartialMatchResult
