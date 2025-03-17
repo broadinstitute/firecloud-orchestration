@@ -386,29 +386,11 @@ class MockRawlsDAO extends RawlsDAO {
   override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] =
     Future.successful(userInfo.id == "curator")
 
-  override def getBucketUsage(ns: String, name: String)(implicit
-    userInfo: WithAccessToken
-  ): Future[BucketUsageResponse] =
-    Future.successful(BucketUsageResponse(BigInt("256000000000"), Option(new DateTime(0))))
-
   override def getBucketUsageV2(ns: String, name: String)(implicit
     userInfo: WithAccessToken
   ): Future[BucketMetricsResponse] =
     Future.successful(
       BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
-    )
-
-  override def getBucketOptions(ns: String, name: String, userProject: Option[GoogleProjectId] = None)(implicit
-    userInfo: WithAccessToken
-  ): Future[WorkspaceBucketOptions] =
-    Future.successful(
-      WorkspaceBucketOptions(
-        false,
-        ns match {
-          case "europeWest1BucketWorkspace" => "europe-west1"
-          case _                            => "us-central1"
-        }
-      )
     )
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
