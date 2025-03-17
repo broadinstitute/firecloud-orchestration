@@ -43,7 +43,7 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
-    "ch.qos.logback"                 % "logback-classic"     % "1.5.16",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.17",
     "io.sentry"                      % "sentry-logback"      % "8.1.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
