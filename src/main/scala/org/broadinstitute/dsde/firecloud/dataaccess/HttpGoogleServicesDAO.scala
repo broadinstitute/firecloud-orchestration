@@ -40,11 +40,6 @@ import spray.json.{DefaultJsonProtocol, _}
 
 case class StoragePriceList(prices: Map[String, BigDecimal])
 
-/** Result from Google's pricing calculator price list
-  * (https://cloudpricingcalculator.appspot.com/static/data/pricelist.json).
-  */
-case class GooglePriceList(prices: GooglePrices, version: String, updated: String)
-
 /** Partial price list. Attributes can be added as needed to import prices for more products. */
 case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal], cpComputeengineInternetEgressNA: UsTieredPriceItem)
 
@@ -72,8 +67,6 @@ object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSup
     FireCloudConfig.GoogleCloud.priceListStorageKey,
     FireCloudConfig.GoogleCloud.priceListEgressKey
   )
-  implicit val GooglePriceListFormat: RootJsonFormat[GooglePriceList] =
-    jsonFormat(GooglePriceList, "gcp_price_list", "version", "updated")
 }
 import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
@@ -108,7 +101,7 @@ object HttpGoogleServicesDAO {
       .getTokenValue
 }
 
-class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceList)(
+class HttpGoogleServicesDAO()(
   implicit val system: ActorSystem,
   implicit val materializer: Materializer,
   implicit val executionContext: ExecutionContext
@@ -225,23 +218,6 @@ class HttpGoogleServicesDAO(priceListUrl: String, defaultPriceList: GooglePriceL
   def getObjectResourceUrl(bucketName: String, objectKey: String) = {
     val gcsStatUrl = "https://www.googleapis.com/storage/v1/b/%s/o/%s"
     gcsStatUrl.format(bucketName, java.net.URLEncoder.encode(objectKey, "UTF-8"))
-  }
-
-  /** Fetch the latest price list from Google. Returns only the subset of prices that we find we have use for. */
-  // Why is this a val? Because the price lists do not change very often. This prevents making an HTTP call to Google
-  // every time we want to calculate a cost estimate (which happens extremely often in the Terra UI)
-  // Because the price list is brittle and Google sometimes changes the names of keys in the JSON, there is a
-  // default cached value in configuration to use as a backup. If we fallback to it, the error will be logged
-  // but users will probably not notice a difference. They're cost *estimates*, after all.
-  lazy val fetchPriceList: Future[GooglePriceList] = {
-    val httpReq = Get(priceListUrl)
-
-    unAuthedRequestToObject[GooglePriceList](httpReq).recover { case t: Throwable =>
-      logger.error(
-        s"Unable to fetch/parse latest Google price list. A cached (possibly outdated) value will be used instead. Error: ${t.getMessage}"
-      )
-      defaultPriceList
-    }
   }
 
   override def deleteGoogleGroup(groupEmail: String): Unit = {
