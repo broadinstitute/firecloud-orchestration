@@ -230,6 +230,7 @@ object FireCloudConfig {
     lazy val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
     lazy val maxAggregations: Int = Try(elasticsearch.getInt("maxAggregations")).getOrElse(1000)
     val enabled = elasticsearch.optionalBoolean("enabled").getOrElse(true)
+    val libraryEnabled = elasticsearch.optionalBoolean("libraryEnabled").getOrElse(true)
   }
 
   def parseESServers(confString: String): Seq[Authority] =
