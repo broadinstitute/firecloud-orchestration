@@ -809,7 +809,7 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
   /api/workflows/{version}/{id}/cost:
-    patch:
+    get:
       tags:
         - CromIAM Workflows (for Job Manager)
       summary: Get estimated cloud costs incurred by this workflow so far (not predictive)
