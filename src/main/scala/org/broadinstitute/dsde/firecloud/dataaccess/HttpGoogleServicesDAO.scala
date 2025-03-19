@@ -36,39 +36,6 @@ import java.io.FileInputStream
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
-import spray.json.{DefaultJsonProtocol, _}
-
-case class StoragePriceList(prices: Map[String, BigDecimal])
-
-/** Partial price list. Attributes can be added as needed to import prices for more products. */
-case class GooglePrices(cpBigstoreStorage: Map[String, BigDecimal], cpComputeengineInternetEgressNA: UsTieredPriceItem)
-
-/** Tiered price item containing only US currency.
-  *
-  * Used for egress, may need to be altered to work with other types in the future.
-  * Contains a map of the different tiers of pricing, where the key is the size in GB
-  * for that tier and the value is the cost in USD for that tier.
-  */
-case class UsTieredPriceItem(tiers: Map[Long, BigDecimal])
-
-object GooglePriceListJsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
-  implicit object UsTieredPriceItemFormat extends RootJsonFormat[UsTieredPriceItem] {
-    override def write(value: UsTieredPriceItem): JsValue = ???
-    override def read(json: JsValue): UsTieredPriceItem = json match {
-      case JsObject(values) =>
-        UsTieredPriceItem(values("tiers").asJsObject.fields.map { case (name, value) =>
-          name.toLong -> BigDecimal(value.toString)
-        })
-      case x => throw new DeserializationException("invalid value: " + x)
-    }
-  }
-  implicit val GooglePricesFormat: RootJsonFormat[GooglePrices] = jsonFormat(
-    GooglePrices,
-    FireCloudConfig.GoogleCloud.priceListStorageKey,
-    FireCloudConfig.GoogleCloud.priceListEgressKey
-  )
-}
-import org.broadinstitute.dsde.firecloud.dataaccess.GooglePriceListJsonProtocol._
 
 object HttpGoogleServicesDAO {
   // the minimal scopes needed to get through the auth proxy and populate our UserInfo model objects
