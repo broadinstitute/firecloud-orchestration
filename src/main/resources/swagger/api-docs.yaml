@@ -6767,7 +6767,7 @@ components:
         estimate:
           type: string
           description: The estimated monthly storage cost of the bucket
-        usageInByes:
+        usageInBytes:
           type: integer
           description: The current storage bucket usage in bytes
         lastUpdated:
