@@ -67,23 +67,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
 
   val storagePriceList = FireCloudConfig.GoogleCloud.storagePriceList
 
-  def getStorageCostEstimate(workspaceNamespace: String,
-                             workspaceName: String,
-                             userProject: Option[GoogleProjectId]
-  ): Future[RequestComplete[WorkspaceStorageCostEstimate]] = for {
-    bucketUsage <- rawlsDAO.getBucketUsage(workspaceNamespace, workspaceName)
-    priceList <- googleServicesDAO.fetchPriceList
-    bucketOptions <- rawlsDAO.getBucketOptions(workspaceNamespace, workspaceName, userProject)
-  } yield {
-    val rate = priceList.prices.cpBigstoreStorage.getOrElse(
-      bucketOptions.location.toLowerCase,
-      priceList.prices.cpBigstoreStorage("us")
-    )
-    // Convert bytes to GB since rate is based on GB.
-    val estimate: BigDecimal = BigDecimal(bucketUsage.usageInBytes) / (1024 * 1024 * 1024) * rate
-    RequestComplete(WorkspaceStorageCostEstimate(f"$$$estimate%.2f", bucketUsage.lastUpdated))
-  }
-
   def getStorageCostEstimateV2(workspaceNamespace: String,
                                workspaceName: String
   ): Future[RequestComplete[WorkspaceStorageUsageAndCostEstimate]] =

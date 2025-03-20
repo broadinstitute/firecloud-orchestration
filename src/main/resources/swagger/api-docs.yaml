@@ -3104,26 +3104,6 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
       x-passthrough: true
       x-passthrough-target: rawls
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/bucketUsage:
-    get:
-      tags:
-        - Workspaces
-      summary: Get bucket usage
-      deprecated: true
-      description: Deprecated in favor of /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/storageCostEstimate, which returns usage as well as cost
-      operationId: getBucketUsage
-      parameters:
-        - $ref: '#/components/parameters/workspaceNamespaceParam'
-        - $ref: '#/components/parameters/workspaceNameParam'
-      responses:
-        200:
-          description: Successful Request
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/BucketUsageResponse'
-      x-passthrough: true
-      x-passthrough-target: rawls
   /api/workspaces/{workspaceNamespace}/{workspaceName}/catalog:
     get:
       tags:
@@ -4720,33 +4700,6 @@ paths:
           content: {}
       x-passthrough: true
       x-passthrough-target: rawls
-  /api/workspaces/{workspaceNamespace}/{workspaceName}/storageCostEstimate:
-    get:
-      tags:
-        - Workspaces
-      summary: Calculate an estimate of the monthly storage cost for the workspace
-        bucket
-      deprecated: true
-      description: Deprecated in favor of /api/workspaces/v2/{workspaceNamespace}/{workspaceName}/storageCostEstimate
-      operationId: getStorageCostEstimate
-      parameters:
-        - $ref: '#/components/parameters/workspaceNamespaceParam'
-        - $ref: '#/components/parameters/workspaceNameParam'
-        - $ref: '#/components/parameters/userProjectQueryParam'
-      responses:
-        200:
-          description: Successful Request
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/BucketStorageCost'
-        404:
-          description: Workspace not found
-          content: {}
-        500:
-          description: Internal Error
-          content: {}
-      x-passthrough: false
   /api/workspaces/{workspaceNamespace}/{workspaceName}/submissions:
     get:
       tags:
@@ -6805,32 +6758,6 @@ components:
           type: string
           description: informational message about the project
       description: ""
-    BucketStorageCost:
-      required:
-        - estimate
-      type: object
-      properties:
-        estimate:
-          type: string
-          description: The estimated monthly storage cost of the bucket
-        lastUpdated:
-          type: string
-          format: timestamp
-          description: timestamp (UTC) marking the date that the bucket cost was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
-      description: ""
-    BucketUsageResponse:
-      required:
-        - usageInBytes
-      type: object
-      properties:
-        usageInBytes:
-          type: integer
-          description: The current storage bucket usage in bytes
-        lastUpdated:
-          type: string
-          format: timestamp
-          description: timestamp (UTC) marking the date that the bucket usage was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
-      description: ""
     BucketStorageUsageAndCost:
       required:
         - estimate
@@ -6840,7 +6767,7 @@ components:
         estimate:
           type: string
           description: The estimated monthly storage cost of the bucket
-        usageInByes:
+        usageInBytes:
           type: integer
           description: The current storage bucket usage in bytes
         lastUpdated:
@@ -10532,14 +10459,6 @@ components:
       in: path
       description: Submission ID
       required: true
-      schema:
-        type: string
-    userProjectQueryParam:
-      name: userProject
-      in: query
-      description: |
-        When specified, bill google storage requests to this project
-      required: false
       schema:
         type: string
     workflowIdParam:

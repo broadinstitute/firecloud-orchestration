@@ -1079,40 +1079,6 @@ class WorkspaceApiServiceSpec
     }
 
     "Workspace storage cost estimate tests" - {
-      "when calling any method other than GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 405 Method Not Allowed for anything other than GET" in {
-          List(HttpMethods.PUT, HttpMethods.POST, HttpMethods.PATCH, HttpMethods.DELETE) map { method =>
-            new RequestBuilder(method)(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-              workspaceRoutes
-            ) ~> check {
-              status should be(MethodNotAllowed)
-            }
-          }
-        }
-      }
-
-      "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for us region" in
-          Get(usBucketStorageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should be(OK)
-            // 256000000000 / (1024 * 1024 * 1024) *0.01
-            responseAs[WorkspaceStorageCostEstimate].estimate should be("$2.38")
-          }
-      }
-
-      "when calling GET on workspaces/*/*/storageCostEstimate" - {
-        "should return 200 with result for different europe east 1 region." in
-          Get(europeWest1storageCostEstimatePath) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should be(OK)
-            // 256000000000 / (1024 * 1024 * 1024) *0.02
-            responseAs[WorkspaceStorageCostEstimate].estimate should be("$4.77")
-          }
-      }
-
       "when calling GET on workspaces/v2/*/*/storageCostEstimate" - {
         "should return 200 with result" in
           Get(bucketStorageCostEstimateV2Path) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(

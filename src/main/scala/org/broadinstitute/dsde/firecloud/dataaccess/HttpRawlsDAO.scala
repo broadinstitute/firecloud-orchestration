@@ -67,28 +67,10 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
       }
     }
 
-  override def getBucketUsage(ns: String, name: String)(implicit
-    userInfo: WithAccessToken
-  ): Future[BucketUsageResponse] =
-    authedRequestToObject[BucketUsageResponse](Get(rawlsBucketUsageUrl(ns, name)))
-
   override def getBucketUsageV2(ns: String, name: String)(implicit
     userInfo: WithAccessToken
   ): Future[BucketMetricsResponse] =
     authedRequestToObject[BucketMetricsResponse](Get(rawlsBucketUsageV2Url(ns, name)))
-
-  override def getBucketOptions(ns: String, name: String, userProject: Option[GoogleProjectId] = None)(implicit
-    userInfo: WithAccessToken
-  ): Future[WorkspaceBucketOptions] =
-    authedRequestToObject[WorkspaceBucketOptions](Get(getBucketOptionsUrl(ns, name, userProject)))
-
-  private def getBucketOptionsUrl(ns: String, name: String, userProject: Option[GoogleProjectId]): String =
-    rawlsBucketOptionsUrl(ns, name) + {
-      userProject match {
-        case Some(id) => rawlsBucketOptionsQueryString.format(id)
-        case None     => ""
-      }
-    }
 
   override def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]] =
     authedRequestToObject[Seq[WorkspaceListResponse]](Get(rawlsWorkpacesUrl),
