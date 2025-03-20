@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.9.3"
   val akkaHttpV = "10.6.3"
-  val jacksonV = "2.18.2"
-  val jacksonHotfixV = "2.18.2" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.18.3"
+  val jacksonHotfixV = "2.18.3" // for when only some of the Jackson libs have hotfix releases
   val nettyV = "4.1.119.Final"
   val workbenchLibsHash = "3e0cf25" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
@@ -43,8 +43,8 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
-    "ch.qos.logback"                 % "logback-classic"     % "1.5.16",
-    "io.sentry"                      % "sentry-logback"      % "8.1.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.17",
+    "io.sentry"                      % "sentry-logback"      % "8.4.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -60,7 +60,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.8-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.2" excludeAll(excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.4" excludeAll(excludeSpringBoot, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -96,7 +96,7 @@ object Dependencies {
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
     "org.mock-server"                % "mockserver-netty-no-dependencies"    % "5.15.0"  % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.30" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.33" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
