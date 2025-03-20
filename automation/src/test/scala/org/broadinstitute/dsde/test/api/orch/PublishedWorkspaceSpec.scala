@@ -24,7 +24,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Mat
   "a user with publish permissions" - {
     "can publish a workspace" - {
 
-      "published workspace should be visible in the library table" in {
+      "published workspace should be visible in the library table" ignore {
 
         val curatorUser = UserPool.chooseCurator
         implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
@@ -56,7 +56,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Mat
       }
 
       "can clone a published workspace" - {
-        "cloned workspace should default to unpublished status" in {
+        "cloned workspace should default to unpublished status" ignore {
 
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
@@ -85,7 +85,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Mat
           }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
         }
 
-        "cloned workspace should default to visible to 'all users'" in {
+        "cloned workspace should default to visible to 'all users'" ignore {
 
           val curatorUser = UserPool.chooseCurator
           implicit val curatorAuthToken: AuthToken = curatorUser.makeAuthToken()
@@ -118,7 +118,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Mat
 
       }
 
-      "publish a dataset with consent codes" in {
+      "publish a dataset with consent codes" ignore {
 
         val curatorUser = UserPool.chooseCurator
         implicit val authToken: AuthToken = curatorUser.makeAuthToken()
@@ -139,7 +139,7 @@ class PublishedWorkspaceSpec extends AnyFreeSpec with WorkspaceFixtures with Mat
         }(UserPool.chooseProjectOwner.makeAuthToken(billingScopes))
       }
 
-      "publish a dataset with tags" in {
+      "publish a dataset with tags" ignore {
 
         val tags = Map("tag:tags" -> Seq("testing", "diabetes", "PublishedWorkspaceSpec"))
         val curatorUser = UserPool.chooseCurator

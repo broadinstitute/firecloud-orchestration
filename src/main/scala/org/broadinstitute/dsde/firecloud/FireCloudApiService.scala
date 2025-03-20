@@ -190,6 +190,14 @@ trait FireCloudApiService
       logRequests &
       noCacheNoStore
 
+  // CORE-377: library routes are enabled/disabled via config (default: disabled) as a scream test.
+  //   Once we are sure they are unused, we should delete the code instead of disabling.
+  private val maybeEnabledLibraryRoutes: server.Route = if (FireCloudConfig.ElasticSearch.libraryEnabled) {
+    libraryRoutes
+  } else {
+    reject
+  }
+
   def route: server.Route = routeWrappers {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
@@ -197,7 +205,7 @@ trait FireCloudApiService
       exportEntitiesRoutes ~
       entityRoutes ~
       healthServiceRoutes ~
-      libraryRoutes ~
+      maybeEnabledLibraryRoutes ~
       namespaceRoutes ~
       oauthRoutes ~
       profileRoutes ~
