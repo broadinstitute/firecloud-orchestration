@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Route.{seal => sealRoute}
 import akka.stream.Materializer
 import org.broadinstitute.dsde.firecloud.FireCloudConfig
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.mock.{MockGoogleServicesDAO, MockUtils, SamMockserverUtils}
+import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.JWTWrapper
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.NihStatus
@@ -17,17 +17,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.ExecutionContext
 
-class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll with SamMockserverUtils {
-
-  // mockserver to return an enabled user from Sam
-  var mockSamServer: ClientAndServer = _
-
-  override def afterAll(): Unit = mockSamServer.stop()
-
-  override def beforeAll(): Unit = {
-    mockSamServer = startClientAndServer(MockUtils.samServerPort)
-    returnEnabledUser(mockSamServer)
-  }
+class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll {
 
   val tcgaDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TCGA")).head.groupToSync
   val targetDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TARGET")).head.groupToSync

@@ -128,7 +128,8 @@ object Boot extends IOApp with LazyLogging {
             userServiceConstructor,
             shareLogServiceConstructor,
             managedGroupServiceConstructor,
-            oauth2Config
+            oauth2Config,
+            app.samDAO
           )
         }
       } yield service

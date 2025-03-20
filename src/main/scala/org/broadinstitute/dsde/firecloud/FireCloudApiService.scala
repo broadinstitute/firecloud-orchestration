@@ -14,6 +14,7 @@ import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, Logg
 import akka.http.scaladsl.server.{Directive, Directive0, ExceptionHandler, RouteResult}
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.dataaccess.SamDAO
 import org.broadinstitute.dsde.firecloud.model.{ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
@@ -189,6 +190,14 @@ trait FireCloudApiService
       logRequests &
       noCacheNoStore
 
+  // CORE-377: library routes are enabled/disabled via config (default: disabled) as a scream test.
+  //   Once we are sure they are unused, we should delete the code instead of disabling.
+  private val maybeEnabledLibraryRoutes: server.Route = if (FireCloudConfig.ElasticSearch.libraryEnabled) {
+    libraryRoutes
+  } else {
+    reject
+  }
+
   def route: server.Route = routeWrappers {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
@@ -196,7 +205,7 @@ trait FireCloudApiService
       exportEntitiesRoutes ~
       entityRoutes ~
       healthServiceRoutes ~
-      libraryRoutes ~
+      maybeEnabledLibraryRoutes ~
       namespaceRoutes ~
       oauthRoutes ~
       profileRoutes ~
@@ -234,7 +243,8 @@ class FireCloudApiServiceImpl(
   val userServiceConstructor: (UserInfo) => UserService,
   val shareLogServiceConstructor: () => ShareLogService,
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService,
-  val oidcConfig: OpenIDConnectConfiguration
+  val oidcConfig: OpenIDConnectConfiguration,
+  val samDao: SamDAO
 )(implicit
   val actorRefFactory: ActorRefFactory,
   val executionContext: ExecutionContext,
