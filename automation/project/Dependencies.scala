@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val scalaV = "2.13"
+  val scalaV = "2.13.16"
 
   val jacksonV = "2.18.2"
   val jacksonHotfixV = "2.18.2" // for when only some of the Jackson libs have hotfix releases
