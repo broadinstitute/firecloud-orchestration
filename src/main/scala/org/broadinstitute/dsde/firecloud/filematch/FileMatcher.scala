@@ -1,8 +1,17 @@
 package org.broadinstitute.dsde.firecloud.filematch
 
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.filematch.result.{FailedMatchResult, FileMatchResult, SuccessfulMatchResult}
-import org.broadinstitute.dsde.firecloud.filematch.strategy.{FileRecognitionStrategy, IlluminaPairedEndStrategy}
+import org.broadinstitute.dsde.firecloud.filematch.result.{
+  FailedMatchResult,
+  FileMatchResult,
+  PartialMatchResult,
+  SuccessfulMatchResult
+}
+import org.broadinstitute.dsde.firecloud.filematch.strategy.{
+  FileRecognitionStrategy,
+  IlluminaPairedEndStrategy,
+  OntSingleReadStrategy
+}
 
 import java.nio.file.Path
 
@@ -16,7 +25,8 @@ import java.nio.file.Path
 class FileMatcher extends LazyLogging {
 
   // the list of recognition strategies to use
-  private val matchingStrategies: List[FileRecognitionStrategy] = List(new IlluminaPairedEndStrategy())
+  private val matchingStrategies: List[FileRecognitionStrategy] =
+    List(new IlluminaPairedEndStrategy(), new OntSingleReadStrategy())
 
   /**
     * Given a list of files, pair up those files according to our known recognition strategies.
@@ -48,25 +58,28 @@ class FileMatcher extends LazyLogging {
     */
   private def performPairing(pathList: List[Path]): List[FileMatchResult] = {
     // find every path in the incoming pathList that is recognized by one of our known patterns
-    val desiredPairings: List[SuccessfulMatchResult] = findFirstFiles(pathList)
+    val matches = findFirstFiles(pathList)
+    val successfulMatches: List[SuccessfulMatchResult] = matches.collect { case x: SuccessfulMatchResult => x }
+    val partialMatches: List[PartialMatchResult] = matches.collect { case x: PartialMatchResult => x }
 
-    // remove the recognized firstFiles from the outstanding pathList
-    val remainingPaths: List[Path] = pathList diff desiredPairings.map(_.firstFile)
+    // remove the recognized firstFiles and partialMatches from the outstanding pathList
+    val remainingPaths: List[Path] =
+      pathList.diff(successfulMatches.map(_.firstFile) ++ partialMatches.map(_.firstFile))
 
     // process the recognized "read 1" files, and look for their desired pairings in the outstanding pathList.
     // this will result in either SuccessfulMatchResult when the desired pairing is found, or PartialMatchResult
     // when the desired pairing is not found
-    val pairingResults: List[FileMatchResult] = findSecondFiles(remainingPaths, desiredPairings)
+    val pairingResults: List[FileMatchResult] = findSecondFiles(remainingPaths, successfulMatches)
 
     // remove the recognized "read 2" files from the outstanding pathList
     val unrecognizedPaths: List[Path] = remainingPaths diff pairingResults.collect { case s: SuccessfulMatchResult =>
       s.secondFile
     }
     // translate the unrecognized paths into a FileMatchResult
-    val unrecognizedResults: List[FailedMatchResult] = unrecognizedPaths.map(path => FailedMatchResult(path))
+    val unrecognizedResults: List[FailedMatchResult] = unrecognizedPaths.map(FailedMatchResult(_))
 
     // return results, sorted by firstFile
-    (pairingResults ++ unrecognizedResults).sortBy(r => r.firstFile)
+    (pairingResults ++ partialMatches ++ unrecognizedResults).sortBy(_.firstFile)
   }
 
   /**
@@ -74,10 +87,11 @@ class FileMatcher extends LazyLogging {
     * @param pathList the list of files to inspect
     * @return pairing results
     */
-  private def findFirstFiles(pathList: List[Path]): List[SuccessfulMatchResult] =
+  private def findFirstFiles(pathList: List[Path]): List[FileMatchResult] =
     pathList.collect { path =>
       tryPairingStrategies(path) match {
         case success: SuccessfulMatchResult => success
+        case partial: PartialMatchResult    => partial
       }
     }
 
@@ -111,11 +125,12 @@ class FileMatcher extends LazyLogging {
     val strategyHit = matchingStrategies.collectFirst(strategy =>
       strategy.matchFirstFile(file) match {
         case success: SuccessfulMatchResult => success
+        case partial: PartialMatchResult    => partial
       }
     )
     strategyHit match {
       // The current file is recognized by one of our recognition strategies
-      case Some(desiredResult: SuccessfulMatchResult) => desiredResult
+      case Some(desiredResult: FileMatchResult) => desiredResult
       // the current file is not recognized
       case _ => FailedMatchResult(file)
     }

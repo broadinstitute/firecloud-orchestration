@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.18.2"
   val jacksonHotfixV = "2.18.2" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.118.Final"
+  val nettyV = "4.1.119.Final"
   val workbenchLibsHash = "3e0cf25" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
@@ -28,7 +28,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
     "org.yaml"                   % "snakeyaml"                  % "2.3",
     "org.apache.commons"         % "commons-compress"           % "1.27.1", // workbench-libs libraries pull this in
-    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20250208-2.0.0", // from workbench-google2
+    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20250218-2.0.0", // from workbench-google2
     "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20250217-2.0.0" // from workbench-google2
   )
 
@@ -48,7 +48,7 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.310-SNAP")
+    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.321-SNAP")
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
@@ -56,10 +56,10 @@ object Dependencies {
     excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash"),
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.36-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.8-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.365",
+    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.367",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"0.8-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
-    "bio.terra" % "externalcreds-client-resttemplate" % "1.56.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
+    "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
     "org.springframework" % "spring-web" % "6.2.2" excludeAll(excludeSpringBoot, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,

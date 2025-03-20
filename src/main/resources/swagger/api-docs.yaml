@@ -808,6 +808,37 @@ paths:
           content: {}
       x-passthrough: true
       x-passthrough-target: rawls
+  /api/workflows/{version}/{id}/cost:
+    get:
+      tags:
+        - CromIAM Workflows (for Job Manager)
+      summary: Get estimated cloud costs incurred by this workflow so far (not predictive)
+      parameters:
+        - $ref: '#/components/parameters/versionParam'
+        - name: id
+          in: path
+          description: Workflow ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostResponse'
+        400:
+          description: Malformed Workflow ID
+          content: { }
+        404:
+          description: Workflow ID Not Found
+          content: { }
+        500:
+          description: Internal Error
+          content: { }
+      x-passthrough: true
+      x-passthrough-target: cromiam
   /api/workflows/{version}/{id}/labels:
     patch:
       tags:
@@ -2688,12 +2719,13 @@ paths:
       x-passthrough: false
   /api/sharelog/sharees:
     get:
+      deprecated: true
       tags:
         - ShareLog
       summary: |
-        Get a list of users with whom current user has shared a Workspace.
+        Deprecated; will be deleted on or after April 7, 2025
       description: |
-        Get a list of users with whom current user has shared a Workspace.
+        Deprecated; will be deleted on or after April 7, 2025
       operationId: getSharees
       responses:
         200:
@@ -8274,11 +8306,16 @@ components:
           description: Method configuration source name
     RawlsBillingProjectResponse:
       required:
+        - id
         - projectName
         - invalidBillingAccount
         - roles
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+          description: the uuid of the project
         projectName:
           type: string
           description: the name of the project
@@ -10323,6 +10360,36 @@ components:
       enum:
         - CWL
         - WDL
+    CostResponse:
+      required:
+        - cost
+        - currency
+        - errors
+        - id
+        - status
+      type: object
+      properties:
+        cost:
+          type: number
+          description: The current estimated cost of the workflow
+          example: 0.045
+        currency:
+          type: string
+          description: The currency that the cost is in, currently always USD
+          example: USD
+        errors:
+          type: array
+          items:
+            type: string
+          description: Errors that were encountered while obtaining cost information, if any. If this list is nonempty the estimated cost should be regarded as incomplete.
+        id:
+          type: string
+          description: The identifier of the workflow
+          example: 00001111-2222-3333-aaaa-bbbbccccdddd
+        status:
+          type: string
+          description: The status of the workflow
+          example: Running
     LabelsResponse:
       required:
         - id
