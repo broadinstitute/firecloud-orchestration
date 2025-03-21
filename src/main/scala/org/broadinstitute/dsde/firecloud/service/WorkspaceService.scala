@@ -81,7 +81,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
           (sumBytes + metric.valueInBytes, sumEstimate + estimate)
       }
       RequestComplete(
-        WorkspaceStorageUsageAndCostEstimate(totalEstimate.setScale(2, RoundingMode.HALF_UP), totalBytes, Instant.now)
+        WorkspaceStorageUsageAndCostEstimate(totalEstimate.setScale(2, RoundingMode.HALF_UP),
+                                             totalBytes.toBigInt,
+                                             Instant.now
+        )
       )
     }) recoverWith {
       case e: NoSuchElementException =>
