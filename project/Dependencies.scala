@@ -58,7 +58,6 @@ object Dependencies {
       // we don't need all the libraries that workbench-google2 pulls in
       exclude("com.google.cloud", "google-cloud-bigquery")
       exclude("com.google.cloud", "google-cloud-billing")
-      exclude("com.google.cloud", "google-cloud-compute")
       exclude("com.google.cloud", "google-cloud-container")
       exclude("com.google.cloud", "google-cloud-dataproc")
       exclude("com.google.cloud", "google-cloud-kms")
