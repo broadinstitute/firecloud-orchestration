@@ -8,7 +8,6 @@ object Dependencies {
   val nettyV = "4.1.119.Final"
   val workbenchLibsHash = "70c7d82" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
-  def excludeGuava(m: ModuleID): ModuleID = m.exclude("com.google.guava", "guava")
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream =       ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
   val excludeAkkaHttp = ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
@@ -23,6 +22,7 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
+    "com.google.guava"           % "guava"                      % "33.4.5-jre",
     "com.fasterxml.jackson.core" % "jackson-annotations"        % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind"           % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
@@ -38,7 +38,6 @@ object Dependencies {
     // TODO: can these move to sbt's dependencyOverrides?
     "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
     "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
-    "com.google.guava"               % "guava"               % "33.4.5-jre",
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
@@ -48,12 +47,12 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    excludeGuava("org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.331-SNAP")
+    "org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.331-SNAP"
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
-    excludeGuava("org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash"),
+    "org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.37-$workbenchLibsHash"
       // we don't need all the libraries that workbench-google2 pulls in
       exclude("com.google.cloud", "google-cloud-bigquery")
