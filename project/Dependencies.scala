@@ -43,8 +43,8 @@ object Dependencies {
 
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
-    "ch.qos.logback"                 % "logback-classic"     % "1.5.17",
-    "io.sentry"                      % "sentry-logback"      % "8.4.0",
+    "ch.qos.logback"                 % "logback-classic"     % "1.5.18",
+    "io.sentry"                      % "sentry-logback"      % "8.5.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -69,7 +69,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"1.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.4" excludeAll(excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.5" excludeAll(excludeSpringBoot, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
