@@ -26,7 +26,6 @@ tags:
   - name: OAuth
   - name: Profile
   - name: Service Perimeters
-  - name: ShareLog
   - name: Static Notebooks
   - name: Status
   - name: Submissions
@@ -2716,27 +2715,6 @@ paths:
             application/json:
               schema:
                 type: object
-      x-passthrough: false
-  /api/sharelog/sharees:
-    get:
-      deprecated: true
-      tags:
-        - ShareLog
-      summary: |
-        Deprecated; will be deleted on or after April 7, 2025
-      description: |
-        Deprecated; will be deleted on or after April 7, 2025
-      operationId: getSharees
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StringArray'
-        500:
-          description: Internal Error
-          content: {}
       x-passthrough: false
   /api/staticNotebooks/convert:
     post:

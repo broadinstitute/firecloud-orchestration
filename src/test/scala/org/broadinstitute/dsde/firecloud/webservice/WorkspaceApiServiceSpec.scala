@@ -6,7 +6,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route.{seal => sealRoute}
 
 import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.{FILETYPE_PFB, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.dataaccess.{MockCwdsDAO, MockShareLogDAO, WorkspaceApiServiceSpecShareLogDAO}
+import org.broadinstitute.dsde.firecloud.dataaccess.MockCwdsDAO
 import org.broadinstitute.dsde.firecloud.mock.MockUtils._
 import org.broadinstitute.dsde.firecloud.mock.{MockTSVFormData, MockUtils}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
@@ -130,13 +130,11 @@ class WorkspaceApiServiceSpec
   private def catalogPath(ns: String = workspace.namespace, name: String = workspace.name) =
     workspacesRoot + "/%s/%s/catalog".format(ns, name)
 
-  val localShareLogDao: MockShareLogDAO = new WorkspaceApiServiceSpecShareLogDAO
-
   // use a disabled cWDS for these tests; enabled cWDS has tests coverage elsewhere
   val mockCwdsDao: MockCwdsDAO = new MockCwdsDAO(enabled = false)
 
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService =
-    WorkspaceService.constructor(app.copy(shareLogDAO = localShareLogDao))
+    WorkspaceService.constructor(app)
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService =
     PermissionReportService.constructor(app)
   val entityServiceConstructor: (ModelSchema) => EntityService =
