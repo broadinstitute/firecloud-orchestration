@@ -169,16 +169,15 @@ trait FireCloudApiService
 
   // routes under /api
   def apiRoutes: server.Route =
-    options(complete(StatusCodes.OK)) ~
-      withExecutionContext(ExecutionContext.global) {
-        v1RegisterRoutes ~
-          methodsApiServiceRoutes ~
-          profileRoutes ~
-          cromIamApiServiceRoutes ~
-          methodConfigurationRoutes ~
-          nihRoutes ~
-          staticNotebooksRoutes
-      }
+    withExecutionContext(ExecutionContext.global) {
+      v1RegisterRoutes ~
+        methodsApiServiceRoutes ~
+        profileRoutes ~
+        cromIamApiServiceRoutes ~
+        methodConfigurationRoutes ~
+        nihRoutes ~
+        staticNotebooksRoutes
+    }
 
   val routeWrappers: Directive[Unit] =
     handleRejections(org.broadinstitute.dsde.firecloud.model.defaultErrorReportRejectionHandler) &
