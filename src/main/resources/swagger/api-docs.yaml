@@ -8626,6 +8626,10 @@ components:
           type: boolean
           default: false
           description: Whether or not to create output columns if they would be empty and optional.  Defaults to false (columns are created).
+        perWorkflowCostCap:
+          type: number
+          description: The maximum cost for a single workflow in this submission.  If the workflow exceeds this cost, it will be aborted.
+          format: float
       description: If the referenced method configuration takes no root entity, do
         not define `entityType`, `entityName` and `expression`.
     SubmissionStatus:
