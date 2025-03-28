@@ -8628,8 +8628,11 @@ components:
           description: Whether or not to create output columns if they would be empty and optional.  Defaults to false (columns are created).
         perWorkflowCostCap:
           type: number
-          description: The maximum cost for a single workflow in this submission.  If the workflow exceeds this cost, it will be aborted.
+          description: A cost threshold in USD to apply to individual workflows. When the estimated cost is exceeded, the workflow is terminated.
           format: float
+          minimum: 0.01
+          maximum: 9999999999.99
+          multipleOf: 0.01
       description: If the referenced method configuration takes no root entity, do
         not define `entityType`, `entityName` and `expression`.
     SubmissionStatus:
