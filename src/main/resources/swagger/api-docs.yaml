@@ -2764,29 +2764,6 @@ paths:
       x-passthrough: true
       x-passthrough-target: calhoun
       x-codegen-request-body-name: notebook
-  /api/submissions/queueStatus:
-    get:
-      tags:
-        - Submissions
-      summary: workflow queue status
-      description: List workflow counts by queueing state
-      operationId: workflowQueueStatus
-      deprecated: true
-      responses:
-        200:
-          description: Successful Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkflowQueueStatusResponse'
-        500:
-          description: Rawls Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      x-passthrough: true
-      x-passthrough-target: rawls
   /api/template:
     post:
       tags:
@@ -9066,29 +9043,6 @@ components:
           type: string
           description: The id of this workflow
       description: The cost of a workflow, if available
-    WorkflowQueueStatusResponse:
-      required:
-        - estimatedQueueTimeMS
-        - workflowCountsByStatus
-        - workflowsBeforeNextUserWorkflow
-      type: object
-      properties:
-        estimatedQueueTimeMS:
-          type: integer
-          description: estimated milliseconds until the current queue is submitted
-          format: int64
-        workflowsBeforeNextUserWorkflow:
-          type: integer
-          description: the number of workflows in the queue ahead of the user's first
-            workflow
-          format: int32
-        workflowCountsByStatus:
-          type: object
-          additionalProperties:
-            type: integer
-            format: int32
-          description: Map[String,Int]
-      description: Information about the status of workflows and the workflow queue
     WorkflowStatus:
       type: string
       description: workflow status

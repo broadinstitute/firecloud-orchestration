@@ -65,8 +65,6 @@ object FireCloudConfig {
     val submissionsWorkflowIdPath = workspace.getString("submissionsWorkflowIdPath")
     val submissionsWorkflowIdOutputsPath = workspace.getString("submissionsWorkflowIdOutputsPath")
     val createGroupPath = workspace.getString("createGroup")
-    val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
-    val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
     val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
     val executionEngineVersionUrl = baseUrl + executionEngineVersionPath
     val notificationsPath = workspace.getString("notificationsPath")
