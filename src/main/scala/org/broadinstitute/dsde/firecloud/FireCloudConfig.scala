@@ -52,25 +52,13 @@ object FireCloudConfig {
     val authUrl = baseUrl + authPrefix
     val workspacesPath = workspace.getString("workspacesPath")
     val workspacesUrl = authUrl + workspacesPath
-    val workspacesV2Path = workspace.getString("workspacesV2Path")
-    val workspacesV2Url = authUrl + workspacesV2Path
     val entitiesPath = workspace.getString("entitiesPath")
     val entityQueryPath = workspace.getString("entityQueryPath")
     val workspacesEntitiesCopyPath = workspace.getString("workspacesEntitiesCopyPath")
     def workspacesEntitiesCopyUrl(linkExistingEntities: Boolean) =
       authUrl + workspacesEntitiesCopyPath + "?linkExistingEntities=%s".format(linkExistingEntities)
-    val submissionsCountPath = workspace.getString("submissionsCountPath")
-    val submissionsPath = workspace.getString("submissionsPath")
-    val submissionsIdPath = workspace.getString("submissionsIdPath")
-    val submissionsWorkflowIdPath = workspace.getString("submissionsWorkflowIdPath")
-    val submissionsWorkflowIdOutputsPath = workspace.getString("submissionsWorkflowIdOutputsPath")
     val createGroupPath = workspace.getString("createGroup")
-    val submissionQueueStatusPath = workspace.getString("submissionQueueStatusPath")
-    val submissionQueueStatusUrl = authUrl + submissionQueueStatusPath
-    val executionEngineVersionPath = workspace.getString("executionEngineVersionPath")
-    val executionEngineVersionUrl = baseUrl + executionEngineVersionPath
     val notificationsPath = workspace.getString("notificationsPath")
-    val notificationsUrl = authUrl + notificationsPath
     val defaultPageSize = rawls.getInt("defaultPageSize")
 
     def entityPathFromWorkspace(namespace: String, name: String) = authUrl + entitiesPath.format(namespace, name)

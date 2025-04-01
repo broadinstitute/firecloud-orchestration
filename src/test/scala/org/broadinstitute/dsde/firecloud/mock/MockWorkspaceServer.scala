@@ -132,18 +132,6 @@ object MockWorkspaceServer {
       .when(
         request()
           .withMethod("GET")
-          .withPath("/api/submissions/queueStatus")
-      )
-      .respond(
-        response()
-          .withHeaders(header)
-          .withStatusCode(OK.intValue)
-      )
-
-    MockWorkspaceServer.workspaceServer
-      .when(
-        request()
-          .withMethod("GET")
           .withPath(
             s"${workspaceBasePath}/%s/%s/submissionsCount"
               .format(mockValidWorkspace.namespace, mockValidWorkspace.name)
