@@ -22,14 +22,14 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "com.google.guava"           % "guava"                      % "33.4.5-jre",
+    "com.google.guava"           % "guava"                      % "33.4.6-jre",
     "com.fasterxml.jackson.core" % "jackson-annotations"        % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind"           % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
     "org.yaml"                   % "snakeyaml"                  % "2.4",
     "org.apache.commons"         % "commons-compress"           % "1.27.1", // workbench-libs libraries pull this in
     "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20250311-2.0.0", // from workbench-google2
-    "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20250217-2.0.0" // from workbench-google2
+    "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20250325-2.0.0" // from workbench-google2
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -47,7 +47,7 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    "org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.331-SNAP"
+    "org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.337-SNAP"
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
@@ -63,7 +63,7 @@ object Dependencies {
       exclude("com.google.cloud", "google-cloud-resourcemanager")
       exclude("com.google.cloud", "google-cloud-storage-transfer"),
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.9-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.370",
+    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.375",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"1.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),

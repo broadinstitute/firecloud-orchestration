@@ -2742,29 +2742,6 @@ paths:
       x-passthrough: true
       x-passthrough-target: calhoun
       x-codegen-request-body-name: notebook
-  /api/submissions/queueStatus:
-    get:
-      tags:
-        - Submissions
-      summary: workflow queue status
-      description: List workflow counts by queueing state
-      operationId: workflowQueueStatus
-      deprecated: true
-      responses:
-        200:
-          description: Successful Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkflowQueueStatusResponse'
-        500:
-          description: Rawls Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorReport'
-      x-passthrough: true
-      x-passthrough-target: rawls
   /api/template:
     post:
       tags:
@@ -8604,6 +8581,13 @@ components:
           type: boolean
           default: false
           description: Whether or not to create output columns if they would be empty and optional.  Defaults to false (columns are created).
+        perWorkflowCostCap:
+          type: number
+          description: A cost threshold in USD to apply to individual workflows. When the estimated cost is exceeded, the workflow is terminated.
+          format: float
+          minimum: 0.01
+          maximum: 9999999999.99
+          multipleOf: 0.01
       description: If the referenced method configuration takes no root entity, do
         not define `entityType`, `entityName` and `expression`.
     SubmissionStatus:
@@ -9037,29 +9021,6 @@ components:
           type: string
           description: The id of this workflow
       description: The cost of a workflow, if available
-    WorkflowQueueStatusResponse:
-      required:
-        - estimatedQueueTimeMS
-        - workflowCountsByStatus
-        - workflowsBeforeNextUserWorkflow
-      type: object
-      properties:
-        estimatedQueueTimeMS:
-          type: integer
-          description: estimated milliseconds until the current queue is submitted
-          format: int64
-        workflowsBeforeNextUserWorkflow:
-          type: integer
-          description: the number of workflows in the queue ahead of the user's first
-            workflow
-          format: int32
-        workflowCountsByStatus:
-          type: object
-          additionalProperties:
-            type: integer
-            format: int32
-          description: Map[String,Int]
-      description: Information about the status of workflows and the workflow queue
     WorkflowStatus:
       type: string
       description: workflow status
