@@ -77,6 +77,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
   val userDbGap = genSamUser();
+  val deniedUser = genSamUser().copy(email = WorkbenchEmail("someone@gmAil.com"))
   val dbGapGroupEmail = WorkbenchEmail(UUID.randomUUID().toString + "@email.com")
 
   // DateTimes must be modified in seconds instead of days to match implementation
@@ -93,13 +94,14 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   var userDbGapLinkedAccount =
     LinkedEraAccount(userDbGap.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
 
-  val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap)
+  val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap, deniedUser)
   val linkedAccounts = Seq(
     userNoAllowlistsLinkedAccount,
     userTcgaAndTargetLinkedAccount,
     userTcgaOnlyLinkedAccount,
     userTargetOnlyLinkedAccount,
-    userDbGapLinkedAccount
+    userDbGapLinkedAccount,
+    deniedUser
   )
 
   val idToSamUser = samUsers.groupBy(_.id).view.mapValues(_.head).toMap
@@ -109,7 +111,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     userTcgaAndTarget.id -> userTcgaAndTargetLinkedAccount,
     userTcgaOnly.id -> userTcgaOnlyLinkedAccount,
     userTargetOnly.id -> userTargetOnlyLinkedAccount,
-    userDbGap.id -> userDbGapLinkedAccount
+    userDbGap.id -> userDbGapLinkedAccount,
+    deniedUser.id -> userTcgaAndTargetLinkedAccount
   )
 
   val linkedAccountsByExternalId = Map(
@@ -412,6 +415,61 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
     verify(samDao, times(1)).addGroupMember(
+      ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
+    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+    verify(samDao, never()).addGroupMember(
+      ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
+    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+    verify(samDao, never()).addGroupMember(
+      ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
+    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+  }
+
+  it should "decode a JWT from Shibboleth and sync allowlists and remove a denied user" in {
+    mockShibbolethDAO()
+    mockEcmUsers()
+    mockThurloeUsers()
+    val user = deniedUser
+    val userInfo = UserInfo(user.email.value,
+      OAuth2BearerToken(user.id.value),
+      Instant.now().plusSeconds(60).getEpochSecond,
+      user.id.value
+    )
+    val linkedAccount = userTcgaOnlyLinkedAccount
+    val jwt = jwtForUser(linkedAccount)
+    val (statusCode, nihStatus) = Await
+      .result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf)
+      .asInstanceOf[PerRequest.RequestComplete[(StatusCode, NihStatus)]]
+      .response
+
+    nihStatus.linkedNihUsername should be(Some(linkedAccount.linkedExternalId))
+    nihStatus.linkExpireTime should be(Some(linkedAccount.linkExpireTime.getMillis / 1000L))
+    nihStatus.datasetPermissions should be(
+      Set(
+        NihDatasetPermission("BROKEN", authorized = false),
+        NihDatasetPermission("TARGET", authorized = false),
+        NihDatasetPermission("TCGA", authorized = false),
+        NihDatasetPermission("RAS", authorized = false)
+      )
+    )
+
+    statusCode should be(StatusCodes.OK)
+    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
+    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
+      "target-whitelist.txt"
+    )
+    verify(samDao, times(1)).removeGroupMember(
+      ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
+    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+    verify(samDao, times(1)).removeGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
       ArgumentMatchers.eq(WorkbenchEmail(user.email.value))

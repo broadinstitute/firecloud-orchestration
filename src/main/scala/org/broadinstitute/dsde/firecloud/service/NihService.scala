@@ -263,7 +263,7 @@ class NihService(val samDao: SamDAO,
       dbGapGroupEmail <- Future.traverse(dbGapSamGroup.toList)(samDao.getGroupEmail(_)(getAdminAccessToken))
       ecmEmails <- getNihAllowlistTerraEmailsFromEcm(allowlistUsers)
       thurloeEmails <- getNihAllowlistTerraEmailsFromThurloe(allowlistUsers)
-      members = ecmEmails ++ thurloeEmails ++ dbGapGroupEmail
+      members = allowedNihMembers(ecmEmails ++ thurloeEmails ++ dbGapGroupEmail)
       _ <- ensureAllowlistGroupsExists()
       // The request to Sam to completely overwrite the group with the list of actively linked users on the allowlist
       _ <- samDao.overwriteGroupMembers(nihAllowlist.groupToSync, ManagedGroupRoles.Member, members.toList)(
@@ -272,6 +272,12 @@ class NihService(val samDao: SamDAO,
         throw new FireCloudException(s"Error synchronizing NIH allowlist: ${e.getMessage}")
       }
     } yield ()
+  }
+
+  private def allowedNihMembers(members: Set[WorkbenchEmail]): Set[WorkbenchEmail] = {
+    members.filterNot(email => FireCloudConfig.Nih.denyEmailPatterns.exists { r =>
+      r.matches(email.value)
+    })
   }
 
   private def linkNihAccountEcm(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] =
@@ -387,7 +393,7 @@ class NihService(val samDao: SamDAO,
   ): Future[Boolean] = {
     val allowlistUsers = downloadNihAllowlist(nihAllowlist)
 
-    if (allowlistUsers contains linkedNihUserName) {
+    if (allowlistUsers.contains(linkedNihUserName) && allowedNihMembers(Set(userEmail)).contains(userEmail)) {
       for {
         _ <- samDao.addGroupMember(nihAllowlist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
       } yield true
