@@ -274,8 +274,17 @@ class NihService(val samDao: SamDAO,
     } yield ()
   }
 
-  private def allowedNihMembers(members: Set[WorkbenchEmail]): Set[WorkbenchEmail] =
-    members.filterNot(email => FireCloudConfig.Nih.denyEmailPatterns.exists(_.matches(email.value)))
+  private def allowedNihMembers(members: Set[WorkbenchEmail]): Set[WorkbenchEmail] = {
+    val allowedMembers =
+      members.filterNot(email => FireCloudConfig.Nih.denyEmailPatterns.exists(_.matches(email.value)))
+    val deniedMembers = members -- allowedMembers
+    if (deniedMembers.nonEmpty) {
+      logger.info(
+        s"NIH allowlist sync: ${deniedMembers.mkString(",")} were denied access to the NIH allowlist due to matching deny patterns"
+      )
+    }
+    allowedMembers
+  }
 
   private def linkNihAccountEcm(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] =
     ecmDao
