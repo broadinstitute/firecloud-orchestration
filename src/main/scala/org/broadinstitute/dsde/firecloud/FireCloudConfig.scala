@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 import scala.util.Try
+import scala.util.matching.Regex
 
 object FireCloudConfig {
   private val config = ConfigFactory.load()
@@ -204,6 +205,12 @@ object FireCloudConfig {
 
         DbGapPermission(phsId, consentGroup) -> groupName
       }.toMap
+    }
+    lazy val denyEmailPatterns: Set[Regex] = {
+      val denyEmailPatternsConfigs = nih.getStringList("denyEmailPatterns")
+      denyEmailPatternsConfigs.asScala.toSet.map { pattern: String =>
+        pattern.r
+      }
     }
   }
 
