@@ -94,7 +94,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   var userDbGapLinkedAccount =
     LinkedEraAccount(userDbGap.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
 
-  val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap, deniedUser)
+  val samUsers =
+    Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap, deniedUser)
   val linkedAccounts = Seq(
     userNoAllowlistsLinkedAccount,
     userTcgaAndTargetLinkedAccount,
@@ -437,9 +438,9 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     mockThurloeUsers()
     val user = deniedUser
     val userInfo = UserInfo(user.email.value,
-      OAuth2BearerToken(user.id.value),
-      Instant.now().plusSeconds(60).getEpochSecond,
-      user.id.value
+                            OAuth2BearerToken(user.id.value),
+                            Instant.now().plusSeconds(60).getEpochSecond,
+                            user.id.value
     )
     val linkedAccount = userTcgaOnlyLinkedAccount
     val jwt = jwtForUser(linkedAccount)
@@ -462,7 +463,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     statusCode should be(StatusCodes.OK)
     verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
     verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
-      "target-whitelist.txt"
+                                                             "target-whitelist.txt"
     )
     verify(samDao, times(1)).removeGroupMember(
       ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),

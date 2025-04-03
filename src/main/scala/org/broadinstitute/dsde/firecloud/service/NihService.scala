@@ -274,11 +274,8 @@ class NihService(val samDao: SamDAO,
     } yield ()
   }
 
-  private def allowedNihMembers(members: Set[WorkbenchEmail]): Set[WorkbenchEmail] = {
-    members.filterNot(email => FireCloudConfig.Nih.denyEmailPatterns.exists { r =>
-      r.matches(email.value)
-    })
-  }
+  private def allowedNihMembers(members: Set[WorkbenchEmail]): Set[WorkbenchEmail] =
+    members.filterNot(email => FireCloudConfig.Nih.denyEmailPatterns.exists(_.matches(email.value)))
 
   private def linkNihAccountEcm(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] =
     ecmDao
