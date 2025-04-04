@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.18.3"
   val jacksonHotfixV = "2.18.3" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.119.Final"
+  val nettyV = "4.2.0.Final"
   val workbenchLibsHash = "70c7d82" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
