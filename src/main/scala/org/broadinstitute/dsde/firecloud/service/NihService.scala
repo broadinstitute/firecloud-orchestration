@@ -263,7 +263,7 @@ class NihService(val samDao: SamDAO,
       dbGapGroupEmail <- Future.traverse(dbGapSamGroup.toList)(samDao.getGroupEmail(_)(getAdminAccessToken))
       ecmEmails <- getNihAllowlistTerraEmailsFromEcm(allowlistUsers)
       thurloeEmails <- getNihAllowlistTerraEmailsFromThurloe(allowlistUsers)
-      members = ecmEmails ++ thurloeEmails ++ dbGapGroupEmail
+      members = allowedNihMembers(ecmEmails ++ thurloeEmails ++ dbGapGroupEmail)
       _ <- ensureAllowlistGroupsExists()
       // The request to Sam to completely overwrite the group with the list of actively linked users on the allowlist
       _ <- samDao.overwriteGroupMembers(nihAllowlist.groupToSync, ManagedGroupRoles.Member, members.toList)(
@@ -272,6 +272,18 @@ class NihService(val samDao: SamDAO,
         throw new FireCloudException(s"Error synchronizing NIH allowlist: ${e.getMessage}")
       }
     } yield ()
+  }
+
+  private def allowedNihMembers(members: Set[WorkbenchEmail]): Set[WorkbenchEmail] = {
+    val allowedMembers =
+      members.filterNot(email => FireCloudConfig.Nih.denyEmailPatterns.exists(_.matches(email.value)))
+    val deniedMembers = members -- allowedMembers
+    if (deniedMembers.nonEmpty) {
+      logger.info(
+        s"NIH allowlist sync: ${deniedMembers.mkString(",")} were denied access to the NIH allowlist due to matching deny patterns"
+      )
+    }
+    allowedMembers
   }
 
   private def linkNihAccountEcm(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] =
@@ -335,6 +347,16 @@ class NihService(val samDao: SamDAO,
 
   def updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper): Future[PerRequestMessage] = {
     val res = for {
+      _ <-
+        if (allowedNihMembers(Set(WorkbenchEmail(userInfo.userEmail))).isEmpty) {
+          Future.failed(
+            new FireCloudExceptionWithErrorReport(
+              ErrorReport(StatusCodes.Forbidden, "User is not allowed to link NIH account")
+            )
+          )
+        } else {
+          Future.successful(())
+        }
       shibbolethPublicKey <- shibbolethDao.getPublicKey()
       decodedToken <- Future
         .fromTry(Jwt.decodeRawAll(jwtWrapper.jwt, shibbolethPublicKey, Seq(JwtAlgorithm.RS256)))
@@ -387,7 +409,7 @@ class NihService(val samDao: SamDAO,
   ): Future[Boolean] = {
     val allowlistUsers = downloadNihAllowlist(nihAllowlist)
 
-    if (allowlistUsers contains linkedNihUserName) {
+    if (allowlistUsers.contains(linkedNihUserName) && allowedNihMembers(Set(userEmail)).contains(userEmail)) {
       for {
         _ <- samDao.addGroupMember(nihAllowlist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
       } yield true

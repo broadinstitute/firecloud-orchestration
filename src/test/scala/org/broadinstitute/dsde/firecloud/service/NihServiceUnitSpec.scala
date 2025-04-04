@@ -77,6 +77,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
   val userDbGap = genSamUser();
+  val deniedUser = genSamUser().copy(email = WorkbenchEmail("someone@gmAil.com"))
   val dbGapGroupEmail = WorkbenchEmail(UUID.randomUUID().toString + "@email.com")
 
   // DateTimes must be modified in seconds instead of days to match implementation
@@ -93,13 +94,15 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   var userDbGapLinkedAccount =
     LinkedEraAccount(userDbGap.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
 
-  val samUsers = Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap)
+  val samUsers =
+    Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap, deniedUser)
   val linkedAccounts = Seq(
     userNoAllowlistsLinkedAccount,
     userTcgaAndTargetLinkedAccount,
     userTcgaOnlyLinkedAccount,
     userTargetOnlyLinkedAccount,
-    userDbGapLinkedAccount
+    userDbGapLinkedAccount,
+    deniedUser
   )
 
   val idToSamUser = samUsers.groupBy(_.id).view.mapValues(_.head).toMap
@@ -109,7 +112,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     userTcgaAndTarget.id -> userTcgaAndTargetLinkedAccount,
     userTcgaOnly.id -> userTcgaOnlyLinkedAccount,
     userTargetOnly.id -> userTargetOnlyLinkedAccount,
-    userDbGap.id -> userDbGapLinkedAccount
+    userDbGap.id -> userDbGapLinkedAccount,
+    deniedUser.id -> userTcgaAndTargetLinkedAccount
   )
 
   val linkedAccountsByExternalId = Map(
