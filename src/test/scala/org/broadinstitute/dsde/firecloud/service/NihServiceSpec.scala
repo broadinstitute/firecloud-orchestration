@@ -1,6 +1,8 @@
 package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.dsde.firecloud.FireCloudExceptionWithErrorReport
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{JWTWrapper, UserInfo}
@@ -111,5 +113,14 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
       case x =>
         fail(s"Expired token should fail at the decode stage. Response was: $x")
     }
+  }
+
+  it should "403 linking denied email" in {
+    val nihServiceMock = new NihService(samDao, thurloeDao, googleDao, mock[ShibbolethDAO], ecmDao)
+    val userToken: UserInfo = UserInfo("someone@gmail.com", OAuth2BearerToken("dummyToken"), -1, thurloeDao.TCGA_AND_TARGET_LINKED)
+    val error = intercept[FireCloudExceptionWithErrorReport] {
+      Await.result(nihServiceMock.updateNihLinkAndSyncSelf(userToken, JWTWrapper("dummyToken")), 3.seconds)
+    }
+    error.errorReport.statusCode shouldBe Some(StatusCodes.Forbidden)
   }
 }
