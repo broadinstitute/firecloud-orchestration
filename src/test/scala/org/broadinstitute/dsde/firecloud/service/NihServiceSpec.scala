@@ -117,7 +117,8 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
 
   it should "403 linking denied email" in {
     val nihServiceMock = new NihService(samDao, thurloeDao, googleDao, mock[ShibbolethDAO], ecmDao)
-    val userToken: UserInfo = UserInfo("someone@gmail.com", OAuth2BearerToken("dummyToken"), -1, thurloeDao.TCGA_AND_TARGET_LINKED)
+    val userToken: UserInfo =
+      UserInfo("someone@gmail.com", OAuth2BearerToken("dummyToken"), -1, thurloeDao.TCGA_AND_TARGET_LINKED)
     val error = intercept[FireCloudExceptionWithErrorReport] {
       Await.result(nihServiceMock.updateNihLinkAndSyncSelf(userToken, JWTWrapper("dummyToken")), 3.seconds)
     }
