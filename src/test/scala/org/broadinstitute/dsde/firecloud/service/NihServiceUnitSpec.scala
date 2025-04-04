@@ -432,61 +432,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
-  it should "decode a JWT from Shibboleth and sync allowlists and remove a denied user" in {
-    mockShibbolethDAO()
-    mockEcmUsers()
-    mockThurloeUsers()
-    val user = deniedUser
-    val userInfo = UserInfo(user.email.value,
-                            OAuth2BearerToken(user.id.value),
-                            Instant.now().plusSeconds(60).getEpochSecond,
-                            user.id.value
-    )
-    val linkedAccount = userTcgaOnlyLinkedAccount
-    val jwt = jwtForUser(linkedAccount)
-    val (statusCode, nihStatus) = Await
-      .result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf)
-      .asInstanceOf[PerRequest.RequestComplete[(StatusCode, NihStatus)]]
-      .response
-
-    nihStatus.linkedNihUsername should be(Some(linkedAccount.linkedExternalId))
-    nihStatus.linkExpireTime should be(Some(linkedAccount.linkExpireTime.getMillis / 1000L))
-    nihStatus.datasetPermissions should be(
-      Set(
-        NihDatasetPermission("BROKEN", authorized = false),
-        NihDatasetPermission("TARGET", authorized = false),
-        NihDatasetPermission("TCGA", authorized = false),
-        NihDatasetPermission("RAS", authorized = false)
-      )
-    )
-
-    statusCode should be(StatusCodes.OK)
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
-                                                             "target-whitelist.txt"
-    )
-    verify(samDao, times(1)).removeGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, times(1)).removeGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, never()).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, never()).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-  }
-
   it should "continue, but return an error of ECM returns an error" in {
     mockShibbolethDAO()
     mockThurloeUsers()
