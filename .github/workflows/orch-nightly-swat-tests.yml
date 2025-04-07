@@ -32,7 +32,7 @@ jobs:
       - id: prepare-outputs
         run: |-
           echo 'log-results=true' >> $GITHUB_OUTPUT
-          echo 'test-context=manual' >> $GITHUB_OUTPUT
+          echo 'test-context=nightly' >> $GITHUB_OUTPUT
 
   create-bee-workflow:
     strategy:
