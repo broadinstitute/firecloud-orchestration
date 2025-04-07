@@ -26,6 +26,9 @@ jobs:
       custom-version-json: ${{ steps.publish-orch.outputs.custom-version-json }}
     steps:
       - uses: 'actions/checkout@v4'
+        with:
+          ref: develop
+          fetch-tags: true
       # Publish jar to GCR
       - id: publish-orch
         name: Publish Orch
