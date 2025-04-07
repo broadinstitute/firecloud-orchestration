@@ -10,39 +10,40 @@ on:
   workflow_dispatch:
 
 env:
-  GCR_REGISTRY: gcr.io/broad-dsp-gcr-public/firecloud-orchestration
-  # Region-specific Google Docker repository where GOOGLE_PROJECT/REPOSITORY_NAME can be found
-  GOOGLE_DOCKER_REPOSITORY: us-central1-docker.pkg.dev
+#  GCR_REGISTRY: gcr.io/broad-dsp-gcr-public/firecloud-orchestration # unused?
+#  # Region-specific Google Docker repository where GOOGLE_PROJECT/REPOSITORY_NAME can be found
+#  GOOGLE_DOCKER_REPOSITORY: us-central1-docker.pkg.dev # unused?
   RUN_NAME: '${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
-  orch-build-tag-publish-job:
+#  setup-vars:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: 'read'
+##      id-token: 'write'
+#    outputs:
+#
+#    steps:
+
+  prepare-configs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
     outputs:
-      tag: ${{ steps.publish-orch.outputs.tag }}
-      custom-version-json: ${{ steps.publish-orch.outputs.custom-version-json }}
+      #      tag: ${{ steps.get-latest-tag.outputs.tag }} # unused?
+      custom-version-json: ${{ steps.build-custom-version-json.outputs.custom-version-json }}
+#      log-results: ${{ steps.prepare-outputs.outputs.log-results }} # unused?
+      test-context: ${{ steps.prepare-outputs.outputs.test-context }}
     steps:
       - uses: 'actions/checkout@v4'
         with:
           ref: develop
           fetch-tags: true
-      # Publish jar to GCR
-      - id: publish-orch
+      - id: get-latest-tag
+        run: |
+          echo "tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_OUTPUT
+      - id: build-custom-version-json
         name: Publish Orch
         run: |
-          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
-          echo "custom-version-json={\"firecloudorch\":{\"appVersion\":\"${LATEST_TAG}\"}}" >> $GITHUB_OUTPUT
-
-  prepare-configs:
-    runs-on: ubuntu-latest
-    outputs:
-      log-results: ${{ steps.prepare-outputs.outputs.log-results }}
-      test-context: ${{ steps.prepare-outputs.outputs.test-context }}
-    steps:
+          echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${{ steps.get-latest-tag.outputs.tag }}\"}}' >> $GITHUB_OUTPUT
       - id: prepare-outputs
         run: |-
           echo 'log-results=true' >> $GITHUB_OUTPUT
@@ -53,14 +54,14 @@ jobs:
       matrix:
         terra-env: [ dev ] # what versions of apps do we use to emulate types of environments
     runs-on: ubuntu-latest
-    needs: [orch-build-tag-publish-job]
+    needs: [prepare-configs]
     permissions:
       contents: 'read'
       id-token: 'write'
     steps:
       - name: Echo Orch version
         run: |
-          echo '${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}'
+          echo '${{ needs.prepare-configs.outputs.custom-version-json }}'
 
       - name: dispatch to terra-github-workflows
         uses: broadinstitute/workflow-dispatch@v4
@@ -75,7 +76,7 @@ jobs:
           inputs: '{
               "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
               "version-template": "${{ matrix.terra-env }}",
-              "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}",
+              "custom-version-json": "${{ needs.setup-vars.outputs.custom-version-json }}",
               "run-name": "bee-create-${{ env.RUN_NAME }}"
             }'
 
