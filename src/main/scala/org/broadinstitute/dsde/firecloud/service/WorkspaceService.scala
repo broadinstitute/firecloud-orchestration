@@ -42,8 +42,7 @@ object WorkspaceService {
                          app.thurloeDAO,
                          app.googleServicesDAO,
                          app.ontologyDAO,
-                         app.searchDAO,
-                         app.shareLogDAO
+                         app.searchDAO
     )
 }
 
@@ -53,8 +52,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
                        val thurloeDAO: ThurloeDAO,
                        val googleServicesDAO: GoogleServicesDAO,
                        val ontologyDAO: OntologyDAO,
-                       val searchDAO: SearchDAO,
-                       val shareLogDAO: ShareLogDAO
+                       val searchDAO: SearchDAO
 )(implicit protected val executionContext: ExecutionContext)
     extends AttributeSupport
     with TSVFileSupport
@@ -146,19 +144,10 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
                          originId: String,
                          inviteUsersNotFound: Boolean
   ): Future[RequestComplete[WorkspaceACLUpdateResponseList]] = {
-    def logShares(aclUpdateList: WorkspaceACLUpdateResponseList) = {
-      // this will log a share every time a workspace is shared with a user
-      // it will also log a share every time a workspace permission is changed
-      // i.e. READER to WRITER, etc
-      val sharees = aclUpdateList.usersUpdated.filterNot(_.accessLevel == WorkspaceAccessLevels.NoAccess).map(_.email)
-      val invitesSent = aclUpdateList.invitesSent.map(_.email)
-      shareLogDAO.logShares(originId, (sharees ++ invitesSent).toSeq, ShareType.WORKSPACE)
-    }
 
     val aclUpdate = rawlsDAO.patchWorkspaceACL(workspaceNamespace, workspaceName, aclUpdates, inviteUsersNotFound)
 
     aclUpdate map { actualUpdates =>
-      logShares(actualUpdates)
       RequestComplete(actualUpdates)
     }
   }

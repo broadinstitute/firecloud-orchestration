@@ -38,7 +38,6 @@ trait ApiServiceSpec
     val searchDao: MockSearchDAO
     val researchPurposeSupport: MockResearchPurposeSupport
     val thurloeDao: MockThurloeDAO
-    val shareLogDao: MockShareLogDAO
     val shibbolethDao: ShibbolethDAO
     val cwdsDao: CwdsDAO
     val ecmDao: ExternalCredsDAO
@@ -54,7 +53,6 @@ trait ApiServiceSpec
                       searchDao,
                       researchPurposeSupport,
                       thurloeDao,
-                      shareLogDao,
                       shibbolethDao,
                       cwdsDao,
                       ecmDao

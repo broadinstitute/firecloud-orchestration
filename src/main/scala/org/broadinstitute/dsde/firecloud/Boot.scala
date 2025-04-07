@@ -91,7 +91,6 @@ object Boot extends IOApp with LazyLogging {
       val permissionReportServiceConstructor: (UserInfo) => PermissionReportService =
         PermissionReportService.constructor(app)
       val userServiceConstructor: (UserInfo) => UserService = UserService.constructor(app)
-      val shareLogServiceConstructor: () => ShareLogService = ShareLogService.constructor(app)
       val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService =
         ManagedGroupService.constructor(app)
 
@@ -126,7 +125,6 @@ object Boot extends IOApp with LazyLogging {
             statusServiceConstructor,
             permissionReportServiceConstructor,
             userServiceConstructor,
-            shareLogServiceConstructor,
             managedGroupServiceConstructor,
             oauth2Config,
             app.samDAO
@@ -170,9 +168,6 @@ object Boot extends IOApp with LazyLogging {
     val searchDAO: SearchDAO = elasticSearchClient
       .map(new ElasticSearchDAO(_, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport))
       .getOrElse(DisabledServiceFactory.newDisabledService[SearchDAO])
-    val shareLogDAO: ShareLogDAO = elasticSearchClient
-      .map(new ElasticSearchShareLogDAO(_, FireCloudConfig.ElasticSearch.shareLogIndexName))
-      .getOrElse(DisabledServiceFactory.newDisabledService[ShareLogDAO])
 
     Application(agoraDAO,
                 googleServicesDAO,
@@ -182,7 +177,6 @@ object Boot extends IOApp with LazyLogging {
                 searchDAO,
                 researchPurposeSupport,
                 thurloeDAO,
-                shareLogDAO,
                 shibbolethDAO,
                 cwdsDAO,
                 ecmDAO
