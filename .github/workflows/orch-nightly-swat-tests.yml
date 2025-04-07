@@ -34,8 +34,8 @@ jobs:
         name: Publish Orch
         run: |
           LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo 'tag=${LATEST_TAG}' >> $GITHUB_OUTPUT
-          echo 'custom-version-json={\"firecloudorch\":{\"appVersion\":\"${LATEST_TAG}\"}}' >> $GITHUB_OUTPUT
+          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "custom-version-json={\"firecloudorch\":{\"appVersion\":\"${LATEST_TAG}\"}}" >> $GITHUB_OUTPUT
 
   prepare-configs:
     runs-on: ubuntu-latest
