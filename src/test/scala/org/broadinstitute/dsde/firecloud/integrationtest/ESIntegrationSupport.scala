@@ -48,9 +48,6 @@ object ESIntegrationSupport extends IntegrationTestConfig {
     // use the index name defined in reference.conf, since we execute read-only
     new ElasticSearchOntologyDAO(client, FireCloudConfig.ElasticSearch.ontologyIndexName)
 
-  lazy val shareLogDAO: ShareLogDAO =
-    new ElasticSearchShareLogDAO(client, itTestIndexName, RefreshPolicy.IMMEDIATE)
-
   lazy val emptyCriteria =
     LibrarySearchParams(None, Map.empty[String, Seq[String]], None, Map.empty[String, Int], None, None, None, None)
 

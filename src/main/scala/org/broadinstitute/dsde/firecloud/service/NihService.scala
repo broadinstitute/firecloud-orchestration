@@ -347,6 +347,16 @@ class NihService(val samDao: SamDAO,
 
   def updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper): Future[PerRequestMessage] = {
     val res = for {
+      _ <-
+        if (allowedNihMembers(Set(WorkbenchEmail(userInfo.userEmail))).isEmpty) {
+          Future.failed(
+            new FireCloudExceptionWithErrorReport(
+              ErrorReport(StatusCodes.Forbidden, "User is not allowed to link NIH account")
+            )
+          )
+        } else {
+          Future.successful(())
+        }
       shibbolethPublicKey <- shibbolethDao.getPublicKey()
       decodedToken <- Future
         .fromTry(Jwt.decodeRawAll(jwtWrapper.jwt, shibbolethPublicKey, Seq(JwtAlgorithm.RS256)))

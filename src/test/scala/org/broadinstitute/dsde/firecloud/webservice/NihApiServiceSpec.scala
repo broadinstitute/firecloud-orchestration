@@ -51,7 +51,6 @@ class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll {
                             searchDao: MockSearchDAO,
                             researchPurposeSupport: MockResearchPurposeSupport,
                             thurloeDao: MockThurloeDAO,
-                            shareLogDao: MockShareLogDAO,
                             shibbolethDao: MockShibbolethDAO,
                             cwdsDao: CwdsDAO,
                             ecmDao: ExternalCredsDAO
@@ -68,7 +67,6 @@ class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll {
       new MockSearchDAO,
       new MockResearchPurposeSupport,
       new MockThurloeDAO,
-      new MockShareLogDAO,
       new MockShibbolethDAO,
       new MockCwdsDAO,
       new DisabledExternalCredsDAO

@@ -19,7 +19,6 @@ class BaseServiceSpec extends ServiceSpec with BeforeAndAfter {
   val searchDao: MockSearchDAO = new MockSearchDAO
   val researchPurposeSupport: MockResearchPurposeSupport = new MockResearchPurposeSupport
   val thurloeDao: MockThurloeDAO = new MockThurloeDAO
-  val shareLogDao: MockShareLogDAO = new MockShareLogDAO
   val shibbolethDao: MockShibbolethDAO = new MockShibbolethDAO
   val cwdsDao: CwdsDAO = new MockCwdsDAO
   val ecmDao: ExternalCredsDAO = new DisabledExternalCredsDAO
@@ -33,7 +32,6 @@ class BaseServiceSpec extends ServiceSpec with BeforeAndAfter {
                     searchDao,
                     researchPurposeSupport,
                     thurloeDao,
-                    shareLogDao,
                     shibbolethDao,
                     cwdsDao,
                     ecmDao

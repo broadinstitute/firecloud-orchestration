@@ -75,7 +75,6 @@ trait FireCloudApiService
     with StatusApiService
     with MethodsApiService
     with UserApiService
-    with ShareLogApiService
     with ManagedGroupApiService
     with CromIamApiService
     with HealthApiService
@@ -95,7 +94,6 @@ trait FireCloudApiService
   val statusServiceConstructor: () => StatusService
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService
   val userServiceConstructor: (UserInfo) => UserService
-  val shareLogServiceConstructor: () => ShareLogService
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService
   val agoraPermissionService: (UserInfo) => AgoraPermissionService
   val oidcConfig: OpenIDConnectConfiguration
@@ -178,7 +176,6 @@ trait FireCloudApiService
         cromIamApiServiceRoutes ~
         methodConfigurationRoutes ~
         nihRoutes ~
-        shareLogServiceRoutes ~
         staticNotebooksRoutes
     }
 
@@ -240,7 +237,6 @@ class FireCloudApiServiceImpl(
   val statusServiceConstructor: () => StatusService,
   val permissionReportServiceConstructor: (UserInfo) => PermissionReportService,
   val userServiceConstructor: (UserInfo) => UserService,
-  val shareLogServiceConstructor: () => ShareLogService,
   val managedGroupServiceConstructor: (WithAccessToken) => ManagedGroupService,
   val oidcConfig: OpenIDConnectConfiguration,
   val samDao: SamDAO

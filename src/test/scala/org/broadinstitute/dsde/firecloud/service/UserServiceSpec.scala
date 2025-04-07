@@ -2,12 +2,7 @@ package org.broadinstitute.dsde.firecloud.service
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig}
-import org.broadinstitute.dsde.firecloud.dataaccess.{
-  DisabledExternalCredsDAO,
-  MockCwdsDAO,
-  MockResearchPurposeSupport,
-  MockShareLogDAO
-}
+import org.broadinstitute.dsde.firecloud.dataaccess.{DisabledExternalCredsDAO, MockCwdsDAO, MockResearchPurposeSupport}
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.{ProfileWrapper, UserInfo}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
@@ -27,7 +22,6 @@ class UserServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     new MockSearchDeleteWSDAO(),
     new MockResearchPurposeSupport,
     thurloeDao,
-    new MockShareLogDAO,
     shibbolethDao,
     new MockCwdsDAO,
     new DisabledExternalCredsDAO
