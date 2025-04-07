@@ -5,32 +5,17 @@ name: orch-nightly-swat-tests
 on:
   schedule:
     - cron: "30 9 * * *"
-  pull_request:
-    paths-ignore: ['.github/workflows/orch-nightly-swat-tests.yml']
   workflow_dispatch:
 
 env:
-#  GCR_REGISTRY: gcr.io/broad-dsp-gcr-public/firecloud-orchestration # unused?
-#  # Region-specific Google Docker repository where GOOGLE_PROJECT/REPOSITORY_NAME can be found
-#  GOOGLE_DOCKER_REPOSITORY: us-central1-docker.pkg.dev # unused?
   RUN_NAME: '${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
-#  setup-vars:
-#    runs-on: ubuntu-latest
-#    permissions:
-#      contents: 'read'
-##      id-token: 'write'
-#    outputs:
-#
-#    steps:
 
   prepare-configs:
     runs-on: ubuntu-latest
     outputs:
-      #      tag: ${{ steps.get-latest-tag.outputs.tag }} # unused?
       custom-version-json: ${{ steps.build-custom-version-json.outputs.custom-version-json }}
-#      log-results: ${{ steps.prepare-outputs.outputs.log-results }} # unused?
       test-context: ${{ steps.prepare-outputs.outputs.test-context }}
     steps:
       - uses: 'actions/checkout@v4'
