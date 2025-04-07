@@ -4,7 +4,9 @@ name: orch-nightly-swat-tests
 
 on:
   schedule:
-    - cron: "00 16 * * *"
+    - cron: "30 9 * * *"
+  pull_request:
+    paths-ignore: ['.github/workflows/orch-nightly-swat-tests.yml']
   workflow_dispatch:
 
 env:
