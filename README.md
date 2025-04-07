@@ -59,26 +59,6 @@ sbt
 sbt test
 ```
 
-## Integration Testing
-
-Start an Elasticsearch server in a docker container:
-```sh
-./docker/run-es.sh start
-```
-
-Run integration tests. You can re-run tests multiple times against the same running Elasticsearch container.
-```sh
-sbt it:test
-```
-
-Stop the Elasticsearch server once you are done with your tests:
-```sh
-./docker/run-es.sh stop
-```
-If you find that `./docker/run-es.sh start` fails silently, fails mysteriously, or fails while attempting
-to pre-populate data, you may be running into RAM limits where the Elasticsearh image cannot get enough memory
-to run. Try increasing [Docker's RAM allocation](https://docs.docker.com/docker-for-mac/#resources).
-
 ## Docker
 
 To build the orch jar with docker, and then build the orch docker image, run:
