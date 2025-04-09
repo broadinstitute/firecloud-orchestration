@@ -33,12 +33,6 @@ object Dependencies {
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    // proactively pull in latest versions of these libraries, instead of relying on the versions
-    // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
-    // TODO: can these move to sbt's dependencyOverrides?
-    "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
-    // END transitive dependency overrides
-
     // elasticsearch requires log4j, but we redirect log4j to logback
     "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.18",
