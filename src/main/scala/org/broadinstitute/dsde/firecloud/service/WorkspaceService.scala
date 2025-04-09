@@ -240,9 +240,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
     patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
   }
 
-  def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String =
-    s" The workspace $workspaceNamespace:$workspaceName has been un-published."
-
   def cloneWorkspace(namespace: String, name: String, cloneRequest: WorkspaceRequest): Future[PerRequestMessage] =
     rawlsDAO.cloneWorkspace(namespace, name, cloneRequest).map { res =>
       RequestComplete(StatusCodes.Created, res)

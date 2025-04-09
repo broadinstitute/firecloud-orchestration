@@ -36,10 +36,7 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
-  lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
   lazy val rawlsWorkpacesUrl = FireCloudConfig.Rawls.workspacesUrl
-  lazy val rawlsAdminWorkspaces =
-    FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
   def rawlsWorkspaceACLUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(
     FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/acl"
   )
