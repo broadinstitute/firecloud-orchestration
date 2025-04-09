@@ -58,8 +58,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
-  def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
-
   def getBucketUsageV2(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketMetricsResponse]
 
   def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]]
@@ -75,9 +73,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit
     userToken: WithAccessToken
   ): Future[WorkspaceDetails]
-
-  // you must be an admin to execute this method
-  def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]]
 
   def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL]
 

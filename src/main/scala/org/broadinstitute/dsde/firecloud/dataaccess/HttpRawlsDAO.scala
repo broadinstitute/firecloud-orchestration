@@ -55,18 +55,6 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
       }
     }
 
-  override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] =
-    userAuthedRequest(Get(rawlsCuratorUrl))(userInfo) flatMap { response =>
-      response.status match {
-        case OK       => Future.successful(true)
-        case NotFound => Future.successful(false)
-        case _ =>
-          FCErrorReport(response).flatMap { errorReport =>
-            Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
-          }
-      }
-    }
-
   override def getBucketUsageV2(ns: String, name: String)(implicit
     userInfo: WithAccessToken
   ): Future[BucketMetricsResponse] =
@@ -108,22 +96,6 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
     authedRequestToObject[WorkspaceACLUpdateResponseList](
       Patch(patchWorkspaceAclUrl(ns, name, inviteUsersNotFound), aclUpdates)
     )
-
-  // you must be an admin to execute this method
-  override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]] =
-    userAuthedRequest(Get(rawlsAdminWorkspaces)).flatMap { response =>
-      if (response.status.isSuccess()) {
-        Unmarshal(response).to[Seq[WorkspaceDetails]].map { srw =>
-          logger.info("admin workspace list reindexing: " + srw.length + " published workspaces")
-          srw
-        }
-      } else {
-        logger.info(s"body of reindex error response: ${response.entity}")
-        throw new FireCloudExceptionWithErrorReport(
-          ErrorReport(StatusCodes.InternalServerError, "Could not unmarshal: " + response.entity)
-        )
-      }
-    }
 
   override def fetchAllEntitiesOfType(workspaceNamespace: String, workspaceName: String, entityType: String)(implicit
     userInfo: UserInfo

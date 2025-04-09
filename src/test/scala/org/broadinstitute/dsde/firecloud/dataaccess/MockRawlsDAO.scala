@@ -379,9 +379,6 @@ class MockRawlsDAO extends RawlsDAO {
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
 
-  override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] =
-    Future.successful(userInfo.id == "curator")
-
   override def getBucketUsageV2(ns: String, name: String)(implicit
     userInfo: WithAccessToken
   ): Future[BucketMetricsResponse] =
@@ -609,9 +606,6 @@ class MockRawlsDAO extends RawlsDAO {
     implicit userToken: WithAccessToken
   ): Future[WorkspaceDetails] =
     Future.successful(newWorkspace)
-
-  override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]] =
-    Future.successful(Seq.empty[WorkspaceDetails])
 
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken) =
     Future.successful(WorkspaceACL(Map.empty[String, AccessEntry]))
