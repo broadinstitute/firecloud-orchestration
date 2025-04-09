@@ -37,7 +37,6 @@ object Dependencies {
     // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
     // TODO: can these move to sbt's dependencyOverrides?
     "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
-    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
     // END transitive dependency overrides
 
     // elasticsearch requires log4j, but we redirect log4j to logback
@@ -78,18 +77,6 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-http-testkit"    % akkaHttpV % "test",
 
     "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
-
-    "org.elasticsearch.client"       % "transport"           % "5.6.16" // pin to this version; it's the latest compatible with our elasticsearch server
-      exclude("io.netty", "netty-codec")
-      exclude("io.netty", "netty-transport")
-      exclude("io.netty", "netty-resolver")
-      exclude("io.netty", "netty-buffer")
-      exclude("io.netty", "netty-common")
-      exclude("io.netty", "netty-codec-http")
-      exclude("io.netty", "netty-handler")
-      exclude("com.fasterxml.jackson.dataformat", "jackson-dataformat-cbor")
-      exclude("org.apache.logging.log4j", "log4j-api")
-      exclude("org.apache.logging.log4j", "log4j-core"),
 
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.4",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
