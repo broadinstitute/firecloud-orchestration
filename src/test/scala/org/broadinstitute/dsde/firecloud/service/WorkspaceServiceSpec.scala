@@ -52,52 +52,6 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
   }
 
-  "delete workspace" - {
-
-    val workspaceName = "name"
-
-    "should delete an unpublished workspace successfully" in {
-      val workspaceNamespace = "projectowner"
-      val rqComplete = Await
-        .result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf)
-        .asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
-      val (status, workspaceDeleteResponse) = rqComplete.response
-      workspaceDeleteResponse.isDefined should be(true)
-      status should be(StatusCodes.Accepted)
-    }
-
-    "should delete a published workspace successfully" in {
-      val workspaceNamespace = "unpublishsuccess"
-      val rqComplete = Await
-        .result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf)
-        .asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
-      val (status, workspaceDeleteResponse) = rqComplete.response
-      workspaceDeleteResponse.isDefined should be(true)
-      workspaceDeleteResponse.get should include(ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
-      status should be(StatusCodes.Accepted)
-    }
-
-    "should not delete a published workspace if un-publish fails" in {
-      val workspaceNamespace = "unpublishfailure"
-      val rqComplete = Await
-        .result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf)
-        .asInstanceOf[RequestComplete[(StatusCode, ErrorReport)]]
-      val (status, error) = rqComplete.response
-      status should be(StatusCodes.InternalServerError)
-    }
-
-    "should delete a workspace and skip unpublishing if a user has lost access to view a workspace" in {
-      val workspaceNamespace = "deleteWithoutUnpublish"
-      val rqComplete = Await
-        .result(ws.deleteWorkspace(workspaceNamespace, workspaceName), Duration.Inf)
-        .asInstanceOf[RequestComplete[(StatusCode, Option[String])]]
-      val (status, workspaceDeleteResponse) = rqComplete.response
-      workspaceDeleteResponse.isDefined should be(true)
-      workspaceDeleteResponse.get should not include (ws.unPublishSuccessMessage(workspaceNamespace, workspaceName))
-      status should be(StatusCodes.Accepted)
-    }
-  }
-
   "getStorageCostEstimate" - {
     "should sum all costs" in {
       val costEstimateResponse = Await

@@ -60,37 +60,28 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
         pathPrefix("workspaces") {
           pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
             val workspacePath = encodeUri(rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName))
-            pathEnd {
-              delete {
+            path("methodconfigs") {
+              post {
                 requireUserInfo() { userInfo =>
-                  complete {
-                    workspaceServiceConstructor(userInfo).deleteWorkspace(workspaceNamespace, workspaceName)
+                  entity(as[MethodConfiguration]) { methodConfig =>
+                    if (
+                      !methodConfig.outputs.exists { param =>
+                        param._2.value
+                          .startsWith("this.library:") || param._2.value.startsWith("workspace.library:")
+                      }
+                    ) {
+                      val passthroughReq = Post(workspacePath + "/methodconfigs", methodConfig)
+                      complete(userAuthedRequest(passthroughReq)(userInfo))
+                    } else {
+                      complete(
+                        StatusCodes.Forbidden,
+                        ErrorReport("Methods and configurations can not create or modify library attributes")
+                      )
+                    }
                   }
                 }
               }
             } ~
-              path("methodconfigs") {
-                post {
-                  requireUserInfo() { userInfo =>
-                    entity(as[MethodConfiguration]) { methodConfig =>
-                      if (
-                        !methodConfig.outputs.exists { param =>
-                          param._2.value
-                            .startsWith("this.library:") || param._2.value.startsWith("workspace.library:")
-                        }
-                      ) {
-                        val passthroughReq = Post(workspacePath + "/methodconfigs", methodConfig)
-                        complete(userAuthedRequest(passthroughReq)(userInfo))
-                      } else {
-                        complete(
-                          StatusCodes.Forbidden,
-                          ErrorReport("Methods and configurations can not create or modify library attributes")
-                        )
-                      }
-                    }
-                  }
-                }
-              } ~
               path("flexibleImportEntities") {
                 post {
                   requireUserInfo() { userInfo =>
@@ -206,6 +197,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               } ~
               path("updateAttributes") {
                 patch {
+                  // TODO CORE-382: can this be a passthrough?
                   requireUserInfo() { userInfo: UserInfo =>
                     entity(as[Seq[AttributeUpdateOperation]]) { replacementAttributes =>
                       complete {
@@ -220,6 +212,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               } ~
               path("setAttributes") {
                 patch {
+                  // TODO CORE-382: can this be a passthrough?
                   requireUserInfo() { userInfo =>
                     implicit val impAttributeFormat: AttributeFormat = new AttributeFormat
                       with PlainArrayAttributeListSerializer
@@ -262,6 +255,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               } ~
               path("acl") {
                 patch {
+                  // TODO CORE-382: can this be a passthrough?
                   requireUserInfo() { userInfo =>
                     parameter(Symbol("inviteUsersNotFound").?) { inviteUsersNotFound =>
                       entity(as[List[WorkspaceACLUpdate]]) { aclUpdates =>
@@ -281,6 +275,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                 }
               } ~
               path("catalog") {
+                // TODO CORE-382: delete
                 get {
                   requireUserInfo() { userInfo =>
                     complete {
@@ -304,6 +299,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               } ~
               path("clone") {
                 post {
+                  // TODO CORE-382: can this be a passthrough?
                   requireUserInfo() { userInfo =>
                     entity(as[WorkspaceRequest]) { createRequest =>
                       // the only reason this is not a passthrough is because library needs to overwrite any publish and discoverableByGroups values
@@ -325,6 +321,7 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               path("tags") {
                 requireUserInfo() { userInfo =>
                   get {
+                    // TODO CORE-382: can this be a passthrough?
                     complete(workspaceServiceConstructor(userInfo).getTags(workspaceNamespace, workspaceName))
                   } ~
                     put {
