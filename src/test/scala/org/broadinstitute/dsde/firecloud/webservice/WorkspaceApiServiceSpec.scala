@@ -414,46 +414,6 @@ class WorkspaceApiServiceSpec
         status should equal(OK)
       }
 
-    "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
-
-      val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map())
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Created)
-        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
-      }
-    }
-
-    "POST on /workspaces/.../.../clone for 'protected' workspace sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
-
-      val orchestrationRequest: WorkspaceRequest =
-        WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Created)
-        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
-      }
-    }
-
-    "When cloning a published workspace, the clone should not be published" in {
-      val (_, rawlsResponse) = stubRawlsCloneWorkspace(
-        "namespace",
-        "name",
-        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false),
-                         AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
-        )
-      )
-
-      val published = AttributeName("library", "published") -> AttributeBoolean(true)
-      val discoverable =
-        AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
-      val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Created)
-        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
-      }
-    }
-
     "Catalog permission tests on /workspaces/.../.../catalog" - {
       "when calling PATCH" - {
         "should be Forbidden as reader" in {

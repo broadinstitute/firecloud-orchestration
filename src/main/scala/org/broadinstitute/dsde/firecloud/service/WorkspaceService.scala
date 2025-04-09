@@ -107,7 +107,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
       )
       for {
         ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations)
-        // TODO CORE-382: can this be a passthrough?
       } yield RequestComplete(ws)
     }
 
@@ -239,11 +238,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
     val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS(), AttributeString(tag.trim)))
     patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
   }
-
-  def cloneWorkspace(namespace: String, name: String, cloneRequest: WorkspaceRequest): Future[PerRequestMessage] =
-    rawlsDAO.cloneWorkspace(namespace, name, cloneRequest).map { res =>
-      RequestComplete(StatusCodes.Created, res)
-    }
 
   private def getTagsFromWorkspace(ws: WorkspaceDetails): Seq[String] =
     ws.attributes.getOrElse(Map.empty).get(AttributeName.withTagsNS()) match {

@@ -212,7 +212,6 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               } ~
               path("setAttributes") {
                 patch {
-                  // TODO CORE-382: can this be a passthrough?
                   requireUserInfo() { userInfo =>
                     implicit val impAttributeFormat: AttributeFormat = new AttributeFormat
                       with PlainArrayAttributeListSerializer
@@ -297,31 +296,9 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                     }
                   }
               } ~
-              path("clone") {
-                post {
-                  // TODO CORE-382: can this be a passthrough?
-                  requireUserInfo() { userInfo =>
-                    entity(as[WorkspaceRequest]) { createRequest =>
-                      // the only reason this is not a passthrough is because library needs to overwrite any publish and discoverableByGroups values
-                      val cloneRequest = createRequest.copy(attributes =
-                        createRequest.attributes + (AttributeName("library", "published") -> AttributeBoolean(
-                          false
-                        )) + (AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList)
-                      )
-                      complete {
-                        workspaceServiceConstructor(userInfo).cloneWorkspace(workspaceNamespace,
-                                                                             workspaceName,
-                                                                             cloneRequest
-                        )
-                      }
-                    }
-                  }
-                }
-              } ~
               path("tags") {
                 requireUserInfo() { userInfo =>
                   get {
-                    // TODO CORE-382: can this be a passthrough?
                     complete(workspaceServiceConstructor(userInfo).getTags(workspaceNamespace, workspaceName))
                   } ~
                     put {

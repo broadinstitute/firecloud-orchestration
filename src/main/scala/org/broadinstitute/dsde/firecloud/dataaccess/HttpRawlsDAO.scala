@@ -126,10 +126,6 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
     FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name"
   )
 
-  private def getWorkspaceCloneUrl(ns: String, name: String) = encodeUri(
-    FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name/clone"
-  )
-
   private def getWorkspaceAclUrl(ns: String, name: String) = encodeUri(rawlsWorkspaceACLUrl(ns, name))
 
   private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) =
@@ -264,10 +260,5 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
         SubsystemStatus(false, Some(List(e.getMessage)))
       }
   }
-
-  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(
-    implicit userToken: WithAccessToken
-  ): Future[WorkspaceDetails] =
-    authedRequestToObject[WorkspaceDetails](Post(getWorkspaceCloneUrl(workspaceNamespace, workspaceName), cloneRequest))
 
 }
