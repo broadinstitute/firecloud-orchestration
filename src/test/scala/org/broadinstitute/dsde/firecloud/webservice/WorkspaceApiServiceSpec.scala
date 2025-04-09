@@ -396,12 +396,6 @@ class WorkspaceApiServiceSpec
   override def afterAll(): Unit =
     rawlsServer.stop
 
-  override def beforeEach(): Unit =
-    this.searchDao.reset()
-
-  override def afterEach(): Unit =
-    this.searchDao.reset()
-
   // there are many values in the response that in reality cannot be predicted
   // we will only compare the key details: namespace, name, authdomain, attributes
   def assertWorkspaceDetailsEqual(expected: WorkspaceDetails, actual: WorkspaceDetails) = {
@@ -941,7 +935,6 @@ class WorkspaceApiServiceSpec
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
 
         "should republish if the document is already published" in
@@ -963,9 +956,6 @@ class WorkspaceApiServiceSpec
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked.get(),
-                   "Should have republished this published WS when changing attributes"
-            )
           }
 
       }
@@ -1005,7 +995,6 @@ class WorkspaceApiServiceSpec
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
 
         "should republish if the document is already published" in
@@ -1023,9 +1012,6 @@ class WorkspaceApiServiceSpec
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked.get(),
-                   "Should have republished this published WS when changing attributes"
-            )
           }
 
       }

@@ -17,11 +17,8 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   val customApp = Application(
     agoraDao,
     googleServicesDao,
-    ontologyDao,
     new MockRawlsDeleteWSDAO(),
     samDao,
-    new MockSearchDeleteWSDAO(),
-    new MockResearchPurposeSupport,
     thurloeDao,
     shibbolethDao,
     new MockCwdsDAO,
@@ -31,12 +28,6 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
   val workspaceServiceConstructor: (WithAccessToken) => WorkspaceService = WorkspaceService.constructor(customApp)
 
   lazy val ws: WorkspaceService = workspaceServiceConstructor(AccessToken(OAuth2BearerToken("")))
-
-  override def beforeEach(): Unit =
-    searchDao.reset()
-
-  override def afterEach(): Unit =
-    searchDao.reset()
 
   "export workspace attributes as TSV " - {
     "export valid tsv" in {
@@ -246,18 +237,6 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
       Future.successful(
         BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
       )
-    }
-
-}
-
-class MockSearchDeleteWSDAO extends MockSearchDAO {
-
-  override def deleteDocument(id: String): Unit =
-    id match {
-      case "unpublishfailure" =>
-        deleteDocumentInvoked.set(false)
-        throw new FireCloudException(s"Failed to remove document with id $id from elastic search")
-      case _ => deleteDocumentInvoked.set(true)
     }
 
 }

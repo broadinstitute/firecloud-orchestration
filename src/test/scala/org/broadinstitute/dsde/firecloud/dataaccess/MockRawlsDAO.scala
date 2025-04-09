@@ -7,7 +7,6 @@ import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigu
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.RawlsBillingProjectMember
 import org.broadinstitute.dsde.firecloud.model._
-import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiServiceSpec
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
@@ -315,10 +314,7 @@ class MockRawlsDAO extends RawlsDAO {
         AttributeName.withLibraryNS("technology") -> AttributeValueList(
           Seq(AttributeString("is an optional"), AttributeString("array attribute"))
         ),
-        AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp"),
-        LibraryService.discoverableWSAttribute -> AttributeValueList(
-          Seq(AttributeString("group1"), AttributeString("group2"))
-        )
+        AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp")
       )
     ),
     false,

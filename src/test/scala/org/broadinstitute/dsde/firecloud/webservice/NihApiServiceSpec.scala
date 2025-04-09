@@ -45,11 +45,8 @@ class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll {
 
   case class TestApiService(agoraDao: MockAgoraDAO,
                             googleDao: MockGoogleServicesDAO,
-                            ontologyDao: MockOntologyDAO,
                             rawlsDao: MockRawlsDAO,
                             samDao: MockSamDAO,
-                            searchDao: MockSearchDAO,
-                            researchPurposeSupport: MockResearchPurposeSupport,
                             thurloeDao: MockThurloeDAO,
                             shibbolethDao: MockShibbolethDAO,
                             cwdsDao: CwdsDAO,
@@ -61,11 +58,8 @@ class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll {
     val apiService = TestApiService(
       new MockAgoraDAO,
       new MockGoogleServicesDAO,
-      new MockOntologyDAO,
       new MockRawlsDAO,
       new MockSamDAO,
-      new MockSearchDAO,
-      new MockResearchPurposeSupport,
       new MockThurloeDAO,
       new MockShibbolethDAO,
       new MockCwdsDAO,

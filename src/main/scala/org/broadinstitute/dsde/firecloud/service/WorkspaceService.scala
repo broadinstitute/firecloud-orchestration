@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{
   PerRequestMessage,
@@ -36,28 +35,18 @@ import scala.util.{Failure, Success, Try}
   */
 object WorkspaceService {
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userToken,
-                         app.rawlsDAO,
-                         app.samDAO,
-                         app.thurloeDAO,
-                         app.googleServicesDAO,
-                         app.ontologyDAO,
-                         app.searchDAO
-    )
+    new WorkspaceService(userToken, app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)
 }
 
 class WorkspaceService(protected val argUserToken: WithAccessToken,
                        val rawlsDAO: RawlsDAO,
                        val samDao: SamDAO,
                        val thurloeDAO: ThurloeDAO,
-                       val googleServicesDAO: GoogleServicesDAO,
-                       val ontologyDAO: OntologyDAO,
-                       val searchDAO: SearchDAO
+                       val googleServicesDAO: GoogleServicesDAO
 )(implicit protected val executionContext: ExecutionContext)
     extends AttributeSupport
     with TSVFileSupport
     with PermissionsSupport
-    with WorkspacePublishingSupport
     with SprayJsonSupport
     with LazyLogging {
 
@@ -105,7 +94,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
   ) =
     for {
       ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson)
-      _ <- republishDocument(ws, ontologyDAO, searchDAO)
+      // TODO CORE-382: can this be a passthrough?
     } yield RequestComplete(ws)
 
   def setWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =
@@ -118,7 +107,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
       )
       for {
         ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations)
-        _ <- republishDocument(ws, ontologyDAO, searchDAO)
+        // TODO CORE-382: can this be a passthrough?
       } yield RequestComplete(ws)
     }
 
@@ -232,7 +221,7 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
   ) =
     for {
       ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, ops)
-      _ <- republishDocument(ws, ontologyDAO, searchDAO)
+      // TODO CORE-382: can this be a passthrough?
     } yield {
       val tags = getTagsFromWorkspace(ws)
       RequestComplete(StatusCodes.OK, formatTags(tags))
@@ -255,18 +244,12 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
     s" The workspace $workspaceNamespace:$workspaceName has been un-published."
 
   def deleteWorkspace(ns: String, name: String): Future[PerRequestMessage] =
-    rawlsDAO.getWorkspace(ns, name) flatMap { wsResponse =>
-      val unpublishFuture: Future[WorkspaceDetails] =
-        if (isPublished(wsResponse))
-          setWorkspacePublishedStatus(wsResponse.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO)
-        else
-          Future.successful(wsResponse.workspace)
-      unpublishFuture flatMap { ws =>
-        rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
-          RequestComplete(StatusCodes.Accepted,
-                          Some(List(wsResponse.getOrElse(""), unPublishSuccessMessage(ns, name)).mkString(" "))
-          )
-        }
+    // TODO CORE-382: can this be a passthrough?
+    rawlsDAO.getWorkspace(ns, name) flatMap { _ =>
+      rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+        RequestComplete(StatusCodes.Accepted,
+                        Some(List(wsResponse.getOrElse(""), unPublishSuccessMessage(ns, name)).mkString(" "))
+        )
       } recover {
         case e: FireCloudExceptionWithErrorReport =>
           RequestComplete(

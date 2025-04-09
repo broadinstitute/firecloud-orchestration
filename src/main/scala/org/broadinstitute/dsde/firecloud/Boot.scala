@@ -4,11 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import cats.effect.std.Queue
 import cats.effect.{ExitCode, IO, IOApp, Resource}
-import cats.effect.unsafe.IORuntime
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import org.broadinstitute.dsde.firecloud.dataaccess._
-import org.broadinstitute.dsde.firecloud.elastic.ElasticUtils
 import org.broadinstitute.dsde.firecloud.model.{ExternalCredsMessage, ModelSchema, UserInfo, WithAccessToken}
 import org.broadinstitute.dsde.firecloud.service._
 import org.broadinstitute.dsde.firecloud.utils.DisabledServiceFactory
@@ -16,7 +14,6 @@ import org.broadinstitute.dsde.workbench.google2.GoogleSubscriber
 import org.broadinstitute.dsde.workbench.oauth2.{ClientId, OpenIDConnectConfiguration}
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.broadinstitute.dsde.workbench.util2.messaging.{CloudSubscriber, ReceivedMessage}
-import org.elasticsearch.client.transport.TransportClient
 import org.typelevel.log4cats.StructuredLogger
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -82,8 +79,6 @@ object Boot extends IOApp with LazyLogging {
       val exportEntitiesByTypeActorConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor =
         ExportEntitiesByTypeActor.constructor(app, system)
       val entityServiceConstructor: (ModelSchema) => EntityService = EntityService.constructor(app)
-      val libraryServiceConstructor: (UserInfo) => LibraryService = LibraryService.constructor(app)
-      val ontologyServiceConstructor: () => OntologyService = OntologyService.constructor(app)
       val namespaceServiceConstructor: (UserInfo) => NamespaceService = NamespaceService.constructor(app)
       val nihServiceConstructor: () => NihService = NihService.constructor(app)
       val registerServiceConstructor: () => RegisterService = RegisterService.constructor(app)
@@ -116,8 +111,6 @@ object Boot extends IOApp with LazyLogging {
             agoraPermissionServiceConstructor,
             exportEntitiesByTypeActorConstructor,
             entityServiceConstructor,
-            libraryServiceConstructor,
-            ontologyServiceConstructor,
             namespaceServiceConstructor,
             nihServiceConstructor,
             registerServiceConstructor,
@@ -157,30 +150,7 @@ object Boot extends IOApp with LazyLogging {
       new HttpCwdsDAO(FireCloudConfig.Cwds.enabled, FireCloudConfig.Cwds.supportedFormats)
     )
 
-    val elasticSearchClient: Option[TransportClient] = Option.when(FireCloudConfig.ElasticSearch.enabled) {
-      ElasticUtils.buildClient(FireCloudConfig.ElasticSearch.servers, FireCloudConfig.ElasticSearch.clusterName)
-    }
-
-    val ontologyDAO: OntologyDAO = elasticSearchClient
-      .map(new ElasticSearchOntologyDAO(_, FireCloudConfig.ElasticSearch.ontologyIndexName))
-      .getOrElse(DisabledServiceFactory.newDisabledService[OntologyDAO])
-    val researchPurposeSupport: ResearchPurposeSupport = new ESResearchPurposeSupport(ontologyDAO)
-    val searchDAO: SearchDAO = elasticSearchClient
-      .map(new ElasticSearchDAO(_, FireCloudConfig.ElasticSearch.indexName, researchPurposeSupport))
-      .getOrElse(DisabledServiceFactory.newDisabledService[SearchDAO])
-
-    Application(agoraDAO,
-                googleServicesDAO,
-                ontologyDAO,
-                rawlsDAO,
-                samDAO,
-                searchDAO,
-                researchPurposeSupport,
-                thurloeDAO,
-                shibbolethDAO,
-                cwdsDAO,
-                ecmDAO
-    )
+    Application(agoraDAO, googleServicesDAO, rawlsDAO, samDAO, thurloeDAO, shibbolethDAO, cwdsDAO, ecmDAO)
   }
 
   private def createExternalCredsSubscriber()(implicit
