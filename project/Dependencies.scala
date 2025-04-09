@@ -5,7 +5,6 @@ object Dependencies {
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.18.3"
   val jacksonHotfixV = "2.18.3" // for when only some of the Jackson libs have hotfix releases
-  val nettyV = "4.1.119.Final"
   val workbenchLibsHash = "70c7d82" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -33,8 +32,6 @@ object Dependencies {
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    // elasticsearch requires log4j, but we redirect log4j to logback
-    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.18",
     "io.sentry"                      % "sentry-logback"      % "8.6.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
