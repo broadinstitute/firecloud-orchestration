@@ -191,8 +191,8 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
   }
 
   private def patchWorkspaceTags(workspaceNamespace: String,
-                                         workspaceName: String,
-                                         ops: Seq[AttributeUpdateOperation]
+                                 workspaceName: String,
+                                 ops: Seq[AttributeUpdateOperation]
   ) =
     for {
       ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, ops)
