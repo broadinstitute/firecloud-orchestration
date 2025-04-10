@@ -187,16 +187,15 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
   def putTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrList = AttributeValueList(tags map (tag => AttributeString(tag.trim)))
     val op = AddUpdateAttribute(AttributeName.withTagsNS(), attrList)
-    patchAndRepublishWorkspace(workspaceNamespace, workspaceName, Seq(op))
+    patchWorkspaceTags(workspaceNamespace, workspaceName, Seq(op))
   }
 
-  private def patchAndRepublishWorkspace(workspaceNamespace: String,
+  private def patchWorkspaceTags(workspaceNamespace: String,
                                          workspaceName: String,
                                          ops: Seq[AttributeUpdateOperation]
   ) =
     for {
       ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, ops)
-      // TODO CORE-382: can this be a passthrough?
     } yield {
       val tags = getTagsFromWorkspace(ws)
       RequestComplete(StatusCodes.OK, formatTags(tags))
@@ -207,12 +206,12 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
       val origTags = getTagsFromWorkspace(origWs.workspace)
       val attrOps =
         (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS(), AttributeString(tag.trim)))
-      patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
+      patchWorkspaceTags(workspaceNamespace, workspaceName, attrOps)
     }
 
   def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS(), AttributeString(tag.trim)))
-    patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
+    patchWorkspaceTags(workspaceNamespace, workspaceName, attrOps)
   }
 
   private def getTagsFromWorkspace(ws: WorkspaceDetails): Seq[String] =

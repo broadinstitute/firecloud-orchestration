@@ -206,17 +206,6 @@ trait WorkspaceApiService
                   streamingPassthrough(
                     s"${FireCloudConfig.Rawls.baseUrl}/api/workspaces/$workspaceNamespace/$workspaceName"
                   )
-                  // TODO CORE-382: can this be a passthrough?
-//                  requireUserInfo() { userInfo: UserInfo =>
-//                    entity(as[Seq[AttributeUpdateOperation]]) { replacementAttributes =>
-//                      complete {
-//                        workspaceServiceConstructor(userInfo).updateWorkspaceAttributes(workspaceNamespace,
-//                                                                                        workspaceName,
-//                                                                                        replacementAttributes
-//                        )
-//                      }
-//                    }
-//                  }
                 }
               } ~
               path("setAttributes") {
