@@ -88,15 +88,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
         )
     }
 
-  def updateWorkspaceAttributes(workspaceNamespace: String,
-                                workspaceName: String,
-                                workspaceUpdateJson: Seq[AttributeUpdateOperation]
-  ) =
-    for {
-      ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson)
-      // TODO CORE-382: can this be a passthrough?
-    } yield RequestComplete(ws)
-
   def setWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
       // this is technically vulnerable to a race condition in which the workspace attributes have changed

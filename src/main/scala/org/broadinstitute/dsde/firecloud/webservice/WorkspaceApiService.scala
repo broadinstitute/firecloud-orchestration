@@ -17,7 +17,7 @@ import org.broadinstitute.dsde.firecloud.service.{
   PermissionReportService,
   WorkspaceService
 }
-import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
+import org.broadinstitute.dsde.firecloud.utils.{StandardUserInfoDirectives, StreamingPassthrough}
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
@@ -28,7 +28,11 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
-trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
+trait WorkspaceApiService
+    extends FireCloudRequestBuilding
+    with FireCloudDirectives
+    with StandardUserInfoDirectives
+    with StreamingPassthrough {
 
   implicit val executionContext: ExecutionContext
 
@@ -197,17 +201,22 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
               } ~
               path("updateAttributes") {
                 patch {
+                  // PATCH /api/workspaces/{namespace}/{name}/updateAttributes in Orch is a passthrough to
+                  // PATCH /api/workspaces/{namespace}/{name} in Rawls
+                  streamingPassthrough(
+                    s"${FireCloudConfig.Rawls.baseUrl}/api/workspaces/$workspaceNamespace/$workspaceName"
+                  )
                   // TODO CORE-382: can this be a passthrough?
-                  requireUserInfo() { userInfo: UserInfo =>
-                    entity(as[Seq[AttributeUpdateOperation]]) { replacementAttributes =>
-                      complete {
-                        workspaceServiceConstructor(userInfo).updateWorkspaceAttributes(workspaceNamespace,
-                                                                                        workspaceName,
-                                                                                        replacementAttributes
-                        )
-                      }
-                    }
-                  }
+//                  requireUserInfo() { userInfo: UserInfo =>
+//                    entity(as[Seq[AttributeUpdateOperation]]) { replacementAttributes =>
+//                      complete {
+//                        workspaceServiceConstructor(userInfo).updateWorkspaceAttributes(workspaceNamespace,
+//                                                                                        workspaceName,
+//                                                                                        replacementAttributes
+//                        )
+//                      }
+//                    }
+//                  }
                 }
               } ~
               path("setAttributes") {
