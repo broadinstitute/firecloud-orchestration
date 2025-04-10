@@ -131,10 +131,6 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
   private def patchWorkspaceAclUrl(ns: String, name: String, inviteUsersNotFound: Boolean) =
     rawlsWorkspaceACLUrl(ns, name) + rawlsWorkspaceACLQuerystring.format(inviteUsersNotFound)
 
-  private def workspaceCatalogUrl(ns: String, name: String) = encodeUri(
-    FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name/catalog"
-  )
-
   // If we ever need to getAllMethodConfigs, that's Uri(rawlsWorkspaceMethodConfigsUrl.format(ns, name)).withQuery("allRepos" -> "true")
   override def getAgoraMethodConfigs(ns: String, name: String)(implicit
     userToken: WithAccessToken
