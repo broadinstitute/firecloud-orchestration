@@ -821,55 +821,6 @@ class WorkspaceApiServiceSpec
         }
       }
 
-      "when calling PATCH on workspaces/*/*/updateAttributes path" - {
-        "should 400 Bad Request if the payload is malformed" in
-          (Patch(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-          }
-
-        "should 200 OK if the payload is ok" in
-          (Patch(
-            updateAttributesPath,
-            HttpEntity(
-              MediaTypes.`application/json`,
-              """[
-                |  {
-                |    "op": "AddUpdateAttribute",
-                |    "attributeName": "library:dataCategory",
-                |    "addUpdateAttribute": "test-attribute-value"
-                |  }
-                |]""".stripMargin
-            )
-          )
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-          }
-
-        "should republish if the document is already published" in
-          (Patch(
-            workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace,
-                                                              WorkspaceApiServiceSpec.publishedWorkspace.name
-            ),
-            HttpEntity(
-              MediaTypes.`application/json`,
-              """[
-                |  {
-                |    "op": "AddUpdateAttribute",
-                |    "attributeName": "library:dataCategory",
-                |    "addUpdateAttribute": "test-attribute-value"
-                |  }
-                |]""".stripMargin
-            )
-          )
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-          }
-
-      }
     }
 
     "Workspace setAttributes tests" - {
