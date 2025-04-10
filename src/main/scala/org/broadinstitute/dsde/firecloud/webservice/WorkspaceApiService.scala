@@ -273,29 +273,6 @@ trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirecti
                   }
                 }
               } ~
-              path("catalog") {
-                // TODO CORE-382: delete
-                get {
-                  requireUserInfo() { userInfo =>
-                    complete {
-                      workspaceServiceConstructor(userInfo).getCatalog(workspaceNamespace, workspaceName, userInfo)
-                    }
-                  }
-                } ~
-                  patch {
-                    requireUserInfo() { userInfo =>
-                      entity(as[Seq[WorkspaceCatalog]]) { updates =>
-                        complete {
-                          workspaceServiceConstructor(userInfo).updateCatalog(workspaceNamespace,
-                                                                              workspaceName,
-                                                                              updates,
-                                                                              userInfo
-                          )
-                        }
-                      }
-                    }
-                  }
-              } ~
               path("tags") {
                 requireUserInfo() { userInfo =>
                   get {

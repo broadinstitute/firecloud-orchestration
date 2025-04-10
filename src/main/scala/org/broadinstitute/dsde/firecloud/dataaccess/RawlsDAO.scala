@@ -89,14 +89,6 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
     userToken: UserInfo
   ): Future[Map[String, EntityTypeMetadata]]
 
-  def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit
-    userToken: WithAccessToken
-  ): Future[Seq[WorkspaceCatalog]]
-
-  def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit
-    userToken: WithAccessToken
-  ): Future[WorkspaceCatalogUpdateResponseList]
-
   def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit
     userToken: WithAccessToken
   ): Future[Seq[AgoraConfigurationShort]]

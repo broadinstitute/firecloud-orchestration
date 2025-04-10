@@ -110,21 +110,6 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
       } yield RequestComplete(ws)
     }
 
-  def getCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] =
-    asPermitted(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Read, userInfo) {
-      rawlsDAO.getCatalog(workspaceNamespace, workspaceName) map (RequestComplete(_))
-    }
-
-  def updateCatalog(workspaceNamespace: String,
-                    workspaceName: String,
-                    updates: Seq[WorkspaceCatalog],
-                    userInfo: UserInfo
-  ): Future[PerRequestMessage] =
-    // can update if admin or owner of workspace
-    asPermitted(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Owner, userInfo) {
-      rawlsDAO.patchCatalog(workspaceNamespace, workspaceName, updates) map (RequestComplete(_))
-    }
-
   def updateWorkspaceACL(workspaceNamespace: String,
                          workspaceName: String,
                          aclUpdates: Seq[WorkspaceACLUpdate],

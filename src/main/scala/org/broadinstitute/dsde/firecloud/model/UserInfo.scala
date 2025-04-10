@@ -67,9 +67,6 @@ case class WorkbenchUserInfo(userSubjectId: String, userEmail: String)
 case class WorkbenchEnabled(google: Boolean, ldap: Boolean, allUsersGroup: Boolean)
 case class WorkbenchEnabledV2(enabled: Boolean, inAllUsersGroup: Boolean, inGoogleProxyGroup: Boolean)
 
-// TODO: roll into RawlsEnabled? combine with an isAdmin role?
-case class Curator(curator: Boolean)
-
 // indicates whether or not the user can import (workflow|data|etc) into a workspace - the user
 // must have either a writable workspace or the ability to create a workspace (ready billing project)
 case class UserImportPermission(billingProject: Boolean, writableWorkspace: Boolean)

@@ -414,55 +414,6 @@ class WorkspaceApiServiceSpec
         status should equal(OK)
       }
 
-    "Catalog permission tests on /workspaces/.../.../catalog" - {
-      "when calling PATCH" - {
-        "should be Forbidden as reader" in {
-          val content =
-            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("reader"), content) ~> dummyUserIdHeaders(
-            dummyUserId
-          ) ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(Forbidden)
-          }
-        }
-        "should be Forbidden as writer" in {
-          val content =
-            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("unpublishedwriter"), content) ~> dummyUserIdHeaders(
-            dummyUserId
-          ) ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(Forbidden)
-          }
-        }
-        "should be OK as owner" in {
-          val content =
-            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should equal(OK)
-            val expected = WorkspaceCatalogUpdateResponseList(Seq(WorkspaceCatalogResponse("userid", true)), Seq.empty)
-            responseAs[WorkspaceCatalogUpdateResponseList] should equal(expected)
-
-          }
-        }
-      }
-      "when calling GET" - {
-        "should be OK as reader" in
-          new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should equal(OK)
-          }
-        "should be OK as writer" in
-          new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders(
-            dummyUserId
-          ) ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(OK)
-          }
-      }
-    }
-
     "WorkspaceService TSV Tests" - {
 
       "when calling any method other than POST on workspaces/*/*/importEntities path" - {

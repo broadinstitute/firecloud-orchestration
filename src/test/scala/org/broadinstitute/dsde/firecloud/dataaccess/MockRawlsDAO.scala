@@ -758,17 +758,6 @@ class MockRawlsDAO extends RawlsDAO {
       Future.successful(validEntitiesMetadata)
     }
 
-  override def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) =
-    Future.successful(Seq(WorkspaceCatalog("user@gmail.com", true)))
-
-  override def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit
-    userToken: WithAccessToken
-  ) = {
-    val responses =
-      updates.map(cat => WorkspaceCatalogResponse(cat.email.substring(0, cat.email.indexOf("@")) + "id", cat.catalog))
-    Future.successful(WorkspaceCatalogUpdateResponseList(responses, Seq.empty))
-  }
-
   override def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit
     userToken: WithAccessToken
   ) =

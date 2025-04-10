@@ -135,18 +135,6 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
     FireCloudConfig.Rawls.authUrl + FireCloudConfig.Rawls.workspacesPath + s"/$ns/$name/catalog"
   )
 
-  override def getCatalog(ns: String, name: String)(implicit
-    userToken: WithAccessToken
-  ): Future[Seq[WorkspaceCatalog]] =
-    authedRequestToObject[Seq[WorkspaceCatalog]](Get(workspaceCatalogUrl(ns, name)), true)
-
-  override def patchCatalog(ns: String, name: String, catalogUpdates: Seq[WorkspaceCatalog])(implicit
-    userToken: WithAccessToken
-  ): Future[WorkspaceCatalogUpdateResponseList] =
-    authedRequestToObject[WorkspaceCatalogUpdateResponseList](Patch(workspaceCatalogUrl(ns, name), catalogUpdates),
-                                                              true
-    )
-
   // If we ever need to getAllMethodConfigs, that's Uri(rawlsWorkspaceMethodConfigsUrl.format(ns, name)).withQuery("allRepos" -> "true")
   override def getAgoraMethodConfigs(ns: String, name: String)(implicit
     userToken: WithAccessToken
