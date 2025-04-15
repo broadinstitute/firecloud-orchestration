@@ -17,3 +17,5 @@ jobs:
           ## Optional: Define the working directory of your build.
           ## It should contain the build.sbt file.
           working-directory: './'
+          # Ignore dependencies for the benchmarking module; these are not used at runtime
+          modules-ignore: bench_2.13
