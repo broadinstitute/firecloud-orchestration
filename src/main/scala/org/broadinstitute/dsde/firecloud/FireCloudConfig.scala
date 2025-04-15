@@ -214,26 +214,6 @@ object FireCloudConfig {
     }
   }
 
-  object ElasticSearch {
-    // lazy - only required when elasticsearch is enabled
-    private lazy val elasticsearch = config.getConfig("elasticsearch")
-    lazy val servers: Seq[Authority] = parseESServers(elasticsearch.getString("urls"))
-    lazy val clusterName = elasticsearch.getString("clusterName")
-    lazy val indexName = elasticsearch.getString("index") // for library
-    lazy val ontologyIndexName = elasticsearch.getString("ontologyIndex")
-    lazy val discoverGroupNames = elasticsearch.getStringList("discoverGroupNames")
-    lazy val shareLogIndexName: String = elasticsearch.getString("shareLogIndex")
-    lazy val maxAggregations: Int = Try(elasticsearch.getInt("maxAggregations")).getOrElse(1000)
-    val enabled = elasticsearch.optionalBoolean("enabled").getOrElse(true)
-    val libraryEnabled = elasticsearch.optionalBoolean("libraryEnabled").getOrElse(true)
-  }
-
-  def parseESServers(confString: String): Seq[Authority] =
-    confString.split(',').toIndexedSeq map { hostport =>
-      val hp = hostport.split(':')
-      Authority(Host(hp(0)), hp(1).toInt)
-    }
-
   object GoogleCloud {
     // lazy - only required when google is enabled
     private lazy val googlecloud = config.getConfig("googlecloud")
@@ -247,14 +227,6 @@ object FireCloudConfig {
     lazy val priceListEgressKey = googlecloud.getString("priceListEgressKey")
     lazy val priceListStorageKey = googlecloud.getString("priceListStorageKey")
     val enabled = googlecloud.optionalBoolean("enabled").getOrElse(true)
-  }
-
-  object Duos {
-    // lazy - only required when duos is enabled
-    private lazy val duos = config.getConfig("duos")
-    lazy val baseOntologyUrl = duos.getString("baseOntologyUrl")
-    lazy val dulvn = duos.getInt("dulvn")
-    val enabled = duos.optionalBoolean("enabled").getOrElse(true)
   }
 
   object Notification {

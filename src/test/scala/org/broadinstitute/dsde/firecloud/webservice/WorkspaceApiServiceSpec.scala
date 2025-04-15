@@ -396,12 +396,6 @@ class WorkspaceApiServiceSpec
   override def afterAll(): Unit =
     rawlsServer.stop
 
-  override def beforeEach(): Unit =
-    this.searchDao.reset()
-
-  override def afterEach(): Unit =
-    this.searchDao.reset()
-
   // there are many values in the response that in reality cannot be predicted
   // we will only compare the key details: namespace, name, authdomain, attributes
   def assertWorkspaceDetailsEqual(expected: WorkspaceDetails, actual: WorkspaceDetails) = {
@@ -419,95 +413,6 @@ class WorkspaceApiServiceSpec
       ) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
         status should equal(OK)
       }
-
-    "POST on /workspaces/.../.../clone for 'not protected' workspace sends non-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name")
-
-      val orchestrationRequest: WorkspaceRequest = WorkspaceRequest("namespace", "name", Map())
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Created)
-        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
-      }
-    }
-
-    "POST on /workspaces/.../.../clone for 'protected' workspace sends NIH-realm WorkspaceRequest to Rawls and passes back the Rawls status and body" in {
-      val (_, rawlsResponse) = stubRawlsCloneWorkspace("namespace", "name", authDomain = Set(nihProtectedAuthDomain))
-
-      val orchestrationRequest: WorkspaceRequest =
-        WorkspaceRequest("namespace", "name", Map(), Option(Set(nihProtectedAuthDomain)))
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Created)
-        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
-      }
-    }
-
-    "When cloning a published workspace, the clone should not be published" in {
-      val (_, rawlsResponse) = stubRawlsCloneWorkspace(
-        "namespace",
-        "name",
-        attributes = Map(AttributeName("library", "published") -> AttributeBoolean(false),
-                         AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList
-        )
-      )
-
-      val published = AttributeName("library", "published") -> AttributeBoolean(true)
-      val discoverable =
-        AttributeName("library", "discoverableByGroups") -> AttributeValueList(Seq(AttributeString("all_broad_users")))
-      val orchestrationRequest = WorkspaceRequest("namespace", "name", Map(published, discoverable))
-      Post(clonePath, orchestrationRequest) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(workspaceRoutes) ~> check {
-        status should equal(Created)
-        assertWorkspaceDetailsEqual(rawlsResponse, responseAs[WorkspaceDetails])
-      }
-    }
-
-    "Catalog permission tests on /workspaces/.../.../catalog" - {
-      "when calling PATCH" - {
-        "should be Forbidden as reader" in {
-          val content =
-            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("reader"), content) ~> dummyUserIdHeaders(
-            dummyUserId
-          ) ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(Forbidden)
-          }
-        }
-        "should be Forbidden as writer" in {
-          val content =
-            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath("unpublishedwriter"), content) ~> dummyUserIdHeaders(
-            dummyUserId
-          ) ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(Forbidden)
-          }
-        }
-        "should be OK as owner" in {
-          val content =
-            HttpEntity(ContentTypes.`application/json`, "[ {\"email\": \"user@gmail.com\",\"catalog\": true} ]")
-          new RequestBuilder(HttpMethods.PATCH)(catalogPath(), content) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should equal(OK)
-            val expected = WorkspaceCatalogUpdateResponseList(Seq(WorkspaceCatalogResponse("userid", true)), Seq.empty)
-            responseAs[WorkspaceCatalogUpdateResponseList] should equal(expected)
-
-          }
-        }
-      }
-      "when calling GET" - {
-        "should be OK as reader" in
-          new RequestBuilder(HttpMethods.GET)(catalogPath("reader")) ~> dummyUserIdHeaders(dummyUserId) ~> sealRoute(
-            workspaceRoutes
-          ) ~> check {
-            status should equal(OK)
-          }
-        "should be OK as writer" in
-          new RequestBuilder(HttpMethods.GET)(catalogPath("unpublishedwriter")) ~> dummyUserIdHeaders(
-            dummyUserId
-          ) ~> sealRoute(workspaceRoutes) ~> check {
-            status should equal(OK)
-          }
-      }
-    }
 
     "WorkspaceService TSV Tests" - {
 
@@ -916,59 +821,6 @@ class WorkspaceApiServiceSpec
         }
       }
 
-      "when calling PATCH on workspaces/*/*/updateAttributes path" - {
-        "should 400 Bad Request if the payload is malformed" in
-          (Patch(updateAttributesPath, HttpEntity(MediaTypes.`application/json`, "{{{"))
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(BadRequest)
-          }
-
-        "should 200 OK if the payload is ok" in
-          (Patch(
-            updateAttributesPath,
-            HttpEntity(
-              MediaTypes.`application/json`,
-              """[
-                |  {
-                |    "op": "AddUpdateAttribute",
-                |    "attributeName": "library:dataCategory",
-                |    "addUpdateAttribute": "test-attribute-value"
-                |  }
-                |]""".stripMargin
-            )
-          )
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
-          }
-
-        "should republish if the document is already published" in
-          (Patch(
-            workspacesRoot + "/%s/%s/updateAttributes".format(WorkspaceApiServiceSpec.publishedWorkspace.namespace,
-                                                              WorkspaceApiServiceSpec.publishedWorkspace.name
-            ),
-            HttpEntity(
-              MediaTypes.`application/json`,
-              """[
-                |  {
-                |    "op": "AddUpdateAttribute",
-                |    "attributeName": "library:dataCategory",
-                |    "addUpdateAttribute": "test-attribute-value"
-                |  }
-                |]""".stripMargin
-            )
-          )
-            ~> dummyUserIdHeaders(dummyUserId)
-            ~> sealRoute(workspaceRoutes)) ~> check {
-            status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked.get(),
-                   "Should have republished this published WS when changing attributes"
-            )
-          }
-
-      }
     }
 
     "Workspace setAttributes tests" - {
@@ -1005,7 +857,6 @@ class WorkspaceApiServiceSpec
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(!this.searchDao.indexDocumentInvoked.get(), "Should not be indexing an unpublished WS")
           }
 
         "should republish if the document is already published" in
@@ -1023,9 +874,6 @@ class WorkspaceApiServiceSpec
             ~> dummyUserIdHeaders(dummyUserId)
             ~> sealRoute(workspaceRoutes)) ~> check {
             status should equal(OK)
-            assert(this.searchDao.indexDocumentInvoked.get(),
-                   "Should have republished this published WS when changing attributes"
-            )
           }
 
       }
