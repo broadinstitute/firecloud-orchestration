@@ -18,7 +18,6 @@ env:
   GCR_REGISTRY: gcr.io/broad-dsp-gcr-public/firecloud-orchestration
   # Region-specific Google Docker repository where GOOGLE_PROJECT/REPOSITORY_NAME can be found
   GOOGLE_DOCKER_REPOSITORY: us-central1-docker.pkg.dev
-  RUN_NAME: '${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}'
 
 jobs:
   orch-build-tag-publish-job:
@@ -122,87 +121,3 @@ jobs:
       id-token: 'write'
           
 
-  create-bee-workflow:
-    strategy:
-      matrix:
-        terra-env: [ dev ] # what versions of apps do we use to emulate types of environments
-    runs-on: ubuntu-latest
-    needs: [orch-build-tag-publish-job]
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: Echo Orch version
-        run: |
-          echo '${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}'
-
-      - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v4
-        with:
-          workflow: bee-create
-          run-name: "bee-create-${{ env.RUN_NAME }}"
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
-          token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
-          # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          # Note: There is a hard limit of bee-name not exceeding 32 characters
-          inputs: '{
-              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
-              "version-template": "${{ matrix.terra-env }}",
-              "custom-version-json": "${{ needs.orch-build-tag-publish-job.outputs.custom-version-json }}",
-              "run-name": "bee-create-${{ env.RUN_NAME }}"
-            }'
-
-  orch-swat-test-job:
-    strategy:
-      matrix:
-        terra-env: [ dev ] # what versions of apps do we use to emulate types of environments
-        testing-env: [ qa ] # what env resources to use, e.g. SA keys
-    runs-on: ubuntu-latest
-    needs: [create-bee-workflow]
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v4
-        with:
-          workflow: orch-swat-tests
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
-          token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
-          # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          inputs: '{
-              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
-              "ENV": "${{ matrix.testing-env }}",
-              "test-context": "${{ needs.prepare-configs.outputs.test-context }}",
-              "ref": "${{ github.head_ref }}"
-            }'
-          # github.head_ref, used above, is only populated for PRs and will be blank when merging to develop.
-          # This is ok; the orch-swat-tests workflow uses "develop" as a default when receiving a blank value.
-
-  destroy-bee-workflow:
-    strategy:
-      matrix:
-        terra-env: [ dev ] # what versions of apps do we use to emulate types of environments
-    runs-on: ubuntu-latest
-    needs: [orch-swat-test-job]
-    if: always() # always run to confirm bee is destroyed
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: dispatch to terra-github-workflows
-        uses: broadinstitute/workflow-dispatch@v4
-        with:
-          workflow: bee-destroy
-          run-name: "bee-destroy-${{ env.RUN_NAME }}"
-          repo: broadinstitute/terra-github-workflows
-          ref: refs/heads/main
-          token: ${{ secrets.BROADBOT_TOKEN}} # github token for access to kick off a job in the private repo
-          # manually recalculate b/c env context is broken https://github.com/actions/runner/issues/480
-          inputs: '{
-              "bee-name": "orch-${{ github.run_id }}-${{ matrix.terra-env }}",
-              "run-name": "bee-destroy-${{ env.RUN_NAME }}"
-            }'
-          wait-for-completion: false
