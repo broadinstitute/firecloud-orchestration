@@ -45,6 +45,12 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource("EntityServiceSpec")
 
+  override def beforeEach(): Unit =
+    searchDao.reset()
+
+  override def afterEach(): Unit =
+    searchDao.reset()
+
   private def dummyUserInfo(tokenStr: String) = UserInfo("dummy", OAuth2BearerToken(tokenStr), -1, "dummy")
 
   "EntityService.importEntitiesFromTSV()" - {

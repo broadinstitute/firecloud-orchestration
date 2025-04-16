@@ -25,4 +25,7 @@ trait FireCloudDirectives extends Directives with RequestBuilding with RestJsonC
 
   def encodeUri(path: String): String = FireCloudDirectiveUtils.encodeUri(path)
 
+  def withResourceFileContents(path: String)(innerRoute: String => Route): Route =
+    innerRoute(FileUtils.readAllTextFromResource(path))
+
 }

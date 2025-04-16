@@ -36,7 +36,10 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   lazy val rawlsWorkspacesRoot = FireCloudConfig.Rawls.workspacesUrl
   lazy val rawlsAdminUrl = FireCloudConfig.Rawls.authUrl + "/user/role/admin"
+  lazy val rawlsCuratorUrl = FireCloudConfig.Rawls.authUrl + "/user/role/curator"
   lazy val rawlsWorkpacesUrl = FireCloudConfig.Rawls.workspacesUrl
+  lazy val rawlsAdminWorkspaces =
+    FireCloudConfig.Rawls.authUrl + "/admin/workspaces?attributeName=library:published&valueBoolean=true"
   def rawlsWorkspaceACLUrl(workspaceNamespace: String, workspaceName: String): String = encodeUri(
     FireCloudConfig.Rawls.workspacesUrl + s"/$workspaceNamespace/$workspaceName/acl"
   )
@@ -55,6 +58,8 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
 
   def isAdmin(userInfo: UserInfo): Future[Boolean]
 
+  def isLibraryCurator(userInfo: UserInfo): Future[Boolean]
+
   def getBucketUsageV2(ns: String, name: String)(implicit userInfo: WithAccessToken): Future[BucketMetricsResponse]
 
   def getWorkspaces(implicit userInfo: WithAccessToken): Future[Seq[WorkspaceListResponse]]
@@ -70,6 +75,9 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
   def updateLibraryAttributes(ns: String, name: String, attributeOperations: Seq[AttributeUpdateOperation])(implicit
     userToken: WithAccessToken
   ): Future[WorkspaceDetails]
+
+  // you must be an admin to execute this method
+  def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]]
 
   def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceACL]
 
@@ -89,9 +97,25 @@ trait RawlsDAO extends LazyLogging with ReportsSubsystemStatus {
     userToken: UserInfo
   ): Future[Map[String, EntityTypeMetadata]]
 
+  def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit
+    userToken: WithAccessToken
+  ): Future[Seq[WorkspaceCatalog]]
+
+  def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit
+    userToken: WithAccessToken
+  ): Future[WorkspaceCatalogUpdateResponseList]
+
   def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit
     userToken: WithAccessToken
   ): Future[Seq[AgoraConfigurationShort]]
+
+  def deleteWorkspace(workspaceNamespace: String, workspaceName: String)(implicit
+    userToken: WithAccessToken
+  ): Future[Option[String]]
+
+  def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(implicit
+    userToken: WithAccessToken
+  ): Future[WorkspaceDetails]
 
   def getProjects(implicit userToken: WithAccessToken): Future[Seq[RawlsBillingProjectMembership]]
 

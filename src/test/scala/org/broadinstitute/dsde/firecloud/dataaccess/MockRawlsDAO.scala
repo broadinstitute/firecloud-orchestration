@@ -7,6 +7,7 @@ import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository.AgoraConfigu
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project.RawlsBillingProjectMember
 import org.broadinstitute.dsde.firecloud.model._
+import org.broadinstitute.dsde.firecloud.service.LibraryService
 import org.broadinstitute.dsde.firecloud.webservice.WorkspaceApiServiceSpec
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
@@ -314,7 +315,10 @@ class MockRawlsDAO extends RawlsDAO {
         AttributeName.withLibraryNS("technology") -> AttributeValueList(
           Seq(AttributeString("is an optional"), AttributeString("array attribute"))
         ),
-        AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp")
+        AttributeName.withLibraryNS("orsp") -> AttributeString("some orsp"),
+        LibraryService.discoverableWSAttribute -> AttributeValueList(
+          Seq(AttributeString("group1"), AttributeString("group2"))
+        )
       )
     ),
     false,
@@ -378,6 +382,9 @@ class MockRawlsDAO extends RawlsDAO {
     )
 
   override def isAdmin(userInfo: UserInfo): Future[Boolean] = Future.successful(false)
+
+  override def isLibraryCurator(userInfo: UserInfo): Future[Boolean] =
+    Future.successful(userInfo.id == "curator")
 
   override def getBucketUsageV2(ns: String, name: String)(implicit
     userInfo: WithAccessToken
@@ -607,6 +614,9 @@ class MockRawlsDAO extends RawlsDAO {
   ): Future[WorkspaceDetails] =
     Future.successful(newWorkspace)
 
+  override def getAllLibraryPublishedWorkspaces(implicit userToken: WithAccessToken): Future[Seq[WorkspaceDetails]] =
+    Future.successful(Seq.empty[WorkspaceDetails])
+
   override def getWorkspaceACL(ns: String, name: String)(implicit userToken: WithAccessToken) =
     Future.successful(WorkspaceACL(Map.empty[String, AccessEntry]))
 
@@ -758,6 +768,17 @@ class MockRawlsDAO extends RawlsDAO {
       Future.successful(validEntitiesMetadata)
     }
 
+  override def getCatalog(workspaceNamespace: String, workspaceName: String)(implicit userToken: WithAccessToken) =
+    Future.successful(Seq(WorkspaceCatalog("user@gmail.com", true)))
+
+  override def patchCatalog(workspaceNamespace: String, workspaceName: String, updates: Seq[WorkspaceCatalog])(implicit
+    userToken: WithAccessToken
+  ) = {
+    val responses =
+      updates.map(cat => WorkspaceCatalogResponse(cat.email.substring(0, cat.email.indexOf("@")) + "id", cat.catalog))
+    Future.successful(WorkspaceCatalogUpdateResponseList(responses, Seq.empty))
+  }
+
   override def getAgoraMethodConfigs(workspaceNamespace: String, workspaceName: String)(implicit
     userToken: WithAccessToken
   ) =
@@ -798,4 +819,31 @@ class MockRawlsDAO extends RawlsDAO {
                                    updates: Seq[EntityUpdateDefinition]
   )(implicit userToken: UserInfo): Future[HttpResponse] = Future.successful(HttpResponse(StatusCodes.NoContent))
 
+  override def cloneWorkspace(workspaceNamespace: String, workspaceName: String, cloneRequest: WorkspaceRequest)(
+    implicit userToken: WithAccessToken
+  ): Future[WorkspaceDetails] = Future.successful(
+    WorkspaceDetails(
+      cloneRequest.namespace,
+      cloneRequest.name,
+      "id",
+      "bucket",
+      Some("workflow-collection-id"),
+      DateTime.now(),
+      DateTime.now(),
+      "test-user",
+      Some(cloneRequest.attributes),
+      false,
+      cloneRequest.authorizationDomain,
+      WorkspaceVersions.V2,
+      GoogleProjectId("googleProject"),
+      Some(GoogleProjectNumber("googleProjectNumber")),
+      Some(RawlsBillingAccountName("billingAccount")),
+      None,
+      None,
+      Option(DateTime.now()),
+      None,
+      None,
+      WorkspaceState.Ready
+    )
+  )
 }

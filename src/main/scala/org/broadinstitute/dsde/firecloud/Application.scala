@@ -8,8 +8,11 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 
 case class Application(agoraDAO: AgoraDAO,
                        googleServicesDAO: GoogleServicesDAO,
+                       ontologyDAO: OntologyDAO,
                        rawlsDAO: RawlsDAO,
                        samDAO: SamDAO,
+                       searchDAO: SearchDAO,
+                       researchPurposeSupport: ResearchPurposeSupport,
                        thurloeDAO: ThurloeDAO,
                        shibbolethDAO: ShibbolethDAO,
                        cwdsDAO: CwdsDAO,

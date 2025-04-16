@@ -17,7 +17,7 @@ import org.broadinstitute.dsde.firecloud.service.{
   PermissionReportService,
   WorkspaceService
 }
-import org.broadinstitute.dsde.firecloud.utils.{StandardUserInfoDirectives, StreamingPassthrough}
+import org.broadinstitute.dsde.firecloud.utils.StandardUserInfoDirectives
 import org.broadinstitute.dsde.firecloud.{EntityService, FireCloudConfig}
 import org.broadinstitute.dsde.rawls.model.Attributable.AttributeMap
 import org.broadinstitute.dsde.rawls.model.AttributeUpdateOperations.AttributeUpdateOperation
@@ -28,11 +28,7 @@ import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 
-trait WorkspaceApiService
-    extends FireCloudRequestBuilding
-    with FireCloudDirectives
-    with StandardUserInfoDirectives
-    with StreamingPassthrough {
+trait WorkspaceApiService extends FireCloudRequestBuilding with FireCloudDirectives with StandardUserInfoDirectives {
 
   implicit val executionContext: ExecutionContext
 
@@ -64,28 +60,37 @@ trait WorkspaceApiService
         pathPrefix("workspaces") {
           pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
             val workspacePath = encodeUri(rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName))
-            path("methodconfigs") {
-              post {
+            pathEnd {
+              delete {
                 requireUserInfo() { userInfo =>
-                  entity(as[MethodConfiguration]) { methodConfig =>
-                    if (
-                      !methodConfig.outputs.exists { param =>
-                        param._2.value
-                          .startsWith("this.library:") || param._2.value.startsWith("workspace.library:")
-                      }
-                    ) {
-                      val passthroughReq = Post(workspacePath + "/methodconfigs", methodConfig)
-                      complete(userAuthedRequest(passthroughReq)(userInfo))
-                    } else {
-                      complete(
-                        StatusCodes.Forbidden,
-                        ErrorReport("Methods and configurations can not create or modify library attributes")
-                      )
-                    }
+                  complete {
+                    workspaceServiceConstructor(userInfo).deleteWorkspace(workspaceNamespace, workspaceName)
                   }
                 }
               }
             } ~
+              path("methodconfigs") {
+                post {
+                  requireUserInfo() { userInfo =>
+                    entity(as[MethodConfiguration]) { methodConfig =>
+                      if (
+                        !methodConfig.outputs.exists { param =>
+                          param._2.value
+                            .startsWith("this.library:") || param._2.value.startsWith("workspace.library:")
+                        }
+                      ) {
+                        val passthroughReq = Post(workspacePath + "/methodconfigs", methodConfig)
+                        complete(userAuthedRequest(passthroughReq)(userInfo))
+                      } else {
+                        complete(
+                          StatusCodes.Forbidden,
+                          ErrorReport("Methods and configurations can not create or modify library attributes")
+                        )
+                      }
+                    }
+                  }
+                }
+              } ~
               path("flexibleImportEntities") {
                 post {
                   requireUserInfo() { userInfo =>
@@ -201,11 +206,16 @@ trait WorkspaceApiService
               } ~
               path("updateAttributes") {
                 patch {
-                  // PATCH /api/workspaces/{namespace}/{name}/updateAttributes in Orch is a passthrough to
-                  // PATCH /api/workspaces/{namespace}/{name} in Rawls
-                  streamingPassthrough(
-                    s"${FireCloudConfig.Rawls.baseUrl}/api/workspaces/$workspaceNamespace/$workspaceName"
-                  )
+                  requireUserInfo() { userInfo: UserInfo =>
+                    entity(as[Seq[AttributeUpdateOperation]]) { replacementAttributes =>
+                      complete {
+                        workspaceServiceConstructor(userInfo).updateWorkspaceAttributes(workspaceNamespace,
+                                                                                        workspaceName,
+                                                                                        replacementAttributes
+                        )
+                      }
+                    }
+                  }
                 }
               } ~
               path("setAttributes") {
@@ -252,7 +262,6 @@ trait WorkspaceApiService
               } ~
               path("acl") {
                 patch {
-                  // TODO CORE-382: can this be a passthrough?
                   requireUserInfo() { userInfo =>
                     parameter(Symbol("inviteUsersNotFound").?) { inviteUsersNotFound =>
                       entity(as[List[WorkspaceACLUpdate]]) { aclUpdates =>
@@ -266,6 +275,48 @@ trait WorkspaceApiService
                             inviteUsersNotFound.getOrElse("false").toBoolean
                           )
                         }
+                      }
+                    }
+                  }
+                }
+              } ~
+              path("catalog") {
+                get {
+                  requireUserInfo() { userInfo =>
+                    complete {
+                      workspaceServiceConstructor(userInfo).getCatalog(workspaceNamespace, workspaceName, userInfo)
+                    }
+                  }
+                } ~
+                  patch {
+                    requireUserInfo() { userInfo =>
+                      entity(as[Seq[WorkspaceCatalog]]) { updates =>
+                        complete {
+                          workspaceServiceConstructor(userInfo).updateCatalog(workspaceNamespace,
+                                                                              workspaceName,
+                                                                              updates,
+                                                                              userInfo
+                          )
+                        }
+                      }
+                    }
+                  }
+              } ~
+              path("clone") {
+                post {
+                  requireUserInfo() { userInfo =>
+                    entity(as[WorkspaceRequest]) { createRequest =>
+                      // the only reason this is not a passthrough is because library needs to overwrite any publish and discoverableByGroups values
+                      val cloneRequest = createRequest.copy(attributes =
+                        createRequest.attributes + (AttributeName("library", "published") -> AttributeBoolean(
+                          false
+                        )) + (AttributeName("library", "discoverableByGroups") -> AttributeValueEmptyList)
+                      )
+                      complete {
+                        workspaceServiceConstructor(userInfo).cloneWorkspace(workspaceNamespace,
+                                                                             workspaceName,
+                                                                             cloneRequest
+                        )
                       }
                     }
                   }

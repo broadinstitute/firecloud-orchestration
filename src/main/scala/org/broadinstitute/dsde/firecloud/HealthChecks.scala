@@ -20,7 +20,9 @@ class HealthChecks(app: Application)(implicit val system: ActorSystem, implicit 
   def healthMonitorChecks: () => Map[Subsystem, Future[SubsystemStatus]] = () => {
     val servicesToMonitor = Seq(app.rawlsDAO, app.samDAO, app.thurloeDAO) ++
       Option.when(FireCloudConfig.Agora.enabled)(app.agoraDAO) ++
-      Option.when(FireCloudConfig.GoogleCloud.enabled)(app.googleServicesDAO)
+      Option.when(FireCloudConfig.GoogleCloud.enabled)(app.googleServicesDAO) ++
+      Option.when(FireCloudConfig.ElasticSearch.enabled)(app.searchDAO) ++
+      Option.when(FireCloudConfig.ElasticSearch.enabled)(app.ontologyDAO)
 
     servicesToMonitor.map { subsystem =>
       subsystem.serviceName -> subsystem.status

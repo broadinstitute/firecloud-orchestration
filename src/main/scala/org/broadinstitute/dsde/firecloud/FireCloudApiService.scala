@@ -65,6 +65,7 @@ trait FireCloudApiService
     extends CookieAuthedApiService
     with EntityApiService
     with ExportEntitiesApiService
+    with LibraryApiService
     with NamespaceApiService
     with NihApiService
     with OauthApiService
@@ -84,6 +85,8 @@ trait FireCloudApiService
 
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor
   val entityServiceConstructor: (ModelSchema) => EntityService
+  val libraryServiceConstructor: (UserInfo) => LibraryService
+  val ontologyServiceConstructor: () => OntologyService
   val namespaceServiceConstructor: (UserInfo) => NamespaceService
   val nihServiceConstructor: () => NihService
   val registerServiceConstructor: () => RegisterService
@@ -183,6 +186,14 @@ trait FireCloudApiService
       logRequests &
       noCacheNoStore
 
+  // CORE-377: library routes are enabled/disabled via config (default: disabled) as a scream test.
+  //   Once we are sure they are unused, we should delete the code instead of disabling.
+  private val maybeEnabledLibraryRoutes: server.Route = if (FireCloudConfig.ElasticSearch.libraryEnabled) {
+    libraryRoutes
+  } else {
+    reject
+  }
+
   def route: server.Route = routeWrappers {
     cromIamEngineRoutes ~
       exportEntitiesRoutes ~
@@ -190,6 +201,7 @@ trait FireCloudApiService
       exportEntitiesRoutes ~
       entityRoutes ~
       healthServiceRoutes ~
+      maybeEnabledLibraryRoutes ~
       namespaceRoutes ~
       oauthRoutes ~
       profileRoutes ~
@@ -216,6 +228,8 @@ class FireCloudApiServiceImpl(
   val agoraPermissionService: (UserInfo) => AgoraPermissionService,
   val exportEntitiesByTypeConstructor: (ExportEntitiesByTypeArguments) => ExportEntitiesByTypeActor,
   val entityServiceConstructor: (ModelSchema) => EntityService,
+  val libraryServiceConstructor: (UserInfo) => LibraryService,
+  val ontologyServiceConstructor: () => OntologyService,
   val namespaceServiceConstructor: (UserInfo) => NamespaceService,
   val nihServiceConstructor: () => NihService,
   val registerServiceConstructor: () => RegisterService,

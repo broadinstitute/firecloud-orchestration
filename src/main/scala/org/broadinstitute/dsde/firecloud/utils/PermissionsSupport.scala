@@ -35,6 +35,22 @@ trait PermissionsSupport {
         )
     }
 
+  def tryIsCurator(userInfo: UserInfo): Future[Boolean] =
+    rawlsDAO.isLibraryCurator(userInfo) recoverWith { case t =>
+      throw new FireCloudException("Unable to query for library curator status.", t)
+    }
+
+  def asCurator(op: => Future[PerRequestMessage])(implicit userInfo: UserInfo): Future[PerRequestMessage] =
+    tryIsCurator(userInfo) flatMap { isCurator =>
+      if (isCurator) op
+      else
+        Future.failed(
+          new FireCloudExceptionWithErrorReport(errorReport =
+            ErrorReport(StatusCodes.Forbidden, "You must be a library curator.")
+          )
+        )
+    }
+
   def asPermitted(ns: String, name: String, lvl: WorkspaceAccessLevel, userInfo: UserInfo)(
     op: => Future[PerRequestMessage]
   ): Future[PerRequestMessage] =

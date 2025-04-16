@@ -5,6 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.18.3"
   val jacksonHotfixV = "2.18.3" // for when only some of the Jackson libs have hotfix releases
+  val nettyV = "4.1.119.Final"
   val workbenchLibsHash = "70c7d82" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -32,6 +33,15 @@ object Dependencies {
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
+    // proactively pull in latest versions of these libraries, instead of relying on the versions
+    // specified as transitive dependencies, due to OWASP DependencyCheck warnings for earlier versions.
+    // TODO: can these move to sbt's dependencyOverrides?
+    "io.netty"                       % "netty-handler"       % nettyV, // netty is needed by the Elasticsearch client at runtime
+    "org.apache.lucene"              % "lucene-queryparser"  % "6.6.6", // pin to this version; it's the latest compatible with our elasticsearch client
+    // END transitive dependency overrides
+
+    // elasticsearch requires log4j, but we redirect log4j to logback
+    "org.apache.logging.log4j"       % "log4j-to-slf4j"      % "2.24.3",
     "ch.qos.logback"                 % "logback-classic"     % "1.5.18",
     "io.sentry"                      % "sentry-logback"      % "8.6.0",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
@@ -67,12 +77,27 @@ object Dependencies {
     "com.typesafe.akka"   %%  "akka-testkit"         % akkaV     % "test",
     "com.typesafe.akka"   %%  "akka-http-testkit"    % akkaHttpV % "test",
 
+    "net.virtual-void"              %% "json-lenses"               % "0.6.2"  % "test",
+
+    "org.elasticsearch.client"       % "transport"           % "5.6.16" // pin to this version; it's the latest compatible with our elasticsearch server
+      exclude("io.netty", "netty-codec")
+      exclude("io.netty", "netty-transport")
+      exclude("io.netty", "netty-resolver")
+      exclude("io.netty", "netty-buffer")
+      exclude("io.netty", "netty-common")
+      exclude("io.netty", "netty-codec-http")
+      exclude("io.netty", "netty-handler")
+      exclude("com.fasterxml.jackson.dataformat", "jackson-dataformat-cbor")
+      exclude("org.apache.logging.log4j", "log4j-api")
+      exclude("org.apache.logging.log4j", "log4j-core"),
+
     "com.github.jwt-scala"          %% "jwt-core"            % "10.0.4",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail"                   % "javax.mail"          % "1.6.2"
       exclude("javax.activation", "activation"),
     "com.univocity"                  % "univocity-parsers"   % "2.9.1",
+    "com.github.erosb"               % "everit-json-schema"  % "1.14.5",
     "com.github.pathikrit"          %% "better-files"        % "3.9.2",
 
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",

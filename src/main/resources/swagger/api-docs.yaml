@@ -18,6 +18,7 @@ tags:
   - name: Entities
   - name: GA4GH Tool Registry
   - name: Groups
+  - name: Library
   - name: Method Configurations
   - name: Method Repository
   - name: NIH
@@ -1627,6 +1628,360 @@ paths:
       x-passthrough: true
       x-passthrough-target: rawls
       x-codegen-request-body-name: methodName
+  /api/library/admin/reindex:
+    post:
+      tags:
+        - Library
+      summary: |
+        deletes and rebuilds the entire index of published library datasets
+      operationId: reindexAll
+      responses:
+        200:
+          description: Indexing Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryBulkIndexResponse'
+        204:
+          description: No published datasets exist to index
+          content:
+            application/json:
+              schema:
+                type: string
+        500:
+          description: Indexing Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryBulkIndexResponse'
+      x-passthrough: false
+  /api/library/groups:
+    get:
+      tags:
+        - Library
+      summary: |
+        returns groups that can be used for discoverable datasets
+      operationId: groups
+      responses:
+        200:
+          description: Names of the allowed groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+      x-passthrough: false
+  /api/library/search:
+    post:
+      tags:
+        - Library
+      summary: |
+        searches published library datasets
+      operationId: FindDocuments
+      requestBody:
+        description: Search terms and pagination parameters
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/SearchTermRef'
+        required: false
+      responses:
+        200:
+          description: Matching datasets
+          content: {}
+      x-passthrough: false
+      x-codegen-request-body-name: searchParams
+  /api/library/suggest:
+    post:
+      tags:
+        - Library
+      summary: |
+        search suggestions
+      operationId: searchSuggest
+      requestBody:
+        description: Search terms and pagination parameters
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/SearchTermRef'
+        required: false
+      responses:
+        200:
+          description: Search suggestions, with highlighting
+          content: {}
+      x-passthrough: false
+      x-codegen-request-body-name: searchParams
+  /api/library/populate/suggest/{field}:
+    get:
+      tags:
+        - Library
+      summary: |
+        suggestions for populating a field
+      operationId: populateSuggest
+      parameters:
+        - name: field
+          in: path
+          description: the property to get suggestions for
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: the initial text to complete
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Field specific suggestions
+          content: {}
+        400:
+          description: Bad Request, specified field that was not configured for suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+  /api/library/user/role/curator:
+    get:
+      tags:
+        - Profile
+      summary: Query to see if you're a library curator
+      description: gets the curator status of a user
+      operationId: isCurator
+      responses:
+        200:
+          description: are you a curator?
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuratorStatus'
+        500:
+          description: Rawls Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+  /api/library/{workspaceNamespace}/{workspaceName}/discoverableGroups:
+    get:
+      tags:
+        - Library
+      summary: |
+        get the groups that can discover this library dataset
+      operationId: getDiscoverableGroups
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: The groups that can discover the dataset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringArray'
+        403:
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+    put:
+      tags:
+        - Library
+      summary: |
+        set the groups that can discover this library dataset
+      operationId: updateDiscoverableGroups
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      requestBody:
+        description: Json array of group names, or empty array for no restrictions
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/StringArray'
+        required: true
+      responses:
+        200:
+          description: The workspace, after assigning groups to be able to discover
+            the dataset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        400:
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        403:
+          description: Insufficient permissions to change catalog permissions (must
+            be owner or have grant or catalog with access to the workspace)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace, user or group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+      x-codegen-request-body-name: discoverableGroups
+  /api/library/{workspaceNamespace}/{workspaceName}/metadata:
+    get:
+      tags:
+        - Library
+      summary: |
+        get the entire metadata for a library dataset
+      operationId: getLibraryMetadata
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryMetadataInput'
+        404:
+          description: Workspace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+    put:
+      tags:
+        - Library
+      summary: |
+        put the entire metadata for a library dataset
+      operationId: putLibraryMetadata
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+        - name: validate
+          in: query
+          description: |
+            Should the payload be validated? Validation is always enabled for published datasets and defaults to false for unpublished datasets.
+          schema:
+            type: boolean
+      requestBody:
+        description: Library metadata
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/LibraryMetadataInput'
+        required: true
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        404:
+          description: Workspace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+      x-codegen-request-body-name: libraryMetadataJson
+  /api/library/{workspaceNamespace}/{workspaceName}/published:
+    post:
+      tags:
+        - Library
+      summary: |
+        publish the workspace in the Library
+      operationId: publishLibraryWorkspace
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        204:
+          description: Dataset already in requested published state
+          content: {}
+        403:
+          description: You must be the workspace owner and library curator to publish
+            a workspace to the library
+          content: {}
+        500:
+          description: Rawls Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+    delete:
+      tags:
+        - Library
+      summary: |
+        unpublish the workspace in the Library
+      operationId: unpublishLibraryWorkspace
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        403:
+          description: You must be the workspace owner and library curator to unpublish
+            a workspace from the library
+          content: {}
+        500:
+          description: Rawls Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
   /api/methods:
     get:
       tags:
@@ -2704,6 +3059,84 @@ paths:
                 $ref: '#/components/schemas/ErrorReport'
       x-passthrough: true
       x-passthrough-target: rawls
+  /api/workspaces/{workspaceNamespace}/{workspaceName}/catalog:
+    get:
+      tags:
+        - Workspaces
+      summary: Get workspace catalog permission
+      description: Get catalog permissions for a workspace
+      operationId: getCatalog
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      responses:
+        200:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceCatalog'
+        404:
+          description: Workspace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+    patch:
+      tags:
+        - Workspaces
+      summary: Update catalog permission
+      description: Set catalog permisisons for a workspace
+      operationId: updateCatalog
+      parameters:
+        - $ref: '#/components/parameters/workspaceNamespaceParam'
+        - $ref: '#/components/parameters/workspaceNameParam'
+      requestBody:
+        description: Series of Catalog updates for workspace
+        content:
+          'application/json':
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkspaceCatalog'
+        required: true
+      responses:
+        200:
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceCatalogUpdateResponseList'
+        403:
+          description: Insufficient permissions to change catalog permissions (must
+            be owner or admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        404:
+          description: Workspace, user or group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+        500:
+          description: Rawls Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReport'
+      x-passthrough: false
+      x-codegen-request-body-name: catalogUpdates
   /api/workspaces/{workspaceNamespace}/{workspaceName}/checkBucketReadAccess:
     get:
       tags:
@@ -5439,6 +5872,69 @@ paths:
         500:
           $ref: '#/components/responses/RawlsInternalError'
       x-codegen-request-body-name: renameEntityAttribute
+  /duos/autocomplete/{queryTerm}:
+    get:
+      tags:
+        - Library
+      summary: |
+        Passes through to DUOS' autocomplete method to select ontology terms of disease type that match the query term.
+      operationId: duosAutocomplete
+      parameters:
+        - name: queryTerm
+          in: path
+          description: The query term (word fragment) which the service should try and
+            complete.
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Array of results.
+          content: {}
+        500:
+          description: Internal Server Error
+          content: {}
+      x-passthrough: false
+  /duos/researchPurposeQuery:
+    post:
+      tags:
+        - Library
+      summary: Generates an ElasticSearch clause for filtering by research purpose
+      operationId: duosResearchPurposeQuery
+      requestBody:
+        description: Research Purpose Request
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/ResearchPurposeRequest'
+        required: true
+      responses:
+        200:
+          description: JSON of ES filter clause
+          content: {}
+      x-passthrough: false
+      x-codegen-request-body-name: body
+  /duos/structuredData:
+    post:
+      tags:
+        - Library
+      summary: Data Use Search ingest
+      description: The ingest API will take the answers to consent questions and return
+        the elasticsearch structure to persist with the data reference.
+      operationId: dataIngest
+      requestBody:
+        description: Structured Data Request
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/structuredDataRequest'
+        required: true
+      responses:
+        500:
+          description: Internal Server Error
+          content: {}
+      x-passthrough: false
+      x-codegen-request-body-name: body
   /error:
     get:
       tags:
@@ -6472,6 +6968,107 @@ components:
           type: string
           description: Type of the AgoraEntity -- Task or Workflow.
           default: Task
+    Consent:
+      type: object
+      properties:
+        consentId:
+          type: string
+          description: The ID of the entity.
+        name:
+          type: string
+          description: Name used to identify the consent.
+        createDate:
+          type: integer
+          description: Creation Date in date-time milliseconds
+          format: int64
+        lastUpdate:
+          type: integer
+          description: Date of the last update in date-time milliseconds
+          format: int64
+        sortDate:
+          type: integer
+          description: The lastest modification date in date-time milliseconds
+          format: int64
+        requiresManualReview:
+          type: boolean
+          description: Describes if this consent has to be reviewed manually.
+        dataUseLetter:
+          type: string
+          description: The URL of the saved file.
+        useRestriction:
+          type: object
+          additionalProperties:
+            type: object
+          description: The UseRestriction of this consent. Used to match against another
+            entities.
+        dulName:
+          type: string
+          description: Name that identifies the Data Use Letter file.
+        translatedUseRestriction:
+          type: string
+          description: The translated use restriction of the consent.
+    structuredDataRequest:
+      required:
+        - aggregateLevelDataProhibited
+        - commercialUseProhibited
+        - controlsUseProhibited
+        - diseaseUseRequired
+        - forProfitUseProhibited
+        - genderUseRequired
+        - generalResearchUse
+        - healthMedicalBiomedicalUseRequired
+        - irbRequired
+        - methodsResearchProhibited
+        - pediatricResearchRequired
+      type: object
+      properties:
+        generalResearchUse:
+          type: boolean
+          description: Is the data available for future general research use?
+        healthMedicalBiomedicalUseRequired:
+          type: boolean
+          description: Is future use limited for health/medical/biomedical research?
+        diseaseUseRequired:
+          type: array
+          description: Future use is limited to research involving the following disease
+            area(s). These values must be urls such as "http://purl.obolibrary.org/obo/DOID_12345".
+          items:
+            type: string
+            example: http://purl.obolibrary.org/obo/DOID_4
+        commercialUseProhibited:
+          type: boolean
+          description: Is future commercial use prohibited?
+        forProfitUseProhibited:
+          type: boolean
+          description: Is future use by for-profit entities prohibited?
+        methodsResearchProhibited:
+          type: boolean
+          description: Is future use for methods research (analytic/software/technology
+            development) outside the bounds of the other specified restrictions prohibited?
+        aggregateLevelDataProhibited:
+          type: boolean
+          description: Is future use of aggregate-level data for general research
+            purposes prohibited?
+        controlsUseProhibited:
+          type: boolean
+          description: Is future use as a control set for diseases other than those
+            specified prohibited?
+        genderUseRequired:
+          type: string
+          description: If future use is limited to research involving a particular
+            gender, specify "male" or "female". Any other value will be read as false.
+            This field is case-insensitive.
+        pediatricResearchRequired:
+          type: boolean
+          description: Is future use limited to pediatric research?
+        irbRequired:
+          type: boolean
+          description: Should the requester provide documentation of local IRB/REC
+            approval?
+        prefix:
+          type: string
+          description: Optional. A prefix that is prepended to the field names of
+            the responses. This is purely for personalization.
     CopyConfigurationIngest:
       required:
         - configurationName
@@ -6592,6 +7189,14 @@ components:
         enterprise:
           type: boolean
           description: whether this billing project is part of an enterprise organization i.e. they have a signed business associate agreement (BAA)
+    CuratorStatus:
+      required:
+        - curator
+      type: object
+      properties:
+        curator:
+          type: boolean
+      description: is the user a curator?
     DatasetPermission:
       type: object
       properties:
@@ -6910,6 +7515,37 @@ components:
           type: string
         value:
           type: string
+    LibraryBulkIndexResponse:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          description: the number of published workspaces sent to be indexed
+          format: int32
+        hasFailures:
+          type: boolean
+          description: did the indexing operation result in any failures?
+          default: false
+        failureMessages:
+          type: object
+          additionalProperties:
+            type: string
+          description: Map[String,String] of id -> failure message
+    LibraryMetadataInput:
+      type: object
+      description: JSON-standard packet of metadata as defined by the Library schema
+      example: |
+        {
+          "library:requiresExternalApproval": false,
+          "library:contactEmail": "someone@broadinstitute.org",
+          "library:datasetName": "My Dataset",
+          "library:numSubjects": 123,
+          "library:datatype": ["Whole Exome", "Whole Genome"]
+          ...
+          additional JSON-standard fields as
+          defined by the Library schema
+          ...
+        }
     ManagedGroupRef:
       required:
         - membersGroupName
@@ -7649,6 +8285,119 @@ components:
           description: Does the user accept the Terra Terms of Service?
         profile:
           $ref: '#/components/schemas/Profile'
+    ResearchPurpose:
+      required:
+        - DS
+        - NAGR
+        - NCTRL
+        - NCU
+        - NMDS
+        - POA
+      type: object
+      properties:
+        DS:
+          type: array
+          description: |
+            Disease focused research. Values are DOID ontology node ids in the form http://purl.obolibrary.org/obo/DOID_NNN. Specify an empty array if this is not disease focused research.
+          items:
+            type: string
+            example: http://purl.obolibrary.org/obo/DOID_4
+        NMDS:
+          type: boolean
+          description: Methods development/Validation study
+          default: false
+        NCTRL:
+          type: boolean
+          description: Control set
+          default: false
+        NAGR:
+          type: boolean
+          description: Aggregate analysis to understand variation in the general population
+          default: false
+        POA:
+          type: boolean
+          description: Study population origins or ancestry
+          default: false
+        NCU:
+          type: boolean
+          description: Commercial purpose/by a commercial entity
+          default: false
+    ResearchPurposeRequest:
+      type: object
+      properties:
+        DS:
+          type: array
+          description: |
+            Disease focused research. Values are DOID ontology node ids in the form http://purl.obolibrary.org/obo/DOID_NNN. Specify an empty array if this is not disease focused research.
+          items:
+            type: string
+            example: http://purl.obolibrary.org/obo/DOID_4
+        NMDS:
+          type: boolean
+          description: Methods development/Validation study
+          default: false
+        NCTRL:
+          type: boolean
+          description: Control set
+          default: false
+        NAGR:
+          type: boolean
+          description: Aggregate analysis to understand variation in the general population
+          default: false
+        POA:
+          type: boolean
+          description: Study population origins or ancestry
+          default: false
+        NCU:
+          type: boolean
+          description: Commercial purpose/by a commercial entity
+          default: false
+        prefix:
+          type: string
+          description: Prefix for query properties. Must match prefix used when indexing.
+          default: ""
+    SearchTermRef:
+      type: object
+      properties:
+        searchString:
+          type: string
+          description: The term to search for
+        filters:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Map[String, Array[String]] Each entry contains the column name
+            (i.e. "library:indication") and a list of terms that will be or'ed in
+            the query (["cancer", "sleep apnea"])
+        researchPurpose:
+          $ref: '#/components/schemas/ResearchPurpose'
+        fieldAggregations:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+          description: Map[String, Int] The list of fields for which you would like
+            to retrieve aggregations and the number of aggregations to return. Default
+            is 5. Specify 0 to get all
+        from:
+          type: integer
+          description: Where in the results list to start (used for pagination)
+          format: int32
+          default: 0
+        size:
+          type: integer
+          description: How many results to return
+          format: int32
+          default: 10
+        sortField:
+          type: string
+          description: Field name on which to sort; defaults to sort by relevance
+            if not specified
+        sortDirection:
+          type: string
+          description: asc or desc; defaults to asc if not specified
     StackTraceElement:
       required:
         - className
@@ -7940,7 +8689,15 @@ components:
               ok: true
             Google:
               ok: true
+            Consent:
+              ok: false
+              messages:
+                - ClusterHealth is RED
             Rawls:
+              ok: true
+            Ontology:
+              ok: true
+            Search:
               ok: true
             Thurloe:
               ok: false
@@ -8464,6 +9221,52 @@ components:
           type: boolean
           description: Whether the bucket is requester pays
       description: Extra information about a GCS bucket attached to a workspace
+    WorkspaceCatalog:
+      required:
+        - catalog
+        - email
+      type: object
+      properties:
+        email:
+          type: string
+          description: email address of the user or group whose permissions will be
+            changed
+        catalog:
+          type: boolean
+          description: Set to true if you want this user to be able to perform library
+            related operations on the workspace
+      description: ""
+    WorkspaceCatalogResponse:
+      required:
+        - catalog
+        - subjectId
+      type: object
+      properties:
+        subjectId:
+          type: string
+          description: subject id of the user or group whose permissions were changed
+        catalog:
+          type: boolean
+          description: Set to true if you want this user to be able to perform library
+            related operations on the workspace
+      description: ""
+    WorkspaceCatalogUpdateResponseList:
+      required:
+        - emailsNotFound
+        - usersUpdated
+      type: object
+      properties:
+        usersUpdated:
+          type: array
+          description: the users or groups who were updated
+          items:
+            $ref: '#/components/schemas/WorkspaceCatalogResponse'
+        emailsNotFound:
+          type: array
+          description: the emails of users or groups who were not found
+          items:
+            type: string
+      description: ""
     WorkspaceDeletionResult:
       type: object
       description: Workspace deletion metadata

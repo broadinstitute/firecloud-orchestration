@@ -5,23 +5,52 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler}
+import org.broadinstitute.dsde.firecloud.model.DataUse._
 import org.broadinstitute.dsde.firecloud.model.ManagedGroupRoles.ManagedGroupRole
 import org.broadinstitute.dsde.firecloud.model.OrchMethodRepository._
+import org.broadinstitute.dsde.firecloud.model.Ontology.{ESTermParent, TermParent, TermResource}
 import org.broadinstitute.dsde.firecloud.model.Project.ProjectRoles.ProjectRole
 import org.broadinstitute.dsde.firecloud.model.Project._
 import org.broadinstitute.dsde.firecloud.model.SamResource.{AccessPolicyName, ResourceId, UserPolicy}
+import org.broadinstitute.dsde.firecloud.model.ShareLog.{Share, ShareType}
 import org.broadinstitute.dsde.firecloud.utils.StatusCodeUtils
 import org.broadinstitute.dsde.rawls.model.UserModelJsonSupport._
 import org.broadinstitute.dsde.rawls.model.WorkspaceACLJsonSupport.WorkspaceAccessLevelFormat
 import org.broadinstitute.dsde.rawls.model._
+import org.broadinstitute.dsde.workbench.client.sam.model.User
 import org.broadinstitute.dsde.workbench.model.ValueObjectFormat
 import org.broadinstitute.dsde.workbench.model.WorkbenchIdentityJsonSupport._
 import org.broadinstitute.dsde.workbench.model.google.GoogleModelJsonSupport.InstantFormat
 import spray.json._
 
+import scala.util.{Failure, Success, Try}
+
 //noinspection TypeAnnotation,RedundantNewCaseClass
 object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with StatusCodeUtils {
   import spray.json.DefaultJsonProtocol._
+
+  def optionalEntryIntReader(fieldName: String, data: Map[String, JsValue]): Option[Int] =
+    optionalEntryReader[Option[Int]](fieldName, data, _.convertTo[Option[Int]], None)
+
+  /**
+    * optionalEntryReader constructs a type from a json map for a field that may or may not be in the map.
+    * if the field is missing from the map, the default passed in will be returned. This class does not necessarily
+    * have to return an option. It will if the type T is an Option.
+    * @param fieldName the field that may or may not exist in the map
+    * @param data the map to check
+    * @param converter the convert to method for the type T (you can pass the parameter as: _.convertTo[T] where you replace T with the actual type)
+    * @param default what to return if the field is not in the map
+    * @tparam T the type of the object the data represents and will be converted to
+    * @return on object of the specified type constructed from the data if field is in the map, or the default if not
+    */
+  def optionalEntryReader[T](fieldName: String, data: Map[String, JsValue], converter: JsValue => T, default: T): T =
+    data.getOrElse(fieldName, None) match {
+      case j: JsValue =>
+        Try(converter(j)).toOption.getOrElse(
+          throw DeserializationException(s"unexpected json type for $fieldName")
+        )
+      case None => default
+    }
 
   implicit object impStatusCode extends JsonFormat[StatusCode] {
     override def write(code: StatusCode): JsValue = JsNumber(code.intValue)
@@ -31,6 +60,103 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with
       case _           => throw DeserializationException("unexpected json type")
     }
   }
+
+  implicit object impDiseaseOntologyNodeId extends RootJsonFormat[DiseaseOntologyNodeId] {
+    override def write(obj: DiseaseOntologyNodeId): JsValue = JsString(obj.uri.toString)
+
+    override def read(json: JsValue): DiseaseOntologyNodeId = json match {
+      case JsString(uristring) => DiseaseOntologyNodeId(uristring)
+      case _ => throw DeserializationException(s"cannot deserialize DiseaseOntologyNodeId from [$json]")
+    }
+  }
+  implicit val impResearchPurpose: RootJsonFormat[ResearchPurpose] = jsonFormat6(ResearchPurpose.apply)
+  implicit val impResearchPurposeRequest: RootJsonFormat[ResearchPurposeRequest] = jsonFormat7(
+    ResearchPurposeRequest.apply
+  )
+
+  implicit object impLibrarySearchParams extends RootJsonFormat[LibrarySearchParams] {
+    val SEARCH_STRING = "searchString"
+    val FILTERS = "filters"
+    val RESEARCH_PURPOSE = "researchPurpose"
+    val FIELD_AGGREGATIONS = "fieldAggregations"
+    val MAX_AGGREGATIONS = "maxAggregations"
+    val FROM = "from"
+    val SIZE = "size"
+    val SORT_FIELD = "sortField"
+    val SORT_DIR = "sortDirection"
+
+    override def write(params: LibrarySearchParams): JsValue = {
+      val fields: Seq[Option[(String, JsValue)]] = Seq(
+        Some(FILTERS -> params.filters.toJson),
+        params.researchPurpose map { RESEARCH_PURPOSE -> _.toJson },
+        Some(FIELD_AGGREGATIONS -> params.fieldAggregations.toJson),
+        Some(FROM -> params.from.toJson),
+        Some(SIZE -> params.size.toJson),
+        params.sortField map { SORT_FIELD -> JsString(_) },
+        params.sortDirection map { SORT_DIR -> JsString(_) },
+        params.searchString map { SEARCH_STRING -> JsString(_) }
+      )
+
+      JsObject(fields.filter(_.isDefined).map(_.get).toMap)
+    }
+
+    override def read(json: JsValue): LibrarySearchParams = {
+      val data = json.asJsObject.fields
+      val term = data.getOrElse(SEARCH_STRING, None) match {
+        case JsString(str) if str.trim == "" => None
+        case JsString(str)                   => Some(str.trim)
+        case None                            => None
+        case _ => throw DeserializationException(s"unexpected json type for $SEARCH_STRING")
+      }
+
+      val filters =
+        optionalEntryReader[Map[String, Seq[String]]](FILTERS, data, _.convertTo[Map[String, Seq[String]]], Map.empty)
+      val aggs =
+        optionalEntryReader[Map[String, Int]](FIELD_AGGREGATIONS, data, _.convertTo[Map[String, Int]], Map.empty)
+      val from = optionalEntryIntReader(FROM, data)
+      val size = optionalEntryIntReader(SIZE, data)
+
+      val researchPurposeOption = data.get(RESEARCH_PURPOSE) map (_.convertTo[ResearchPurpose])
+
+      val sortField = data.get(SORT_FIELD) match {
+        case Some(x: JsString) => Some(x.value)
+        case _                 => None
+      }
+
+      val sortDirection = data.get(SORT_DIR) match {
+        case Some(x: JsString) => Some(x.value)
+        case _                 => None
+      }
+
+      LibrarySearchParams(term, filters, researchPurposeOption, aggs, from, size, sortField, sortDirection)
+    }
+  }
+
+  implicit val ESInnerFieldFormat: RootJsonFormat[ESInnerField] = jsonFormat7(ESInnerField)
+  implicit val ESInternalTypeFormat: RootJsonFormat[ESInternalType] = jsonFormat3(ESInternalType)
+  implicit val ESNestedTypeFormat: RootJsonFormat[ESNestedType] = jsonFormat2(ESNestedType)
+  implicit val ESTypeFormat: RootJsonFormat[ESType] = jsonFormat3(ESType.apply)
+
+  implicit object impESPropertyFields extends JsonFormat[ESPropertyFields] {
+    override def write(input: ESPropertyFields): JsValue = input match {
+      case estype: ESType                 => estype.toJson
+      case esinternaltype: ESInternalType => esinternaltype.toJson
+      case esinnerfield: ESInnerField     => esinnerfield.toJson
+      case esnestedtype: ESNestedType     => esnestedtype.toJson
+      case _                              => throw new SerializationException("unexpected ESProperty type")
+    }
+
+    override def read(json: JsValue): ESPropertyFields = {
+      val data = json.asJsObject.fields
+      data match {
+        case x if x.contains("properties") => ESNestedTypeFormat.read(json)
+        case x if x.contains("fields")     => ESTypeFormat.read(json)
+        case _                             => ESInternalTypeFormat.read(json)
+      }
+    }
+  }
+
+  implicit val ESDatasetPropertiesFormat: RootJsonFormat[ESDatasetProperty] = jsonFormat1(ESDatasetProperty)
 
   implicit object impStackTraceElement extends RootJsonFormat[StackTraceElement] {
     val CLASS_NAME = "className"
@@ -136,6 +262,7 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with
   implicit val impSamUserResponse: RootJsonFormat[SamUserResponse] = jsonFormat8(SamUserResponse)
   implicit val impSamUser: RootJsonFormat[SamUser] = jsonFormat8(SamUser)
   implicit val impUserIdInfo: RootJsonFormat[UserIdInfo] = jsonFormat3(UserIdInfo)
+  implicit val impCurator: RootJsonFormat[Curator] = jsonFormat1(Curator)
   implicit val impUserImportPermission: RootJsonFormat[UserImportPermission] = jsonFormat2(UserImportPermission)
 
   implicit val impPFBImportRequest: RootJsonFormat[PFBImportRequest] = jsonFormat1(PFBImportRequest)
@@ -167,6 +294,30 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with
   implicit val impResourceId: ValueObjectFormat[ResourceId] = ValueObjectFormat(ResourceId)
   implicit val impAccessPolicyName: ValueObjectFormat[AccessPolicyName] = ValueObjectFormat(AccessPolicyName)
   implicit val impUserPolicy: RootJsonFormat[UserPolicy] = jsonFormat5(UserPolicy)
+
+  implicit val AttributeDetailFormat: RootJsonFormat[AttributeDetail] = rootFormat(
+    lazyFormat(jsonFormat5(AttributeDetail))
+  )
+  implicit val AttributeDefinitionFormat: RootJsonFormat[AttributeDefinition] = jsonFormat1(AttributeDefinition)
+
+  implicit val impAggregationTermResult: RootJsonFormat[AggregationTermResult] = jsonFormat2(AggregationTermResult)
+  implicit val impAggregationFieldResults: RootJsonFormat[AggregationFieldResults] = jsonFormat2(
+    AggregationFieldResults
+  )
+  implicit val impLibraryAggregationResponse: RootJsonFormat[LibraryAggregationResponse] = jsonFormat2(
+    LibraryAggregationResponse
+  )
+  implicit val impLibrarySearchResponse: RootJsonFormat[LibrarySearchResponse] = jsonFormat4(LibrarySearchResponse)
+  implicit val impLibraryBulkIndexResponse: RootJsonFormat[LibraryBulkIndexResponse] = jsonFormat3(
+    LibraryBulkIndexResponse
+  )
+
+  implicit val impStructuredDataRequest: RootJsonFormat[StructuredDataRequest] = jsonFormat12(StructuredDataRequest)
+  implicit val impStructuredDataResponse: RootJsonFormat[StructuredDataResponse] = jsonFormat4(StructuredDataResponse)
+
+  implicit val impOntologyTermParent: RootJsonFormat[TermParent] = jsonFormat5(TermParent)
+  implicit val impOntologyTermResource: RootJsonFormat[TermResource] = jsonFormat7(TermResource)
+  implicit val impOntologyESTermParent: RootJsonFormat[ESTermParent] = jsonFormat2(ESTermParent)
 
   implicit val impThurloeStatus: RootJsonFormat[ThurloeStatus] = jsonFormat2(ThurloeStatus)
 
@@ -218,6 +369,17 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with
 
   implicit val impCreateRawlsBillingProjectFullRequestFormat: RootJsonFormat[CreateRawlsBillingProjectFullRequest] =
     jsonFormat2(CreateRawlsBillingProjectFullRequest)
+
+  implicit object ShareTypeFormat extends RootJsonFormat[ShareType.Value] {
+    override def write(obj: ShareType.Value): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): ShareType.Value = json match {
+      case JsString(name) => ShareType.withName(name)
+      case _              => throw DeserializationException("could not deserialize share type")
+    }
+  }
+
+  implicit val impShareFormat: RootJsonFormat[Share] = jsonFormat4(Share)
 
   implicit val impWorkspaceIdFormat: RootJsonFormat[WorkspaceId] = jsonFormat1(WorkspaceId)
   implicit val impWorkspaceIdResponseFormat: RootJsonFormat[WorkspaceIdResponse] = jsonFormat1(WorkspaceIdResponse)

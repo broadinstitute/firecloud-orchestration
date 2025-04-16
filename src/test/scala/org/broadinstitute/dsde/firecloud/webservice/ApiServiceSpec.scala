@@ -32,8 +32,11 @@ trait ApiServiceSpec
   trait ApiServices extends NihApiService {
     val agoraDao: MockAgoraDAO
     val googleDao: MockGoogleServicesDAO
+    val ontologyDao: MockOntologyDAO
     val rawlsDao: MockRawlsDAO
     val samDao: MockSamDAO
+    val searchDao: MockSearchDAO
+    val researchPurposeSupport: MockResearchPurposeSupport
     val thurloeDao: MockThurloeDAO
     val shibbolethDao: ShibbolethDAO
     val cwdsDao: CwdsDAO
@@ -42,7 +45,18 @@ trait ApiServiceSpec
     def actorRefFactory = system
 
     val nihServiceConstructor = NihService.constructor(
-      new Application(agoraDao, googleDao, rawlsDao, samDao, thurloeDao, shibbolethDao, cwdsDao, ecmDao)
+      new Application(agoraDao,
+                      googleDao,
+                      ontologyDao,
+                      rawlsDao,
+                      samDao,
+                      searchDao,
+                      researchPurposeSupport,
+                      thurloeDao,
+                      shibbolethDao,
+                      cwdsDao,
+                      ecmDao
+      )
     ) _
 
   }

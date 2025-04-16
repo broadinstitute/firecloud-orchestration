@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
+import org.broadinstitute.dsde.firecloud.model.ShareLog.ShareType
 import org.broadinstitute.dsde.firecloud.model.{RequestCompleteWithErrorReport, _}
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{
   PerRequestMessage,
@@ -35,18 +36,28 @@ import scala.util.{Failure, Success, Try}
   */
 object WorkspaceService {
   def constructor(app: Application)(userToken: WithAccessToken)(implicit executionContext: ExecutionContext) =
-    new WorkspaceService(userToken, app.rawlsDAO, app.samDAO, app.thurloeDAO, app.googleServicesDAO)
+    new WorkspaceService(userToken,
+                         app.rawlsDAO,
+                         app.samDAO,
+                         app.thurloeDAO,
+                         app.googleServicesDAO,
+                         app.ontologyDAO,
+                         app.searchDAO
+    )
 }
 
 class WorkspaceService(protected val argUserToken: WithAccessToken,
                        val rawlsDAO: RawlsDAO,
                        val samDao: SamDAO,
                        val thurloeDAO: ThurloeDAO,
-                       val googleServicesDAO: GoogleServicesDAO
+                       val googleServicesDAO: GoogleServicesDAO,
+                       val ontologyDAO: OntologyDAO,
+                       val searchDAO: SearchDAO
 )(implicit protected val executionContext: ExecutionContext)
     extends AttributeSupport
     with TSVFileSupport
     with PermissionsSupport
+    with WorkspacePublishingSupport
     with SprayJsonSupport
     with LazyLogging {
 
@@ -88,6 +99,15 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
         )
     }
 
+  def updateWorkspaceAttributes(workspaceNamespace: String,
+                                workspaceName: String,
+                                workspaceUpdateJson: Seq[AttributeUpdateOperation]
+  ) =
+    for {
+      ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, workspaceUpdateJson)
+      _ <- republishDocument(ws, ontologyDAO, searchDAO)
+    } yield RequestComplete(ws)
+
   def setWorkspaceAttributes(workspaceNamespace: String, workspaceName: String, newAttributes: AttributeMap) =
     rawlsDAO.getWorkspace(workspaceNamespace, workspaceName) flatMap { workspaceResponse =>
       // this is technically vulnerable to a race condition in which the workspace attributes have changed
@@ -98,7 +118,23 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
       )
       for {
         ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, allOperations)
+        _ <- republishDocument(ws, ontologyDAO, searchDAO)
       } yield RequestComplete(ws)
+    }
+
+  def getCatalog(workspaceNamespace: String, workspaceName: String, userInfo: UserInfo): Future[PerRequestMessage] =
+    asPermitted(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Read, userInfo) {
+      rawlsDAO.getCatalog(workspaceNamespace, workspaceName) map (RequestComplete(_))
+    }
+
+  def updateCatalog(workspaceNamespace: String,
+                    workspaceName: String,
+                    updates: Seq[WorkspaceCatalog],
+                    userInfo: UserInfo
+  ): Future[PerRequestMessage] =
+    // can update if admin or owner of workspace
+    asPermitted(workspaceNamespace, workspaceName, WorkspaceAccessLevels.Owner, userInfo) {
+      rawlsDAO.patchCatalog(workspaceNamespace, workspaceName, updates) map (RequestComplete(_))
     }
 
   def updateWorkspaceACL(workspaceNamespace: String,
@@ -187,15 +223,16 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
   def putTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrList = AttributeValueList(tags map (tag => AttributeString(tag.trim)))
     val op = AddUpdateAttribute(AttributeName.withTagsNS(), attrList)
-    patchWorkspaceTags(workspaceNamespace, workspaceName, Seq(op))
+    patchAndRepublishWorkspace(workspaceNamespace, workspaceName, Seq(op))
   }
 
-  private def patchWorkspaceTags(workspaceNamespace: String,
-                                 workspaceName: String,
-                                 ops: Seq[AttributeUpdateOperation]
+  private def patchAndRepublishWorkspace(workspaceNamespace: String,
+                                         workspaceName: String,
+                                         ops: Seq[AttributeUpdateOperation]
   ) =
     for {
       ws <- rawlsDAO.patchWorkspaceAttributes(workspaceNamespace, workspaceName, ops)
+      _ <- republishDocument(ws, ontologyDAO, searchDAO)
     } yield {
       val tags = getTagsFromWorkspace(ws)
       RequestComplete(StatusCodes.OK, formatTags(tags))
@@ -206,13 +243,59 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
       val origTags = getTagsFromWorkspace(origWs.workspace)
       val attrOps =
         (tags diff origTags) map (tag => AddListMember(AttributeName.withTagsNS(), AttributeString(tag.trim)))
-      patchWorkspaceTags(workspaceNamespace, workspaceName, attrOps)
+      patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
     }
 
   def deleteTags(workspaceNamespace: String, workspaceName: String, tags: List[String]): Future[PerRequestMessage] = {
     val attrOps = tags map (tag => RemoveListMember(AttributeName.withTagsNS(), AttributeString(tag.trim)))
-    patchWorkspaceTags(workspaceNamespace, workspaceName, attrOps)
+    patchAndRepublishWorkspace(workspaceNamespace, workspaceName, attrOps)
   }
+
+  def unPublishSuccessMessage(workspaceNamespace: String, workspaceName: String): String =
+    s" The workspace $workspaceNamespace:$workspaceName has been un-published."
+
+  def deleteWorkspace(ns: String, name: String): Future[PerRequestMessage] =
+    rawlsDAO.getWorkspace(ns, name) flatMap { wsResponse =>
+      val unpublishFuture: Future[WorkspaceDetails] =
+        if (isPublished(wsResponse))
+          setWorkspacePublishedStatus(wsResponse.workspace, publishArg = false, rawlsDAO, ontologyDAO, searchDAO)
+        else
+          Future.successful(wsResponse.workspace)
+      unpublishFuture flatMap { ws =>
+        rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+          RequestComplete(StatusCodes.Accepted,
+                          Some(List(wsResponse.getOrElse(""), unPublishSuccessMessage(ns, name)).mkString(" "))
+          )
+        }
+      } recover {
+        case e: FireCloudExceptionWithErrorReport =>
+          RequestComplete(
+            e.errorReport.statusCode.getOrElse(StatusCodes.InternalServerError),
+            ErrorReport(message = s"You cannot delete this workspace: ${e.errorReport.message}")
+          )
+        case e: Throwable =>
+          RequestComplete(StatusCodes.InternalServerError,
+                          ErrorReport(message = s"You cannot delete this workspace: ${e.getMessage}")
+          )
+      }
+    } recoverWith {
+      // This case is only possible when a user owns a workspace, but has lost access to it because they have been removed
+      // from the auth domain group(s). A user is allowed to delete these workspaces, but not view them. Because Orchestration
+      // has the extra step to get and unpublish a workspace, that would cause the above rawlsDAO.getWorkspace call to fail, thus
+      // preventing the user from deleting the workspace. They could delete the workspace by calling Rawls directly because it does not
+      // bother with unpublishing a workspace (that is strictly an Orch concept), but that is not a friendly UX, and we want to make our best
+      // attempt to unpublish the workspace if possible, although it is not critical. It is unlikely that this recoverWith would be
+      // reached for a published workspace anyway.
+      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) =>
+        rawlsDAO.deleteWorkspace(ns, name) map { wsResponse =>
+          RequestComplete(StatusCodes.Accepted, Some(wsResponse.getOrElse("")))
+        }
+    }
+
+  def cloneWorkspace(namespace: String, name: String, cloneRequest: WorkspaceRequest): Future[PerRequestMessage] =
+    rawlsDAO.cloneWorkspace(namespace, name, cloneRequest).map { res =>
+      RequestComplete(StatusCodes.Created, res)
+    }
 
   private def getTagsFromWorkspace(ws: WorkspaceDetails): Seq[String] =
     ws.attributes.getOrElse(Map.empty).get(AttributeName.withTagsNS()) match {
