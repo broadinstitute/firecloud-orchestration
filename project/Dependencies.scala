@@ -41,6 +41,7 @@ object Dependencies {
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
+      exclude("org.typelevel", "cats-parse_2.13")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.37-$workbenchLibsHash"
