@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.9.3"
   val akkaHttpV = "10.6.3"
-  val jacksonV = "2.18.3"
-  val jacksonHotfixV = "2.18.3" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.19.0"
+  val jacksonHotfixV = "2.19.0" // for when only some of the Jackson libs have hotfix releases
   val workbenchLibsHash = "70c7d82" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor =        ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -21,7 +21,7 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "com.google.guava"           % "guava"                      % "33.4.6-jre",
+    "com.google.guava"           % "guava"                      % "33.4.8-jre",
     "com.fasterxml.jackson.core" % "jackson-annotations"        % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind"           % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
@@ -33,7 +33,7 @@ object Dependencies {
 
   val rootDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback"                 % "logback-classic"     % "1.5.18",
-    "io.sentry"                      % "sentry-logback"      % "8.6.0",
+    "io.sentry"                      % "sentry-logback"      % "8.11.1",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -57,7 +57,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"1.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.5" excludeAll(excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.6" excludeAll(excludeSpringBoot, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -78,7 +78,7 @@ object Dependencies {
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
     "org.mock-server"                % "mockserver-netty-no-dependencies"    % "5.15.0"  % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.33" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.34" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
