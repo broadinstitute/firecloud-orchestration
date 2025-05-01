@@ -37,10 +37,11 @@ object Dependencies {
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    "org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.337-SNAP"
+    "org.broadinstitute.dsde"       %% "rawls-model"         % "v0.0.376-SNAP"
       exclude("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude("com.typesafe.akka", "akka-stream_2.13")
       exclude("com.google.code.findbugs", "jsr305")
+      exclude("org.typelevel", "cats-parse_2.13")
       excludeAll(excludeAkkaHttp, excludeSprayJson),
     "org.broadinstitute.dsde.workbench" %% "workbench-util"  % s"0.10-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.37-$workbenchLibsHash"
