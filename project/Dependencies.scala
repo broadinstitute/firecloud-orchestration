@@ -27,7 +27,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-core"               % jacksonV,
     "org.yaml"                   % "snakeyaml"                  % "2.4",
     "org.apache.commons"         % "commons-compress"           % "1.27.1", // workbench-libs libraries pull this in
-    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20250311-2.0.0", // from workbench-google2
+    "com.google.apis"            % "google-api-services-pubsub" % "v1-rev20250414-2.0.0", // from workbench-google2
     "com.google.apis"  % "google-api-services-admin-directory"  % "directory_v1-rev20250325-2.0.0" // from workbench-google2
   )
 
