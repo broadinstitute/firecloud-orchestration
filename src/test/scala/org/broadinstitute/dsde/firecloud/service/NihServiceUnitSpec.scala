@@ -3,8 +3,7 @@ package org.broadinstitute.dsde.firecloud.service
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.unsafe.implicits.global
-import org.broadinstitute.dsde.firecloud.FireCloudConfig
-import org.broadinstitute.dsde.firecloud.FireCloudException
+import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
 import org.broadinstitute.dsde.firecloud.dataaccess.{
   ExternalCredsDAO,
   GoogleServicesDAO,
@@ -36,7 +35,7 @@ import org.broadinstitute.dsde.workbench.model.{
   WorkbenchGroupName,
   WorkbenchUserId
 }
-import org.broadinstitute.dsde.rawls.model.ErrorReport
+import org.broadinstitute.dsde.rawls.model.{ErrorReport, ErrorReportSource}
 import org.broadinstitute.dsde.workbench.client.sam.model.{BulkMembershipUpdateRequestV2, PolicyMembershipUpdate}
 import org.broadinstitute.dsde.workbench.util2.messaging.{AckHandler, ReceivedMessage}
 import org.joda.time.DateTime
@@ -62,6 +61,7 @@ import scala.util.{Failure, Random, Success}
 class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
 
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val errorReportSource: ErrorReportSource = ErrorReportSource("NihServiceUnitSpec")
   val samDao = mock[SamDAO]
   val thurloeDao = mock[ThurloeDAO]
   val googleDao = mock[GoogleServicesDAO]
@@ -293,6 +293,32 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
 
     val emailsToSync = Set(userDbGap.email, dbGapGroupEmail)
+    val nihStatus = Await
+      .result(nihService.syncAllowlistAllUsers("RAS"), Duration.Inf)
+      .asInstanceOf[PerRequest.RequestComplete[StatusCode]]
+      .response
+
+    nihStatus should be(StatusCodes.NoContent)
+    verify(samDao, times(1)).overwriteGroupMembers(
+      ArgumentMatchers.eq(WorkbenchGroupName("dbgap_phs002409_c1")),
+      ArgumentMatchers.eq(ManagedGroupRoles.Member),
+      ArgumentMatchers.argThat((list: List[WorkbenchEmail]) => list.toSet.equals(emailsToSync))
+    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
+  }
+
+  it should "sync all users by tolerating groups found with consentGroup + phsId that don't exist" in {
+    when(ecmDao.getActiveLinkedEraAccounts(ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))))
+      .thenReturn(Future.successful(Seq(userDbGapLinkedAccount)))
+    when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
+    when(samDao.getGroupEmail(ArgumentMatchers.eq(WorkbenchGroupName("dbgap_phs002409_c1")))(any())).thenReturn(
+      Future.failed(
+        new FireCloudExceptionWithErrorReport(
+          ErrorReport(StatusCodes.NotFound, "Group not found")
+        )
+      )
+    )
+
+    val emailsToSync = Set(userDbGap.email)
     val nihStatus = Await
       .result(nihService.syncAllowlistAllUsers("RAS"), Duration.Inf)
       .asInstanceOf[PerRequest.RequestComplete[StatusCode]]
