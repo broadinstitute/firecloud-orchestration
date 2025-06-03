@@ -33,7 +33,7 @@ object Dependencies {
 
   val rootDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback"                 % "logback-classic"     % "1.5.18",
-    "io.sentry"                      % "sentry-logback"      % "8.11.1",
+    "io.sentry"                      % "sentry-logback"      % "8.13.2",
     "com.typesafe.scala-logging"    %% "scala-logging"       % "3.9.5",
 
     "org.parboiled" % "parboiled-core" % "1.4.1",
@@ -58,7 +58,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"1.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.6" excludeAll(excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.7" excludeAll(excludeSpringBoot, excludeSpringJcl),
 
     "com.typesafe.akka"   %%  "akka-actor"           % akkaV,
     "com.typesafe.akka"   %%  "akka-slf4j"           % akkaV,
@@ -79,7 +79,7 @@ object Dependencies {
     "org.scalatest"                 %% "scalatest"           % "3.2.19"   % "test",
     "org.mock-server"                % "mockserver-netty-no-dependencies"    % "5.15.0"  % "test",
     // provides testing mocks
-    "com.google.cloud"               % "google-cloud-nio"    % "0.127.34" % "test",
+    "com.google.cloud"               % "google-cloud-nio"    % "0.127.36" % "test",
     "org.scalatestplus"             %% "mockito-4-5"         % "3.2.12.0" % "test"
   )
 }
