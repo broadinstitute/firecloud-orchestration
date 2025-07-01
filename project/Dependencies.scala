@@ -54,7 +54,7 @@ object Dependencies {
       exclude("com.google.cloud", "google-cloud-resourcemanager")
       exclude("com.google.cloud", "google-cloud-storage-transfer"),
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.9-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.392",
+    "org.broadinstitute.dsde.workbench" %% "sam-client"       % "v0.0.402",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" %s"1.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll(excludeSpring, excludeSpringBoot),
