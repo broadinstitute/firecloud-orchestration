@@ -3,8 +3,6 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     open-pull-requests-limit: 10
-    reviewers:
-      - "@broadinstitute/broad-core-services"
     commit-message:
       prefix: "[CORE-69]"
     schedule:
