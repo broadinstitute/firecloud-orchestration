@@ -7374,12 +7374,12 @@ components:
           format: int64
           default: 0
     NihResources:
-      type: array
+      type: object
       properties:
-        name:
-          type: string
-        authorized:
-          type: boolean
+        datasetPermissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatasetPermission'
     NotificationType:
       required:
         - description
