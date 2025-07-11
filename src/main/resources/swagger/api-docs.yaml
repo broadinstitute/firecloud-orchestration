@@ -2183,7 +2183,7 @@ paths:
       operationId: NIHResources
       responses:
         200:
-          description: Successfully retrieved NIH Resources (without Linked NIH Username)
+          description: Successfully retrieved NIH Resources
           content:
             application/json:
               schema:
@@ -7359,20 +7359,18 @@ components:
           description: Is this config marked as deleted?
           default: false
     NihStatus:
-      required:
-        - linkedNihUsername
-      type: object
-      properties:
-        linkedNihUsername:
-          type: string
-        datasetPermissions:
-          type: array
-          items:
-            $ref: '#/components/schemas/DatasetPermission'
-        linkExpireTime:
-          type: integer
-          format: int64
-          default: 0
+      allOf:
+        - $ref: "#/components/schemas/NihResources"
+        - required:
+            - linkedNihUsername
+          type: object
+          properties:
+            linkedNihUsername:
+              type: string
+            linkExpireTime:
+              type: integer
+              format: int64
+              default: 0
     NihResources:
       type: object
       properties:
