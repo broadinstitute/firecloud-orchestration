@@ -2175,6 +2175,20 @@ paths:
           description: Internal server error unlinking NIH account
           content: {}
       x-passthrough: false
+  /api/nih/resources:
+    get:
+      tags:
+        - NIH
+      summary: Retrieves info about a user's NIH Resources
+      operationId: NIHResources
+      responses:
+        200:
+          description: Successfully retrieved NIH Resources (without Linked NIH Username)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NihResources'
+      x-passthrough: false
   /api/notifications/general:
     get:
       tags:
@@ -7359,6 +7373,13 @@ components:
           type: integer
           format: int64
           default: 0
+    NihResources:
+      type: array
+      properties:
+        name:
+          type: string
+        authorized:
+          type: boolean
     NotificationType:
       required:
         - description

@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.NihService
+import org.broadinstitute.dsde.firecloud.service.NihStatus._
 import org.broadinstitute.dsde.firecloud.utils.{EnabledUserDirectives, StandardUserInfoDirectives}
 import org.slf4j.LoggerFactory
 
@@ -50,6 +51,9 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
                   nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent)
                 }
               }
+            } ~
+            path("resources") {
+              complete(nihServiceConstructor().getNihResources(userInfo))
             }
         }
       }

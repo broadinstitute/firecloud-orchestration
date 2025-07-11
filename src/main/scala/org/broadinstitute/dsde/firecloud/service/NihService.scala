@@ -54,9 +54,12 @@ case class NihAllowlist(name: String,
 
 case class NihDatasetPermission(name: String, authorized: Boolean)
 
+case class NihResources(datasetPermissions: Set[NihDatasetPermission])
+
 object NihStatus {
   implicit val impNihDatasetPermission: RootJsonFormat[NihDatasetPermission] = jsonFormat2(NihDatasetPermission)
   implicit val impNihStatus: RootJsonFormat[NihStatus] = jsonFormat3(NihStatus.apply)
+  implicit val impNihResources: RootJsonFormat[NihResources] = jsonFormat1(NihResources)
 }
 
 object NihService {
@@ -165,6 +168,11 @@ class NihService(val samDao: SamDAO,
             RequestComplete(nihStatus)
           case None => RequestComplete(NotFound)
         }
+    }
+
+  def getNihResources(userInfo: UserInfo): Future[NihResources] =
+    getAllAllowlistGroupMemberships(userInfo).map { allowlistMembership =>
+      NihResources(allowlistMembership)
     }
 
   private def getNihStatusFromEcm(userInfo: UserInfo): Future[Option[NihStatus]] =
