@@ -8,7 +8,8 @@ import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.mock.MockGoogleServicesDAO
 import org.broadinstitute.dsde.firecloud.model.JWTWrapper
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
-import org.broadinstitute.dsde.firecloud.service.NihStatus
+import org.broadinstitute.dsde.firecloud.service.{NihResources, NihStatus}
+import org.broadinstitute.dsde.firecloud.service.NihStatus._
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
 import org.broadinstitute.dsde.workbench.model.WorkbenchEmail
 import org.mockserver.integration.ClientAndServer
@@ -282,6 +283,30 @@ class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll {
   it should "return NotFound for unknown whitelist" in withDefaultApiServices { services =>
     Post("/sync_whitelist/foobar") ~> sealRoute(services.syncRoute) ~> check {
       status should equal(NotFound)
+    }
+  }
+
+  it should "return NIH resources for a user" in withDefaultApiServices { services =>
+    val user = WorkbenchEmail("test-user@example.com")
+
+    Get("/nih/resources") ~> dummyUserIdHeaders(user.value, "access_token", user.value) ~> sealRoute(
+      services.nihRoutes
+    ) ~> check {
+      status should equal(OK)
+      val resources = responseAs[NihResources]
+      resources should not be null
+    }
+  }
+
+  it should "handle user without NIH resources" in withDefaultApiServices { services =>
+    val user = WorkbenchEmail("unlinked-user@example.com")
+
+    Get("/nih/resources") ~> dummyUserIdHeaders(user.value, "access_token", user.value) ~> sealRoute(
+      services.nihRoutes
+    ) ~> check {
+      // Depending on your implementation, this might return OK with empty resources
+      // or a different status code
+      status should equal(OK)
     }
   }
 }

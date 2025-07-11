@@ -124,4 +124,24 @@ class NihServiceSpec extends AnyFlatSpec with Matchers {
     }
     error.errorReport.statusCode shouldBe Some(StatusCodes.Forbidden)
   }
+
+  "getNihResources" should "return NIH resources for a user" in {
+    val userInfo = UserInfo("test-token", thurloeDao.TCGA_AND_TARGET_LINKED)
+
+    val resources = Await.result(nihService.getNihResources(userInfo), 3.seconds)
+
+    resources should not be null
+    resources.datasetPermissions should not be empty
+    resources.datasetPermissions.foreach(_.authorized should be(true))
+  }
+
+  it should "return dataset permissions even for users without NIH links" in {
+    val userInfo = UserInfo("test-token", "unlinked-user@example.com")
+
+    val resources = Await.result(nihService.getNihResources(userInfo), 3.seconds)
+
+    resources should not be null
+    resources.datasetPermissions should not be empty
+    resources.datasetPermissions.foreach(_.authorized should be(true))
+  }
 }
