@@ -243,6 +243,48 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
+  "getNihResources" should "return NIH resources for a user with allowlist memberships" in {
+    val user = userTcgaAndTarget
+    val userInfo = UserInfo(userToAccessToken(user.id), user.id.value)
+
+    val resources = Await.result(nihService.getNihResources(userInfo), Duration.Inf)
+
+    resources.datasetPermissions should contain allOf (
+      NihDatasetPermission("TCGA", authorized = true),
+      NihDatasetPermission("TARGET", authorized = true),
+      NihDatasetPermission("BROKEN", authorized = false),
+      NihDatasetPermission("RAS", authorized = false)
+    )
+  }
+
+  it should "return empty dataset permissions for a user with no allowlist memberships" in {
+    val user = userNoLinkedAccount
+    val userInfo = UserInfo(userToAccessToken(user.id), user.id.value)
+
+    val resources = Await.result(nihService.getNihResources(userInfo), Duration.Inf)
+
+    resources.datasetPermissions should contain allOf (
+      NihDatasetPermission("TCGA", authorized = false),
+      NihDatasetPermission("TARGET", authorized = false),
+      NihDatasetPermission("BROKEN", authorized = false),
+      NihDatasetPermission("RAS", authorized = false)
+    )
+  }
+
+  it should "return partial dataset permissions for a user with some allowlist memberships" in {
+    val user = userTcgaOnly
+    val userInfo = UserInfo(userToAccessToken(user.id), user.id.value)
+
+    val resources = Await.result(nihService.getNihResources(userInfo), Duration.Inf)
+
+    resources.datasetPermissions should contain allOf (
+      NihDatasetPermission("TCGA", authorized = true),
+      NihDatasetPermission("TARGET", authorized = false),
+      NihDatasetPermission("BROKEN", authorized = false),
+      NihDatasetPermission("RAS", authorized = false)
+    )
+  }
+
   "syncAllowlistAllUsers" should "sync all users for a single allowlist from ECM" in {
     mockEcmUsers()
     when(thurloeDao.getAllUserValuesForKey(any[String])).thenReturn(Future.successful(Map.empty))
