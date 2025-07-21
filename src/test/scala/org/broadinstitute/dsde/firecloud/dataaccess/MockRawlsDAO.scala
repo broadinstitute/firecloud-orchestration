@@ -383,7 +383,11 @@ class MockRawlsDAO extends RawlsDAO {
     userInfo: WithAccessToken
   ): Future[BucketMetricsResponse] =
     Future.successful(
-      BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+      BucketMetricsResponse(
+        Seq(BucketMetric("COLDLINE", "soft-deleted-object", 256000000000d),
+            BucketMetric("REGIONAL", "live-object", 102400000d)
+        )
+      )
     )
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =

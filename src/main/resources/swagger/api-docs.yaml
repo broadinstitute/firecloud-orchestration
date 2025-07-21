@@ -6242,11 +6242,14 @@ components:
           description: The estimated monthly storage cost of the bucket
         usageInBytes:
           type: integer
-          description: The current storage bucket usage in bytes
+          description: The total current storage bucket usage in bytes
         lastUpdated:
           type: string
           format: timestamp
           description: timestamp (UTC) marking the date that the bucket cost was last updated (YYYY-MM-DDThh:mm:ss.fffZ)
+        usage:
+          type: object
+          description: Bucket usage in bytes, broken down by storage type.
       description: ""
     CallMetadata:
       type: object

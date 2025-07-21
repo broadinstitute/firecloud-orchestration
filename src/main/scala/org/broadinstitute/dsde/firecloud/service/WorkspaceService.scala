@@ -67,10 +67,18 @@ class WorkspaceService(protected val argUserToken: WithAccessToken,
           val estimate = bytes / (1024 * 1024 * 1024) * storagePriceList(metric.storageClass)
           (sumBytes + metric.valueInBytes, sumEstimate + estimate)
       }
+      // calculate total bytes by storage type (e.g. live-object vs. soft-deleted-object
+      val bytesByType = bucketUsage.metrics
+        .groupMap(_.storageState)(_.valueInBytes)
+        .map { case (storageState, byteSeq) =>
+          (storageState, BigDecimal(byteSeq.sum).toBigInt)
+        }
+
       RequestComplete(
         WorkspaceStorageUsageAndCostEstimate(totalEstimate.setScale(2, RoundingMode.HALF_UP),
                                              totalBytes.toBigInt,
-                                             Instant.now
+                                             Instant.now,
+                                             bytesByType
         )
       )
     }) recoverWith {
