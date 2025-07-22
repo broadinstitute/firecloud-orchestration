@@ -8,7 +8,7 @@ import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
 import org.broadinstitute.dsde.workbench.google2.{GoogleStorageInterpreter, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GcsObjectName, GcsPath}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{when, RETURNS_SMART_NULLS}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.PrivateMethodTester
@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets
 import cats.effect.std.Semaphore
 import com.typesafe.config.ConfigFactory
 import fs2.Stream
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.Await
 
@@ -51,8 +52,8 @@ class HttpGoogleServicesDAOSpec extends AnyFlatSpec with Matchers with PrivateMe
     // under the covers, Storage.writer is the Google library method that gets called. So, mock that
     // and force it to throw
     val mockedException = new StorageException(418, "intentional unit test failure")
-    val throwingStorageHelper = mock[Storage]
-    when(throwingStorageHelper.writer(any[BlobInfo], any[BlobWriteOption]))
+    val throwingStorageHelper = mock[Storage](RETURNS_SMART_NULLS)
+    when(throwingStorageHelper.writer(any[BlobInfo]))
       .thenThrow(mockedException)
     val localStorage = storageResource(throwingStorageHelper)
 
