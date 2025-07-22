@@ -66,6 +66,20 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
       costEstimateResponse.response.usageInBytes shouldBe 256102400000d
     }
 
+    "should report storage sizes by state" in {
+      val costEstimateResponse = Await
+        .result(
+          ws.getStorageCostEstimateV2("workspaceNameSpace", "workspaceName"),
+          Duration.Inf
+        )
+      // Mock Rawls DAO returns  BucketMetric("COLDLINE", "soft-deleted-object", 256000000000d
+      // and BucketMetric("REGIONAL", "live-object", 102400000d)
+      costEstimateResponse.response.usage shouldBe Map(
+        "soft-deleted-object" -> 256000000000d,
+        "live-object" -> 102400000d
+      )
+    }
+
     "should error on unexpected storage class" in
       intercept[Exception] {
         Await.result(ws.getStorageCostEstimateV2("workspaceNameSpace", "unexpectedStorageClass"), Duration.Inf)
@@ -185,11 +199,19 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
   ): Future[BucketMetricsResponse] =
     if (name == "unexpectedStorageClass") {
       Future.successful(
-        BucketMetricsResponse(Seq(BucketMetric("incorrect", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+        BucketMetricsResponse(
+          Seq(BucketMetric("incorrect", "soft-deleted-object", 256000000000d),
+              BucketMetric("REGIONAL", "live-object", 102400000d)
+          )
+        )
       )
     } else {
       Future.successful(
-        BucketMetricsResponse(Seq(BucketMetric("COLDLINE", 256000000000d), BucketMetric("REGIONAL", 102400000d)))
+        BucketMetricsResponse(
+          Seq(BucketMetric("COLDLINE", "soft-deleted-object", 256000000000d),
+              BucketMetric("REGIONAL", "live-object", 102400000d)
+          )
+        )
       )
     }
 
