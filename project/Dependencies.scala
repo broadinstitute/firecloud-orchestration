@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.19.1"
   val jacksonHotfixV = "2.19.1" // for when only some of the Jackson libs have hotfix releases
-  val workbenchLibsHash = "70c7d82" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val workbenchLibsHash = "9df42f5" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream = ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
@@ -43,7 +43,7 @@ object Dependencies {
       exclude ("org.typelevel", "cats-parse_2.13")
       excludeAll (excludeAkkaHttp, excludeSprayJson),
     "org.broadinstitute.dsde.workbench" %% "workbench-util" % s"0.10-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.37-$workbenchLibsHash"
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.40-$workbenchLibsHash"
     // we don't need all the libraries that workbench-google2 pulls in
     exclude ("com.google.cloud", "google-cloud-bigquery")
       exclude ("com.google.cloud", "google-cloud-billing")
