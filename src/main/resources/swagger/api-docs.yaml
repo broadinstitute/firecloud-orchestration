@@ -8748,6 +8748,7 @@ components:
             - GcpBucketLifecycle
             - GcpBucketSoftDelete
             - GcpBucketRequesterPays
+            - GcpLogBucketRetention
             - SeparateSubmissionFinalOutputs
             - UseCromwellGcpBatchBackend
         config:
@@ -8756,6 +8757,7 @@ components:
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketLifecycleConfig'
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketSoftDeleteConfig'
             - $ref: '#/components/schemas/WorkspaceSettingGcpBucketRequesterPaysConfig'
+            - $ref: '#/components/schemas/WorkspaceSettingGcpLogBucketRetentionConfig'
             - $ref: '#/components/schemas/WorkspaceSettingSeparateSubmissionFinalOutputsConfig'
             - $ref: '#/components/schemas/WorkspaceSettingUseCromwellGcpBatchBackendConfig'
     WorkspaceSettingGcpBucketLifecycleConfig:
@@ -8816,6 +8818,14 @@ components:
         enabled:
           type: boolean
           description: Enabled status to set for requester pays
+    WorkspaceSettingGcpLogBucketRetentionConfig:
+      required:
+        - retentionDurationInDays
+      type: object
+      properties:
+        retentionDurationInDays:
+          type: integer
+          description: The length of time, in days, to retain logs in _Default bucket
     WorkspaceSettingSeparateSubmissionFinalOutputsConfig:
       required:
         - enabled
