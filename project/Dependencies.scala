@@ -28,7 +28,7 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "2.4",
     "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20250414-2.0.0", // from workbench-google2
-    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20250626-2.0.0" // from workbench-google2
+    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20250707-2.0.0" // from workbench-google2
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -53,7 +53,7 @@ object Dependencies {
       exclude ("com.google.cloud", "google-cloud-resourcemanager")
       exclude ("com.google.cloud", "google-cloud-storage-transfer"),
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.9-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "sam-client" % "v0.0.402",
+    "org.broadinstitute.dsde.workbench" %% "sam-client" % "v0.0.407",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"1.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll (excludeSpring, excludeSpringBoot),
@@ -75,7 +75,7 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
     "org.mock-server" % "mockserver-netty-no-dependencies" % "5.15.0" % "test",
     // provides testing mocks
-    "com.google.cloud" % "google-cloud-nio" % "0.127.38" % "test",
+    "com.google.cloud" % "google-cloud-nio" % "0.128.1" % "test",
     "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test"
   )
 }
