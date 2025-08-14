@@ -49,7 +49,12 @@ class OrchestrationApiSpec extends AnyFreeSpec with Matchers with ScalaFutures w
       implicit val userToken: AuthToken = user.makeAuthToken()
 
       Orchestration.NIH.addUserInNIH(OrchConfig.Users.genericJsonWebTokenKey)
-      try verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
+      try
+        verifyDatasetPermissions(
+          Set(NihDatasetPermission("AnVIL_BroadCMG_GRU", false),
+              NihDatasetPermission("AnVIL_Schizophrenia_BipolarDisorder_GRU", false)
+          )
+        )
       finally resetNihLinkToInactive()
     }
 
