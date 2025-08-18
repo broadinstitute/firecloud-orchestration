@@ -78,7 +78,9 @@ class OrchestrationApiSpec extends AnyFreeSpec with Matchers with ScalaFutures w
 
     Orchestration.NIH.syncWhitelistFull()
 
-    verifyDatasetPermissions(Set(NihDatasetPermission("TCGA", false), NihDatasetPermission("TARGET", false)))
+    verifyDatasetPermissions(
+      Set(NihDatasetPermission("GTEx", false), NihDatasetPermission("AnVIL_CARD_HBCC_GRU", false))
+    )
   }
 
   private def verifyDatasetPermissions(
