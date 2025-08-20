@@ -36,7 +36,7 @@ object Dependencies {
     "io.sentry" % "sentry-logback" % "8.18.0",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
     "org.parboiled" % "parboiled-core" % "1.4.1",
-    "org.broadinstitute.dsde" %% "rawls-model" % "v0.0.511-SNAP"
+    "org.broadinstitute.dsde" %% "rawls-model" % "v0.0.537-SNAP"
       exclude ("com.typesafe.scala-logging", "scala-logging_2.13")
       exclude ("com.typesafe.akka", "akka-stream_2.13")
       exclude ("com.google.code.findbugs", "jsr305")
