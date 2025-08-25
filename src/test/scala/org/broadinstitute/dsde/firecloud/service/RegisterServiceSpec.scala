@@ -71,7 +71,7 @@ class RegisterServiceSpec extends AnyFlatSpec with Matchers with BeforeAndAfterE
 
   "generateWelcomeEmail" should "generate an Azure welcome email for Azure B2C users" in {
     val notification = registerService.generateWelcomeEmail(azureB2CUserInfo)
-    notification.getClass.getName shouldBe AzurePreviewActivationNotification.getClass.getName.stripSuffix("$")
+    notification.getClass.getName shouldBe ActivationNotification.getClass.getName.stripSuffix("$")
   }
 
   it should "generate a standard welcome email for Google B2C users" in {
