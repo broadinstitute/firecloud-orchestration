@@ -775,37 +775,6 @@ paths:
           content: {}
       x-passthrough: true
       x-passthrough-target: cromiam
-  /api/workflows/{version}/{id}/backend/metadata/{backendId}:
-    get:
-      tags:
-        - Rawls Workflows (for Job Manager)
-      summary: Get backend (e.g. PAPI, Google Life Sciences) metadata for a job
-      parameters:
-        - $ref: '#/components/parameters/versionParam'
-        - name: id
-          in: path
-          description: Workflow ID
-          required: true
-          schema:
-            type: string
-        - name: backendId
-          in: path
-          description: Backend ID, must be a job that is part of the workflow
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Successful Request, format is backend dependent
-          content: {}
-        404:
-          description: Workflow or Backend ID Not Found
-          content: {}
-        500:
-          description: Internal Error
-          content: {}
-      x-passthrough: true
-      x-passthrough-target: rawls
   /api/workflows/{version}/{id}/cost:
     get:
       tags:
