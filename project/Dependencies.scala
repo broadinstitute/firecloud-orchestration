@@ -25,7 +25,7 @@ object Dependencies {
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "org.yaml" % "snakeyaml" % "2.4",
+    "org.yaml" % "snakeyaml" % "2.5",
     "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20250414-2.0.0", // from workbench-google2
     "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20250707-2.0.0" // from workbench-google2
