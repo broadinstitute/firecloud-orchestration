@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val scalaV = "2.13.16"
 
-  val jacksonV = "2.20"
-  val jacksonHotfixV = "2.19.2" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.20.0"
+  val jacksonAnnotationsV = "2.20"
   val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
   val workbenchLibsHash = "9df42f5"
@@ -32,8 +32,8 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
-    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
+    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonAnnotationsV,
+    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "io.grpc" % "grpc-xds" % "1.56.1",
     "org.typelevel" %% "cats-effect" % "3.4.11",

@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   val akkaV = "2.9.3"
   val akkaHttpV = "10.6.3"
-  val jacksonV = "2.20"
-  val jacksonHotfixV = "2.19.2" // for when only some of the Jackson libs have hotfix releases
+  val jacksonV = "2.20.0"
+  val jacksonAnnotationsV = "2.20"
   val workbenchLibsHash = "9df42f5" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -22,8 +22,8 @@ object Dependencies {
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
     "com.google.guava" % "guava" % "33.4.8-jre",
-    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
-    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
+    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonAnnotationsV,
+    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "org.yaml" % "snakeyaml" % "2.4",
     "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
