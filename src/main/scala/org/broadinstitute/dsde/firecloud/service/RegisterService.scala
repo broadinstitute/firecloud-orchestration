@@ -1,21 +1,15 @@
 package org.broadinstitute.dsde.firecloud.service
 
+import akka.http.scaladsl.model.StatusCodes
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
 import org.broadinstitute.dsde.firecloud.dataaccess._
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
 import org.broadinstitute.dsde.firecloud.{Application, FireCloudConfig, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.workbench.model.Notifications.{
-  ActivationNotification,
-  AzurePreviewActivationNotification,
-  AzurePreviewActivationNotificationType,
-  Notification,
-  NotificationFormat
-}
 import org.broadinstitute.dsde.rawls.model.ErrorReport
-import akka.http.scaladsl.model.StatusCodes
-import org.broadinstitute.dsde.firecloud.FireCloudConfig.Sam
+import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, Notification, NotificationFormat}
 import org.broadinstitute.dsde.workbench.model.WorkbenchUserId
 
 import scala.concurrent.{ExecutionContext, Future}
