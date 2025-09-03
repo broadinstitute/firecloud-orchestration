@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.20.0"
   val jacksonAnnotationsV = "2.20"
-  val workbenchLibsHash = "9df42f5" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val workbenchLibsHash = "56f2c74" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream = ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
@@ -54,7 +54,7 @@ object Dependencies {
       exclude ("com.google.cloud", "google-cloud-storage-transfer"),
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.9-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client" % "v0.0.407",
-    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"1.1-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.0-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll (excludeSpring, excludeSpringBoot),
     "org.springframework" % "spring-web" % "6.2.9" excludeAll (excludeSpringBoot, excludeSpringJcl),
