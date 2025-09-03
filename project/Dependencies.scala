@@ -4,8 +4,8 @@ object Dependencies {
   val akkaV = "2.9.3"
   val akkaHttpV = "10.6.3"
   val jacksonV = "2.20.0"
-  val jacksonHotfixV = "2.20.0" // for when only some of the Jackson libs have hotfix releases
-  val workbenchLibsHash = "9df42f5" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val jacksonAnnotationsV = "2.20"
+  val workbenchLibsHash = "56f2c74" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream = ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
@@ -22,12 +22,12 @@ object Dependencies {
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
     "com.google.guava" % "guava" % "33.4.8-jre",
-    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonV,
-    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonHotfixV,
+    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonAnnotationsV,
+    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
-    "org.yaml" % "snakeyaml" % "2.4",
+    "org.yaml" % "snakeyaml" % "2.5",
     "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
-    "com.google.apis" % "google-api-services-pubsub" % "v1-rev20250414-2.0.0", // from workbench-google2
+    "com.google.apis" % "google-api-services-pubsub" % "v1-rev20250807-2.0.0", // from workbench-google2
     "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20250707-2.0.0" // from workbench-google2
   )
 
@@ -54,7 +54,7 @@ object Dependencies {
       exclude ("com.google.cloud", "google-cloud-storage-transfer"),
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.9-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client" % "v0.0.407",
-    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"1.1-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.0-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll (excludeSpring, excludeSpringBoot),
     "org.springframework" % "spring-web" % "6.2.10" excludeAll (excludeSpringBoot, excludeSpringJcl),

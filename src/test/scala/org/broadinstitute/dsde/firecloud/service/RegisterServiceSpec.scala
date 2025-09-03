@@ -10,10 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.{
   WorkbenchEnabled,
   WorkbenchUserInfo
 }
-import org.broadinstitute.dsde.workbench.model.Notifications.{
-  ActivationNotification,
-  AzurePreviewActivationNotification
-}
+import org.broadinstitute.dsde.workbench.model.Notifications.ActivationNotification
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
