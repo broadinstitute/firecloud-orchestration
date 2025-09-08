@@ -59,7 +59,7 @@ jobs:
 
       # Install gcloud, `setup-gcloud` automatically picks up authentication from `auth`.
       - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
+        uses: 'google-github-actions/setup-gcloud@v3'
 
       - name: Explicitly auth Docker for Artifact Registry
         run: gcloud auth configure-docker $GOOGLE_DOCKER_REPOSITORY --quiet      
