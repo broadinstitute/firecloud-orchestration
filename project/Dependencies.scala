@@ -21,7 +21,7 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "com.google.guava" % "guava" % "33.4.8-jre",
+    "com.google.guava" % "guava" % "33.5.0-jre",
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonAnnotationsV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
