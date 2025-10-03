@@ -43,7 +43,7 @@ object Dependencies {
   val rootDependencies: Seq[ModuleID] = Seq(
     "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
-    "ch.qos.logback" % "logback-classic" % "1.5.18",
+    "ch.qos.logback" % "logback-classic" % "1.5.19",
     "com.typesafe.akka" %% "akka-http-core" % akkaHttpV,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaV,
     "com.typesafe.akka" %% "akka-http" % akkaHttpV,
@@ -52,7 +52,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,
     "org.specs2" %% "specs2-core" % "4.15.0" % "test",
     "org.scalatest" %% "scalatest" % "3.2.19" % Test,
-    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
 
     // required but not provided by workbench-google.
     // workbench-google specifies 7.0.1

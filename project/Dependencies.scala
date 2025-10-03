@@ -21,7 +21,7 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "com.google.guava" % "guava" % "33.4.8-jre",
+    "com.google.guava" % "guava" % "33.5.0-jre",
     "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonAnnotationsV,
     "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
     "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
@@ -32,9 +32,9 @@ object Dependencies {
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.5.18",
-    "io.sentry" % "sentry-logback" % "8.20.0",
-    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+    "ch.qos.logback" % "logback-classic" % "1.5.19",
+    "io.sentry" % "sentry-logback" % "8.22.0",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "org.parboiled" % "parboiled-core" % "1.4.1",
     "org.broadinstitute.dsde" %% "rawls-model" % "v0.0.537-SNAP"
       exclude ("com.typesafe.scala-logging", "scala-logging_2.13")
@@ -57,7 +57,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.0-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll (excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.10" excludeAll (excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.11" excludeAll (excludeSpringBoot, excludeSpringJcl),
     "com.typesafe.akka" %% "akka-actor" % akkaV,
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,
     "com.typesafe.akka" %% "akka-http" % akkaHttpV excludeAll (excludeAkkaActor, excludeAkkaStream),
@@ -65,7 +65,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-stream" % akkaV,
     "com.typesafe.akka" %% "akka-testkit" % akkaV % "test",
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test",
-    "com.github.jwt-scala" %% "jwt-core" % "11.0.2",
+    "com.github.jwt-scala" %% "jwt-core" % "11.0.3",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail" % "javax.mail" % "1.6.2"
@@ -75,7 +75,7 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
     "org.mock-server" % "mockserver-netty-no-dependencies" % "5.15.0" % "test",
     // provides testing mocks
-    "com.google.cloud" % "google-cloud-nio" % "0.128.3" % "test",
+    "com.google.cloud" % "google-cloud-nio" % "0.128.5" % "test",
     "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test"
   )
 }
