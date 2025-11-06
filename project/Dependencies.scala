@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.21"
   val akkaHttpV = "10.2.10"
-  val jacksonV = "2.20.0"
+  val jacksonV = "2.20.1"
   val jacksonAnnotationsV = "2.20"
   val workbenchLibsHash = "56f2c74" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
@@ -32,8 +32,8 @@ object Dependencies {
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.5.19",
-    "io.sentry" % "sentry-logback" % "8.22.0",
+    "ch.qos.logback" % "logback-classic" % "1.5.20",
+    "io.sentry" % "sentry-logback" % "8.25.0",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "org.parboiled" % "parboiled-core" % "1.4.1",
     "org.broadinstitute.dsde" %% "rawls-model" % "v0.0.537-SNAP"
@@ -57,7 +57,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.0-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll (excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.11" excludeAll (excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.12" excludeAll (excludeSpringBoot, excludeSpringJcl),
     "com.typesafe.akka" %% "akka-actor" % akkaV,
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,
     "com.typesafe.akka" %% "akka-http" % akkaHttpV excludeAll (excludeAkkaActor, excludeAkkaStream),
@@ -75,7 +75,7 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
     "org.mock-server" % "mockserver-netty-no-dependencies" % "5.15.0" % "test",
     // provides testing mocks
-    "com.google.cloud" % "google-cloud-nio" % "0.128.5" % "test",
+    "com.google.cloud" % "google-cloud-nio" % "0.128.7" % "test",
     "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test"
   )
 }
