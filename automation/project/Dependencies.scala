@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val scalaV = "2.13.17"
+  val scalaV = "2.13.18"
 
   val jacksonV = "2.20.1"
   val jacksonAnnotationsV = "2.20"
