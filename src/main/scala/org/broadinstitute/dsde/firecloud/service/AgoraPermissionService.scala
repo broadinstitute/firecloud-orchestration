@@ -45,7 +45,7 @@ object AgoraPermissionService {
   // translation between a list of Agora roles and a FireCloud role
   def toFireCloudRole(agoraRoles: Option[List[String]]) =
     agoraRoles match {
-      case None => NoAccess
+      case None    => NoAccess
       case Some(r) =>
         r.sorted match {
           case ListNoAccess => NoAccess

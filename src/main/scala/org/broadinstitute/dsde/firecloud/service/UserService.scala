@@ -77,7 +77,7 @@ class UserService(rawlsDAO: RawlsDAO,
     // so, so many nested Options ...
     val futurePref: Future[TerraPreference] =
       thurloeDAO.getAllKVPs(userToken.id, userToken) map { // .getAllKVPs returns Option[ProfileWrapper]
-        case None => TerraPreference(preferTerra = true, 0)
+        case None          => TerraPreference(preferTerra = true, 0)
         case Some(wrapper) =>
           val pref: Boolean = Try(
             getProfileValue(wrapper, UserService.TerraPreferenceKey).getOrElse("true").toBoolean
@@ -164,7 +164,7 @@ class UserService(rawlsDAO: RawlsDAO,
   def setupAnonymizedGoogleGroup(keys: ProfileWrapper, anonymousGroupName: String): Future[PerRequestMessage] = {
     // define userEmail to add to google Group - check first for contactEmail, otherwise use user's login email
     val userEmail = getProfileValue(keys, UserService.ContactEmailKey) match {
-      case None | Some("") => userToken.userEmail
+      case None | Some("")    => userToken.userEmail
       case Some(contactEmail) =>
         contactEmail // if there is a non-empty value set for contactEmail, we assume contactEmail is a valid email
     }

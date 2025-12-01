@@ -48,7 +48,7 @@ class HttpRawlsDAO(implicit val system: ActorSystem,
       response.status match {
         case OK       => Future.successful(true)
         case NotFound => Future.successful(false)
-        case _ =>
+        case _        =>
           FCErrorReport(response).flatMap { errorReport =>
             Future.failed(new FireCloudExceptionWithErrorReport(errorReport))
           }

@@ -28,12 +28,12 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "2.5",
     "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20251104-2.0.0", // from workbench-google2
-    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20251021-2.0.0" // from workbench-google2
+    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20251107-2.0.0" // from workbench-google2
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.5.20",
-    "io.sentry" % "sentry-logback" % "8.25.0",
+    "ch.qos.logback" % "logback-classic" % "1.5.21",
+    "io.sentry" % "sentry-logback" % "8.27.1",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "org.parboiled" % "parboiled-core" % "1.4.1",
     "org.broadinstitute.dsde" %% "rawls-model" % "v0.0.537-SNAP"
@@ -57,7 +57,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.0-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.2.167-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.83.0-SNAPSHOT" excludeAll (excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.12" excludeAll (excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.14" excludeAll (excludeSpringBoot, excludeSpringJcl),
     "com.typesafe.akka" %% "akka-actor" % akkaV,
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,
     "com.typesafe.akka" %% "akka-http" % akkaHttpV excludeAll (excludeAkkaActor, excludeAkkaStream),
@@ -75,7 +75,7 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
     "org.mock-server" % "mockserver-netty-no-dependencies" % "5.15.0" % "test",
     // provides testing mocks
-    "com.google.cloud" % "google-cloud-nio" % "0.128.7" % "test",
+    "com.google.cloud" % "google-cloud-nio" % "0.128.8" % "test",
     "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test"
   )
 }

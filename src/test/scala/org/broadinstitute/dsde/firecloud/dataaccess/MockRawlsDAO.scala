@@ -420,7 +420,7 @@ class MockRawlsDAO extends RawlsDAO {
             None
           )
         )
-      case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
+      case "attributes"      => Future(rawlsWorkspaceResponseWithAttributes)
       case "publishedreader" =>
         Future(
           WorkspaceResponse(

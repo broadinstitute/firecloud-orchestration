@@ -198,7 +198,7 @@ class ExportEntitiesByTypeActor(rawlsDAO: RawlsDAO,
   private def handleStandardException(t: Throwable): Future[HttpResponse] = {
     val errorReport = t match {
       case f: FireCloudExceptionWithErrorReport => f.errorReport
-      case _ =>
+      case _                                    =>
         ErrorReport(StatusCodes.InternalServerError,
                     s"FireCloudException: Error generating entity download: ${t.getMessage}"
         )
