@@ -35,7 +35,7 @@ object TsvTypes {
       case "entity"     => ENTITY
       case "update"     => UPDATE
       case "membership" => MEMBERSHIP
-      case _ =>
+      case _            =>
         throw new FireCloudException(s"Invalid TSV type '$name', supported types are: membership, entity, update")
     }
 }
@@ -210,7 +210,7 @@ trait TSVFileSupport {
         case _ if possibleNumbers.contains(firstChar) =>
           Try(java.lang.Integer.parseInt(value)) match {
             case Success(intValue) => Some(AttributeNumber(intValue))
-            case Failure(_) =>
+            case Failure(_)        =>
               Try(java.lang.Double.parseDouble(value)) match {
                 // because we represent AttributeNumber as a BigDecimal, and BigDecimal has no concept of infinity or NaN,
                 // if we find infinite/NaN numbers here, don't save them as AttributeNumber; instead let them fall through
@@ -282,7 +282,7 @@ trait TSVFileSupport {
           case value if deleteEmptyValues && value.trim.isEmpty =>
             Seq(Map(removeAttrOperation, nameEntry(attributeName)))
           case value if modelSchema.isAttributeArray(value) => generateAttributeArrayOperations(value, attributeName)
-          case _ =>
+          case _                                            =>
             Seq(Map(upsertAttrOperation, nameEntry(attributeName), valEntry(stringToTypedAttribute(attributeValue))))
         }
     }
@@ -327,11 +327,11 @@ trait TSVFileSupport {
         case jsstr: JsString   => addListEntry(AttributeString(jsstr.value))
         case jsnum: JsNumber   => addListEntry(AttributeNumber(jsnum.value))
         case jsbool: JsBoolean => addListEntry(AttributeBoolean(jsbool.value))
-        case jsobj: JsObject =>
+        case jsobj: JsObject   =>
           val entRefAttempt = Try(jsobj.convertTo[AttributeEntityReference])
           entRefAttempt match {
             case Success(ref) => addListEntry(ref)
-            case Failure(_) =>
+            case Failure(_)   =>
               throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, UNSUPPORTED_ARRAY_TYPE_ERROR_MSG))
           }
         case jsArray: JsArray => addListEntry(AttributeValueRawJson(jsArray.compactPrint))

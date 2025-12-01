@@ -112,7 +112,7 @@ class MockRawlsDeleteWSDAO(implicit val executionContext: ExecutionContext) exte
 
   override def getWorkspace(ns: String, name: String)(implicit userToken: WithAccessToken): Future[WorkspaceResponse] =
     ns match {
-      case "attributes" => Future(rawlsWorkspaceResponseWithAttributes)
+      case "attributes"             => Future(rawlsWorkspaceResponseWithAttributes)
       case "deleteWithoutUnpublish" =>
         Future.failed(
           new FireCloudExceptionWithErrorReport(

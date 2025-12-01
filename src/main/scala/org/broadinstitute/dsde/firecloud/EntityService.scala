@@ -38,7 +38,7 @@ object EntityService {
                                      modelSchema: ModelSchema
   ): TSVLoadFile =
     modelSchema.getTypeSchema(entityType) match {
-      case Failure(_) => tsvLoadFile // the failure will be handled during parsing
+      case Failure(_)        => tsvLoadFile // the failure will be handled during parsing
       case Success(metaData) =>
         val newHeaders = tsvLoadFile.headers.map { header =>
           val headerSansId = header.stripSuffix("_id")
@@ -82,7 +82,7 @@ class EntityService(rawlsDAO: RawlsDAO,
     op: Map[String, String] => Future[PerRequestMessage]
   ): Future[PerRequestMessage] =
     modelSchema.getRequiredAttributes(entityType) match {
-      case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
+      case Failure(regret)             => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
       case Success(requiredAttributes) =>
         if (!requiredAttributes.keySet.subsetOf(headers.toSet)) {
           Future(
@@ -163,7 +163,7 @@ class EntityService(rawlsDAO: RawlsDAO,
           modelSchema.getRequiredAttributes(entityType) match {
             // Required attributes aren't required to be headers in update TSVs - they should already have been
             // defined when the entity was created. But we still need the type information if the headers do exist.
-            case Failure(regret) => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
+            case Failure(regret)             => Future(RequestCompleteWithErrorReport(BadRequest, regret.getMessage))
             case Success(requiredAttributes) =>
               val colInfo = colNamesToAttributeNames(tsv.headers, requiredAttributes)
               val rawlsCalls = tsv.tsvData.map(row =>
@@ -296,10 +296,10 @@ class EntityService(rawlsDAO: RawlsDAO,
 
     withTSVFile(tsvString) { tsv =>
       val (tsvType, entityType) = tsv.firstColumnHeader.split(":") match {
-        case Array(entityTypeString) => (TsvTypes.ENTITY, stripEntityType(entityTypeString))
+        case Array(entityTypeString)                => (TsvTypes.ENTITY, stripEntityType(entityTypeString))
         case Array(tsvTypeString, entityTypeString) =>
           val tsvType = Try(TsvTypes.withName(tsvTypeString)) match {
-            case Success(t) => t
+            case Success(t)   => t
             case Failure(err) =>
               throw new FireCloudExceptionWithErrorReport(errorReport =
                 ErrorReport(StatusCodes.BadRequest, err.toString)
