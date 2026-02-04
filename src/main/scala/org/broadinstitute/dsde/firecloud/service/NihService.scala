@@ -83,8 +83,6 @@ class NihService(val samDao: SamDAO,
   private val nihAllowlists: Set[NihAllowlist] = FireCloudConfig.Nih.whitelists
   private val enabledNihAllowlists = FireCloudConfig.Nih.whitelists.filterNot(_.disabled)
 
-  logger.info(s"Running with email deny patterns: ${FireCloudConfig.Nih.denyEmailPatterns.mkString(",")}")
-
   def processExternalCredsMessage(externalCredsMessage: ReceivedMessage[ExternalCredsMessage]): IO[Unit] = {
     val groupUpdateIO = for {
       visas <- IO.fromFuture(
