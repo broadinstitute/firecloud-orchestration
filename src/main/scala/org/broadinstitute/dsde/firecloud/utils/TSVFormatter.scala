@@ -148,7 +148,7 @@ object TSVFormatter {
 
     val requestedHeadersSansId = requestedHeaders
       .
-        // remove empty strings
+      // remove empty strings
       map(_.filter(_.length > 0))
       .
       // handle empty requested headers as no requested headers
