@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val scalaV = "2.13.18"
 
-  val jacksonV = "2.20.1"
+  val jacksonV = "2.20.2"
   val jacksonAnnotationsV = "2.20"
   val akkaV = "2.6.19"
   val akkaHttpV = "10.2.10"
@@ -43,7 +43,7 @@ object Dependencies {
   val rootDependencies: Seq[ModuleID] = Seq(
     "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonV,
     "net.virtual-void" %% "json-lenses" % "0.6.2" % "test",
-    "ch.qos.logback" % "logback-classic" % "1.5.23",
+    "ch.qos.logback" % "logback-classic" % "1.5.27",
     "com.typesafe.akka" %% "akka-http-core" % akkaHttpV,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaV,
     "com.typesafe.akka" %% "akka-http" % akkaHttpV,

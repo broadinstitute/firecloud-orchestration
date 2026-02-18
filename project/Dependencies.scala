@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.21"
   val akkaHttpV = "10.2.10"
-  val jacksonV = "2.20.1"
+  val jacksonV = "2.20.2"
   val jacksonAnnotationsV = "2.20"
   val workbenchLibsHash = "56f2c74" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
@@ -32,8 +32,8 @@ object Dependencies {
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.5.23",
-    "io.sentry" % "sentry-logback" % "8.29.0",
+    "ch.qos.logback" % "logback-classic" % "1.5.27",
+    "io.sentry" % "sentry-logback" % "8.31.0",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "org.parboiled" % "parboiled-core" % "1.4.1",
     "org.broadinstitute.dsde" %% "rawls-model" % "v0.0.537-SNAP"
@@ -75,7 +75,7 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
     "org.mock-server" % "mockserver-netty-no-dependencies" % "5.15.0" % "test",
     // provides testing mocks
-    "com.google.cloud" % "google-cloud-nio" % "0.128.9" % "test",
+    "com.google.cloud" % "google-cloud-nio" % "0.128.11" % "test",
     "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test"
   )
 }
