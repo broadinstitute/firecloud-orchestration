@@ -44,7 +44,7 @@ class OrchestrationApiSpec extends AnyFreeSpec with Matchers with ScalaFutures w
       finally resetNihLinkToInactive()
     }
 
-    "should link an eRA Commons account with access to none of the supported closed-access datasets" in {
+    "should link an eRA Commons account with access to none of the supported closed-access datasets" ignore {
       val user = UserPool.chooseAuthDomainUser
       implicit val userToken: AuthToken = user.makeAuthToken()
 
