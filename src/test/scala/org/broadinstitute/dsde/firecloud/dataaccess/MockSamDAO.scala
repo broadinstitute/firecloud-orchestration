@@ -50,7 +50,9 @@ class MockSamDAO extends SamDAO {
       WorkbenchEmail("target-linked-expired"),
       WorkbenchEmail("tcga-and-target-linked"),
       WorkbenchEmail("tcga-and-target-linked-expired")
-    )
+    ),
+    WorkbenchGroupName("dbgap_phs002409_c1") -> Set.empty,
+    WorkbenchGroupName("dbgap_phs002410_c1") -> Set.empty
   )
 
   override def registerUser(
