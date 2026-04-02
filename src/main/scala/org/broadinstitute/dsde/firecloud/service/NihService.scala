@@ -203,13 +203,16 @@ class NihService(val samDao: SamDAO,
       case None => Future.successful(None)
     }
 
+  // Since the RAS release, the dbGaP groups (e.g. dbgap_phs000424_c1) managed via
+  // dbGapPermissionToGroup are the correct source for dataset permissions. The legacy
+  // NihAllowlist-based groups are no longer in use.
   private def getAllAllowlistGroupMemberships(userInfo: UserInfo): Future[Set[NihDatasetPermission]] = {
     val groupMemberships = samDao.listGroups(userInfo)
     groupMemberships.map { groups =>
       val samGroupNames = groups.map(g => WorkbenchGroupName(g.groupName)).toSet
-      enabledNihAllowlists.map(allowlist =>
-        NihDatasetPermission(allowlist.name, samGroupNames.contains(allowlist.groupToSync))
-      )
+      FireCloudConfig.Nih.dbGapPermissionToGroup.map { case (_, groupName) =>
+        NihDatasetPermission(groupName, samGroupNames.contains(WorkbenchGroupName(groupName)))
+      }.toSet
     }
   }
 

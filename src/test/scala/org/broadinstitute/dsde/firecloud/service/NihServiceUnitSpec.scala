@@ -77,6 +77,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val userTcgaOnly = genSamUser();
   val userTargetOnly = genSamUser();
   val userDbGap = genSamUser();
+  val userDbGapBoth = genSamUser();
   val deniedUser = genSamUser().copy(email = WorkbenchEmail("someone@gmAil.com"))
   val dbGapGroupEmail = WorkbenchEmail(UUID.randomUUID().toString + "@email.com")
 
@@ -95,7 +96,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     LinkedEraAccount(userDbGap.id.value, "nihUsername5", new DateTime().plusSeconds(secondsIn30Days))
 
   val samUsers =
-    Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap, deniedUser)
+    Seq(userNoLinkedAccount, userNoAllowlists, userTcgaAndTarget, userTcgaOnly, userTargetOnly, userDbGap, userDbGapBoth, deniedUser)
   val linkedAccounts = Seq(
     userNoAllowlistsLinkedAccount,
     userTcgaAndTargetLinkedAccount,
@@ -131,7 +132,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       userTcgaAndTarget.id -> Set("TCGA-dbGaP-Authorized", "TARGET-dbGaP-Authorized", "other-group"),
       userTcgaOnly.id -> Set("TCGA-dbGaP-Authorized", "other-group"),
       userTargetOnly.id -> Set("TARGET-dbGaP-Authorized", "other-group"),
-      userDbGap.id -> Set("dbgap_phs002409_c1")
+      userDbGap.id -> Set("dbgap_phs002409_c1"),
+      userDbGapBoth.id -> Set("dbgap_phs002409_c1", "dbgap_phs002410_c1")
     )
 
   val samGroupMemberships =
@@ -149,7 +151,8 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       UUID.randomUUID().toString -> userTcgaAndTarget.id,
       UUID.randomUUID().toString -> userTcgaOnly.id,
       UUID.randomUUID().toString -> userTargetOnly.id,
-      UUID.randomUUID().toString -> userDbGap.id
+      UUID.randomUUID().toString -> userDbGap.id,
+      UUID.randomUUID().toString -> userDbGapBoth.id
     )
 
   val userToAccessToken = accessTokenToUser.map(_.swap)
@@ -243,45 +246,39 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
-  "getNihResources" should "return NIH resources for a user with allowlist memberships" in {
-    val user = userTcgaAndTarget
+  "getNihResources" should "return authorized dbGap permissions based on Sam group membership" in {
+    val user = userDbGap
     val userInfo = UserInfo(userToAccessToken(user.id), user.id.value)
 
     val resources = Await.result(nihService.getNihResources(userInfo), Duration.Inf)
 
     resources.datasetPermissions should contain allOf (
-      NihDatasetPermission("TCGA", authorized = true),
-      NihDatasetPermission("TARGET", authorized = true),
-      NihDatasetPermission("BROKEN", authorized = false),
-      NihDatasetPermission("RAS", authorized = false)
+      NihDatasetPermission("dbgap_phs002409_c1", authorized = true),
+      NihDatasetPermission("dbgap_phs002410_c1", authorized = false)
     )
   }
 
-  it should "return empty dataset permissions for a user with no allowlist memberships" in {
+  it should "return all authorized when user is in all dbGap groups" in {
+    val user = userDbGapBoth
+    val userInfo = UserInfo(userToAccessToken(user.id), user.id.value)
+
+    val resources = Await.result(nihService.getNihResources(userInfo), Duration.Inf)
+
+    resources.datasetPermissions should contain allOf (
+      NihDatasetPermission("dbgap_phs002409_c1", authorized = true),
+      NihDatasetPermission("dbgap_phs002410_c1", authorized = true)
+    )
+  }
+
+  it should "return all unauthorized when user has no dbGap group memberships" in {
     val user = userNoLinkedAccount
     val userInfo = UserInfo(userToAccessToken(user.id), user.id.value)
 
     val resources = Await.result(nihService.getNihResources(userInfo), Duration.Inf)
 
     resources.datasetPermissions should contain allOf (
-      NihDatasetPermission("TCGA", authorized = false),
-      NihDatasetPermission("TARGET", authorized = false),
-      NihDatasetPermission("BROKEN", authorized = false),
-      NihDatasetPermission("RAS", authorized = false)
-    )
-  }
-
-  it should "return partial dataset permissions for a user with some allowlist memberships" in {
-    val user = userTcgaOnly
-    val userInfo = UserInfo(userToAccessToken(user.id), user.id.value)
-
-    val resources = Await.result(nihService.getNihResources(userInfo), Duration.Inf)
-
-    resources.datasetPermissions should contain allOf (
-      NihDatasetPermission("TCGA", authorized = true),
-      NihDatasetPermission("TARGET", authorized = false),
-      NihDatasetPermission("BROKEN", authorized = false),
-      NihDatasetPermission("RAS", authorized = false)
+      NihDatasetPermission("dbgap_phs002409_c1", authorized = false),
+      NihDatasetPermission("dbgap_phs002410_c1", authorized = false)
     )
   }
 
