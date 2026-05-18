@@ -5,7 +5,7 @@ object Dependencies {
   val akkaHttpV = "10.2.10"
   val jacksonV = "2.20.2"
   val jacksonAnnotationsV = "2.21"
-  val workbenchLibsHash = "56f2c74" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val workbenchLibsHash = "be59bd7" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream = ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
