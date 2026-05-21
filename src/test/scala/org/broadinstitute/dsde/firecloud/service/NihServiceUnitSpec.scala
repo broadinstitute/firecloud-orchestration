@@ -4,12 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.unsafe.implicits.global
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException, FireCloudExceptionWithErrorReport}
-import org.broadinstitute.dsde.firecloud.dataaccess.{
-  ExternalCredsDAO,
-  GoogleServicesDAO,
-  SamDAO,
-  ThurloeDAO
-}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ExternalCredsDAO, GoogleServicesDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.{
   ConsentGroup,
   DbGapPermission,
