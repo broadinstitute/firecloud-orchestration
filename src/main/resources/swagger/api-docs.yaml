@@ -2081,8 +2081,9 @@ paths:
     post:
       tags:
         - NIH
-      summary: Updates a user's NIH link from a JWT
+      summary: Deprecated. NIH account linking is now handled via ECM.
       operationId: NIHCallback
+      deprecated: true
       requestBody:
         description: JWT from NIH login
         content:
@@ -2091,20 +2092,11 @@ paths:
               $ref: '#/components/schemas/JWTWrapper'
         required: true
       responses:
-        200:
-          description: Successfully updated NIH link
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NihStatus'
-        400:
-          description: Invalid or malformed JWT
+        410:
+          description: This endpoint has been retired. NIH account linking is now handled via ECM.
           content: {}
         401:
           description: Unauthorized
-          content: {}
-        500:
-          description: Internal server error saving NIH link to profile
           content: {}
       x-passthrough: false
       x-codegen-request-body-name: jwt
