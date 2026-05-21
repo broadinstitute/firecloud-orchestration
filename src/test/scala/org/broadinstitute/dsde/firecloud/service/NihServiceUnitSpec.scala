@@ -48,7 +48,7 @@ import java.util.UUID
 
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Random
+import scala.util.{Random, Success}
 
 class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
 
