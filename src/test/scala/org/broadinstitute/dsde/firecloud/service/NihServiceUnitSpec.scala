@@ -58,7 +58,7 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource("NihServiceUnitSpec")
   val samDao = mock[SamDAO]
-  val thurloeDao = mock[ThurloeDAO]
+  val thurloeDao = mock[ThurloeDAO] 
   val googleDao = mock[GoogleServicesDAO]
   val ecmDao = mock[ExternalCredsDAO]
 
