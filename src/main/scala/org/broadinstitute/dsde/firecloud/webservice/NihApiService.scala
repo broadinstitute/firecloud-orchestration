@@ -35,8 +35,8 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
       requireEnabledUser(userInfo) {
         pathPrefix("nih") {
           path("status") {
-              complete(nihServiceConstructor().getNihStatus(userInfo))
-            } ~
+            complete(nihServiceConstructor().getNihStatus(userInfo))
+          } ~
             path("account") {
               delete {
                 complete {

@@ -7,12 +7,7 @@ import cats.effect.kernel.Outcome.Succeeded
 import cats.effect.{IO, Outcome}
 import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.{
-  ExternalCredsDAO,
-  GoogleServicesDAO,
-  SamDAO,
-  ThurloeDAO
-}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ExternalCredsDAO, GoogleServicesDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
