@@ -8,7 +8,7 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{
   ExternalCredsDAO,
   GoogleServicesDAO,
   SamDAO,
-  ThurloeDAO 
+  ThurloeDAO
 }
 import org.broadinstitute.dsde.firecloud.model.{
   ConsentGroup,
@@ -44,11 +44,13 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
+
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util
 import java.util.UUID
+
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
