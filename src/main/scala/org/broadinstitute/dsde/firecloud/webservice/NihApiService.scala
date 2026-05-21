@@ -39,9 +39,9 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
               complete(StatusCodes.Gone)
             }
           } ~
-          path("status") {
-            complete(nihServiceConstructor().getNihStatus(userInfo))
-          } ~
+            path("status") {
+              complete(nihServiceConstructor().getNihStatus(userInfo))
+            } ~
             path("account") {
               delete {
                 complete {
