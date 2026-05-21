@@ -8,7 +8,6 @@ import org.broadinstitute.dsde.firecloud.dataaccess.{
   ExternalCredsDAO,
   GoogleServicesDAO,
   SamDAO,
-  ShibbolethDAO,
   ThurloeDAO
 }
 import org.broadinstitute.dsde.firecloud.model.{
@@ -17,7 +16,6 @@ import org.broadinstitute.dsde.firecloud.model.{
   ExternalCredsMessage,
   FireCloudKeyValue,
   FireCloudManagedGroupMembership,
-  JWTWrapper,
   LinkedEraAccount,
   ManagedGroupRoles,
   NihLink,
@@ -46,17 +44,14 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
-import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
-
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
-import java.security.{KeyPairGenerator, PrivateKey}
 import java.time.Instant
 import java.util
-import java.util.{Base64, UUID}
+import java.util.UUID
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Random, Success}
+import scala.util.Random
 
 class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -65,11 +60,10 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   val samDao = mock[SamDAO]
   val thurloeDao = mock[ThurloeDAO]
   val googleDao = mock[GoogleServicesDAO]
-  val shibbolethDao = mock[ShibbolethDAO]
   val ecmDao = mock[ExternalCredsDAO]
 
   // build the service instance we'll use for tests
-  val nihService = new NihService(samDao, thurloeDao, googleDao, shibbolethDao, ecmDao)
+  val nihService = new NihService(samDao, thurloeDao, googleDao, ecmDao)
 
   val userNoLinkedAccount = genSamUser();
   val userNoAllowlists = genSamUser()
@@ -450,156 +444,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
   }
 
-  "updateNihLinkAndSyncSelf" should "decode a JWT from Shibboleth and sync allowlists for a user" in {
-    mockShibbolethDAO()
-    mockEcmUsers()
-    mockThurloeUsers()
-    val user = userTcgaOnly
-    val userInfo = UserInfo(user.email.value,
-                            OAuth2BearerToken(user.id.value),
-                            Instant.now().plusSeconds(60).getEpochSecond,
-                            user.id.value
-    )
-    val linkedAccount = userTcgaOnlyLinkedAccount
-    val jwt = jwtForUser(linkedAccount)
-    val (statusCode, nihStatus) = Await
-      .result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf)
-      .asInstanceOf[PerRequest.RequestComplete[(StatusCode, NihStatus)]]
-      .response
-
-    nihStatus.linkedNihUsername should be(Some(linkedAccount.linkedExternalId))
-    nihStatus.linkExpireTime should be(Some(linkedAccount.linkExpireTime.getMillis / 1000L))
-    nihStatus.datasetPermissions should be(
-      Set(
-        NihDatasetPermission("BROKEN", authorized = false),
-        NihDatasetPermission("TARGET", authorized = false),
-        NihDatasetPermission("TCGA", authorized = true),
-        NihDatasetPermission("RAS", authorized = false)
-      )
-    )
-
-    statusCode should be(StatusCodes.OK)
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
-                                                             "target-whitelist.txt"
-    )
-    verify(samDao, times(1)).removeGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, times(1)).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, never()).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, never()).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("other-group")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-  }
-
-  it should "continue, but return an error of ECM returns an error" in {
-    mockShibbolethDAO()
-    mockThurloeUsers()
-    when(ecmDao.putLinkedEraAccount(any[LinkedEraAccount], any[WithAccessToken]))
-      .thenReturn(Future.failed(new RuntimeException("ECM is down")))
-
-    val user = userTcgaOnly
-    val userInfo = UserInfo(user.email.value,
-                            OAuth2BearerToken(user.id.value),
-                            Instant.now().plusSeconds(60).getEpochSecond,
-                            user.id.value
-    )
-    val linkedAccount = userTcgaOnlyLinkedAccount
-    val jwt = jwtForUser(linkedAccount)
-    val (statusCode, errorReport) = Await
-      .result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf)
-      .asInstanceOf[PerRequest.RequestComplete[(StatusCode, ErrorReport)]]
-      .response
-
-    errorReport.message should include("Error updating NIH link")
-    statusCode should be(StatusCodes.InternalServerError)
-
-    verify(thurloeDao, times(1)).saveKeyValues(userInfo, NihLink(linkedAccount).propertyValueMap)
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
-                                                             "target-whitelist.txt"
-    )
-    verify(samDao, times(1)).removeGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, times(1)).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, never()).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-  }
-
-  it should "continue, but return an error of Thurloe returns an error" in {
-    mockShibbolethDAO()
-    mockEcmUsers()
-    when(thurloeDao.saveKeyValues(any[UserInfo], any[Map[String, String]]))
-      .thenReturn(Future.successful(Failure(new RuntimeException("Thurloe is down"))))
-
-    val user = userTcgaOnly
-    val userInfo = UserInfo(user.email.value,
-                            OAuth2BearerToken(user.id.value),
-                            Instant.now().plusSeconds(60).getEpochSecond,
-                            user.id.value
-    )
-    val linkedAccount = userTcgaOnlyLinkedAccount
-    val jwt = jwtForUser(linkedAccount)
-    val (statusCode, errorReport) = Await
-      .result(nihService.updateNihLinkAndSyncSelf(userInfo, jwt), Duration.Inf)
-      .asInstanceOf[PerRequest.RequestComplete[(StatusCode, ErrorReport)]]
-      .response
-
-    errorReport.message should include("Error updating NIH link")
-    statusCode should be(StatusCodes.InternalServerError)
-
-    // Tokens from Shibboleth are to the second, not millisecond
-    var expectedLinkedAccount = linkedAccount.copy(linkExpireTime =
-      linkedAccount.linkExpireTime.minusMillis(linkedAccount.linkExpireTime.getMillisOfSecond)
-    )
-
-    verify(ecmDao, times(1)).putLinkedEraAccount(ArgumentMatchers.eq(expectedLinkedAccount),
-                                                 ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))
-    )
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
-                                                             "target-whitelist.txt"
-    )
-    verify(samDao, times(1)).removeGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, times(1)).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("TCGA-dbGaP-Authorized")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(samDao, never()).addGroupMember(
-      ArgumentMatchers.eq(WorkbenchGroupName("this-doesnt-matter")),
-      ArgumentMatchers.eq(ManagedGroupRoles.Member),
-      ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
-    )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-  }
-
   "unlinkNihAccountAndSyncSelf" should "remove links from ECM and Thurloe, and sync allowlists" in {
     mockEcmUsers()
     mockThurloeUsers()
@@ -943,31 +787,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
         new ByteArrayInputStream(nihUsernames.mkString("\n").getBytes(StandardCharsets.UTF_8))
       }
     when(googleDao.getAdminUserAccessToken).thenReturn(adminAccessToken)
-  }
-
-  private def mockShibbolethDAO(): Unit =
-    when(shibbolethDao.getPublicKey()).thenReturn(Future.successful(pubKey))
-
-  val keypairGen = KeyPairGenerator.getInstance("RSA")
-  keypairGen.initialize(1024)
-  val keypair = keypairGen.generateKeyPair()
-
-  val privKey: PrivateKey = keypair.getPrivate
-  val pubKey: String =
-    s"-----BEGIN PUBLIC KEY-----\n${Base64.getEncoder.encodeToString(keypair.getPublic.getEncoded)}\n-----END PUBLIC KEY-----"
-
-  private def jwtForUser(linkedEraAccount: LinkedEraAccount): JWTWrapper = {
-    val expiresInTheFuture: Long = linkedEraAccount.linkExpireTime.getMillis / 1000L
-    val issuedAt =
-      Instant.ofEpochMilli(linkedEraAccount.linkExpireTime.minusSeconds(secondsIn30Days).getMillis).getEpochSecond
-    val validStr = Jwt.encode(
-      JwtClaim(s"""{"eraCommonsUsername": "${linkedEraAccount.linkedExternalId}"}""")
-        .issuedAt(issuedAt)
-        .expiresAt(expiresInTheFuture),
-      privKey,
-      JwtAlgorithm.RS256
-    )
-    JWTWrapper(validStr)
   }
 
   private def genSamUser(): SamUser =

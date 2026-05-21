@@ -143,14 +143,12 @@ object Boot extends IOApp with LazyLogging {
       FireCloudConfig.GoogleCloud.enabled,
       new HttpGoogleServicesDAO()
     )
-    val shibbolethDAO: ShibbolethDAO =
-      whenEnabled[ShibbolethDAO](FireCloudConfig.Shibboleth.enabled, new HttpShibbolethDAO)
     val cwdsDAO: CwdsDAO = whenEnabled[CwdsDAO](
       FireCloudConfig.Cwds.enabled,
       new HttpCwdsDAO(FireCloudConfig.Cwds.enabled, FireCloudConfig.Cwds.supportedFormats)
     )
 
-    Application(agoraDAO, googleServicesDAO, rawlsDAO, samDAO, thurloeDAO, shibbolethDAO, cwdsDAO, ecmDAO)
+    Application(agoraDAO, googleServicesDAO, rawlsDAO, samDAO, thurloeDAO, cwdsDAO, ecmDAO)
   }
 
   private def createExternalCredsSubscriber()(implicit

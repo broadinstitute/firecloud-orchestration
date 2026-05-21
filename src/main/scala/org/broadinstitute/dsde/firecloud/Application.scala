@@ -11,7 +11,6 @@ case class Application(agoraDAO: AgoraDAO,
                        rawlsDAO: RawlsDAO,
                        samDAO: SamDAO,
                        thurloeDAO: ThurloeDAO,
-                       shibbolethDAO: ShibbolethDAO,
                        cwdsDAO: CwdsDAO,
                        ecmDAO: ExternalCredsDAO
 )

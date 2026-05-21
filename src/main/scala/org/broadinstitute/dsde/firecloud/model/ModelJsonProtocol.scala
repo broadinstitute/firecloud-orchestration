@@ -114,8 +114,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with
   implicit val impProfileWrapper: RootJsonFormat[ProfileWrapper] = jsonFormat2(ProfileWrapper)
   implicit val impProfileKVP: RootJsonFormat[ProfileKVP] = jsonFormat2(ProfileKVP)
   implicit val impTerraPreference: RootJsonFormat[TerraPreference] = jsonFormat2(TerraPreference)
-  implicit val impShibbolethToken: RootJsonFormat[ShibbolethToken] = jsonFormat2(ShibbolethToken)
-
   implicit val impRegisterRequest: RootJsonFormat[RegisterRequest] = jsonFormat2(RegisterRequest)
   implicit val impSamUserAttributesRequest: RootJsonFormat[SamUserAttributesRequest] = jsonFormat1(
     SamUserAttributesRequest
@@ -123,8 +121,6 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with
   implicit val impSamUserRegistrationRequest: RootJsonFormat[SamUserRegistrationRequest] = jsonFormat2(
     SamUserRegistrationRequest
   )
-
-  implicit val impJWTWrapper: RootJsonFormat[JWTWrapper] = jsonFormat1(JWTWrapper)
 
   implicit val impOAuthUser: RootJsonFormat[OAuthUser] = jsonFormat2(OAuthUser)
 

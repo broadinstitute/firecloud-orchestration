@@ -164,13 +164,6 @@ object FireCloudConfig {
     lazy val maxFileMatchingFileCount = firecloud.getInt("max-filematching-bucket-files")
   }
 
-  object Shibboleth {
-    // lazy - only required when shibboleth is enabled
-    private lazy val shibboleth = config.getConfig("shibboleth")
-    lazy val publicKeyUrl = shibboleth.getString("publicKeyUrl")
-    val enabled = shibboleth.optionalBoolean("enabled").getOrElse(true)
-  }
-
   object Nih {
     // lazy - only required when nih is enabled
     private lazy val nih = config.getConfig("nih")

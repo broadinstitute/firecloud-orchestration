@@ -34,15 +34,7 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
     requireUserInfo() { userInfo =>
       requireEnabledUser(userInfo) {
         pathPrefix("nih") {
-          // api/nih/callback: accept JWT, update linkage + lastlogin
-          path("callback") {
-            post {
-              entity(as[JWTWrapper]) { jwtWrapper =>
-                complete(nihServiceConstructor().updateNihLinkAndSyncSelf(userInfo, jwtWrapper))
-              }
-            }
-          } ~
-            path("status") {
+          path("status") {
               complete(nihServiceConstructor().getNihStatus(userInfo))
             } ~
             path("account") {
