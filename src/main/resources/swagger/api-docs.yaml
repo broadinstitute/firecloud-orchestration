@@ -2077,29 +2077,6 @@ paths:
           content: {}
       x-passthrough: false
       x-codegen-request-body-name: methodacls
-  /api/nih/callback:
-    post:
-      tags:
-        - NIH
-      summary: Deprecated. NIH account linking is now handled via ECM.
-      operationId: NIHCallback
-      deprecated: true
-      requestBody:
-        description: JWT from NIH login
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/JWTWrapper'
-        required: true
-      responses:
-        410:
-          description: This endpoint has been retired. NIH account linking is now handled via ECM.
-          content: {}
-        401:
-          description: Unauthorized
-          content: {}
-      x-passthrough: false
-      x-codegen-request-body-name: jwt
   /api/nih/status:
     get:
       tags:
@@ -6875,12 +6852,6 @@ components:
           type: string
         role:
           type: string
-    JWTWrapper:
-      type: object
-      properties:
-        jwt:
-          type: string
-          description: the encoded/signed JWT
     KeyValuePair:
       type: object
       properties:
