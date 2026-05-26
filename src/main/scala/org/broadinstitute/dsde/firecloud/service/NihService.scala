@@ -7,13 +7,7 @@ import cats.effect.kernel.Outcome.Succeeded
 import cats.effect.{IO, Outcome}
 import cats.implicits.toTraverseOps
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.dsde.firecloud.dataaccess.{
-  ExternalCredsDAO,
-  GoogleServicesDAO,
-  SamDAO,
-  ShibbolethDAO,
-  ThurloeDAO
-}
+import org.broadinstitute.dsde.firecloud.dataaccess.{ExternalCredsDAO, GoogleServicesDAO, SamDAO, ThurloeDAO}
 import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.model._
 import org.broadinstitute.dsde.firecloud.service.PerRequest.{PerRequestMessage, RequestComplete}
@@ -29,7 +23,6 @@ import org.broadinstitute.dsde.workbench.client.sam.model.{BulkMembershipUpdateR
 import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName, WorkbenchUserId}
 import org.broadinstitute.dsde.workbench.util2.messaging.ReceivedMessage
 import org.slf4j.LoggerFactory
-import pdi.jwt.{Jwt, JwtAlgorithm}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -38,7 +31,7 @@ import java.util
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.jdk.CollectionConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 case class NihStatus(linkedNihUsername: Option[String] = None,
                      datasetPermissions: Set[NihDatasetPermission],
@@ -64,13 +57,12 @@ object NihStatus {
 
 object NihService {
   def constructor(app: Application)()(implicit executionContext: ExecutionContext) =
-    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.shibbolethDAO, app.ecmDAO)
+    new NihService(app.samDAO, app.thurloeDAO, app.googleServicesDAO, app.ecmDAO)
 }
 
 class NihService(val samDao: SamDAO,
                  val thurloeDao: ThurloeDAO,
                  val googleDao: GoogleServicesDAO,
-                 val shibbolethDao: ShibbolethDAO,
                  val ecmDao: ExternalCredsDAO
 )(implicit val executionContext: ExecutionContext)
     extends LazyLogging
@@ -311,24 +303,6 @@ class NihService(val samDao: SamDAO,
     allowedMembers
   }
 
-  private def linkNihAccountEcm(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] =
-    ecmDao
-      .putLinkedEraAccount(LinkedEraAccount(userInfo.id, nihLink), getAdminAccessToken)
-      .flatMap { _ =>
-        logger.info("Successfully linked NIH account in ECM for user " + userInfo.id)
-        Future.successful(Success(()))
-      }
-      .recoverWith { case e =>
-        logger.warn("Failed to link NIH account in ECM for user" + userInfo.id)
-        Future.successful(Failure(e))
-      }
-
-  private def linkNihAccountThurloe(userInfo: UserInfo, nihLink: NihLink): Future[Try[Unit]] = {
-    val profilePropertyMap = nihLink.propertyValueMap
-
-    thurloeDao.saveKeyValues(userInfo, profilePropertyMap)
-  }
-
   private def unlinkNihAccount(userInfo: UserInfo): Future[Unit] =
     for {
       _ <- unlinkNihAccountEcm(userInfo)
@@ -369,64 +343,6 @@ class NihService(val samDao: SamDAO,
         }
       }
     } yield {}
-
-  def updateNihLinkAndSyncSelf(userInfo: UserInfo, jwtWrapper: JWTWrapper): Future[PerRequestMessage] = {
-    val res = for {
-      _ <-
-        if (allowedNihMembers(Set(WorkbenchEmail(userInfo.userEmail))).isEmpty) {
-          Future.failed(
-            new FireCloudExceptionWithErrorReport(
-              ErrorReport(StatusCodes.Forbidden, "User is not allowed to link NIH account")
-            )
-          )
-        } else {
-          Future.successful(())
-        }
-      shibbolethPublicKey <- shibbolethDao.getPublicKey()
-      decodedToken <- Future
-        .fromTry(Jwt.decodeRawAll(jwtWrapper.jwt, shibbolethPublicKey, Seq(JwtAlgorithm.RS256)))
-        .recoverWith {
-          // The exception's error message contains the raw JWT. For an abundance of security, don't
-          // log the error message - even though if we reached this point, the JWT is invalid. It could
-          // still contain sensitive info.
-          case _: Throwable =>
-            Future.failed(
-              new FireCloudExceptionWithErrorReport(ErrorReport(StatusCodes.BadRequest, "Failed to decode JWT"))
-            )
-        }
-      nihLink = decodedToken match {
-        case (_, rawTokenFromShibboleth, _) =>
-          rawTokenFromShibboleth.parseJson.convertTo[ShibbolethToken].toNihLink
-      }
-      thurloeLinkResult <- linkNihAccountThurloe(userInfo, nihLink)
-      ecmLinkResult <- linkNihAccountEcm(userInfo, nihLink)
-
-      _ <- ensureAllowlistGroupsExists()
-      allowlistSyncResults <- Future.traverse(enabledNihAllowlists) { allowlist =>
-        syncNihAllowlistForUser(WorkbenchEmail(userInfo.userEmail), nihLink.linkedNihUsername, allowlist)
-          .map(NihDatasetPermission(allowlist.name, _))
-      }
-    } yield
-      if (thurloeLinkResult.isSuccess && ecmLinkResult.isSuccess) {
-        RequestComplete(
-          OK,
-          NihStatus(Option(nihLink.linkedNihUsername), allowlistSyncResults, Option(nihLink.linkExpireTime))
-        )
-      } else {
-        (thurloeLinkResult, ecmLinkResult) match {
-          case (Failure(t), Success(_))   => logger.error("Failed to link NIH Account in Thurloe", t)
-          case (Success(_), Failure(t))   => logger.error("Failed to link NIH Account in ECM", t)
-          case (Failure(t1), Failure(t2)) => logger.error("Failed to link NIH Account in Thurloe and ECM", t1, t2)
-          case _ => // unreachable case due to the if-condition above, but this case avoids compile warnings
-        }
-        RequestCompleteWithErrorReport(InternalServerError, "Error updating NIH link")
-      }
-
-    res.recoverWith {
-      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode == Option(BadRequest) =>
-        Future.successful(RequestCompleteWithErrorReport(BadRequest, e.errorReport.message))
-    }
-  }
 
   private def syncNihAllowlistForUser(userEmail: WorkbenchEmail,
                                       linkedNihUserName: String,

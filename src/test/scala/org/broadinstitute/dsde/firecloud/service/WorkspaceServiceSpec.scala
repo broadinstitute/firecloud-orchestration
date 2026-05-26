@@ -20,7 +20,6 @@ class WorkspaceServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     new MockRawlsDeleteWSDAO(),
     samDao,
     thurloeDao,
-    shibbolethDao,
     new MockCwdsDAO,
     new DisabledExternalCredsDAO
   )

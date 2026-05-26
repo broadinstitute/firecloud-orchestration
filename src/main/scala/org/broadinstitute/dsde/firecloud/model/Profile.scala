@@ -108,21 +108,6 @@ object Profile {
 
 }
 
-object NihLink {
-  def apply(linkedEraAccount: LinkedEraAccount): NihLink =
-    NihLink(linkedEraAccount.linkedExternalId, linkedEraAccount.linkExpireTime.getMillis / 1000)
-}
-
-case class NihLink(linkedNihUsername: String, linkExpireTime: Long) extends mappedPropVals {
-  require(ProfileValidator.nonEmpty(linkedNihUsername), "linkedNihUsername must be non-empty")
-}
-
-// For parsing the decoded JWT received from Shibboleth
-case class ShibbolethToken(eraCommonsUsername: String, iat: Long) {
-  // Link should expire in 30 days
-  def toNihLink: NihLink = NihLink(eraCommonsUsername, iat + 60 * 60 * 24 * 30)
-}
-
 object ProfileValidator {
   // from https://www.regular-expressions.info/email.html
   private val emailRegex = """(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$""".r

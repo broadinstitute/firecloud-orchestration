@@ -35,14 +35,13 @@ trait ApiServiceSpec
     val rawlsDao: MockRawlsDAO
     val samDao: MockSamDAO
     val thurloeDao: MockThurloeDAO
-    val shibbolethDao: ShibbolethDAO
     val cwdsDao: CwdsDAO
     val ecmDao: ExternalCredsDAO
 
     def actorRefFactory = system
 
     val nihServiceConstructor = NihService.constructor(
-      new Application(agoraDao, googleDao, rawlsDao, samDao, thurloeDao, shibbolethDao, cwdsDao, ecmDao)
+      new Application(agoraDao, googleDao, rawlsDao, samDao, thurloeDao, cwdsDao, ecmDao)
     ) _
 
   }

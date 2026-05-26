@@ -2077,37 +2077,6 @@ paths:
           content: {}
       x-passthrough: false
       x-codegen-request-body-name: methodacls
-  /api/nih/callback:
-    post:
-      tags:
-        - NIH
-      summary: Updates a user's NIH link from a JWT
-      operationId: NIHCallback
-      requestBody:
-        description: JWT from NIH login
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/JWTWrapper'
-        required: true
-      responses:
-        200:
-          description: Successfully updated NIH link
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NihStatus'
-        400:
-          description: Invalid or malformed JWT
-          content: {}
-        401:
-          description: Unauthorized
-          content: {}
-        500:
-          description: Internal server error saving NIH link to profile
-          content: {}
-      x-passthrough: false
-      x-codegen-request-body-name: jwt
   /api/nih/status:
     get:
       tags:
@@ -6883,12 +6852,6 @@ components:
           type: string
         role:
           type: string
-    JWTWrapper:
-      type: object
-      properties:
-        jwt:
-          type: string
-          description: the encoded/signed JWT
     KeyValuePair:
       type: object
       properties:

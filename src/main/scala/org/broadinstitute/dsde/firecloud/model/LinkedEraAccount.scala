@@ -1,12 +1,9 @@
 package org.broadinstitute.dsde.firecloud.model
 
 import bio.terra.externalcreds.model.AdminLinkInfo
-import org.joda.time.{DateTime, Instant}
+import org.joda.time.DateTime
 
 object LinkedEraAccount {
-  def apply(samUserId: String, nihLink: NihLink): LinkedEraAccount =
-    LinkedEraAccount(samUserId, nihLink.linkedNihUsername, Instant.ofEpochSecond(nihLink.linkExpireTime).toDateTime)
-
   def apply(adminLinkInfo: AdminLinkInfo): LinkedEraAccount =
     LinkedEraAccount(adminLinkInfo.getUserId,
                      adminLinkInfo.getLinkedExternalId,
