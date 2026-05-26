@@ -108,7 +108,6 @@ object Profile {
 
 }
 
-
 object ProfileValidator {
   // from https://www.regular-expressions.info/email.html
   private val emailRegex = """(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$""".r
