@@ -68,7 +68,6 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-stream" % akkaV,
     "com.typesafe.akka" %% "akka-testkit" % akkaV % "test",
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test",
-    "com.github.jwt-scala" %% "jwt-core" % "11.0.3",
     // javax.mail is used only by MethodRepository.validatePublicOrEmail(). Consider
     // refactoring that method to remove this entire dependency.
     "com.sun.mail" % "javax.mail" % "1.6.2"

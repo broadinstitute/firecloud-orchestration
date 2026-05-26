@@ -13,7 +13,6 @@ import org.broadinstitute.dsde.firecloud.model.{
   FireCloudManagedGroupMembership,
   LinkedEraAccount,
   ManagedGroupRoles,
-  NihLink,
   PhsId,
   ProfileWrapper,
   SamUser,
