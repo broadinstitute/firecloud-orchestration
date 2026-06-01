@@ -149,36 +149,14 @@ class NihService(val samDao: SamDAO,
     )
 
   def getNihStatus(userInfo: UserInfo): Future[PerRequestMessage] =
-    getNihStatusFromEcm(userInfo).flatMap {
-      case Some(nihStatus) =>
-        logger.info("Found eRA Commons link in ECM for user " + userInfo.id)
-        Future.successful(RequestComplete(nihStatus))
-      case None =>
-        getNihStatusFromThurloe(userInfo).map {
-          case Some(nihStatus) =>
-            logger.info("Found eRA Commons link in Thurloe for user " + userInfo.id)
-            RequestComplete(nihStatus)
-          case None => RequestComplete(NotFound)
-        }
+    getNihStatusFromThurloe(userInfo).map {
+      case Some(nihStatus) => RequestComplete(nihStatus)
+      case None            => RequestComplete(NotFound)
     }
 
   def getNihResources(userInfo: UserInfo): Future[NihResources] =
     getAllAllowlistGroupMemberships(userInfo).map { allowlistMembership =>
       NihResources(allowlistMembership)
-    }
-
-  private def getNihStatusFromEcm(userInfo: UserInfo): Future[Option[NihStatus]] =
-    ecmDao.getLinkedAccount(userInfo).flatMap {
-      case Some(linkedAccount) =>
-        getAllAllowlistGroupMemberships(userInfo).map { allowlistMembership =>
-          Some(
-            NihStatus(Some(linkedAccount.linkedExternalId),
-                      allowlistMembership,
-                      Some(linkedAccount.linkExpireTime.getMillis / 1000L)
-            )
-          )
-        }
-      case None => Future.successful(None)
     }
 
   private def getNihStatusFromThurloe(userInfo: UserInfo): Future[Option[NihStatus]] =
@@ -241,18 +219,6 @@ class NihService(val samDao: SamDAO,
     allowlistSyncResults map { _ => RequestComplete(NoContent) }
   }
 
-  private def getNihAllowlistTerraEmailsFromEcm(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
-    for {
-      // The list of users that, according to ECM, have active links
-      allLinkedAccounts <- ecmDao.getActiveLinkedEraAccounts(getAdminAccessToken)
-      // The list of linked accounts which for which the user appears in the allowlist
-      allowlistLinkedAccounts = allLinkedAccounts.filter(linkedAccount =>
-        allowlistEraUsernames.contains(linkedAccount.linkedExternalId)
-      )
-      // The users from Sam for the linked accounts on the allowlist
-      users <- samDao.getUsersForIds(allowlistLinkedAccounts.map(la => WorkbenchUserId(la.userId)))(getAdminAccessToken)
-    } yield users.map(user => WorkbenchEmail(user.userEmail)).toSet
-
   private def getNihAllowlistTerraEmailsFromThurloe(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
     for {
       // The list of users that, according to Thurloe, have active links and are
@@ -272,9 +238,8 @@ class NihService(val samDao: SamDAO,
 
     for {
       dbGapGroupEmail <- Future.traverse(dbGapSamGroup.toList)(getSamGroupEmail)
-      ecmEmails <- getNihAllowlistTerraEmailsFromEcm(allowlistUsers)
       thurloeEmails <- getNihAllowlistTerraEmailsFromThurloe(allowlistUsers)
-      members = allowedNihMembers(ecmEmails ++ thurloeEmails ++ dbGapGroupEmail.flatten)
+      members = allowedNihMembers(thurloeEmails ++ dbGapGroupEmail.flatten)
       _ <- ensureAllowlistGroupsExists()
       // The request to Sam to completely overwrite the group with the list of actively linked users on the allowlist
       _ <- samDao.overwriteGroupMembers(nihAllowlist.groupToSync, ManagedGroupRoles.Member, members.toList)(
@@ -304,13 +269,7 @@ class NihService(val samDao: SamDAO,
   }
 
   private def unlinkNihAccount(userInfo: UserInfo): Future[Unit] =
-    for {
-      _ <- unlinkNihAccountEcm(userInfo)
-      _ <- unlinkNihAccountThurloe(userInfo)
-    } yield ()
-
-  private def unlinkNihAccountEcm(userInfo: UserInfo): Future[Unit] =
-    ecmDao.deleteLinkedEraAccount(userInfo, getAdminAccessToken)
+    unlinkNihAccountThurloe(userInfo)
 
   private def unlinkNihAccountThurloe(userInfo: UserInfo): Future[Unit] = {
     val nihKeys = Set("linkedNihUsername", "linkExpireTime")
