@@ -50,7 +50,7 @@ import scala.util.{Random, Success}
 
 class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
 
-  private case class NihTestAccount(userId: String, linkedExternalId: String, linkExpireTime: DateTime)
+  case class NihTestAccount(userId: String, linkedExternalId: String, linkExpireTime: DateTime)
 
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val errorReportSource: ErrorReportSource = ErrorReportSource("NihServiceUnitSpec")
