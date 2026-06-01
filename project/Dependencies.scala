@@ -28,7 +28,7 @@ object Dependencies {
     "org.yaml" % "snakeyaml" % "2.5",
     "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20251212-2.0.0", // from workbench-google2
-    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20260113-2.0.0", // from workbench-google2
+    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20260522-2.0.0", // from workbench-google2
     "org.bouncycastle" % "bcprov-jdk18on" % "1.84", // CVE-2026-5598
     "org.bouncycastle" % "bcpkix-jdk18on" % "1.84", // CVE-2026-5598
     "org.bouncycastle" % "bcutil-jdk18on" % "1.84" // CVE-2026-5598
