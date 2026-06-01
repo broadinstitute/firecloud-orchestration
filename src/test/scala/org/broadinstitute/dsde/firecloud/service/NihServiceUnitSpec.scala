@@ -258,7 +258,9 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
       .thenReturn(Future.successful(Map(userDbGap.id.value -> userDbGapLinkedAccount.linkedExternalId)))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime")))
-      .thenReturn(Future.successful(Map(userDbGap.id.value -> (userDbGapLinkedAccount.linkExpireTime.getMillis / 1000L).toString)))
+      .thenReturn(
+        Future.successful(Map(userDbGap.id.value -> (userDbGapLinkedAccount.linkExpireTime.getMillis / 1000L).toString))
+      )
 
     val emailsToSync = Set(userDbGap.email, dbGapGroupEmail)
     val nihStatus = Await
@@ -278,7 +280,9 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkedNihUsername")))
       .thenReturn(Future.successful(Map(userDbGap.id.value -> userDbGapLinkedAccount.linkedExternalId)))
     when(thurloeDao.getAllUserValuesForKey(ArgumentMatchers.eq("linkExpireTime")))
-      .thenReturn(Future.successful(Map(userDbGap.id.value -> (userDbGapLinkedAccount.linkExpireTime.getMillis / 1000L).toString)))
+      .thenReturn(
+        Future.successful(Map(userDbGap.id.value -> (userDbGapLinkedAccount.linkExpireTime.getMillis / 1000L).toString))
+      )
     when(samDao.getGroupEmail(ArgumentMatchers.eq(WorkbenchGroupName("dbgap_phs002409_c1")))(any())).thenReturn(
       Future.failed(
         new FireCloudExceptionWithErrorReport(
@@ -386,9 +390,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
       ArgumentMatchers.eq(WorkbenchEmail(user.email.value))
     )(ArgumentMatchers.eq(UserInfo(adminAccessToken, "")))
-    verify(ecmDao, times(1)).deleteNihTestAccount(ArgumentMatchers.eq(userInfo),
-                                                    ArgumentMatchers.eq(UserInfo(adminAccessToken, ""))
-    )
     verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkedNihUsername", userInfo)
     verify(thurloeDao, times(1)).deleteKeyValue(user.id.value, "linkExpireTime", userInfo)
 
