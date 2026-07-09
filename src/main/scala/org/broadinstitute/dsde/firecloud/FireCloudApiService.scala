@@ -196,6 +196,7 @@ trait FireCloudApiService
       registerRoutes ~
       oidcConfig.swaggerRoutes("swagger/api-docs.yaml") ~
       oidcConfig.oauth2Routes ~
+      syncRoute ~
       userServiceRoutes ~
       managedGroupServiceRoutes ~
       workspaceRoutes ~

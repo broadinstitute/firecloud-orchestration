@@ -19,6 +19,17 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
 
   val nihServiceConstructor: () => NihService
 
+  val syncRoute: Route =
+    path("sync_whitelist" / Segment) { whitelistName =>
+      post {
+        complete(nihServiceConstructor().syncAllowlistAllUsers(whitelistName))
+      }
+    } ~ path("sync_whitelist") {
+      post {
+        complete(nihServiceConstructor().syncAllNihAllowlistsAllUsers())
+      }
+    }
+
   val nihRoutes: Route =
     requireUserInfo() { userInfo =>
       requireEnabledUser(userInfo) {
