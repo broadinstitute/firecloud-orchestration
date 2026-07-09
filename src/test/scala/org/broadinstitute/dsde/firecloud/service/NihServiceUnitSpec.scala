@@ -197,9 +197,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       .response
 
     nihStatus should be(StatusCodes.NoContent)
-    verify(googleDao, never()).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
-    verify(googleDao, times(1))
-      .getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "target-whitelist.txt")
     verify(samDao, times(1)).overwriteGroupMembers(
       ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
@@ -358,10 +355,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
       .response
 
     nihStatus should be(StatusCodes.NoContent)
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, "tcga-whitelist.txt")
-    verify(googleDao, times(1)).getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket,
-                                                             "target-whitelist.txt"
-    )
     verify(samDao, times(1)).overwriteGroupMembers(
       ArgumentMatchers.eq(WorkbenchGroupName("TARGET-dbGaP-Authorized")),
       ArgumentMatchers.eq(ManagedGroupRoles.Member),
@@ -679,20 +672,6 @@ class NihServiceUnitSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEa
   }
 
   private def mockGoogleServicesDAO(): Unit = {
-    when(googleDao.getBucketObjectAsInputStream(ArgumentMatchers.eq(FireCloudConfig.Nih.whitelistBucket), any[String]))
-      .thenAnswer { args =>
-        val filename = args.getArgument(1).asInstanceOf[String]
-        val nihUsernames = filename match {
-          case "tcga-whitelist.txt" =>
-            Seq(userTcgaAndTargetLinkedAccount.linkedExternalId, userTcgaOnlyLinkedAccount.linkedExternalId)
-          case "target-whitelist.txt" =>
-            Seq(userTcgaAndTargetLinkedAccount.linkedExternalId, userTargetOnlyLinkedAccount.linkedExternalId)
-          case "dbgap_phs002409_c1_whitelist.txt" =>
-            Seq(userDbGapLinkedAccount.linkedExternalId)
-          case "broken-whitelist.txt" => Seq.empty
-        }
-        new ByteArrayInputStream(nihUsernames.mkString("\n").getBytes(StandardCharsets.UTF_8))
-      }
     when(googleDao.getAdminUserAccessToken).thenReturn(adminAccessToken)
   }
 

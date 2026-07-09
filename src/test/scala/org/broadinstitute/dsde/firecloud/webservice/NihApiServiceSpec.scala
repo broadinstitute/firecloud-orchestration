@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.firecloud.model.ModelJsonProtocol._
 import org.broadinstitute.dsde.firecloud.service.{NihResources, NihStatus}
 import org.broadinstitute.dsde.firecloud.service.NihStatus._
 import org.broadinstitute.dsde.firecloud.utils.DateUtils
-import org.broadinstitute.dsde.workbench.model.WorkbenchEmail
+import org.broadinstitute.dsde.workbench.model.{WorkbenchEmail, WorkbenchGroupName}
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.integration.ClientAndServer.startClientAndServer
 import org.scalatest.BeforeAndAfterAll
@@ -19,8 +19,9 @@ import scala.concurrent.ExecutionContext
 
 class NihApiServiceSpec extends ApiServiceSpec with BeforeAndAfterAll {
 
-  val tcgaDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TCGA")).head.groupToSync
-  val targetDbGaPAuthorized = FireCloudConfig.Nih.whitelists.filter(_.name.equals("TARGET")).head.groupToSync
+  // Config decommissioned: delete me? (CTM-581)
+  val tcgaDbGaPAuthorized = WorkbenchGroupName("TCGA-dbGaP-Authorized")
+  val targetDbGaPAuthorized = WorkbenchGroupName("TARGET-dbGaP-Authorized")
 
   case class TestApiService(agoraDao: MockAgoraDAO,
                             googleDao: MockGoogleServicesDAO,
