@@ -206,15 +206,4 @@ class NihService(val samDao: SamDAO,
 
     usernames.filter { case (fcUser, nihUser) => currentFcUsers.contains(fcUser) }
   }
-
-  // get a mapping of FireCloud user name to NIH User name, for only those Thurloe users with a non-expired NIH link
-  private def getCurrentNihUsernameMap(thurloeDAO: ThurloeDAO): Future[Map[String, String]] = {
-    val nihUsernames = thurloeDAO.getAllUserValuesForKey("linkedNihUsername")
-    val nihExpireTimes = thurloeDAO.getAllUserValuesForKey("linkExpireTime")
-
-    for {
-      usernames <- nihUsernames
-      expirations <- nihExpireTimes
-    } yield filterForCurrentUsers(usernames, expirations)
-  }
 }
