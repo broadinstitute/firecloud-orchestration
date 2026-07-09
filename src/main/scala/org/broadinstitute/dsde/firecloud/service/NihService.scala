@@ -204,11 +204,7 @@ class NihService(val samDao: SamDAO,
     }
     allowedMembers
   }
-
-  def unlinkNihAccount(userInfo: UserInfo): Future[Unit] =
-    unlinkNihAccountThurloe(userInfo)
-
-  private def unlinkNihAccountThurloe(userInfo: UserInfo): Future[Unit] = {
+  def unlinkNihAccountThurloe(userInfo: UserInfo): Future[Unit] = {
     val nihKeys = Set("linkedNihUsername", "linkExpireTime")
 
     Future.traverse(nihKeys) { nihKey =>
