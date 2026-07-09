@@ -72,6 +72,7 @@ class NihService(val samDao: SamDAO,
 
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
 
+  // Config decommissioned: delete me? (CTM-581)
   private val nihAllowlists: Set[NihAllowlist] = Set.empty[NihAllowlist]
   private val enabledNihAllowlists: Set[NihAllowlist] = Set.empty[NihAllowlist]
 
