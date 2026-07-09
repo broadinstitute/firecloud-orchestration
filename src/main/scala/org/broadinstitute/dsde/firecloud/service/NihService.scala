@@ -38,6 +38,13 @@ case class NihStatus(linkedNihUsername: Option[String] = None,
                      linkExpireTime: Option[Long] = None
 )
 
+case class NihAllowlist(name: String,
+                        groupToSync: WorkbenchGroupName,
+                        fileName: String,
+                        dbGapPermission: DbGapPermission,
+                        disabled: Boolean
+)
+
 case class NihDatasetPermission(name: String, authorized: Boolean)
 
 case class NihResources(datasetPermissions: Set[NihDatasetPermission])
@@ -64,6 +71,9 @@ class NihService(val samDao: SamDAO,
   lazy val log = LoggerFactory.getLogger(getClass)
 
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
+
+  private val nihAllowlists: Set[NihAllowlist] = Set.empty[NihAllowlist]
+  private val enabledNihAllowlists: Set[NihAllowlist] = Set.empty[NihAllowlist]
 
   def processExternalCredsMessage(externalCredsMessage: ReceivedMessage[ExternalCredsMessage]): IO[Unit] = {
     val groupUpdateIO = for {
@@ -176,6 +186,29 @@ class NihService(val samDao: SamDAO,
     }
   }
 
+  private def downloadNihAllowlist(allowlist: NihAllowlist): Set[String] = Set.empty[String]
+
+  def syncAllowlistAllUsers(allowlistName: String): Future[PerRequestMessage] = {
+    logger.info("Synchronizing allowlist '" + allowlistName + "' for all users")
+    // include disabled allowlists so we remove all group users during the sync
+    nihAllowlists.find(_.name.equals(allowlistName)) match {
+      case Some(allowlist) =>
+        val allowlistSyncResults = syncNihAllowlistAllUsers(allowlist)
+        allowlistSyncResults map { _ => RequestComplete(NoContent) }
+
+      case None => Future.successful(RequestComplete(NotFound))
+    }
+  }
+
+  // This syncs all of the allowlists for all of the users
+  def syncAllNihAllowlistsAllUsers(): Future[PerRequestMessage] = {
+    logger.info("Synchronizing all allowlists for all users")
+    // include disabled allowlists so we remove all group users during the sync
+    val allowlistSyncResults = Future.traverse(nihAllowlists)(syncNihAllowlistAllUsers)
+
+    allowlistSyncResults map { _ => RequestComplete(NoContent) }
+  }
+
   private def getNihAllowlistTerraEmailsFromThurloe(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
     for {
       // The list of users that, according to Thurloe, have active links and are
@@ -186,6 +219,26 @@ class NihService(val samDao: SamDAO,
       // The users from Sam for the linked accounts on the allowlist
       users <- samDao.getUsersForIds(subjectIds.map(WorkbenchUserId))(getAdminAccessToken)
     } yield users.map(user => WorkbenchEmail(user.userEmail)).toSet
+
+  // This syncs the specified allowlist in full
+  private def syncNihAllowlistAllUsers(nihAllowlist: NihAllowlist): Future[Unit] = {
+    val allowlistUsers = downloadNihAllowlist(nihAllowlist)
+    val dbGapSamGroup =
+      FireCloudConfig.Nih.dbGapPermissionToGroup.get(nihAllowlist.dbGapPermission).map(WorkbenchGroupName)
+
+    for {
+      dbGapGroupEmail <- Future.traverse(dbGapSamGroup.toList)(getSamGroupEmail)
+      thurloeEmails <- getNihAllowlistTerraEmailsFromThurloe(allowlistUsers)
+      members = allowedNihMembers(thurloeEmails ++ dbGapGroupEmail.flatten)
+      _ <- ensureAllowlistGroupsExists()
+      // The request to Sam to completely overwrite the group with the list of actively linked users on the allowlist
+      _ <- samDao.overwriteGroupMembers(nihAllowlist.groupToSync, ManagedGroupRoles.Member, members.toList)(
+        getAdminAccessToken
+      ) recoverWith { case e: Exception =>
+        throw new FireCloudException(s"Error synchronizing NIH allowlist: ${e.getMessage}")
+      }
+    } yield ()
+  }
 
   private def getSamGroupEmail(groupName: WorkbenchGroupName): Future[Option[WorkbenchEmail]] =
     samDao.getGroupEmail(groupName)(getAdminAccessToken).map(Option.apply).recover {
@@ -229,7 +282,56 @@ class NihService(val samDao: SamDAO,
   def unlinkNihAccountAndSyncSelf(userInfo: UserInfo): Future[Unit] =
     for {
       _ <- unlinkNihAccount(userInfo)
+      _ <- ensureAllowlistGroupsExists()
+      _ <- Future.traverse(enabledNihAllowlists) { allowlist =>
+        removeUserFromNihAllowlistGroup(WorkbenchEmail(userInfo.userEmail), allowlist).recoverWith {
+          case _: Exception =>
+            throw new FireCloudExceptionWithErrorReport(
+              ErrorReport(StatusCodes.InternalServerError, "Unable to unlink NIH account")
+            )
+        }
+      }
     } yield {}
+
+  private def syncNihAllowlistForUser(userEmail: WorkbenchEmail,
+                                      linkedNihUserName: String,
+                                      nihAllowlist: NihAllowlist
+  ): Future[Boolean] = {
+    val allowlistUsers = downloadNihAllowlist(nihAllowlist)
+
+    if (allowlistUsers.contains(linkedNihUserName) && allowedNihMembers(Set(userEmail)).contains(userEmail)) {
+      for {
+        _ <- samDao.addGroupMember(nihAllowlist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
+      } yield true
+    } else {
+      for {
+        _ <- samDao.removeGroupMember(nihAllowlist.groupToSync, ManagedGroupRoles.Member, userEmail)(
+          getAdminAccessToken
+        )
+      } yield false
+    }
+  }
+
+  private def removeUserFromNihAllowlistGroup(userEmail: WorkbenchEmail, nihAllowlist: NihAllowlist): Future[Unit] =
+    samDao.removeGroupMember(nihAllowlist.groupToSync, ManagedGroupRoles.Member, userEmail)(getAdminAccessToken)
+
+  private def ensureAllowlistGroupsExists(): Future[Unit] =
+    samDao.listGroups(getAdminAccessToken).flatMap { groups =>
+      val missingGroupNames =
+        enabledNihAllowlists.map(_.groupToSync.value.toLowerCase()) -- groups.map(_.groupName.toLowerCase).toSet
+      if (missingGroupNames.isEmpty) {
+        Future.successful(())
+      } else {
+        Future
+          .traverse(missingGroupNames) { groupName =>
+            samDao.createGroup(WorkbenchGroupName(groupName))(getAdminAccessToken).recover {
+              case fce: FireCloudExceptionWithErrorReport
+                  if fce.errorReport.statusCode.contains(StatusCodes.Conflict) => // somebody else made it
+            }
+          }
+          .map(_ => ())
+      }
+    }
 
   def filterForCurrentUsers(usernames: Map[String, String], expirations: Map[String, String]): Map[String, String] = {
     val currentFcUsers = expirations
