@@ -205,7 +205,7 @@ class NihService(val samDao: SamDAO,
     allowedMembers
   }
 
-  def unlinkNihAccount(userInfo: UserInfo): Future[Unit] =
+  private def unlinkNihAccount(userInfo: UserInfo): Future[Unit] =
     unlinkNihAccountThurloe(userInfo)
 
   private def unlinkNihAccountThurloe(userInfo: UserInfo): Future[Unit] = {
@@ -225,6 +225,11 @@ class NihService(val samDao: SamDAO,
       }
     }
   }
+
+  def unlinkNihAccountAndSyncSelf(userInfo: UserInfo): Future[Unit] =
+    for {
+      _ <- unlinkNihAccount(userInfo)
+    } yield {}
 
   def filterForCurrentUsers(usernames: Map[String, String], expirations: Map[String, String]): Map[String, String] = {
     val currentFcUsers = expirations

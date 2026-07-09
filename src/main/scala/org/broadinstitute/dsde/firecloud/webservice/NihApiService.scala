@@ -29,7 +29,7 @@ trait NihApiService extends Directives with RequestBuilding with EnabledUserDire
             path("account") {
               delete {
                 complete {
-                  nihServiceConstructor().unlinkNihAccount(userInfo).map(_ => StatusCodes.NoContent)
+                  nihServiceConstructor().unlinkNihAccountAndSyncSelf(userInfo).map(_ => StatusCodes.NoContent)
                 }
               }
             } ~
