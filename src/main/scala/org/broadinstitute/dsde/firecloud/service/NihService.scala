@@ -72,8 +72,8 @@ class NihService(val samDao: SamDAO,
 
   def getAdminAccessToken: WithAccessToken = UserInfo(googleDao.getAdminUserAccessToken, "")
 
-  private val nihAllowlists: Set[NihAllowlist] = FireCloudConfig.Nih.whitelists
-  private val enabledNihAllowlists = FireCloudConfig.Nih.whitelists.filterNot(_.disabled)
+  private val nihAllowlists: Set[NihAllowlist] = Set.empty[NihAllowlist]
+  private val enabledNihAllowlists: Set[NihAllowlist] = Set.empty[NihAllowlist]
 
   def processExternalCredsMessage(externalCredsMessage: ReceivedMessage[ExternalCredsMessage]): IO[Unit] = {
     val groupUpdateIO = for {
@@ -186,17 +186,7 @@ class NihService(val samDao: SamDAO,
     }
   }
 
-  private def downloadNihAllowlist(allowlist: NihAllowlist): Set[String] =
-    if (allowlist.disabled) {
-      logger.info(s"NIH allowlist ${allowlist.name} is disabled, skipping download")
-      Set.empty
-    } else {
-      val usersList = Source.fromInputStream(
-        googleDao.getBucketObjectAsInputStream(FireCloudConfig.Nih.whitelistBucket, allowlist.fileName)
-      )
-
-      usersList.getLines().toSet
-    }
+  private def downloadNihAllowlist(allowlist: NihAllowlist): Set[String] = Set.empty[String]
 
   def syncAllowlistAllUsers(allowlistName: String): Future[PerRequestMessage] = {
     logger.info("Synchronizing allowlist '" + allowlistName + "' for all users")

@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.Uri.{Authority, Host, Query}
 import com.google.pubsub.v1.{ProjectSubscriptionName, TopicName}
 import com.typesafe.config.{Config, ConfigFactory, ConfigObject}
 import org.broadinstitute.dsde.firecloud.model.{ConsentGroup, DbGapPermission, PhsId}
-import org.broadinstitute.dsde.firecloud.service.{FireCloudDirectiveUtils, NihAllowlist}
+import org.broadinstitute.dsde.firecloud.service.FireCloudDirectiveUtils
 import org.broadinstitute.dsde.rawls.model.{EntityQuery, SortDirections}
 import org.broadinstitute.dsde.workbench.google2.SubscriberConfig
 import org.broadinstitute.dsde.workbench.model.WorkbenchGroupName
@@ -167,26 +167,6 @@ object FireCloudConfig {
   object Nih {
     // lazy - only required when nih is enabled
     private lazy val nih = config.getConfig("nih")
-    lazy val whitelistBucket = nih.getString("whitelistBucket")
-    lazy val whitelists: Set[NihAllowlist] = {
-      val whitelistConfigs = nih.getConfig("whitelists")
-
-      whitelistConfigs.root.asScala.collect { case (name, configObject: ConfigObject) =>
-        val config = configObject.toConfig
-        val rawlsGroup = config.getString("rawlsGroup")
-        val fileName = config.getString("fileName")
-        val phsId = config.getString("phsId")
-        val consentGroup = config.getString("consentGroup")
-        val disabled = config.optionalBoolean("disabled").getOrElse(false)
-
-        NihAllowlist(name,
-                     WorkbenchGroupName(rawlsGroup),
-                     fileName,
-                     DbGapPermission(PhsId(phsId), ConsentGroup(consentGroup)),
-                     disabled = disabled
-        )
-      }
-    }.toSet
     val enabled = nih.optionalBoolean("enabled").getOrElse(true)
     lazy val rasVisaType = nih.getString("rasVisaType")
     lazy val rasIssuer = nih.getString("rasIssuer")
