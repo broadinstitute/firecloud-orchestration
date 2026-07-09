@@ -176,34 +176,6 @@ class NihService(val samDao: SamDAO,
     }
   }
 
-  private def getNihAllowlistTerraEmailsFromThurloe(allowlistEraUsernames: Set[String]): Future[Set[WorkbenchEmail]] =
-    for {
-      // The list of users that, according to Thurloe, have active links and are
-      // on the specified allowlist
-      subjectIds <- getCurrentNihUsernameMap(thurloeDao) map { mapping =>
-        mapping.collect { case (fcUser, nihUser) if allowlistEraUsernames contains nihUser => fcUser }.toSeq
-      }
-      // The users from Sam for the linked accounts on the allowlist
-      users <- samDao.getUsersForIds(subjectIds.map(WorkbenchUserId))(getAdminAccessToken)
-    } yield users.map(user => WorkbenchEmail(user.userEmail)).toSet
-
-  private def getSamGroupEmail(groupName: WorkbenchGroupName): Future[Option[WorkbenchEmail]] =
-    samDao.getGroupEmail(groupName)(getAdminAccessToken).map(Option.apply).recover {
-      case e: FireCloudExceptionWithErrorReport if e.errorReport.statusCode.contains(StatusCodes.NotFound) =>
-        None
-    }
-
-  private def allowedNihMembers(members: Set[WorkbenchEmail]): Set[WorkbenchEmail] = {
-    val allowedMembers =
-      members.filterNot(email => FireCloudConfig.Nih.denyEmailPatterns.exists(_.matches(email.value)))
-    val deniedMembers = members -- allowedMembers
-    if (deniedMembers.nonEmpty) {
-      logger.info(
-        s"NIH allowlist sync: ${deniedMembers.mkString(",")} were denied access to the NIH allowlist due to matching deny patterns"
-      )
-    }
-    allowedMembers
-  }
   def unlinkNihAccountThurloe(userInfo: UserInfo): Future[Unit] = {
     val nihKeys = Set("linkedNihUsername", "linkExpireTime")
 
