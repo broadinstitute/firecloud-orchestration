@@ -14,7 +14,8 @@ import org.broadinstitute.dsde.workbench.google2.GoogleSubscriber
 import org.broadinstitute.dsde.workbench.oauth2.{ClientId, OpenIDConnectConfiguration}
 import org.broadinstitute.dsde.workbench.util.health.HealthMonitor
 import org.broadinstitute.dsde.workbench.util2.messaging.{CloudSubscriber, ReceivedMessage}
-import org.typelevel.log4cats.StructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jFactory
+import org.typelevel.log4cats.{LoggerFactory, StructuredLogger}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -71,6 +72,7 @@ object Boot extends IOApp with LazyLogging {
     Resource.make {
       // we need an ActorSystem to host our application in
       implicit val system: ActorSystem = ActorSystem("FireCloud-Orchestration-API")
+      implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
 
       val app: Application = buildApplication
 
