@@ -3,8 +3,6 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.21"
   val akkaHttpV = "10.2.10"
-  val jacksonV = "2.22.1"
-  val jacksonAnnotationsV = "2.22"
   val workbenchLibsHash = "737147b" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
@@ -22,9 +20,6 @@ object Dependencies {
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
     "com.google.guava" % "guava" % "33.5.0-jre",
-    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonAnnotationsV,
-    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonV,
-    "com.fasterxml.jackson.core" % "jackson-core" % jacksonV,
     "org.yaml" % "snakeyaml" % "2.5",
     "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20251212-2.0.0", // from workbench-google2
