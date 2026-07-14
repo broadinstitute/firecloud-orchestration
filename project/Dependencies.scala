@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.21"
   val akkaHttpV = "10.2.10"
-  val jacksonV = "2.20.2"
+  val jacksonV = "2.21.1"
   val jacksonAnnotationsV = "2.21"
   val workbenchLibsHash = "a91095a" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
