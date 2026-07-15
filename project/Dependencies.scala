@@ -49,7 +49,8 @@ object Dependencies {
       exclude ("com.google.cloud", "google-cloud-dataproc")
       exclude ("com.google.cloud", "google-cloud-kms")
       exclude ("com.google.cloud", "google-cloud-resourcemanager")
-      exclude ("com.google.cloud", "google-cloud-storage-transfer"),
+      exclude ("com.google.cloud", "google-cloud-storage-transfer")
+      exclude ("io.kubernetes", "client-java"),
     "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.11-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client" % "v0.0.447",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.1-$workbenchLibsHash",
