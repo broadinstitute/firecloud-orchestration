@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.21"
   val akkaHttpV = "10.2.10"
-  val workbenchLibsHash = "737147b" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val workbenchLibsHash = "2e5c77a" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream = ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
@@ -20,13 +20,8 @@ object Dependencies {
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
     "com.google.guava" % "guava" % "33.5.0-jre",
-    "org.yaml" % "snakeyaml" % "2.5",
-    "org.apache.commons" % "commons-compress" % "1.28.0", // workbench-libs libraries pull this in
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20251212-2.0.0", // from workbench-google2
     "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20260113-2.0.0", // from workbench-google2
-    "org.bouncycastle" % "bcprov-jdk18on" % "1.85", // CVE-2026-5598
-    "org.bouncycastle" % "bcpkix-jdk18on" % "1.85", // CVE-2026-5598
-    "org.bouncycastle" % "bcutil-jdk18on" % "1.85" // CVE-2026-5598
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
@@ -41,7 +36,7 @@ object Dependencies {
       exclude ("org.typelevel", "cats-parse_2.13")
       excludeAll (excludeAkkaHttp, excludeSprayJson),
     "org.broadinstitute.dsde.workbench" %% "workbench-util" % s"0.10-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.41-$workbenchLibsHash"
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.42-$workbenchLibsHash"
     // we don't need all the libraries that workbench-google2 pulls in
     exclude ("com.google.cloud", "google-cloud-bigquery")
       exclude ("com.google.cloud", "google-cloud-billing")
