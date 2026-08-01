@@ -65,7 +65,7 @@ object Dependencies {
       exclude ("javax.activation", "activation"),
     "com.univocity" % "univocity-parsers" % "2.9.1",
     "com.github.pathikrit" %% "better-files" % "3.9.2",
-    "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.20" % "test",
     "org.mock-server" % "mockserver-netty-no-dependencies" % "5.15.0" % "test",
     // provides testing mocks
     "com.google.cloud" % "google-cloud-nio" % "0.128.14" % "test",
