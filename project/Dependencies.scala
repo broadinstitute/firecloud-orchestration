@@ -25,7 +25,7 @@ object Dependencies {
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.5.27",
+    "ch.qos.logback" % "logback-classic" % "1.5.38",
     "io.sentry" % "sentry-logback" % "8.31.0",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "org.parboiled" % "parboiled-core" % "1.4.1",
