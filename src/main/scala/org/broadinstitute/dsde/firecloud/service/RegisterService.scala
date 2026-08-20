@@ -47,19 +47,29 @@ class RegisterService(val rawlsDao: RawlsDAO,
     logger.info(s"createUpdateProfile starting for ${userInfo.userEmail}/${userInfo.id} [$invocationId]")
     for {
       isRegistered <- isRegistered(userInfo)
-      _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} isRegistered: $isRegistered [$invocationId]")
+      _ = logger.info(
+        s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} isRegistered: $isRegistered [$invocationId]"
+      )
       userStatus <-
         if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
-          logger.info(s"createUpdateProfile registering new user for ${userInfo.userEmail}/${userInfo.id} [$invocationId]")
+          logger.info(
+            s"createUpdateProfile registering new user for ${userInfo.userEmail}/${userInfo.id} [$invocationId]"
+          )
           for {
             registerResult <- registerUser(userInfo, basicProfile.termsOfService)
-            _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} registerResult: $registerResult [$invocationId]")
+            _ = logger.info(
+              s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} registerResult: $registerResult [$invocationId]"
+            )
             registrationResultUserInfo = userInfo.copy(userEmail = registerResult.userInfo.userEmail,
                                                        id = registerResult.userInfo.userSubjectId
             )
-            _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} writing to Thurloe [$invocationId]")
+            _ = logger.info(
+              s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} writing to Thurloe [$invocationId]"
+            )
             _ <- saveProfileInThurloeAndSendRegistrationEmail(registrationResultUserInfo, basicProfile)
-            _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} write to Thurloe complete [$invocationId]")
+            _ = logger.info(
+              s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} write to Thurloe complete [$invocationId]"
+            )
           } yield registerResult
         } else {
           /* when updating the profile in Thurloe, make sure to send the update under the same user id as the profile
@@ -69,9 +79,13 @@ class RegisterService(val rawlsDao: RawlsDAO,
            Because the original profile was created during registration using `userInfo.userSubjectId` (see
            `registrationResultUserInfo` above), we use that same id here.
            */
-          logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} found existing user, will update profile [$invocationId]")
+          logger.info(
+            s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} found existing user, will update profile [$invocationId]"
+          )
           thurloeDao.saveProfile(userInfo.copy(id = isRegistered.userInfo.userSubjectId), basicProfile) map { _ =>
-            logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} profile update complete [$invocationId]")
+            logger.info(
+              s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} profile update complete [$invocationId]"
+            )
             isRegistered
           }
         }
