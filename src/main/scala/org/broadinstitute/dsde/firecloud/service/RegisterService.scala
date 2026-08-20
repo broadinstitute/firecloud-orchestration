@@ -12,6 +12,7 @@ import org.broadinstitute.dsde.rawls.model.ErrorReport
 import org.broadinstitute.dsde.workbench.model.Notifications.{ActivationNotification, Notification, NotificationFormat}
 import org.broadinstitute.dsde.workbench.model.WorkbenchUserId
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
@@ -41,17 +42,24 @@ class RegisterService(val rawlsDao: RawlsDAO,
       _ <- saveProfileInThurloeAndSendRegistrationEmail(registrationResultUserInfo, registerRequest.profile)
     } yield RequestComplete(StatusCodes.OK, registerResult)
 
-  def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] =
+  def createUpdateProfile(userInfo: UserInfo, basicProfile: BasicProfile): Future[PerRequestMessage] = {
+    val invocationId = UUID.randomUUID()
+    logger.info(s"createUpdateProfile starting for ${userInfo.userEmail}/${userInfo.id} [$invocationId]")
     for {
       isRegistered <- isRegistered(userInfo)
+      _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} isRegistered: $isRegistered [$invocationId]")
       userStatus <-
         if (!isRegistered.enabled.google || !isRegistered.enabled.ldap) {
+          logger.info(s"createUpdateProfile registering new user for ${userInfo.userEmail}/${userInfo.id} [$invocationId]")
           for {
             registerResult <- registerUser(userInfo, basicProfile.termsOfService)
+            _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} registerResult: $registerResult [$invocationId]")
             registrationResultUserInfo = userInfo.copy(userEmail = registerResult.userInfo.userEmail,
                                                        id = registerResult.userInfo.userSubjectId
             )
+            _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} writing to Thurloe [$invocationId]")
             _ <- saveProfileInThurloeAndSendRegistrationEmail(registrationResultUserInfo, basicProfile)
+            _ = logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} write to Thurloe complete [$invocationId]")
           } yield registerResult
         } else {
           /* when updating the profile in Thurloe, make sure to send the update under the same user id as the profile
@@ -61,11 +69,17 @@ class RegisterService(val rawlsDao: RawlsDAO,
            Because the original profile was created during registration using `userInfo.userSubjectId` (see
            `registrationResultUserInfo` above), we use that same id here.
            */
-          thurloeDao.saveProfile(userInfo.copy(id = isRegistered.userInfo.userSubjectId), basicProfile) map (_ =>
+          logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} found existing user, will update profile [$invocationId]")
+          thurloeDao.saveProfile(userInfo.copy(id = isRegistered.userInfo.userSubjectId), basicProfile) map { _ =>
+            logger.info(s"createUpdateProfile for ${userInfo.userEmail}/${userInfo.id} profile update complete [$invocationId]")
             isRegistered
-          )
+          }
         }
-    } yield RequestComplete(StatusCodes.OK, userStatus)
+    } yield {
+      logger.info(s"createUpdateProfile complete for ${userInfo.userEmail}/${userInfo.id} [$invocationId]")
+      RequestComplete(StatusCodes.OK, userStatus)
+    }
+  }
 
   private def saveProfileInThurloeAndSendRegistrationEmail(userInfo: UserInfo, profile: BasicProfile): Future[Unit] = {
     val otherValues = Map("isRegistrationComplete" -> Profile.currentVersion.toString, "email" -> userInfo.userEmail)

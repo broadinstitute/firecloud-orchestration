@@ -199,12 +199,20 @@ class UserService(rawlsDAO: RawlsDAO,
     * @return
     */
   def getAllUserKeys: Future[PerRequestMessage] = {
+    val invocationId = UUID.randomUUID()
+    logger.info(s"getAllUserKeys starting for ${userToken.userEmail}/${userToken.id} [$invocationId]")
     val futureKeys: Future[ProfileWrapper] = getAllKeysFromThurloe(userToken)
     futureKeys flatMap { keys: ProfileWrapper =>
+      logger.info(s"getAllUserKeys for ${userToken.userEmail}/${userToken.id} retrieved KVPs from Thurloe [$invocationId]")
       getProfileValue(keys, UserService.AnonymousGroupKey) match { // getProfileValue returns Option[String]
         case None | Some("") if FireCloudConfig.GoogleCloud.enabled =>
-          setupAnonymizedGoogleGroup(keys, getNewAnonymousGroupName)
+          logger.info(s"getAllUserKeys for ${userToken.userEmail}/${userToken.id} setting up anonymous user group [$invocationId]")
+          setupAnonymizedGoogleGroup(keys, getNewAnonymousGroupName) map { result =>
+            logger.info(s"getAllUserKeys for ${userToken.userEmail}/${userToken.id} anonymous user group complete [$invocationId]")
+            result
+          }
         case _ =>
+          logger.info(s"getAllUserKeys complete for ${userToken.userEmail}/${userToken.id} [$invocationId]")
           Future(RequestComplete(keys))
       }
     }
