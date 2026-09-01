@@ -21,7 +21,7 @@ object Dependencies {
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
     "com.google.guava" % "guava" % "33.5.0-jre",
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20251212-2.0.0", // from workbench-google2
-    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20260113-2.0.0", // from workbench-google2
+    "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20260729-2.0.0", // from workbench-google2
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
