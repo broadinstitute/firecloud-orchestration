@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.21"
   val akkaHttpV = "10.2.10"
-  val workbenchLibsHash = "76e472e" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val workbenchLibsHash = "21b215b" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream = ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
