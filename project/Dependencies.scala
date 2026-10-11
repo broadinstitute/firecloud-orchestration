@@ -19,14 +19,14 @@ object Dependencies {
   // by being listed here.
   // One reason to specify an override here is to avoid static-analysis security warnings.
   val transitiveDependencyOverrides: Seq[ModuleID] = Seq(
-    "com.google.guava" % "guava" % "33.5.0-jre",
+    "com.google.guava" % "guava" % "33.6.0-jre",
     "com.google.apis" % "google-api-services-pubsub" % "v1-rev20251212-2.0.0", // from workbench-google2
     "com.google.apis" % "google-api-services-admin-directory" % "directory_v1-rev20260113-2.0.0", // from workbench-google2
   )
 
   val rootDependencies: Seq[ModuleID] = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.5.27",
-    "io.sentry" % "sentry-logback" % "8.31.0",
+    "ch.qos.logback" % "logback-classic" % "1.5.38",
+    "io.sentry" % "sentry-logback" % "8.51.0",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "org.parboiled" % "parboiled-core" % "1.4.1",
     "org.broadinstitute.dsde" %% "rawls-model" % "v0.0.537-SNAP"
@@ -51,7 +51,7 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.38.49-SNAPSHOT",
     "bio.terra" % "externalcreds-client-resttemplate" % "1.131.0-SNAPSHOT" excludeAll (excludeSpring, excludeSpringBoot),
-    "org.springframework" % "spring-web" % "6.2.15" excludeAll (excludeSpringBoot, excludeSpringJcl),
+    "org.springframework" % "spring-web" % "6.2.19" excludeAll (excludeSpringBoot, excludeSpringJcl),
     "com.typesafe.akka" %% "akka-actor" % akkaV,
     "com.typesafe.akka" %% "akka-slf4j" % akkaV,
     "com.typesafe.akka" %% "akka-http" % akkaHttpV excludeAll (excludeAkkaActor, excludeAkkaStream),
@@ -65,10 +65,10 @@ object Dependencies {
       exclude ("javax.activation", "activation"),
     "com.univocity" % "univocity-parsers" % "2.9.1",
     "com.github.pathikrit" %% "better-files" % "3.9.2",
-    "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.20" % "test",
     "org.mock-server" % "mockserver-netty-no-dependencies" % "5.15.0" % "test",
     // provides testing mocks
-    "com.google.cloud" % "google-cloud-nio" % "0.128.11" % "test",
+    "com.google.cloud" % "google-cloud-nio" % "0.128.14" % "test",
     "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test"
   )
 }
