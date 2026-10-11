@@ -37,5 +37,5 @@ jobs:
         FIRE_CLOUD_ID: 123
       run: sbt clean coverage test coverageReport
 
-    - uses: codecov/codecov-action@v5
+    - uses: codecov/codecov-action@v7
       if: ${{ always() }}
