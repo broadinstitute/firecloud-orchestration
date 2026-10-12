@@ -2,7 +2,14 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, EnhanceYourCalm, Forbidden, UnavailableForLegalReasons}
 import org.broadinstitute.dsde.firecloud.dataaccess.LegacyFileTypes.{FILETYPE_PFB, FILETYPE_RAWLS, FILETYPE_TDR}
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, CwdsListResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{
+  AsyncImportRequest,
+  CwdsListResponse,
+  FileInfo,
+  FileInfoRequest,
+  FileInfoResponse,
+  UserInfo
+}
 import org.broadinstitute.dsde.rawls.model.ErrorReportSource
 import org.databiosphere.workspacedata.client.ApiException
 import org.databiosphere.workspacedata.model.GenericJob
@@ -26,6 +33,12 @@ class MockCwdsDAO(
     userInfo: UserInfo
   ): CwdsListResponse =
     CwdsListResponse(jobId, "ReadyForUpsert", "pfb", None)
+
+  override def getUrlInfoV1(fileInfoRequest: FileInfoRequest)(implicit userInfo: UserInfo): FileInfoResponse =
+    FileInfoResponse(
+      originalUrl = fileInfoRequest.originalUrl,
+      files = List(FileInfo(signedUrl = s"${fileInfoRequest.originalUrl}?signature=mock", sizeBytes = 123L))
+    )
 
   override def importV1(
     workspaceId: String,

@@ -61,270 +61,288 @@ trait WorkspaceApiService
       }
     } ~
       pathPrefix("api") {
-        pathPrefix("workspaces") {
-          pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
-            val workspacePath = encodeUri(rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName))
-            path("methodconfigs") {
-              post {
-                requireUserInfo() { userInfo =>
-                  entity(as[MethodConfiguration]) { methodConfig =>
-                    if (
-                      !methodConfig.outputs.exists { param =>
-                        param._2.value
-                          .startsWith("this.library:") || param._2.value.startsWith("workspace.library:")
-                      }
-                    ) {
-                      val passthroughReq = Post(workspacePath + "/methodconfigs", methodConfig)
-                      complete(userAuthedRequest(passthroughReq)(userInfo))
-                    } else {
-                      complete(
-                        StatusCodes.Forbidden,
-                        ErrorReport("Methods and configurations can not create or modify library attributes")
-                      )
-                    }
+        pathPrefix("import") {
+          path("getUrlInfo") {
+            post {
+              requireUserInfo() { userInfo =>
+                entity(as[FileInfoRequest]) { request =>
+                  complete {
+                    entityServiceConstructor(FlexibleModelSchema).getUrlInfo(
+                      request,
+                      userInfo
+                    )
                   }
                 }
               }
-            } ~
-              path("flexibleImportEntities") {
+            }
+          }
+        } ~
+          pathPrefix("workspaces") {
+            pathPrefix(Segment / Segment) { (workspaceNamespace, workspaceName) =>
+              val workspacePath = encodeUri(rawlsWorkspacesRoot + "/%s/%s".format(workspaceNamespace, workspaceName))
+              path("methodconfigs") {
                 post {
                   requireUserInfo() { userInfo =>
-                    parameter("async" ? "false") { asyncStr =>
-                      parameter("deleteEmptyValues" ? "false") { deleteEmptyValuesStr =>
-                        formFields(Symbol("entities")) { entitiesTSV =>
-                          complete {
-                            val isAsync = java.lang.Boolean.valueOf(asyncStr) // for lenient parsing
-                            val deleteEmptyValues =
-                              java.lang.Boolean.valueOf(deleteEmptyValuesStr) // for lenient parsing
-                            entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace,
-                                                                                                workspaceName,
-                                                                                                entitiesTSV,
-                                                                                                userInfo,
-                                                                                                isAsync,
-                                                                                                deleteEmptyValues
-                            )
-                          }
+                    entity(as[MethodConfiguration]) { methodConfig =>
+                      if (
+                        !methodConfig.outputs.exists { param =>
+                          param._2.value
+                            .startsWith("this.library:") || param._2.value.startsWith("workspace.library:")
                         }
-
+                      ) {
+                        val passthroughReq = Post(workspacePath + "/methodconfigs", methodConfig)
+                        complete(userAuthedRequest(passthroughReq)(userInfo))
+                      } else {
+                        complete(
+                          StatusCodes.Forbidden,
+                          ErrorReport("Methods and configurations can not create or modify library attributes")
+                        )
                       }
                     }
                   }
                 }
               } ~
-              path("importEntities") {
-                post {
-                  requireUserInfo() { userInfo =>
-                    parameter("deleteEmptyValues" ? "false") { deleteEmptyValuesStr =>
-                      formFields(Symbol("entities")) { entitiesTSV =>
+                path("flexibleImportEntities") {
+                  post {
+                    requireUserInfo() { userInfo =>
+                      parameter("async" ? "false") { asyncStr =>
+                        parameter("deleteEmptyValues" ? "false") { deleteEmptyValuesStr =>
+                          formFields(Symbol("entities")) { entitiesTSV =>
+                            complete {
+                              val isAsync = java.lang.Boolean.valueOf(asyncStr) // for lenient parsing
+                              val deleteEmptyValues =
+                                java.lang.Boolean.valueOf(deleteEmptyValuesStr) // for lenient parsing
+                              entityServiceConstructor(FlexibleModelSchema).importEntitiesFromTSV(workspaceNamespace,
+                                                                                                  workspaceName,
+                                                                                                  entitiesTSV,
+                                                                                                  userInfo,
+                                                                                                  isAsync,
+                                                                                                  deleteEmptyValues
+                              )
+                            }
+                          }
+
+                        }
+                      }
+                    }
+                  }
+                } ~
+                path("importEntities") {
+                  post {
+                    requireUserInfo() { userInfo =>
+                      parameter("deleteEmptyValues" ? "false") { deleteEmptyValuesStr =>
+                        formFields(Symbol("entities")) { entitiesTSV =>
+                          complete {
+                            val deleteEmptyValues =
+                              java.lang.Boolean.valueOf(deleteEmptyValuesStr) // for lenient parsing
+                            entityServiceConstructor(FirecloudModelSchema).importEntitiesFromTSV(workspaceNamespace,
+                                                                                                 workspaceName,
+                                                                                                 entitiesTSV,
+                                                                                                 userInfo,
+                                                                                                 deleteEmptyValues =
+                                                                                                   deleteEmptyValues
+                            )
+                          }
+                        }
+                      }
+                    }
+                  }
+                } ~
+                // POST importPFB will likely be deprecated in the future; use POST importJob instead
+                path("importPFB") {
+                  post {
+                    requireUserInfo() { userInfo =>
+                      // this endpoint does not accept a filetype. We hardcode the filetype to "pfb".
+                      entity(as[PFBImportRequest]) { pfbRequest =>
+                        val importRequest = AsyncImportRequest(pfbRequest.url, FILETYPE_PFB)
                         complete {
-                          val deleteEmptyValues =
-                            java.lang.Boolean.valueOf(deleteEmptyValuesStr) // for lenient parsing
-                          entityServiceConstructor(FirecloudModelSchema).importEntitiesFromTSV(workspaceNamespace,
-                                                                                               workspaceName,
-                                                                                               entitiesTSV,
-                                                                                               userInfo,
-                                                                                               deleteEmptyValues =
-                                                                                                 deleteEmptyValues
+                          entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace,
+                                                                                  workspaceName,
+                                                                                  importRequest,
+                                                                                  userInfo
                           )
                         }
                       }
                     }
                   }
-                }
-              } ~
-              // POST importPFB will likely be deprecated in the future; use POST importJob instead
-              path("importPFB") {
-                post {
-                  requireUserInfo() { userInfo =>
-                    // this endpoint does not accept a filetype. We hardcode the filetype to "pfb".
-                    entity(as[PFBImportRequest]) { pfbRequest =>
-                      val importRequest = AsyncImportRequest(pfbRequest.url, FILETYPE_PFB)
-                      complete {
-                        entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace,
-                                                                                workspaceName,
-                                                                                importRequest,
-                                                                                userInfo
-                        )
+                } ~
+                path("importJob") {
+                  post {
+                    requireUserInfo() { userInfo =>
+                      entity(as[AsyncImportRequest]) { importRequest =>
+                        complete {
+                          entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace,
+                                                                                  workspaceName,
+                                                                                  importRequest,
+                                                                                  userInfo
+                          )
+                        }
                       }
                     }
                   }
-                }
-              } ~
-              path("importJob") {
-                post {
-                  requireUserInfo() { userInfo =>
-                    entity(as[AsyncImportRequest]) { importRequest =>
-                      complete {
-                        entityServiceConstructor(FlexibleModelSchema).importJob(workspaceNamespace,
-                                                                                workspaceName,
-                                                                                importRequest,
-                                                                                userInfo
-                        )
+                } ~
+                // GET importPFB is deprecated; use GET importJob instead
+                path("importPFB" | "importJob") {
+                  get {
+                    requireUserInfo() { userInfo =>
+                      parameter(Symbol("running_only").as[Boolean].withDefault(false)) { runningOnly =>
+                        complete {
+                          entityServiceConstructor(FlexibleModelSchema).listJobs(workspaceNamespace,
+                                                                                 workspaceName,
+                                                                                 runningOnly,
+                                                                                 userInfo
+                          ) map { respBody =>
+                            RequestComplete(OK, respBody)
+                          }
+                        }
                       }
                     }
                   }
-                }
-              } ~
-              // GET importPFB is deprecated; use GET importJob instead
-              path("importPFB" | "importJob") {
-                get {
-                  requireUserInfo() { userInfo =>
-                    parameter(Symbol("running_only").as[Boolean].withDefault(false)) { runningOnly =>
+                } ~
+                // GET importPFB/jobId is deprecated; use GET importJob/jobId instead
+                path(("importPFB" | "importJob") / Segment) { jobId =>
+                  get {
+                    requireUserInfo() { userInfo =>
                       complete {
-                        entityServiceConstructor(FlexibleModelSchema).listJobs(workspaceNamespace,
-                                                                               workspaceName,
-                                                                               runningOnly,
-                                                                               userInfo
+                        entityServiceConstructor(FlexibleModelSchema).getJob(workspaceNamespace,
+                                                                             workspaceName,
+                                                                             jobId,
+                                                                             userInfo
                         ) map { respBody =>
                           RequestComplete(OK, respBody)
                         }
                       }
                     }
                   }
-                }
-              } ~
-              // GET importPFB/jobId is deprecated; use GET importJob/jobId instead
-              path(("importPFB" | "importJob") / Segment) { jobId =>
-                get {
-                  requireUserInfo() { userInfo =>
-                    complete {
-                      entityServiceConstructor(FlexibleModelSchema).getJob(workspaceNamespace,
-                                                                           workspaceName,
-                                                                           jobId,
-                                                                           userInfo
-                      ) map { respBody =>
-                        RequestComplete(OK, respBody)
-                      }
-                    }
+                } ~
+                path("updateAttributes") {
+                  patch {
+                    // PATCH /api/workspaces/{namespace}/{name}/updateAttributes in Orch is a passthrough to
+                    // PATCH /api/workspaces/{namespace}/{name} in Rawls
+                    streamingPassthrough(
+                      s"${FireCloudConfig.Rawls.baseUrl}/api/workspaces/$workspaceNamespace/$workspaceName"
+                    )
                   }
-                }
-              } ~
-              path("updateAttributes") {
-                patch {
-                  // PATCH /api/workspaces/{namespace}/{name}/updateAttributes in Orch is a passthrough to
-                  // PATCH /api/workspaces/{namespace}/{name} in Rawls
-                  streamingPassthrough(
-                    s"${FireCloudConfig.Rawls.baseUrl}/api/workspaces/$workspaceNamespace/$workspaceName"
-                  )
-                }
-              } ~
-              path("setAttributes") {
-                patch {
-                  requireUserInfo() { userInfo =>
-                    implicit val impAttributeFormat: AttributeFormat = new AttributeFormat
-                      with PlainArrayAttributeListSerializer
-                    entity(as[AttributeMap]) { newAttributes =>
-                      complete {
-                        workspaceServiceConstructor(userInfo).setWorkspaceAttributes(workspaceNamespace,
-                                                                                     workspaceName,
-                                                                                     newAttributes
-                        )
-                      }
-                    }
-                  }
-                }
-              } ~
-              path("exportAttributesTSV") {
-                get {
-                  requireUserInfo() { userInfo =>
-                    complete {
-                      workspaceServiceConstructor(userInfo).exportWorkspaceAttributesTSV(workspaceNamespace,
-                                                                                         workspaceName,
-                                                                                         workspaceName + filename
-                      )
-                    }
-                  }
-                }
-              } ~
-              path("importAttributesTSV") {
-                post {
-                  requireUserInfo() { userInfo =>
-                    formFields(Symbol("attributes")) { attributesTSV =>
-                      complete {
-                        workspaceServiceConstructor(userInfo).importAttributesFromTSV(workspaceNamespace,
-                                                                                      workspaceName,
-                                                                                      attributesTSV
-                        )
-                      }
-                    }
-                  }
-                }
-              } ~
-              path("acl") {
-                patch {
-                  // TODO CORE-382: can this be a passthrough?
-                  requireUserInfo() { userInfo =>
-                    parameter(Symbol("inviteUsersNotFound").?) { inviteUsersNotFound =>
-                      entity(as[List[WorkspaceACLUpdate]]) { aclUpdates =>
+                } ~
+                path("setAttributes") {
+                  patch {
+                    requireUserInfo() { userInfo =>
+                      implicit val impAttributeFormat: AttributeFormat = new AttributeFormat
+                        with PlainArrayAttributeListSerializer
+                      entity(as[AttributeMap]) { newAttributes =>
                         complete {
-                          workspaceServiceConstructor(userInfo).updateWorkspaceACL(
-                            workspaceNamespace,
-                            workspaceName,
-                            aclUpdates,
-                            userInfo.userEmail,
-                            userInfo.id,
-                            inviteUsersNotFound.getOrElse("false").toBoolean
+                          workspaceServiceConstructor(userInfo).setWorkspaceAttributes(workspaceNamespace,
+                                                                                       workspaceName,
+                                                                                       newAttributes
+                          )
+                        }
+                      }
+                    }
+                  }
+                } ~
+                path("exportAttributesTSV") {
+                  get {
+                    requireUserInfo() { userInfo =>
+                      complete {
+                        workspaceServiceConstructor(userInfo).exportWorkspaceAttributesTSV(workspaceNamespace,
+                                                                                           workspaceName,
+                                                                                           workspaceName + filename
+                        )
+                      }
+                    }
+                  }
+                } ~
+                path("importAttributesTSV") {
+                  post {
+                    requireUserInfo() { userInfo =>
+                      formFields(Symbol("attributes")) { attributesTSV =>
+                        complete {
+                          workspaceServiceConstructor(userInfo).importAttributesFromTSV(workspaceNamespace,
+                                                                                        workspaceName,
+                                                                                        attributesTSV
+                          )
+                        }
+                      }
+                    }
+                  }
+                } ~
+                path("acl") {
+                  patch {
+                    // TODO CORE-382: can this be a passthrough?
+                    requireUserInfo() { userInfo =>
+                      parameter(Symbol("inviteUsersNotFound").?) { inviteUsersNotFound =>
+                        entity(as[List[WorkspaceACLUpdate]]) { aclUpdates =>
+                          complete {
+                            workspaceServiceConstructor(userInfo).updateWorkspaceACL(
+                              workspaceNamespace,
+                              workspaceName,
+                              aclUpdates,
+                              userInfo.userEmail,
+                              userInfo.id,
+                              inviteUsersNotFound.getOrElse("false").toBoolean
+                            )
+                          }
+                        }
+                      }
+                    }
+                  }
+                } ~
+                path("tags") {
+                  requireUserInfo() { userInfo =>
+                    get {
+                      complete(workspaceServiceConstructor(userInfo).getTags(workspaceNamespace, workspaceName))
+                    } ~
+                      put {
+                        entity(as[List[String]]) { tags =>
+                          complete {
+                            workspaceServiceConstructor(userInfo).putTags(workspaceNamespace, workspaceName, tags)
+                          }
+                        }
+                      } ~
+                      patch {
+                        entity(as[List[String]]) { tags =>
+                          complete {
+                            workspaceServiceConstructor(userInfo).patchTags(workspaceNamespace, workspaceName, tags)
+                          }
+                        }
+                      } ~
+                      delete {
+                        entity(as[List[String]]) { tags =>
+                          complete {
+                            workspaceServiceConstructor(userInfo).deleteTags(workspaceNamespace, workspaceName, tags)
+                          }
+                        }
+                      }
+                  }
+                } ~
+                path("permissionReport") {
+                  requireUserInfo() { userInfo =>
+                    post {
+                      entity(as[PermissionReportRequest]) { reportInput =>
+                        complete {
+                          permissionReportServiceConstructor(userInfo).getPermissionReport(workspaceNamespace,
+                                                                                           workspaceName,
+                                                                                           reportInput
                           )
                         }
                       }
                     }
                   }
                 }
-              } ~
-              path("tags") {
-                requireUserInfo() { userInfo =>
+            } ~
+              pathPrefix("v2" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
+                path("storageCostEstimate") {
                   get {
-                    complete(workspaceServiceConstructor(userInfo).getTags(workspaceNamespace, workspaceName))
-                  } ~
-                    put {
-                      entity(as[List[String]]) { tags =>
-                        complete {
-                          workspaceServiceConstructor(userInfo).putTags(workspaceNamespace, workspaceName, tags)
-                        }
-                      }
-                    } ~
-                    patch {
-                      entity(as[List[String]]) { tags =>
-                        complete {
-                          workspaceServiceConstructor(userInfo).patchTags(workspaceNamespace, workspaceName, tags)
-                        }
-                      }
-                    } ~
-                    delete {
-                      entity(as[List[String]]) { tags =>
-                        complete {
-                          workspaceServiceConstructor(userInfo).deleteTags(workspaceNamespace, workspaceName, tags)
-                        }
-                      }
-                    }
-                }
-              } ~
-              path("permissionReport") {
-                requireUserInfo() { userInfo =>
-                  post {
-                    entity(as[PermissionReportRequest]) { reportInput =>
+                    requireUserInfo() { userInfo =>
                       complete {
-                        permissionReportServiceConstructor(userInfo).getPermissionReport(workspaceNamespace,
-                                                                                         workspaceName,
-                                                                                         reportInput
+                        workspaceServiceConstructor(userInfo).getStorageCostEstimateV2(workspaceNamespace,
+                                                                                       workspaceName
                         )
                       }
                     }
                   }
                 }
               }
-          } ~
-            pathPrefix("v2" / Segment / Segment) { (workspaceNamespace, workspaceName) =>
-              path("storageCostEstimate") {
-                get {
-                  requireUserInfo() { userInfo =>
-                    complete {
-                      workspaceServiceConstructor(userInfo).getStorageCostEstimateV2(workspaceNamespace, workspaceName)
-                    }
-                  }
-                }
-              }
-            }
-        }
+          }
       }
 }
