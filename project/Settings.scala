@@ -21,10 +21,10 @@ object Settings {
     "internal-maven-proxy" at artifactory + "maven-central"
   )
 
-  // local m2 repository, for consuming locally-published SNAPSHOT artifacts
-  val localResolvers = List(
-    Resolver.mavenLocal
-  )
+  //  For local m2 repository, for consuming locally-published SNAPSHOT artifacts
+  //  val localResolvers = List(
+  //    Resolver.mavenLocal
+  //  )
 
   //coreDefaultSettings + defaultConfigs = the now deprecated defaultSettings
   val commonBuildSettings = Defaults.coreDefaultSettings ++ Defaults.defaultConfigs ++ Seq(
@@ -56,7 +56,9 @@ object Settings {
     commonBuildSettings ++ commonAssemblySettings ++ commonTestSettings ++ scalafmtSettings ++ List(
     organization  := "org.broadinstitute.dsde.firecloud",
     scalaVersion  := "2.13.18",
-    resolvers := localResolvers ++: proxyResolvers ++: resolvers.value ++: commonResolvers,
+    // For local testing
+    // resolvers := localResolvers ++: proxyResolvers ++: resolvers.value ++: commonResolvers,
+    resolvers := proxyResolvers ++: resolvers.value ++: commonResolvers,
     scalacOptions ++= commonCompilerSettings,
     dependencyOverrides ++= transitiveDependencyOverrides
   )
