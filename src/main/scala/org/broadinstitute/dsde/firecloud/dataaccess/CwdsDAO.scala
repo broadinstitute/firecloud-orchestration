@@ -1,6 +1,12 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, CwdsListResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{
+  AsyncImportRequest,
+  CwdsListResponse,
+  FileInfoRequest,
+  FileInfoResponse,
+  UserInfo
+}
 import org.databiosphere.workspacedata.client.ApiException
 import org.databiosphere.workspacedata.model.GenericJob
 object LegacyFileTypes {
@@ -24,4 +30,6 @@ trait CwdsDAO {
   @throws(classOf[ApiException])
   def importV1(workspaceId: String, asyncImportRequest: AsyncImportRequest)(implicit userInfo: UserInfo): GenericJob
 
+  @throws(classOf[ApiException])
+  def getUrlInfoV1(fileInfoRequest: FileInfoRequest)(implicit userInfo: UserInfo): FileInfoResponse
 }
