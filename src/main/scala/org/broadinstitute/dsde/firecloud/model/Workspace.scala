@@ -29,7 +29,7 @@ case class EntityId(entityType: String, entityName: String)
 case class PFBImportRequest(url: String)
 
 // request/response for resolving a url to its underlying file(s) via cWDS
-case class FileInfoRequest(originalUrl: String)
+case class FileInfoRequest(url: String)
 case class FileInfo(signedUrl: String, sizeBytes: Long)
 case class FileInfoResponse(originalUrl: String, files: List[FileInfo])
 

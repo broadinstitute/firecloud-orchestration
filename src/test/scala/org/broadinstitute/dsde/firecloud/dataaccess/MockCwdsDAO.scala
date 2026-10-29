@@ -36,8 +36,8 @@ class MockCwdsDAO(
 
   override def getUrlInfoV1(fileInfoRequest: FileInfoRequest)(implicit userInfo: UserInfo): FileInfoResponse =
     FileInfoResponse(
-      originalUrl = fileInfoRequest.originalUrl,
-      files = List(FileInfo(signedUrl = s"${fileInfoRequest.originalUrl}?signature=mock", sizeBytes = 123L))
+      originalUrl = fileInfoRequest.url,
+      files = List(FileInfo(signedUrl = s"${fileInfoRequest.url}?signature=mock", sizeBytes = 123L))
     )
 
   override def importV1(

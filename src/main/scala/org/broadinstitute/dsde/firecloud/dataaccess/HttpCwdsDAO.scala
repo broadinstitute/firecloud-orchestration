@@ -116,7 +116,7 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
 
   protected[dataaccess] def toCwdsUrlInfoRequest(fileInfoRequest: FileInfoRequest): UrlInfoRequest = {
     val urlInfoRequest: UrlInfoRequest = new UrlInfoRequest
-    urlInfoRequest.setUrl(URI.create(fileInfoRequest.originalUrl))
+    urlInfoRequest.setUrl(URI.create(fileInfoRequest.url))
 
     urlInfoRequest
   }

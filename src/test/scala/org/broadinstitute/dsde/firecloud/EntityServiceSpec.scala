@@ -389,7 +389,7 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     "should return the file info found by cWDS" in {
       val request = FileInfoRequest("https://example.com/manifest.json")
       val cwdsResponse =
-        FileInfoResponse(request.originalUrl, List(FileInfo("https://example.com/one?sig=abc", 123L)))
+        FileInfoResponse(request.url, List(FileInfo("https://example.com/one?sig=abc", 123L)))
 
       // set up mocks
       val cwdsDAO = mockito[MockCwdsDAO]
