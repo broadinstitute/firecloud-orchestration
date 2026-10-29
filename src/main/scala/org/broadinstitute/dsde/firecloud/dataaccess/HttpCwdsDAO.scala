@@ -3,10 +3,17 @@ package org.broadinstitute.dsde.firecloud.dataaccess
 import okhttp3.Protocol
 import org.broadinstitute.dsde.firecloud.{FireCloudConfig, FireCloudException}
 import org.broadinstitute.dsde.firecloud.dataaccess.HttpCwdsDAO.commonHttpClient
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, CwdsListResponse, UserInfo}
+import org.broadinstitute.dsde.firecloud.model.{
+  AsyncImportRequest,
+  CwdsListResponse,
+  FileInfo,
+  FileInfoRequest,
+  FileInfoResponse,
+  UserInfo
+}
 import org.databiosphere.workspacedata.api.{ImportApi, JobApi}
 import org.databiosphere.workspacedata.client.ApiClient
-import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
+import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest, UrlInfoRequest, UrlInfoResult}
 import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
 
 import java.net.URI
@@ -79,6 +86,13 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
     importApi.importV1(toCwdsImportRequest(asyncImportRequest), UUID.fromString(workspaceId))
   }
 
+  override def getUrlInfoV1(fileInfoRequest: FileInfoRequest)(implicit userInfo: UserInfo): FileInfoResponse = {
+    val importApi: ImportApi = new ImportApi()
+    importApi.setApiClient(getApiClient(userInfo.accessToken.token))
+
+    toFileInfoResponse(importApi.getUrlInfoV1(toCwdsUrlInfoRequest(fileInfoRequest)))
+  }
+
   protected[dataaccess] def toCwdsImportRequest(asyncImportRequest: AsyncImportRequest): ImportRequest = {
     val importRequest: ImportRequest = new ImportRequest
     importRequest.setUrl(URI.create(asyncImportRequest.url))
@@ -99,6 +113,22 @@ class HttpCwdsDAO(enabled: Boolean, supportedFormats: List[String]) extends Cwds
 
     importRequest
   }
+
+  protected[dataaccess] def toCwdsUrlInfoRequest(fileInfoRequest: FileInfoRequest): UrlInfoRequest = {
+    val urlInfoRequest: UrlInfoRequest = new UrlInfoRequest
+    urlInfoRequest.setUrl(URI.create(fileInfoRequest.url))
+
+    urlInfoRequest
+  }
+
+  protected[dataaccess] def toFileInfoResponse(urlInfoResult: UrlInfoResult): FileInfoResponse =
+    FileInfoResponse(
+      originalUrl = urlInfoResult.getOriginalUrl,
+      // cWDS omits the files array, and the size of any individual file, when it cannot determine them
+      files = Option(urlInfoResult.getFiles).map(_.asScala.toList).getOrElse(List.empty).map { urlFileInfo =>
+        FileInfo(signedUrl = urlFileInfo.getSignedUrl, sizeBytes = Option(urlFileInfo.getSizeBytes).fold(0L)(_.toLong))
+      }
+    )
 
   protected[dataaccess] def toCwdsImportType(input: String): ImportRequest.TypeEnum =
     TYPE_TRANSLATION.getOrElse(
