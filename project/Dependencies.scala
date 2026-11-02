@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val akkaV = "2.6.21"
   val akkaHttpV = "10.2.10"
-  val workbenchLibsHash = "21b215b" // see https://github.com/broadinstitute/workbench-libs readme for hash values
+  val workbenchLibsHash = "b3c715c" // see https://github.com/broadinstitute/workbench-libs readme for hash values
 
   val excludeAkkaActor = ExclusionRule(organization = "com.typesafe.akka", name = "akka-actor_2.13")
   val excludeAkkaStream = ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
@@ -36,7 +36,7 @@ object Dependencies {
       exclude ("org.typelevel", "cats-parse_2.13")
       excludeAll (excludeAkkaHttp, excludeSprayJson),
     "org.broadinstitute.dsde.workbench" %% "workbench-util" % s"0.10-$workbenchLibsHash",
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.43-$workbenchLibsHash"
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % s"0.44-$workbenchLibsHash"
     // we don't need all the libraries that workbench-google2 pulls in
     exclude ("com.google.cloud", "google-cloud-bigquery")
       exclude ("com.google.cloud", "google-cloud-billing")
@@ -46,7 +46,7 @@ object Dependencies {
       exclude ("com.google.cloud", "google-cloud-resourcemanager")
       exclude ("com.google.cloud", "google-cloud-storage-transfer")
       exclude ("io.kubernetes", "client-java"),
-    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.11-$workbenchLibsHash",
+    "org.broadinstitute.dsde.workbench" %% "workbench-oauth2" % s"0.12-$workbenchLibsHash",
     "org.broadinstitute.dsde.workbench" %% "sam-client" % "v0.0.447",
     "org.broadinstitute.dsde.workbench" %% "workbench-notifications" % s"2.1-$workbenchLibsHash",
     "org.databiosphere" % "workspacedataservice-client-okhttp-jakarta" % "0.38.49-SNAPSHOT",
