@@ -25,7 +25,6 @@ tags:
   - name: OAuth
   - name: Profile
   - name: Service Perimeters
-  - name: Static Notebooks
   - name: Status
   - name: Submissions
   - name: Terms of Service
@@ -2313,32 +2312,6 @@ paths:
               schema:
                 type: object
       x-passthrough: false
-  /api/staticNotebooks/convert:
-    post:
-      tags:
-        - Static Notebooks
-      summary: |
-        Convert a Notebook ipynb file to a static HTML representation
-      description: |
-        Convert a Notebook ipynb file to a static HTML representation
-      operationId: convertNotebook
-      requestBody:
-        description: Notebook ipynb file
-        content:
-          'application/json':
-            schema:
-              type: string
-        required: true
-      responses:
-        200:
-          description: Success
-          content: {}
-        500:
-          description: Internal Error
-          content: {}
-      x-passthrough: true
-      x-passthrough-target: calhoun
-      x-codegen-request-body-name: notebook
   /api/template:
     post:
       tags:

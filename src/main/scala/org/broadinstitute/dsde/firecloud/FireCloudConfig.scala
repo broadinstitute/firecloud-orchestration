@@ -231,11 +231,6 @@ object FireCloudConfig {
     val enabled = notification.optionalBoolean("enabled").getOrElse(true)
   }
 
-  object StaticNotebooks {
-    private val staticNotebooks = config.getConfig("staticNotebooks")
-    val baseUrl: String = staticNotebooks.getString("baseUrl")
-  }
-
   implicit class RichConfig(val config: Config) {
     private def getOptional[T](path: String, get: String => T): Option[T] =
       if (config.hasPath(path)) {
