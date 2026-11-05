@@ -77,7 +77,6 @@ trait FireCloudApiService
     with ManagedGroupApiService
     with CromIamApiService
     with HealthApiService
-    with StaticNotebooksApiService
     with PassthroughApiService {
 
   override lazy val log = LoggerFactory.getLogger(getClass)
@@ -172,8 +171,7 @@ trait FireCloudApiService
         profileRoutes ~
         cromIamApiServiceRoutes ~
         methodConfigurationRoutes ~
-        nihRoutes ~
-        staticNotebooksRoutes
+        nihRoutes
     }
 
   val routeWrappers: Directive[Unit] =
