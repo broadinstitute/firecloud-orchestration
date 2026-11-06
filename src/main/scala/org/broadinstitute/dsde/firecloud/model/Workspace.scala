@@ -28,6 +28,11 @@ case class EntityId(entityType: String, entityName: String)
 // legacy class specific to PFB import; prefer AsyncImportRequest instead
 case class PFBImportRequest(url: String)
 
+// request/response for resolving a url to its underlying file(s) via cWDS
+case class FileInfoRequest(url: String)
+case class FileInfo(signedUrl: String, sizeBytes: Long)
+case class FileInfoResponse(originalUrl: String, files: List[FileInfo])
+
 // additional import options
 case class ImportOptions(tdrSyncPermissions: Option[Boolean] = None, isUpsert: Option[Boolean] = None)
 // the request payload sent by users to Orchestration for async PFB and TDR snapshot imports

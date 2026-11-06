@@ -11,14 +11,14 @@ import org.broadinstitute.dsde.firecloud.model.{
   AsyncImportRequest,
   AsyncImportResponse,
   CwdsListResponse,
-  CwdsResponse,
   EntityUpdateDefinition,
+  FileInfo,
+  FileInfoRequest,
+  FileInfoResponse,
   FirecloudModelSchema,
   ImportOptions,
   ModelSchema,
-  RequestCompleteWithErrorReport,
-  UserInfo,
-  WithAccessToken
+  UserInfo
 }
 import org.broadinstitute.dsde.firecloud.service.PerRequest.RequestComplete
 import org.broadinstitute.dsde.firecloud.service.{BaseServiceSpec, PerRequest}
@@ -385,6 +385,70 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
     }
   }
 
+  "EntityService.getUrlInfo" - {
+    "should return the file info found by cWDS" in {
+      val request = FileInfoRequest("https://example.com/manifest.json")
+      val cwdsResponse =
+        FileInfoResponse(request.url, List(FileInfo("https://example.com/one?sig=abc", 123L)))
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      when(cwdsDAO.getUrlInfoV1(ArgumentMatchers.eq(request))(any[UserInfo]))
+        .thenReturn(cwdsResponse)
+
+      // inject mocks to entity service
+      val entityService = getEntityService(cwdsDAO = cwdsDAO)
+
+      // get url info via entity service
+      val actual = entityService.getUrlInfo(request, dummyUserInfo("mytoken")).futureValue
+
+      actual shouldBe RequestComplete(StatusCodes.OK, cwdsResponse)
+    }
+
+    "should reject a blank url without calling cWDS" in {
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+
+      // inject mocks to entity service
+      val entityService = getEntityService(cwdsDAO = cwdsDAO)
+
+      val actual = intercept[FireCloudExceptionWithErrorReport] {
+        entityService.getUrlInfo(FileInfoRequest("   "), dummyUserInfo("mytoken"))
+      }
+
+      actual.errorReport.statusCode should contain(StatusCodes.BadRequest)
+      verify(cwdsDAO, never()).getUrlInfoV1(any[FileInfoRequest])(any[UserInfo])
+    }
+
+    "should escalate cWDS's error" in {
+      val request = FileInfoRequest("https://example.com/manifest.json")
+
+      // set up mocks
+      val cwdsDAO = mockito[MockCwdsDAO]
+
+      when(cwdsDAO.isEnabled).thenReturn(true)
+      doThrow(new ApiException(StatusCodes.ImATeapot.intValue, "cWDS unit test intentional error"))
+        .when(cwdsDAO)
+        .getUrlInfoV1(ArgumentMatchers.eq(request))(any[UserInfo])
+
+      // inject mocks to entity service
+      val entityService = getEntityService(cwdsDAO = cwdsDAO)
+
+      val getUrlInfoFuture = entityService.getUrlInfo(request, dummyUserInfo("mytoken"))
+
+      ScalaFutures.whenReady(getUrlInfoFuture.failed) { actual =>
+        actual shouldBe a[FireCloudExceptionWithErrorReport]
+        val apiEx = actual.asInstanceOf[FireCloudExceptionWithErrorReport]
+        apiEx.errorReport.statusCode should contain(StatusCodes.ImATeapot)
+        apiEx.getMessage should (include("cWDS unit test intentional error"))
+      }
+    }
+  }
+
   private def getEntityService(mockGoogleServicesDAO: MockGoogleServicesDAO = new MockGoogleServicesDAO,
                                rawlsDAO: MockRawlsDAO = new MockRawlsDAO,
                                cwdsDAO: MockCwdsDAO = new MockCwdsDAO(false)
@@ -426,7 +490,10 @@ class EntityServiceSpec extends BaseServiceSpec with BeforeAndAfterEach {
 
     // return a 429 so unit tests have an easy way to distinguish this error vs an error somewhere else in the stack
     def errorDefinition: GenericJob =
-      throw new ApiException(StatusCodes.TooManyRequests.intValue, "intentional ErroringCwdsDao error")
+      throw new ApiException(StatusCodes.TooManyRequests.intValue, "intentional Erroring CwdsDao error")
+
+    override def getUrlInfoV1(fileInfoRequest: FileInfoRequest)(implicit userInfo: UserInfo): FileInfoResponse =
+      throw new ApiException(StatusCodes.TooManyRequests.intValue, "intentional Erroring CwdsDao error")
 
     override def importV1(workspaceId: String, importRequest: AsyncImportRequest)(implicit
       userInfo: UserInfo

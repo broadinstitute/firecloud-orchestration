@@ -399,4 +399,16 @@ class EntityService(rawlsDAO: RawlsDAO,
       }
     }
 
+  def getUrlInfo(fileInfoRequest: FileInfoRequest, userInfo: UserInfo): Future[PerRequestMessage] = {
+    // validate that a url exists in the request
+    if (fileInfoRequest.url.trim.isEmpty)
+      throw new FireCloudExceptionWithErrorReport(ErrorReport(BadRequest, "url must be specified"))
+
+    Future {
+      RequestComplete(OK, cwdsDAO.getUrlInfoV1(fileInfoRequest)(userInfo))
+    } recover { case apiEx: ApiException =>
+      throw wrapCwdsException(apiEx)
+    }
+  }
+
 }

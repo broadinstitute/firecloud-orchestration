@@ -141,6 +141,10 @@ object ModelJsonProtocol extends WorkspaceJsonSupport with SprayJsonSupport with
   implicit val impCwdsResponse: RootJsonFormat[CwdsResponse] = jsonFormat3(CwdsResponse)
   implicit val impCwdsListResponse: RootJsonFormat[CwdsListResponse] = jsonFormat4(CwdsListResponse)
 
+  implicit val impFileInfoRequest: RootJsonFormat[FileInfoRequest] = jsonFormat1(FileInfoRequest)
+  implicit val impFileInfo: RootJsonFormat[FileInfo] = jsonFormat2(FileInfo)
+  implicit val impFileInfoResponse: RootJsonFormat[FileInfoResponse] = jsonFormat2(FileInfoResponse)
+
   implicit val impWorkspaceStorageUsageAndCostEstimate: RootJsonFormat[WorkspaceStorageUsageAndCostEstimate] =
     jsonFormat4(
       WorkspaceStorageUsageAndCostEstimate
