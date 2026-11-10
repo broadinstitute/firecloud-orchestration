@@ -25,7 +25,7 @@ jobs:
       test-context: ${{ steps.prepare-outputs.outputs.test-context }}
       tag: ${{ steps.get-latest-tag.outputs.tag }}
     steps:
-      - uses: 'actions/checkout@v6'
+      - uses: 'actions/checkout@v7'
         with:
           ref: develop
           fetch-tags: true
