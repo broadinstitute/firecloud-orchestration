@@ -1,8 +1,15 @@
 package org.broadinstitute.dsde.firecloud.dataaccess
 
 import org.broadinstitute.dsde.firecloud.FireCloudException
-import org.broadinstitute.dsde.firecloud.model.{AsyncImportRequest, CwdsListResponse, ImportOptions}
-import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest}
+import org.broadinstitute.dsde.firecloud.model.{
+  AsyncImportRequest,
+  CwdsListResponse,
+  FileInfo,
+  FileInfoRequest,
+  FileInfoResponse,
+  ImportOptions
+}
+import org.databiosphere.workspacedata.model.{GenericJob, ImportRequest, UrlFileInfo, UrlInfoRequest, UrlInfoResult}
 import org.databiosphere.workspacedata.model.GenericJob.{JobTypeEnum, StatusEnum}
 import org.databiosphere.workspacedata.model.GenericJob.StatusEnum._
 import org.scalatest.freespec.AnyFreeSpec
@@ -194,6 +201,62 @@ class HttpCwdsDAOSpec extends AnyFreeSpec with Matchers {
         expected.setOptions(Map[String, Object]("isUpsert" -> true.asInstanceOf[Object]).asJava)
 
         cwdsDao.toCwdsImportRequest(input) shouldBe expected
+      }
+    }
+
+    "toCwdsUrlInfoRequest" - {
+      "should translate a url info request" in {
+        val testURI: URI = URI.create("https://example.com/file.pfb")
+
+        val expected = new UrlInfoRequest()
+        expected.setUrl(testURI)
+
+        cwdsDao.toCwdsUrlInfoRequest(FileInfoRequest(testURI.toString)) shouldBe expected
+      }
+    }
+
+    "toFileInfoResponse" - {
+      "should translate a result containing files" in {
+        val input = new UrlInfoResult()
+        input.setOriginalUrl("https://example.com/manifest.json")
+        input.setFiles(
+          List(
+            new UrlFileInfo().signedUrl("https://example.com/one?sig=abc").sizeBytes(123L),
+            new UrlFileInfo().signedUrl("https://example.com/two?sig=def").sizeBytes(456L)
+          ).asJava
+        )
+
+        cwdsDao.toFileInfoResponse(input) shouldBe FileInfoResponse(
+          originalUrl = "https://example.com/manifest.json",
+          files =
+            List(FileInfo("https://example.com/one?sig=abc", 123L), FileInfo("https://example.com/two?sig=def", 456L))
+        )
+      }
+
+      "should translate a result with an empty file list" in {
+        val input = new UrlInfoResult()
+        input.setOriginalUrl("https://example.com/empty")
+        input.setFiles(List.empty[UrlFileInfo].asJava)
+
+        cwdsDao.toFileInfoResponse(input) shouldBe FileInfoResponse("https://example.com/empty", List.empty)
+      }
+
+      "should translate a result when cWDS omits the file list" in {
+        val input = new UrlInfoResult()
+        input.setOriginalUrl("https://example.com/unknown")
+
+        cwdsDao.toFileInfoResponse(input) shouldBe FileInfoResponse("https://example.com/unknown", List.empty)
+      }
+
+      "should default to zero when cWDS omits a file size" in {
+        val input = new UrlInfoResult()
+        input.setOriginalUrl("https://example.com/nosize")
+        input.setFiles(List(new UrlFileInfo().signedUrl("https://example.com/nosize?sig=ghi")).asJava)
+
+        cwdsDao.toFileInfoResponse(input) shouldBe FileInfoResponse(
+          originalUrl = "https://example.com/nosize",
+          files = List(FileInfo("https://example.com/nosize?sig=ghi", 0L))
+        )
       }
     }
 
